@@ -11,11 +11,12 @@ path_names = gfa.path_names
 edge_names = gfa.edge_names
 
 #print("lines:{l}\n edges:{e}".format(l=lines, e=edges))
-print("segment names:{sg}\n edge names:{en}".format(sg=segment_names, en=edge_names))
+#print("segment names:{sg}\n edge names:{en}".format(sg=segment_names, en=edge_names))
 
-print("edges:{e}".format(e=edges))
+#print("edges:{e}".format(e=edges))
 
 pfs = set([tuple(line.positional_fieldnames) for line in lines])
-print("segments, edges, paths", pfs)
+#print("segments, edges, paths", pfs)
+print(path_names)
 
 
