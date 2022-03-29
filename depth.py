@@ -5,7 +5,6 @@ depth_map = {}
 
 for path in g.paths:
     for segment in path.segment_names:
-        print(segment)
         name = segment.name
         if name in depth_map:
             depth_map[name] += 1
