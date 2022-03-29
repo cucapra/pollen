@@ -1,5 +1,3 @@
-#!usr/bin/env python3
-
 import gfapy as gf
 
 gfa = gf.Gfa.from_file("DRB1-3123.gfa")
