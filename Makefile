@@ -6,3 +6,6 @@ fetch: $(GFA_FILES)
 
 $(GFA_FILES): %.gfa:
 	curl -Lo $@ $(GFA_URL)/$@
+
+%.og: %.gfa
+	odgi build -g $^ -o $@
