@@ -10,6 +10,13 @@ Getting Started
 You will need to fetch some useful inputs by typing `make fetch`.
 This downloads some simple [GFA][] data files.
 
+Then, to compute the node depth for these graphs, type one of these commands:
+
+    $ python3 depth.py k.gfa
+    $ python3 depth.py DRB1-3123.gfa
+
+The first works on an extremely small example, and the second is a tiny bit bigger.
+
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
 [gfa]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8006571/#FN8
