@@ -13,9 +13,9 @@ def depth(filename):
                 depth_map[name] += 1
             else:
                 depth_map[name] = 1
-    print(depth_map)
+    #print(depth_map)
 
-    with open('output.txt', 'w') as f: 
+    with open('python_output.txt', 'w') as f: 
         depth_items = depth_map.items()
         for pair in depth_items:
             f.write(f'{pair[0]} {pair[1]}\n')
