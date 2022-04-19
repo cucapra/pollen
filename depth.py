@@ -15,6 +15,10 @@ def depth(filename):
                 depth_map[name] = 1
     print(depth_map)
 
+    with open('output.txt', 'w') as f: 
+        depth_items = depth_map.items()
+        for pair in depth_items:
+            f.write(f'{pair[0]} {pair[1]}\n')
 
 if __name__ == '__main__':
     depth(sys.argv[1])
