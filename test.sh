@@ -1,17 +1,42 @@
 #!/bin/bash
 
-odgi build -g $1 -o temp.og
-odgi depth -i temp.og -d > temp_depth.txt
+Help()
+{
+	echo "Syntax: ./test.sh [-f filename] [-i]"
+	echo "options:"
+	echo "f	    Insert argument for file name (gfa)"
+	echo "i     Creates folder for intermediate files called test_files, instead of deleting them"
+	echo "h     Displays Help"
+}
 
-python3 process.py temp_depth.txt
+while getopts 'f:ih' OPTION; do
+	case "$OPTION" in
+		f)
+			odgi build -g $OPTARG -o temp.og
+			odgi depth -i temp.og -d > temp_depth.txt
 
-python3 depth.py $1
-diff odgi_output.txt python_output.txt > diff_output.txt
+			python3 process.py temp_depth.txt
 
-if [ -s diff_output.txt ]; then
-	echo "Test failed! Differences in diff_output.txt"
-else
-	echo "Test passed! No differences."
-fi
+			python3 depth.py $OPTARG
+			diff odgi_output.txt python_output.txt > diff_output.txt
 
-rm -rf temp* odgi.og odgi.txt
+			if [ -s diff_output.txt ]; then
+        			echo -e "\x1b[31mTest failed! Differences in diff_output.txt\x1b[0m"
+			else
+        			echo -e "\x1b[32mTest passed! No differences.\x1b[0m"
+			fi
+
+			;;
+		i)
+			mkdir test_files
+			mv temp* test_files 
+			;;
+		h)
+			Help
+			exit 1
+			;;
+	esac
+done
+
+
+rm -rf temp*
