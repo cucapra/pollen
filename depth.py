@@ -8,16 +8,16 @@ def depth(filename):
 
     for path in g.paths:
         for segment in path.segment_names:
-            name = segment.name
+            name = int(segment.name)
             if name in depth_map:
                 depth_map[name] += 1
             else:
                 depth_map[name] = 1
+    sorted_depth_items = sorted(depth_map.items())
     #print(depth_map)
 
     with open('python_output.txt', 'w') as f: 
-        depth_items = depth_map.items()
-        for pair in depth_items:
+        for pair in sorted_depth_items:
             f.write(f'{pair[0]} {pair[1]}\n')
 
 if __name__ == '__main__':
