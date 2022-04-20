@@ -5,6 +5,9 @@ GFA_URL := https://raw.githubusercontent.com/pangenome/odgi/ebc493f2622f49f1e67c
 .PHONY: fetch test
 fetch: $(GFA_FILES)
 
+test: $(TEST_FILE)
+	./test.sh $(TEST_FILE)
+
 $(GFA_FILES): %.gfa:
 	curl -Lo $@ $(GFA_URL)/$@
 
