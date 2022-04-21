@@ -14,7 +14,6 @@ def depth(filename):
             else:
                 depth_map[name] = 1
     sorted_depth_items = sorted(depth_map.items())
-    #print(depth_map)
 
     with open('python_output.txt', 'w') as f: 
         for pair in sorted_depth_items:
