@@ -6,7 +6,7 @@ def depth(filename):
     Calculates the depth of each node by counting how many times a node appears
     in graph
     '''
-    g = parse_gfa.format_file_path_only(filename)
+    g = parse_gfa.parse_file_path_only(filename)
     depth_map = {}
     for segment in g:
         if segment in depth_map:
