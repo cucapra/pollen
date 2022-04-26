@@ -1,9 +1,12 @@
-import gfapy
 import sys
-
+import parse_gfa
 
 def depth(filename):
-    g = gfapy.Gfa.from_file(filename)
+    '''
+    Calculates the depth of each node by counting how many times a node appears
+    in graph
+    '''
+    g = parse_gfa.parse_file_path_only(filename)
     depth_map = {}
 
     for path in g.paths:
