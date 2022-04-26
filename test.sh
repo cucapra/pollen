@@ -17,7 +17,7 @@ while getopts 'f:ih' OPTION; do
 
 			python3 process.py temp_depth.txt
 
-			python3 depth.py $OPTARG
+			python3 depth1.py $OPTARG
 			diff odgi_output.txt python_output.txt > diff_output.txt
 
 			if [ -s diff_output.txt ]; then
