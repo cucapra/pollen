@@ -5,7 +5,6 @@ with open(sys.argv[1], 'r') as f:
     data = []
     for line in contents:
         data.append(line.split())
-
-with open('odgi_output.txt', 'w') as f2:
+    
     for i in range(1, len(data)):
-        f2.write(f'{data[i][0].strip()} {data[i][1].strip()}\n')
+        print(str(data[i][0].strip()) + " " + str(data[i][1].strip()), end='\n')

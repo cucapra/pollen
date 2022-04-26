@@ -15,10 +15,10 @@ while getopts 'f:ih' OPTION; do
 			odgi build -g $OPTARG -o temp.og
 			odgi depth -i temp.og -d > temp_depth.txt
 
-			python3 process.py temp_depth.txt
+			python3 process.py temp_depth.txt > temp_odgi.txt
 
-			python3 depth1.py $OPTARG
-			diff odgi_output.txt python_output.txt > diff_output.txt
+			python3 depth1.py $OPTARG > temp_output.txt
+			diff temp_odgi.txt temp_output.txt > diff_output.txt
 
 			if [ -s diff_output.txt ]; then
         			echo -e "\x1b[31mTest failed! Differences in diff_output.txt\x1b[0m"
