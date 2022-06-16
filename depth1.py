@@ -14,9 +14,8 @@ def depth(filename):
                 depth_map[name] = 1
     sorted_depth_items = sorted(depth_map.items())
 
-    with open('python_output.txt', 'w') as f: 
-        for pair in sorted_depth_items:
-            f.write(f'{pair[0]} {pair[1]}\n')
+    for pair in sorted_depth_items:
+        print(str(pair[0]) + " " +str(pair[1]), end='\n')
 
 if __name__ == '__main__':
     depth(sys.argv[1])
