@@ -1,0 +1,5 @@
+# [envs.baseline]
+# command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d | python3 ../process.py; rm temp.og"
+
+[envs.py]
+command = "python3 ../depth1.py {filename}"
