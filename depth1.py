@@ -12,11 +12,11 @@ def depth(filename):
                 depth_map[name] += 1
             else:
                 depth_map[name] = 1
-    sorted_depth_items = sorted(depth_map.items())
-
-    with open('python_output.txt', 'w') as f: 
-        for pair in sorted_depth_items:
-            f.write(f'{pair[0]} {pair[1]}\n')
+    sorted_node_depths = sorted(depth_map.items())
+    return sorted_node_depths
 
 if __name__ == '__main__':
-    depth(sys.argv[1])
+    sorted_node_depths = depth(sys.argv[1])
+    print("#node.id\tdepth")
+    for node, depth in sorted_node_depths:
+        print(f'{node}\t{depth}')

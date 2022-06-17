@@ -6,13 +6,13 @@ GFA_URL := https://raw.githubusercontent.com/pangenome/odgi/ebc493f2622f49f1e67c
 fetch: $(GFA_FILES)
 
 test: $(TEST_FILE)
-	./test.sh -f $(TEST_FILE)
+	turnt test/$^
 
 clean: 
-	rm -rf test_files && rm *_output.txt
+	rm -rf test/*.gfa
 
 $(GFA_FILES): %.gfa:
-	curl -Lo $@ $(GFA_URL)/$@
+	curl -Lo ./test/$@ $(GFA_URL)/$@
 
 %.og: %.gfa
 	odgi build -g $^ -o $@
