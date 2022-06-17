@@ -16,7 +16,7 @@ def format_json_data(node_depths, mem='segments0'):
     depths = node_depths['memories'][mem]
     print('#node.id\tdepth')
     for i in range(len(depths)):
-        print(f'{i}\t{depths[i]}')
+        print(f'{i+1}\t{depths[i]}')
     
 if __name__ == '__main__':
     '''

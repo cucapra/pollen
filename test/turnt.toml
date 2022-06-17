@@ -4,5 +4,5 @@ command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d | pytho
 [envs.py]
 command = "python3 ../depth1.py {filename}"
 
-# [env.dahlia]
-# command = fud exec depth.fuse --from dahlia --to dat --through verilog -s verilog.data depth.fuse.data | python3 ../process.py json
+[envs.dahlia]
+command = "fud exec ../depth.fuse --from dahlia --to dat --through verilog -s verilog.data ../depth.fuse.data | python3 ../process.py json"
