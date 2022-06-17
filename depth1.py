@@ -12,6 +12,7 @@ def depth(filename):
                 depth_map[name] += 1
             else:
                 depth_map[name] = 1
+
     sorted_node_depths = sorted(depth_map.items())
     return sorted_node_depths
 
