@@ -5,7 +5,7 @@ decl segments: ubit<32>[15];
 let j : ubit<32>= 0;
 let max : ubit<32>= 0;
 for (let i: ubit<2> = 0..3) {
-  max := offsets[i+1];
+  max := offsets[i];
   while (j < max) {
       let index = paths[j];
       j := j + 1;
