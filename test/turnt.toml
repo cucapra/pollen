@@ -1,8 +1,11 @@
 [envs.baseline]
-command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d | python3 ../process.py gdt; rm temp.og"
+command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d; rm temp.og"
 
-[envs.py]
+[envs.py1]
 command = "python3 ../depth1.py {filename}"
 
-[envs.dahlia]
-command = "fud exec ../depth.fuse --from dahlia --to dat --through verilog -s verilog.data ../depth.fuse.data | python3 ../process.py json"
+[envs.py-og]
+command = "odgi build -g {filename} -o temp.og; python3 ../depth3.py temp.og; rm temp.og"
+
+# [envs.dahlia]
+# command = "fud exec ../depth.fuse --from dahlia --to dat --through verilog -s verilog.data ../depth.fuse.data | python3 ../process.py json"

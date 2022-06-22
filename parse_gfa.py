@@ -40,9 +40,10 @@ def parse_file(filename):
 
     p_offsets.append(len(paths))
 
-    result_dict = {"segment names": s_names, "paths": paths, 
-    "path offsets": p_offsets, "path names": p_names}
-    return result_dict
+    return {"segment names": s_names,
+                   "paths": paths, 
+                   "path offsets": p_offsets,
+                   "path names": p_names}
 
 def parse_file_path_only(filename):
     '''
@@ -61,6 +62,14 @@ def parse_file_path_only(filename):
                 all_paths.append(segment)
     
     return all_paths
+
+def parse_gfa_to_og(filename):
+    '''
+    Parses a .gfa file and returns a dictionary that maps from nodes to steps
+    '''
+    gfa = parse_file(filename)
+    og = {node:[] for node in gfa['segment names']}
+    
 
 def generate_json(filename):
     '''
