@@ -28,11 +28,15 @@ def get_depth_table(graph, subset_paths=[]):
         
         def for_step(step):
             path_h = graph.get_path_handle_of_step(step)
-            if graph.get_path_name(path_h) in paths_to_consider:
-                paths.add(path_h)
+            path = graph.get_path_name(path_h)
+            if path in paths_to_consider:
+                print(path)
+                paths.add(path)
                 depth[0] = depth[0] + 1
 
         graph.for_each_step_on_handle(handle, for_step)
+
+        print(paths)
 
         node_id = graph.get_id(handle)
         ndt[node_id] = (depth[0], len(paths))
