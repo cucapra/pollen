@@ -8,5 +8,7 @@ test/*.out
 test/basic/*.og
 test/basic/*.out
 
+test/subset-paths/*.out
+
 *.json
 og_to_gfa.py
