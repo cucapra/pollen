@@ -19,7 +19,7 @@ test-all: GFA_ZIP_URL test/chr8.pan.og test
 	turnt test/chr8.pan.gfa
 
 clean:
-	rm -rf $(foreach file,$(TEST_FILES),test/$(file)*)
+	rm -rf $(foreach file,$(TEST_FILES),test/$(file).*)
 	rm -rf test/basic/*.og
 	rm -rf test/basic/*.out
 
