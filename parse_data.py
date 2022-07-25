@@ -1,3 +1,7 @@
+'''
+This file converts an odgi graph to numerical JSON data that can be used by calyx hardware simulators.
+'''
+
 import sys
 import json
 import odgi
