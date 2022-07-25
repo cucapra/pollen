@@ -6,9 +6,9 @@ GFA_URL := https://raw.githubusercontent.com/pangenome/odgi/ebc493f2622f49f1e67c
 GFA_ZIP_URL := https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/scratch/2021_05_06_pggb/gfas/chr8.pan.gfa.gz
 
 .PHONY: fetch og test clean test-all
-fetch: $(TEST_FILES)
+fetch: $(TEST_FILES:%=test/%.gfa)
 
-og: fetch $(OG_FILES)
+og: $(OG_FILES)
 
 test: og
 	-turnt --save --env baseline $(GFA_FILES)
@@ -17,7 +17,7 @@ test: og
 	-turnt --save --env baseline test/subset-paths/*.txt
 	-turnt test/subset-paths/*.txt
 
-test-slow: GFA_ZIP_URL test/chr8.pan.og
+test-slow: test/chr8.pan.og
 	-turnt --save --env baseline test/chr8.pan.gfa
 	turnt test/chr8.pan.gfa
 
@@ -35,8 +35,8 @@ test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
 	gunzip ./test/chr8.pan.gfa.gz
 
-$(TEST_FILES):
-	curl -Lo ./test/$@.gfa $(GFA_URL)/$@.gfa
+test/%.gfa:
+	curl -Lo ./$@ $(GFA_URL)/$*.gfa
 
 %.og: %.gfa
 	odgi build -g $^ -o $@
