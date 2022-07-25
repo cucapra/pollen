@@ -24,12 +24,12 @@ test-slow: GFA_ZIP_URL test/chr8.pan.og
 test-all: test test-slow
 
 clean:
-	rm -rf $(GFA_FILES)
-	rm -rf $(OG_FILES)
+	rm -rf $(TEST_FILES:%=test/%.*)
 
-	rm -rf test/*.out
+	rm -rf test/basic/*.og
 	rm -rf test/basic/*.out
-	rm -rf test/subset-path/*.out
+
+	rm -rf test/subset-paths/*.out
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
