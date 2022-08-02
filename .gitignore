@@ -1,7 +1,14 @@
 __pycache__/
 *.py[cod]
 
-k.gfa
-DRB1-3123.gfa
-*.og
+test/*.og
+test/*.gfa
+test/*.out
+
+test/basic/*.og
+test/basic/*.out
+
+test/subset-paths/*.out
+
 *.json
+og_to_gfa.py
