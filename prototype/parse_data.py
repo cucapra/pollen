@@ -130,12 +130,30 @@ if __name__ == '__main__':
         }
     }
 
+    data['paths_on_node'] = {
+        "data": [0] * (args.max_paths + 1),
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": 1
+        }
+    }
+
     data['depth_output'] = {
         'data': [0],
         'format': {
             "numeric_type": "bitnum",
             "is_signed": False,
-            'width': (args.max_paths - 1).bit_length()
+            'width': args.max_steps.bit_length()
+        }
+    }
+
+    data['uniq_output'] = {
+        'data': [0],
+        'format': {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": args.max_paths.bit_length()
         }
     }
 
