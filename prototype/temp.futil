@@ -1,0 +1,99 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+component main() -> () {
+  cells {
+    @external(1) paths_to_consider = std_mem_d1(1, 16, 4);
+    idx = std_reg(4);
+    idx_adder = std_sadd(4);
+    idx_neq = std_neq(4);
+    @external(1) path_ids = std_mem_d1(4, 16, 4);
+    paths_on_node = std_mem_d1(1, 16, 4);
+    @external(1) depth_output = std_mem_d1(4, 1, 1);
+    path_id_reg = std_reg(4);
+    uniq_and_reg_l = std_reg(1);
+    uniq_and_reg_r = std_reg(1);
+    depth = std_reg(4);
+    depth_temp = std_reg(1);
+    depth_adder = std_add(4);
+    node_uniq = std_reg(4);
+    uniq_and = std_and(1);
+    uniq_adders = std_add(4);
+  }
+  wires {
+    group init_idx {
+      idx.in = 4'd0;
+      idx.write_en = 1'd1;
+      init_idx[done] = idx.done;
+    }
+    group load_path_id {
+      path_ids.addr0 = idx.out;
+      path_id_reg.in = path_ids.read_data;
+      path_id_reg.write_en = 1'd1;
+      load_path_id[done] = path_id_reg.done;
+    }
+    group inc_idx {
+      idx_adder.left = idx.out;
+      idx_adder.right = 4'd1;
+      idx.in = idx_adder.out;
+      idx.write_en = 1'd1;
+      inc_idx[done] = idx.done;
+    }
+    comb group compare_idx {
+      idx_neq.left = idx.out;
+      idx_neq.right = 4'd15;
+    }
+    group load_consider_path {
+      paths_to_consider.addr0 = path_id_reg.out;
+      depth_temp.in = paths_to_consider.read_data;
+      depth_temp.write_en = 1'd1;
+      load_consider_path[done] = depth_temp.done;
+    }
+    group inc_depth {
+      depth_adder.left = depth.out;
+      depth_adder.right = 4'd1;
+      depth.in = depth_adder.out;
+      depth.write_en = 1'd1;
+      inc_depth[done] = depth.done;
+    }
+    group no_inc_depth {
+      depth_temp.in = 1'd0;
+      depth_temp.write_en = 1'd1;
+      no_inc_depth[done] = depth_temp.done;
+    }
+    group write_depth {
+      depth_output.addr0 = 1'd0;
+      depth_output.write_data = depth.out;
+      depth_output.write_en = 1'd1;
+      write_depth[done] = depth_output.done;
+    }
+  }
+  control {
+    seq {
+      init_idx;
+      while idx_neq.out with compare_idx {
+        seq {
+          load_path_id;
+          par {
+            inc_idx;
+            seq {
+              load_consider_path;
+              if depth_temp.out {
+                inc_depth;
+              } else {
+                no_inc_depth;
+              }
+            }
+          }
+        }
+      }
+      load_path_id;
+      load_consider_path;
+      if depth_temp.out {
+        inc_depth;
+      } else {
+        no_inc_depth;
+      }
+      write_depth;
+    }
+  }
+}
