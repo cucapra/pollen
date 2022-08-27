@@ -1,9 +1,9 @@
 from calyx.py_ast import *
 import argparse
 
-MAX_NODES=16
+MAX_NODES=32
 MAX_STEPS=15
-MAX_PATHS=15
+MAX_PATHS=7
 
 def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
 
@@ -170,7 +170,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
             CompVar('compare_uniq_idx'),
             [
                 Connect(CompPort(uniq_idx, 'out'), CompPort(uniq_idx_neq, 'left')),
-                Connect(ConstantPort(path_id_width, 0), CompPort(idx_neq, 'right'))
+                Connect(ConstantPort(path_id_width, 0), CompPort(uniq_idx_neq, 'right'))
             ]
         ),
         
