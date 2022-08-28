@@ -34,7 +34,7 @@ def get_depth_table(graph, subset_paths=None):
         node_id = graph.get_id(handle)
         
         paths = set()
-        depth = 0 # depth[0] is the node depth
+        depth = 0
 
         # For a given path step, update the node depth and set of paths which cross the node
         def for_step(step):
