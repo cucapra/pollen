@@ -54,7 +54,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
         graph.for_each_step_on_handle(node_h, parse_step)
 
         # Pad path_ids with 0s
-        path_ids = path_ids + [0] * (max_steps + 1 - len(path_ids))
+        path_ids = path_ids + [0] * (max_steps - len(path_ids))
         
         # 'path_ids{id}' is the list of path ids for each step crossing node {id}
         node_id = graph.get_id(node_h)
@@ -81,7 +81,25 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
                 "width": width
             }
         }
-    
+
+    data['depth_output'] = {
+        "data": [0] * max_nodes,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": args.max_steps.bit_length()
+        }
+    }
+
+    data['uniq_output'] = {
+        "data": [0] * max_nodes,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": args.max_paths.bit_length()
+        }
+    }
+        
     return data
 
 
@@ -110,11 +128,32 @@ def parse_paths_file(filename, path_to_id, max_paths=MAX_PATHS):
     return paths_to_consider
 
 
+def get_maxes(filename):
+
+    graph = odgi.graph()
+    graph.load(filename)
+    
+    max_nodes = graph.get_node_count()
+    max_steps = 0
+    max_paths = graph.get_path_count()
+
+    def update_max_steps(node_h):
+        nonlocal max_steps
+        num_steps = graph.get_step_count(node_h)
+        if num_steps > max_steps:
+            max_steps = num_steps
+
+    graph.for_each_handle(update_max_steps)
+
+    return max_nodes, max_steps, max_paths
+
+
 if __name__ == '__main__':
     
     # Parse commandline arguments                                              
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', help='A .og file representing a pangenome whose node depth we want to calculate')
+    parser.add_argument('-a', '--auto-size', action='store_true', help='Provide an odgi file that will be used to calculate the hardware dimensions. Takes precedence over specified hardware dimensions.')
     parser.add_argument('-s', '--subset-paths', help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.')
     parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
     parser.add_argument('-e', '--max-steps', type=int, default=MAX_STEPS, help='Specify the maximum number of steps per node that the hardware can support.')
@@ -125,11 +164,16 @@ if __name__ == '__main__':
     graph = odgi.graph()
     graph.load(args.filename)
 
+    if args.auto_size:
+        max_nodes, max_steps, max_paths = get_maxes(args.filename)
+    else:
+        max_nodes, max_seps, max_paths = args.max_nodes, args.max_steps, args.max_paths
     
     # Check that the number of paths on the graph does not exceed max_paths
-    if graph.get_path_count() > args.max_paths:
+    if graph.get_path_count() > max_paths:
         raise Exception(f'The number of paths in the graph exceeds the maximum number of paths the hardware can process. {graph.get_path_count()} > {args.max_paths}. Hint: try setting the maximum number of paths manually using the -p flag')
 
+    
     # Assign a path_id to each path; the path_ids are not accessible using the
     # default python bindings for odgi
     
@@ -141,9 +185,9 @@ if __name__ == '__main__':
     path_name_to_id = {path:count for count, path in enumerate(paths)}
 
     
-    paths_to_consider = parse_paths_file(args.subset_paths, path_name_to_id, args.max_paths)
+    paths_to_consider = parse_paths_file(args.subset_paths, path_name_to_id, max_paths)
 
-    data = parse_steps_on_nodes(graph, path_name_to_id, args.max_nodes, args.max_steps, args.max_paths)
+    data = parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths)
 
     data['paths_to_consider'] = {
         "data": paths_to_consider,
@@ -151,24 +195,6 @@ if __name__ == '__main__':
             "numeric_type": "bitnum",
             "is_signed": False,
             "width": 1
-        }
-    }
-
-    data['depth_output'] = {
-        "data": [0] * args.max_nodes,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": args.max_steps.bit_length()
-        }
-    }
-
-    data['depth_uniq_output'] = {
-        "data": [0] * args.max_nodes,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": args.max_paths.bit_length()
         }
     }
 
