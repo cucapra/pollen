@@ -12,12 +12,12 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     stdlib = Stdlib()
     
     # Variable identifiers
-    paths_to_consider = CompVar('paths_to_consider') 
     depth_output = CompVar('depth_output')
     uniq_output = CompVar('uniq_output')
 
     path_ids = [] # path_id for each step on the node
     paths_on_node = [] # computed by depth.uniq
+    paths_to_consider = [] # duplicated, each node gets its own array
 
     path_id_reg = []
     idx = []
@@ -44,6 +44,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     for i in range(1, max_nodes + 1):
         path_ids.append(CompVar(f'path_ids{i}'))
         paths_on_node.append(CompVar(f'paths_on_node{i}'))
+        paths_to_consider.append(CompVar(f'paths_to_consider{i}')) 
 
         path_id_reg.append(CompVar(f'path_id_reg{i}'))
         idx.append(CompVar(f'idx{i}'))
@@ -65,19 +66,18 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         uniq_idx.append(CompVar(f'uniq_idx{i}'))
         uniq_idx_neq.append(CompVar(f'uniq_idx_neq{i}'))
         uniq_idx_adder.append(CompVar(f'uniq_idx_adder{i}'))
-    
+
 
     # Initialize the cells
     ptc_size = max_paths + 1
     path_id_width = max_paths.bit_length()
     depth_width = max_steps.bit_length() # number of bits to represent depth
     uniq_width = path_id_width # number of bits to represent uniq depth
-    steps_width = (max_steps - 1).bit_length()
-    node_width = (max_nodes - 1).bit_length()
+    steps_width = max((max_steps - 1).bit_length(), 1)
+    node_width = max((max_nodes - 1).bit_length(), 1)
     
     cells = [
-        # External memory cells for and paths_on_node and output
-        Cell(paths_to_consider, stdlib.mem_d1(1, ptc_size, path_id_width), is_external=True),
+        # External memory cells for the output
         Cell(depth_output, stdlib.mem_d1(depth_width, max_nodes, node_width), is_external=True),
         Cell(uniq_output, stdlib.mem_d1(uniq_width, max_nodes, node_width), is_external=True)
     ]
@@ -86,6 +86,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         cells.extend([
             Cell(path_ids[i], stdlib.mem_d1(path_id_width, max_steps, steps_width), is_external=True),
             Cell(paths_on_node[i], stdlib.mem_d1(1, ptc_size, path_id_width)),
+            Cell(paths_to_consider[i], stdlib.mem_d1(1, ptc_size, path_id_width), is_external=True),
             
             # Idx cells
             Cell(path_id_reg[i], stdlib.register(path_id_width)),            
@@ -159,8 +160,8 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
             Group(
                 CompVar(f"load_consider_path{i}"),
                 [
-                    Connect(CompPort(path_id_reg[i], "out"), CompPort(paths_to_consider, "addr0")),
-                    Connect(CompPort(paths_to_consider, "read_data"), CompPort(depth_temp[i], "in")),
+                    Connect(CompPort(path_id_reg[i], "out"), CompPort(paths_to_consider[i], "addr0")),
+                    Connect(CompPort(paths_to_consider[i], "read_data"), CompPort(depth_temp[i], "in")),
                     Connect(ConstantPort(1, 1), CompPort(depth_temp[i], "write_en")),
                     Connect(CompPort(depth_temp[i], "done"), HolePort(CompVar(f"load_consider_path{i}"), "done"))
                 ]
@@ -243,8 +244,8 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
             Group(
                 CompVar(f"load_and_r{i}"),
                 [
-                    Connect(CompPort(uniq_idx[i], "out"), CompPort(paths_to_consider, "addr0")),
-                    Connect(CompPort(paths_to_consider, "read_data"), CompPort(uniq_and_reg_r[i], "in")),
+                    Connect(CompPort(uniq_idx[i], "out"), CompPort(paths_to_consider[i], "addr0")),
+                    Connect(CompPort(paths_to_consider[i], "read_data"), CompPort(uniq_and_reg_r[i], "in")),
                     Connect(ConstantPort(1, 1), CompPort(uniq_and_reg_r[i], "write_en")),
                     Connect(CompPort(uniq_and_reg_r[i], "done"), HolePort(CompVar(f"load_and_r{i}"), "done"))            
                 ]
@@ -314,13 +315,20 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
                         Enable(f'inc_uniq{i}'),
                         Enable(f'dec_uniq_idx{i}')    
                     ])    
-                ),
-                ParComp([
-                    Enable(f'store_uniq{i}'),
-                    Enable(f'store_depth{i}')
-                ])
+                )
             ])
         )
+
+    controls = [ParComp(controls)]
+
+    for i in range(max_nodes):
+        controls.append(
+            ParComp([
+                Enable(f'store_uniq{i}'),
+                Enable(f'store_depth{i}')
+            ])
+        )
+    
         
     # Node depth
     # Get the path_id
@@ -351,7 +359,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         inputs=[],
         outputs=[],
         structs=cells + wires,
-        controls=ParComp(controls),
+        controls=SeqComp(controls),
     )
 
     # Create the Calyx program.
