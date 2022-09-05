@@ -1,0 +1,1 @@
+ARGS: basic/ex2.og
