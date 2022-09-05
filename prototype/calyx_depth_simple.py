@@ -1,12 +1,14 @@
 from calyx.py_ast import *
 import argparse
+from parse_data import get_maxes
+
 
 MAX_NODES=32
 MAX_STEPS=15
 MAX_PATHS=7
 
 def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
-
+    
     stdlib = Stdlib()
     
     # Variable identifiers
@@ -42,7 +44,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     ptc_size = max_paths + 1
     path_id_width = max_paths.bit_length()
     depth_width = max_steps.bit_length() # number of bits to represent depth
-    steps_width = (max_steps - 1).bit_length()
+    steps_width = max(1, (max_steps - 1).bit_length())
     uniq_width = path_id_width # number of bits to represent uniq depth
     
     cells = [
@@ -55,7 +57,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
 
         # Idx cells
         Cell(idx, stdlib.register(steps_width)),
-        Cell(idx_adder, stdlib.op("add", steps_width, signed=True)),
+        Cell(idx_adder, stdlib.op("add", steps_width, signed=False)),
         Cell(idx_neq, stdlib.op("neq", steps_width, signed=False)),
 
         # Registers
@@ -327,6 +329,7 @@ if __name__ == '__main__':
 
     # Parse commandline input
     parser = argparse.ArgumentParser()
+    parser.add_argument('-a', '--auto-size', help='automatically infer the dimensions of the hardware accelerator')
     parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
     parser.add_argument('-e', '--max-steps', type=int, default=MAX_STEPS, help='Specify the maximum number of steps per node that the hardware can support.')
     parser.add_argument('-p', '--max-paths', type=int, default=MAX_PATHS, help='Specify the maximum number of paths that the hardware can support.')
@@ -334,9 +337,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-
+    if args.auto_size:
+        max_steps, max_paths = get_maxes(args.auto_size)
+    else:
+        max_steps, max_paths = args.max_steps, args.max_paths
+        
     # Generate calyx code
-    program = node_depth(args.max_nodes, args.max_steps, args.max_paths)
+    program = node_depth(max_steps=max_steps, max_paths=max_paths)
 
     # Emit the code
     if (args.out):
