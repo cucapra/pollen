@@ -189,16 +189,20 @@ def get_maxes(filename):
     return max_nodes, max_steps, max_paths
 
 
-def from_data(filename, max_nodes=None):
+def from_data(filename, from_interp, max_nodes=None):
     '''
     Parse a calyx output file to the odgi format
     '''
 
     with open(filename, 'r') as fp:
         data = json.load(fp)
-        
-    depths = data['memories']['depth_output']
-    uniqs = data['memories']['uniq_output']
+
+    if from_interp:
+        depths = data['memories']['main']['depth_output']
+        uniqs = data['memories']['main']['uniq_output']
+    else:
+        depths = data['memories']['depth_output']
+        uniqs = data['memories']['uniq_output']
 
     if not max_nodes:
         max_nodes = len(depths)
@@ -215,6 +219,7 @@ if __name__ == '__main__':
     parser.add_argument('filename', help='The file to be parsed. If the -d flag is not specified, this must be a .og file.')
     parser.add_argument('-s', '--subset-paths', help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.')
     parser.add_argument('-d', '--from-data', action='store_true', help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.')
+    parser.add_argument('-i', '--from-interp', action='store_true', help='Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.')
     
     parser.add_argument('-a', '--auto-size', action='store_true', help='Provide an odgi file that will be used to calculate the hardware dimensions. Takes precedence over specified hardware dimensions.')
     parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
@@ -225,8 +230,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     
-    if args.from_data:
-        from_data(args.filename)
+    if args.from_data or args.from_interp:
+        from_data(args.filename, args.from_interp)
     else:
         if args.auto_size:
             max_nodes, max_steps, max_paths = get_maxes(args.filename)
