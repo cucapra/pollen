@@ -216,7 +216,7 @@ if __name__ == '__main__':
     
     # Parse commandline arguments                                              
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', help='The file to be parsed. If the -d flag is not specified, this must be a .og file.')
+    parser.add_argument('filename', help='The file to be parsed. If the -d and -i flags are not specified, this must be a .og file.')
     parser.add_argument('-s', '--subset-paths', help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.')
     parser.add_argument('-d', '--from-data', action='store_true', help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.')
     parser.add_argument('-i', '--from-interp', action='store_true', help='Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.')
