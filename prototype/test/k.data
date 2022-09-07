@@ -6,48 +6,22 @@
     "format": {
       "is_signed": false,
       "numeric_type": "bitnum",
-      "width": 4
+      "width": 2
     }
   },
   "path_ids": {
     "data": [
       0,
-      1,
-      1,
-      2,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
+      1
     ],
     "format": {
       "is_signed": false,
       "numeric_type": "bitnum",
-      "width": 4
+      "width": 2
     }
   },
   "paths_on_node": {
     "data": [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
       0,
       0,
       0
@@ -61,19 +35,6 @@
   "paths_to_consider": {
     "data": [
       0,
-      1,
-      0,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
-      1,
       1,
       1
     ],
@@ -90,7 +51,7 @@
     "format": {
       "is_signed": false,
       "numeric_type": "bitnum",
-      "width": 4
+      "width": 2
     }
   }
 }

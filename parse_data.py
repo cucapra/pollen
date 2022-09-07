@@ -12,6 +12,47 @@ MAX_NODES=16
 MAX_STEPS=15
 MAX_PATHS=15
 
+def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
+    '''
+    Create a calyx node depth input file using the graph in './{filename}' and the paths listed in './subset_paths'
+    '''
+
+    graph = odgi.graph()
+    graph.load(args.filename)
+    
+    # Check that the number of paths on the graph does not exceed max_paths
+    if graph.get_path_count() > max_paths:
+        raise Exception(f'The number of paths in the graph exceeds the maximum number of paths the hardware can process. {graph.get_path_count()} > {args.max_paths}. Hint: try setting the maximum number of paths manually using the -p flag')
+
+    
+    # Assign a path_id to each path; the path_ids are not accessible using the
+    # default python bindings for odgi
+    
+    # Obtain a list of path names; a path's index is its id
+    paths = []
+    graph.for_each_path_handle(lambda h: paths.append(graph.get_path_name(h)))
+    
+    # Path name -> path id                                                     
+    path_name_to_id = {path:count for count, path in enumerate(paths, start=1)}
+
+    
+    paths_to_consider = parse_paths_file(args.subset_paths, path_name_to_id, max_paths)
+
+    data = parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths)
+
+    for i in range(1, max_nodes + 1):
+        data[f'paths_to_consider{i}'] = {
+            "data": paths_to_consider,
+            "format": {
+                "numeric_type": "bitnum",
+                "is_signed": False,
+                "width": 1
+            }
+        }
+
+    return data
+    
+
 def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     '''
     Generate input data containing the path ids for each step on each node in the graph, e.g.
@@ -54,7 +95,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
         graph.for_each_step_on_handle(node_h, parse_step)
 
         # Pad path_ids with 0s
-        path_ids = path_ids + [0] * (max_steps + 1 - len(path_ids))
+        path_ids = path_ids + [0] * (max_steps - len(path_ids))
         
         # 'path_ids{id}' is the list of path ids for each step crossing node {id}
         node_id = graph.get_id(node_h)
@@ -81,11 +122,29 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
                 "width": width
             }
         }
-    
+
+    data['depth_output'] = {
+        "data": [0] * max_nodes,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": args.max_steps.bit_length()
+        }
+    }
+
+    data['uniq_output'] = {
+        "data": [0] * max_nodes,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": args.max_paths.bit_length()
+        }
+    }
+        
     return data
 
 
-def parse_paths_file(filename, path_to_id, max_paths=MAX_PATHS):
+def parse_paths_file(filename, path_name_to_id, max_paths=MAX_PATHS):
     '''
     Return paths_to_consider, a list of length max_paths, where 
     paths_to_consider[i] is 1 if i is a path id and we include path i in our
@@ -110,70 +169,79 @@ def parse_paths_file(filename, path_to_id, max_paths=MAX_PATHS):
     return paths_to_consider
 
 
+def get_maxes(filename):
+    
+    graph = odgi.graph()
+    graph.load(filename)
+    
+    max_nodes = graph.get_node_count()
+    max_steps = 0
+    max_paths = graph.get_path_count()
+
+    def update_max_steps(node_h):
+        nonlocal max_steps
+        num_steps = graph.get_step_count(node_h)
+        if num_steps > max_steps:
+            max_steps = num_steps
+
+    graph.for_each_handle(update_max_steps)
+
+    return max_nodes, max_steps, max_paths
+
+
+def from_data(filename, from_interp, max_nodes=None):
+    '''
+    Parse a calyx output file to the odgi format
+    '''
+
+    with open(filename, 'r') as fp:
+        data = json.load(fp)
+
+    if from_interp:
+        depths = data['memories']['main']['depth_output']
+        uniqs = data['memories']['main']['uniq_output']
+    else:
+        depths = data['memories']['depth_output']
+        uniqs = data['memories']['uniq_output']
+
+    if not max_nodes:
+        max_nodes = len(depths)
+    
+    print("#node.id\tdepth\tdepth.uniq")
+    for i in range(max_nodes):
+        print(f'{i + 1}\t{depths[i]}\t{uniqs[i]}')
+
+
 if __name__ == '__main__':
     
     # Parse commandline arguments                                              
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', help='A .og file representing a pangenome whose node depth we want to calculate')
+    parser.add_argument('filename', help='The file to be parsed. If the -d and -i flags are not specified, this must be a .og file.')
     parser.add_argument('-s', '--subset-paths', help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.')
+    parser.add_argument('-d', '--from-data', action='store_true', help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.')
+    parser.add_argument('-i', '--from-interp', action='store_true', help='Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.')
+    
+    parser.add_argument('-a', '--auto-size', action='store_true', help='Provide an odgi file that will be used to calculate the hardware dimensions. Takes precedence over specified hardware dimensions.')
     parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
     parser.add_argument('-e', '--max-steps', type=int, default=MAX_STEPS, help='Specify the maximum number of steps per node that the hardware can support.')
     parser.add_argument('-p', '--max-paths', type=int, default=MAX_PATHS, help='Specify the maximum number of paths that the hardware can support.')
     parser.add_argument('-o', '--out', help='Specify the output file. If not specified, will dump to stdout.')
+    
     args = parser.parse_args()
 
-    graph = odgi.graph()
-    graph.load(args.filename)
-
     
-    # Check that the number of paths on the graph does not exceed max_paths
-    if graph.get_path_count() > args.max_paths:
-        raise Exception(f'The number of paths in the graph exceeds the maximum number of paths the hardware can process. {graph.get_path_count()} > {args.max_paths}. Hint: try setting the maximum number of paths manually using the -p flag')
-
-    # Assign a path_id to each path; the path_ids are not accessible using the
-    # default python bindings for odgi
-    
-    # Obtain a list of path names; a path's index is its id
-    paths = []
-    graph.for_each_path_handle(lambda h: paths.append(graph.get_path_name(h)))
-    
-    # Path name -> path id                                                     
-    path_name_to_id = {path:count for count, path in enumerate(paths)}
-
-    
-    paths_to_consider = parse_paths_file(args.subset_paths, path_name_to_id, args.max_paths)
-
-    data = parse_steps_on_nodes(graph, path_name_to_id, args.max_nodes, args.max_steps, args.max_paths)
-
-    data['paths_to_consider'] = {
-        "data": paths_to_consider,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": 1
-        }
-    }
-
-    data['depth_output'] = {
-        "data": [0] * args.max_nodes,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": args.max_steps.bit_length()
-        }
-    }
-
-    data['depth_uniq_output'] = {
-        "data": [0] * args.max_nodes,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": args.max_paths.bit_length()
-        }
-    }
-
-    if args.out:
-        with open(args.out, 'w') as out_file:
-            json.dump(data, out_file, indent=2, sort_keys=True)
+    if args.from_data or args.from_interp:
+        from_data(args.filename, args.from_interp)
     else:
-        json.dump(data, sys.stdout, indent=2, sort_keys=True)
+        if args.auto_size:
+            max_nodes, max_steps, max_paths = get_maxes(args.filename)
+        else:
+            max_nodes, max_seps, max_paths = args.max_nodes, args.max_steps, args.max_paths
+
+        data = parse_odgi(args.filename, args.subset_paths, max_nodes, max_steps, max_paths)
+
+        if args.out:
+            with open(args.out, 'w') as out_file:
+                json.dump(data, out_file, indent=2, sort_keys=True)
+        else:
+            json.dump(data, sys.stdout, indent=2, sort_keys=True)
