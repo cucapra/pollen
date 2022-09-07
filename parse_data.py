@@ -144,7 +144,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
     return data
 
 
-def parse_paths_file(filename, path_to_id, max_paths=MAX_PATHS):
+def parse_paths_file(filename, path_name_to_id, max_paths=MAX_PATHS):
     '''
     Return paths_to_consider, a list of length max_paths, where 
     paths_to_consider[i] is 1 if i is a path id and we include path i in our
