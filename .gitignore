@@ -12,3 +12,4 @@ test/subset-paths/*.out
 
 *.json
 og_to_gfa.py
+compute_maxes.py
