@@ -7,7 +7,7 @@ It is very much a work in progress.
 Getting Started
 ---------------
 
-You will need to install and configure [calyx][] and the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). If you compile odgi from its source, you will need to (edit your python path)(https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings. Since this will only give you the odgi bindings for the most recent version of python, you may need to download the `.so` files from [bioconda](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) and add them to your `PYTHONPATH` instead.
+You will need to install and configure [calyx][] and the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). If you compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings. Since this will only give you the odgi bindings for the most recent version of python, you may need to download the `.so` files from [bioconda](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) and add them to your `PYTHONPATH` instead.
 
 You will need to fetch some useful inputs by typing `make fetch`.
 This downloads some simple [GFA][] data files into the `./test` directory.
