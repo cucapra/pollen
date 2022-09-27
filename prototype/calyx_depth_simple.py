@@ -88,38 +88,38 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         Group(
             CompVar("init_idx"),
             [
-                Connect(ConstantPort(steps_width, 0), CompPort(idx, "in")),
-                Connect(ConstantPort(1, 1), CompPort(idx, "write_en")),
-                Connect(CompPort(idx, "done"), HolePort(CompVar("init_idx"), "done"))
+                Connect(CompPort(idx, "in"), ConstantPort(steps_width, 0)),
+                Connect(CompPort(idx, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("init_idx"), "done"), CompPort(idx, "done"))
             ]
         ),
         
         Group(
             CompVar("load_path_id"),
             [
-                Connect(CompPort(idx, "out"), CompPort(path_ids, "addr0")),
-                Connect(CompPort(path_ids, "read_data"), CompPort(path_id_reg, "in")),
-                Connect(ConstantPort(1,1), CompPort(path_id_reg, "write_en")),
-                Connect(CompPort(path_id_reg, "done"), HolePort(CompVar("load_path_id"), "done")),
+                Connect(CompPort(path_ids, "addr0"), CompPort(idx, "out")),
+                Connect(CompPort(path_id_reg, "in"), CompPort(path_ids, "read_data")),
+                Connect(CompPort(path_id_reg, "write_en"), ConstantPort(1,1)),
+                Connect(HolePort(CompVar("load_path_id"), "done"), CompPort(path_id_reg, "done")),
             ]
         ),
             
         Group(
             CompVar("inc_idx"),
             [
-                Connect(CompPort(idx, "out"), CompPort(idx_adder, "left")),
-                Connect(ConstantPort(steps_width, 1), CompPort(idx_adder, "right")),
-                Connect(CompPort(idx_adder, "out"), CompPort(idx, "in")),
-                Connect(ConstantPort(1, 1), CompPort(idx, "write_en")),
-                Connect(CompPort(idx, "done"), HolePort(CompVar("inc_idx"), "done"))
+                Connect(CompPort(idx_adder, "left"), CompPort(idx, "out")),
+                Connect(CompPort(idx_adder, "right"), ConstantPort(steps_width, 1)),
+                Connect(CompPort(idx, "in"), CompPort(idx_adder, "out")),
+                Connect(CompPort(idx, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("inc_idx"), "done"), CompPort(idx, "done"))
             ]
         ),
 
         CombGroup(
             CompVar("compare_idx"),
             [
-                Connect(CompPort(idx, "out"), CompPort(idx_neq, "left")),
-                Connect(ConstantPort(steps_width, max_steps - 1), CompPort(idx_neq, "right"))
+                Connect(CompPort(idx_neq, "left"), CompPort(idx, "out")),
+                Connect(CompPort(idx_neq, "right"), ConstantPort(steps_width, max_steps - 1))
             ]
         ),
 
@@ -127,10 +127,10 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         Group(
             CompVar("load_consider_path"),
             [
-                Connect(CompPort(path_id_reg, "out"), CompPort(paths_to_consider, "addr0")),
-                Connect(CompPort(paths_to_consider, "read_data"), CompPort(depth_temp, "in")),
-                Connect(ConstantPort(1, 1), CompPort(depth_temp, "write_en")),
-                Connect(CompPort(depth_temp, "done"), HolePort(CompVar("load_consider_path"), "done"))
+                Connect(CompPort(paths_to_consider, "addr0"), CompPort(path_id_reg, "out")),
+                Connect(CompPort(depth_temp, "in"), CompPort(paths_to_consider, "read_data")),
+                Connect(CompPort(depth_temp, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("load_consider_path"), "done"), CompPort(depth_temp, "done"))
             ]
         ),
             
@@ -138,22 +138,22 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
             CompVar("inc_depth"),
             [
                 #If path_id is not 0, add 1 to depth
-                Connect(CompPort(depth, "out"), CompPort(depth_adder, "left")),
-                Connect(CompPort(depth_temp, 'out'), CompPort(depth_pad, 'in')),
-                Connect(CompPort(depth_pad, 'out'), CompPort(depth_adder, "right")),
-                Connect(CompPort(depth_adder, "out"), CompPort(depth, "in")),
-                Connect(ConstantPort(1, 1), CompPort(depth, "write_en")),
-                Connect(CompPort(depth, "done"), HolePort(CompVar("inc_depth"), "done"))
+                Connect(CompPort(depth_adder, "left"), CompPort(depth, "out")),
+                Connect(CompPort(depth_pad, 'in'), CompPort(depth_temp, 'out')),
+                Connect(CompPort(depth_adder, "right"), CompPort(depth_pad, 'out')),
+                Connect(CompPort(depth, "in"), CompPort(depth_adder, "out")),
+                Connect(CompPort(depth, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("inc_depth"), "done"), CompPort(depth, "done"))
             ]
         ),
 
         Group(
             CompVar('write_depth'),
             [
-                Connect(ConstantPort(1, 0), CompPort(depth_output, "addr0")),
-                Connect(CompPort(depth, 'out'), CompPort(depth_output, 'write_data')),
-                Connect(ConstantPort(1, 1), CompPort(depth_output, 'write_en')),
-                Connect(CompPort(depth_output, 'done'), HolePort(CompVar('write_depth'), 'done'))
+                Connect(CompPort(depth_output, "addr0"), ConstantPort(1, 0)),
+                Connect(CompPort(depth_output, 'write_data'), CompPort(depth, 'out')),
+                Connect(CompPort(depth_output, 'write_en'), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar('write_depth'), 'done'), CompPort(depth_output, 'done'))
             ]
         ),
 
@@ -162,28 +162,28 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         Group(
             CompVar('init_uniq_idx'),
             [
-                Connect(ConstantPort(uniq_width, max_paths), CompPort(uniq_idx, 'in')),
-                Connect(ConstantPort(1, 1), CompPort(uniq_idx, 'write_en')),
-                Connect(CompPort(uniq_idx, 'done'), HolePort(CompVar('init_uniq_idx'), 'done'))
+                Connect(CompPort(uniq_idx, 'in'), ConstantPort(uniq_width, max_paths)),
+                Connect(CompPort(uniq_idx, 'write_en'), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar('init_uniq_idx'), 'done'), CompPort(uniq_idx, 'done'))
             ]
         ),
 
         CombGroup(
             CompVar('compare_uniq_idx'),
             [
-                Connect(CompPort(uniq_idx, 'out'), CompPort(uniq_idx_neq, 'left')),
-                Connect(ConstantPort(path_id_width, 0), CompPort(uniq_idx_neq, 'right'))
+                Connect(CompPort(uniq_idx_neq, 'left'), CompPort(uniq_idx, 'out')),
+                Connect(CompPort(uniq_idx_neq, 'right'), ConstantPort(path_id_width, 0))
             ]
         ),
         
         Group(
             CompVar('dec_uniq_idx'),
             [
-                Connect(CompPort(uniq_idx, 'out'), CompPort(uniq_idx_adder, 'left')),
-                Connect(ConstantPort(path_id_width, 1), CompPort(uniq_idx_adder, 'right')),
-                Connect(CompPort(uniq_idx_adder, 'out'), CompPort(uniq_idx, 'in')),
-                Connect(ConstantPort(1, 1), CompPort(uniq_idx, 'write_en')),
-                Connect(CompPort(uniq_idx, 'done'), HolePort(CompVar('dec_uniq_idx'), 'done'))
+                Connect(CompPort(uniq_idx_adder, 'left'), CompPort(uniq_idx, 'out')),
+                Connect(CompPort(uniq_idx_adder, 'right'), ConstantPort(path_id_width, 1)),
+                Connect(CompPort(uniq_idx, 'in'), CompPort(uniq_idx_adder, 'out')),
+                Connect(CompPort(uniq_idx, 'write_en'), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar('dec_uniq_idx'), 'done'), CompPort(uniq_idx, 'done'))
             ]
         ),
 
@@ -191,54 +191,54 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         Group(
             CompVar('update_pon'), # update paths_on_node
             [
-                Connect(CompPort(path_id_reg, "out"), CompPort(paths_on_node, "addr0")),
-                Connect(ConstantPort(1, 1), CompPort(paths_on_node, "write_data")),
-                Connect(ConstantPort(1, 1), CompPort(paths_on_node, "write_en")),
-                Connect(CompPort(paths_on_node, "done"), HolePort(CompVar("update_pon"), "done"))
+                Connect(CompPort(paths_on_node, "addr0"), CompPort(path_id_reg, "out")),
+                Connect(CompPort(paths_on_node, "write_data"), ConstantPort(1, 1)),
+                Connect(CompPort(paths_on_node, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("update_pon"), "done"), CompPort(paths_on_node, "done"))
             ]
         ),
 
         Group(
             CompVar("load_and_l"),
             [
-                Connect(CompPort(uniq_idx, "out"), CompPort(paths_on_node, "addr0")),
-                Connect(CompPort(paths_on_node, "read_data"), CompPort(uniq_and_reg_l, "in")),
-                Connect(ConstantPort(1, 1), CompPort(uniq_and_reg_l, "write_en")),
-                Connect(CompPort(uniq_and_reg_l, "done"), HolePort(CompVar("load_and_l"), "done"))
+                Connect(CompPort(paths_on_node, "addr0"), CompPort(uniq_idx, "out")),
+                Connect(CompPort(uniq_and_reg_l, "in"), CompPort(paths_on_node, "read_data")),
+                Connect(CompPort(uniq_and_reg_l, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("load_and_l"), "done"), CompPort(uniq_and_reg_l, "done"))
             ]
         ),
 
         Group(
             CompVar("load_and_r"),
             [
-                Connect(CompPort(uniq_idx, "out"), CompPort(paths_to_consider, "addr0")),
-                Connect(CompPort(paths_to_consider, "read_data"), CompPort(uniq_and_reg_r, "in")),
-                Connect(ConstantPort(1, 1), CompPort(uniq_and_reg_r, "write_en")),
-                Connect(CompPort(uniq_and_reg_r, "done"), HolePort(CompVar("load_and_r"), "done"))            
+                Connect(CompPort(paths_to_consider, "addr0"), CompPort(uniq_idx, "out")),
+                Connect(CompPort(uniq_and_reg_r, "in"), CompPort(paths_to_consider, "read_data")),
+                Connect(CompPort(uniq_and_reg_r, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("load_and_r"), "done"), CompPort(uniq_and_reg_r, "done"))   
             ]
         ),
 
         Group(
             CompVar("inc_uniq"),
             [
-                Connect(CompPort(uniq_and_reg_l, "out"), CompPort(uniq_and, "left")),
-                Connect(CompPort(uniq_and_reg_r, "out"), CompPort(uniq_and, "right")),          
-                Connect(CompPort(uniq, "out"), CompPort(uniq_adder, "left")),
-                Connect(CompPort(uniq_and, 'out'), CompPort(uniq_pad, 'in')),
-                Connect(CompPort(uniq_pad, 'out'), CompPort(uniq_adder, "right")),
-                Connect(CompPort(uniq_adder, "out"), CompPort(uniq, "in")),
-                Connect(ConstantPort(1, 1), CompPort(uniq, "write_en")),
-                Connect(CompPort(uniq, "done"), HolePort(CompVar("inc_uniq"), "done"))
+                Connect(CompPort(uniq_and, "left"), CompPort(uniq_and_reg_l, "out")),
+                Connect(CompPort(uniq_and, "right"), CompPort(uniq_and_reg_r, "out")),  
+                Connect(CompPort(uniq_adder, "left"), CompPort(uniq, "out")),
+                Connect(CompPort(uniq_pad, 'in'), CompPort(uniq_and, 'out')),
+                Connect(CompPort(uniq_adder, "right"), CompPort(uniq_pad, 'out')),
+                Connect(CompPort(uniq, "in"), CompPort(uniq_adder, "out")),
+                Connect(CompPort(uniq, "write_en"), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar("inc_uniq"), "done"), CompPort(uniq, "done"))
             ]
         ),
 
         Group(
             CompVar("store_uniq"),
             [
-                Connect(ConstantPort(1, 0), CompPort(uniq_output, 'addr0')),
-                Connect(CompPort(uniq, 'out'), CompPort(uniq_output, 'write_data')),
-                Connect(ConstantPort(1, 1), CompPort(uniq_output, 'write_en')),
-                Connect(CompPort(uniq_output, 'done'), HolePort(CompVar('store_uniq'), 'done'))
+                Connect(CompPort(uniq_output, 'addr0'), ConstantPort(1, 0)),
+                Connect(CompPort(uniq_output, 'write_data'), CompPort(uniq, 'out')),
+                Connect(CompPort(uniq_output, 'write_en'), ConstantPort(1, 1)),
+                Connect(HolePort(CompVar('store_uniq'), 'done'), CompPort(uniq_output, 'done'))
             ]
         )
     ]
