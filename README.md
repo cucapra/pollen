@@ -30,7 +30,7 @@ python3 parse_data.py test/<filename> -a > depth.data
 python3 calxy_depth.py test/<filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data
 ```
     
-This is similar to the previous command, except that the `-a` flag merely infers the dimensions from the input file. The dimensions of the input must be no larger than those of the hardware accelerator.
+This is similar to the previous command, except that the `-a` flag merely infers the dimensions from the input file. The dimensions of the input must be the same as that of the hardware accelerator.
 
 Finally, 
 
