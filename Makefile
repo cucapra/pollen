@@ -24,6 +24,7 @@ test-slow: test/chr8.pan.og
 test-all: test test-slow
 
 clean:
+	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
 
 	rm -rf test/basic/*.og
