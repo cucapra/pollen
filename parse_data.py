@@ -221,7 +221,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--from-data', action='store_true', help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.')
     parser.add_argument('-i', '--from-interp', action='store_true', help='Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.')
     
-    parser.add_argument('-a', '--auto-size', action='store_true', help='Provide an odgi file that will be used to calculate the hardware dimensions. Takes precedence over specified hardware dimensions.')
+    parser.add_argument('-a', '--auto-size', nargs='?', const='d', help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is specified with no argument, use the file to be parsed. Takes precedence over specified hardware dimensions.')
     parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
     parser.add_argument('-e', '--max-steps', type=int, default=MAX_STEPS, help='Specify the maximum number of steps per node that the hardware can support.')
     parser.add_argument('-p', '--max-paths', type=int, default=MAX_PATHS, help='Specify the maximum number of paths that the hardware can support.')
@@ -234,7 +234,8 @@ if __name__ == '__main__':
         from_data(args.filename, args.from_interp)
     else:
         if args.auto_size:
-            max_nodes, max_steps, max_paths = get_maxes(args.filename)
+            filename = args.filename if args.auto_size=='d' else args.auto_size
+            max_nodes, max_steps, max_paths = get_maxes(filename)
         else:
             max_nodes, max_seps, max_paths = args.max_nodes, args.max_steps, args.max_paths
 
