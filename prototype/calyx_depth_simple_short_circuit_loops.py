@@ -22,6 +22,8 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     idx = CompVar('idx')
     idx_adder = CompVar('idx_adder')
     idx_neq = CompVar('idx_neq')
+    pid_neq = CompVar('pid_neq')
+    pid_idx_and = CompVar('pid_idx_and')
     
     depth = CompVar('depth')
     depth_temp = CompVar('depth_temp')
@@ -36,7 +38,7 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     uniq_adder = CompVar('uniq_adder')
     
     uniq_idx = CompVar('uniq_idx')
-    uniq_idx_neq = CompVar('uniq_idx_neq')
+    uniq_idx_neq = CompVar('unid_idx_neq')
     uniq_idx_adder = CompVar('uniq_idx_adder')
     
 
@@ -59,6 +61,8 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         Cell(idx, stdlib.register(steps_width)),
         Cell(idx_adder, stdlib.op("add", steps_width, signed=False)),
         Cell(idx_neq, stdlib.op("neq", steps_width, signed=False)),
+        Cell(pid_neq, stdlib.op("neq", path_id_width, signed=False)),
+        Cell(pid_idx_and, stdlib.op("and", 1, signed=False)),
 
         # Registers
         Cell(path_id_reg, stdlib.register(path_id_width)),
@@ -116,10 +120,14 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
         ),
 
         CombGroup(
-            CompVar("compare_idx"),
+            CompVar("compare_pid_and_idx"),
             [
+                Connect(CompPort(pid_neq, "left"), CompPort(path_id_reg, "out")),
+                Connect(CompPort(pid_neq, "right"), ConstantPort(path_id_width, 0)),
                 Connect(CompPort(idx_neq, "left"), CompPort(idx, "out")),
-                Connect(CompPort(idx_neq, "right"), ConstantPort(steps_width, max_steps-1))
+                Connect(CompPort(idx_neq, "right"), ConstantPort(steps_width, max_steps-1)),
+                Connect(CompPort(pid_idx_and, "left"), CompPort(pid_neq, "out")),
+                Connect(CompPort(pid_idx_and, "right"), CompPort(idx_neq, "out"))
             ]
         ),
 
@@ -247,13 +255,13 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     # Define control flow
     controls = SeqComp([
         Enable("init_idx"),
+        Enable("load_path_id"),
         ParComp([
             Enable('init_uniq_idx'),
             While(
-                CompPort(idx_neq, "out"),
-                CompVar("compare_idx"),
+                CompPort(pid_idx_and, "out"),
+                CompVar("compare_pid_and_idx"),
                 SeqComp([
-                    Enable("load_path_id"),
                     ParComp([
                         Enable('inc_idx'),
                         # Depth computation
@@ -263,11 +271,11 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
                         ]),
                         # Uniq computation
                         Enable('update_pon')
-                    ])
+                    ]),
+                    Enable("load_path_id"),
                 ])
             )
         ]),
-        Enable("load_path_id"),
         Enable("load_consider_path"),
         Enable("inc_depth"),
         Enable('write_depth'),

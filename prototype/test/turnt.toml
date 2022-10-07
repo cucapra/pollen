@@ -7,5 +7,11 @@ command = "odgi build -g {filename} -o temp.og; python3 ../../depth.py temp.og >
 [envs.calyx]
 command = "odgi build -g {filename} -o temp.og; python3 ../calyx_depth_simple.py -a temp.og > temp.futil; python3 ../parse_data.py temp.og -a -o temp.data; fud exec temp.futil --to dat --through verilog -s verilog.data temp.data > temp.depth; python3 ../../parse_data.py -d temp.depth; rm temp.*"
 
+[envs.calyx_scl]
+command = "odgi build -g {filename} -o temp.og; python3 ../calyx_depth_simple_short_circuit_loops.py -a temp.og > temp.futil; python3 ../parse_data.py temp.og -a -o temp.data; fud exec temp.futil --to dat --through verilog -s verilog.data temp.data > temp.depth; python3 ../../parse_data.py -d temp.depth; rm temp.*"
+
+[envs.calyx_scl2]
+command = "odgi build -g {filename} -o temp.og; python3 ../calyx_depth_simple_short_circuit_loops2.py -a temp.og > temp.futil; python3 ../parse_data_scl2.py temp.og -a -o temp.data; fud exec temp.futil --to dat --through verilog -s verilog.data temp.data > temp.depth; python3 ../../parse_data.py -d temp.depth; rm temp.*"
+
 # [envs.dahlia]
 # command = "fud exec ../depth.fuse --from dahlia --to dat --through verilog -s verilog.data ../depth.fuse.data | python3 ../process.py json"
