@@ -1,0 +1,2400 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+component main() -> () {
+  cells {
+    @external(1) depth_output = std_mem_d1(4, 16, 4);
+    @external(1) uniq_output = std_mem_d1(4, 16, 4);
+    @external(1) path_ids1 = std_mem_d1(4, 15, 4);
+    paths_on_node1 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider1 = std_mem_d1(1, 16, 4);
+    path_id_reg1 = std_reg(4);
+    idx1 = std_reg(4);
+    idx_adder1 = std_add(4);
+    idx_neq1 = std_neq(4);
+    depth1 = std_reg(4);
+    depth_temp1 = std_reg(1);
+    depth_pad1 = std_pad(1, 4);
+    depth_depth1 = std_add(4);
+    uniq1 = std_reg(4);
+    uniq_and1 = std_and(1);
+    uniq_and_reg_l1 = std_reg(1);
+    uniq_and_reg_r1 = std_reg(1);
+    uniq_pad1 = std_pad(1, 4);
+    uniq_adder1 = std_add(4);
+    uniq_idx1 = std_reg(4);
+    uniq_idx_neq1 = std_neq(4);
+    uniq_idx_adder1 = std_sub(4);
+    @external(1) path_ids2 = std_mem_d1(4, 15, 4);
+    paths_on_node2 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider2 = std_mem_d1(1, 16, 4);
+    path_id_reg2 = std_reg(4);
+    idx2 = std_reg(4);
+    idx_adder2 = std_add(4);
+    idx_neq2 = std_neq(4);
+    depth2 = std_reg(4);
+    depth_temp2 = std_reg(1);
+    depth_pad2 = std_pad(1, 4);
+    depth_depth2 = std_add(4);
+    uniq2 = std_reg(4);
+    uniq_and2 = std_and(1);
+    uniq_and_reg_l2 = std_reg(1);
+    uniq_and_reg_r2 = std_reg(1);
+    uniq_pad2 = std_pad(1, 4);
+    uniq_adder2 = std_add(4);
+    uniq_idx2 = std_reg(4);
+    uniq_idx_neq2 = std_neq(4);
+    uniq_idx_adder2 = std_sub(4);
+    @external(1) path_ids3 = std_mem_d1(4, 15, 4);
+    paths_on_node3 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider3 = std_mem_d1(1, 16, 4);
+    path_id_reg3 = std_reg(4);
+    idx3 = std_reg(4);
+    idx_adder3 = std_add(4);
+    idx_neq3 = std_neq(4);
+    depth3 = std_reg(4);
+    depth_temp3 = std_reg(1);
+    depth_pad3 = std_pad(1, 4);
+    depth_depth3 = std_add(4);
+    uniq3 = std_reg(4);
+    uniq_and3 = std_and(1);
+    uniq_and_reg_l3 = std_reg(1);
+    uniq_and_reg_r3 = std_reg(1);
+    uniq_pad3 = std_pad(1, 4);
+    uniq_adder3 = std_add(4);
+    uniq_idx3 = std_reg(4);
+    uniq_idx_neq3 = std_neq(4);
+    uniq_idx_adder3 = std_sub(4);
+    @external(1) path_ids4 = std_mem_d1(4, 15, 4);
+    paths_on_node4 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider4 = std_mem_d1(1, 16, 4);
+    path_id_reg4 = std_reg(4);
+    idx4 = std_reg(4);
+    idx_adder4 = std_add(4);
+    idx_neq4 = std_neq(4);
+    depth4 = std_reg(4);
+    depth_temp4 = std_reg(1);
+    depth_pad4 = std_pad(1, 4);
+    depth_depth4 = std_add(4);
+    uniq4 = std_reg(4);
+    uniq_and4 = std_and(1);
+    uniq_and_reg_l4 = std_reg(1);
+    uniq_and_reg_r4 = std_reg(1);
+    uniq_pad4 = std_pad(1, 4);
+    uniq_adder4 = std_add(4);
+    uniq_idx4 = std_reg(4);
+    uniq_idx_neq4 = std_neq(4);
+    uniq_idx_adder4 = std_sub(4);
+    @external(1) path_ids5 = std_mem_d1(4, 15, 4);
+    paths_on_node5 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider5 = std_mem_d1(1, 16, 4);
+    path_id_reg5 = std_reg(4);
+    idx5 = std_reg(4);
+    idx_adder5 = std_add(4);
+    idx_neq5 = std_neq(4);
+    depth5 = std_reg(4);
+    depth_temp5 = std_reg(1);
+    depth_pad5 = std_pad(1, 4);
+    depth_depth5 = std_add(4);
+    uniq5 = std_reg(4);
+    uniq_and5 = std_and(1);
+    uniq_and_reg_l5 = std_reg(1);
+    uniq_and_reg_r5 = std_reg(1);
+    uniq_pad5 = std_pad(1, 4);
+    uniq_adder5 = std_add(4);
+    uniq_idx5 = std_reg(4);
+    uniq_idx_neq5 = std_neq(4);
+    uniq_idx_adder5 = std_sub(4);
+    @external(1) path_ids6 = std_mem_d1(4, 15, 4);
+    paths_on_node6 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider6 = std_mem_d1(1, 16, 4);
+    path_id_reg6 = std_reg(4);
+    idx6 = std_reg(4);
+    idx_adder6 = std_add(4);
+    idx_neq6 = std_neq(4);
+    depth6 = std_reg(4);
+    depth_temp6 = std_reg(1);
+    depth_pad6 = std_pad(1, 4);
+    depth_depth6 = std_add(4);
+    uniq6 = std_reg(4);
+    uniq_and6 = std_and(1);
+    uniq_and_reg_l6 = std_reg(1);
+    uniq_and_reg_r6 = std_reg(1);
+    uniq_pad6 = std_pad(1, 4);
+    uniq_adder6 = std_add(4);
+    uniq_idx6 = std_reg(4);
+    uniq_idx_neq6 = std_neq(4);
+    uniq_idx_adder6 = std_sub(4);
+    @external(1) path_ids7 = std_mem_d1(4, 15, 4);
+    paths_on_node7 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider7 = std_mem_d1(1, 16, 4);
+    path_id_reg7 = std_reg(4);
+    idx7 = std_reg(4);
+    idx_adder7 = std_add(4);
+    idx_neq7 = std_neq(4);
+    depth7 = std_reg(4);
+    depth_temp7 = std_reg(1);
+    depth_pad7 = std_pad(1, 4);
+    depth_depth7 = std_add(4);
+    uniq7 = std_reg(4);
+    uniq_and7 = std_and(1);
+    uniq_and_reg_l7 = std_reg(1);
+    uniq_and_reg_r7 = std_reg(1);
+    uniq_pad7 = std_pad(1, 4);
+    uniq_adder7 = std_add(4);
+    uniq_idx7 = std_reg(4);
+    uniq_idx_neq7 = std_neq(4);
+    uniq_idx_adder7 = std_sub(4);
+    @external(1) path_ids8 = std_mem_d1(4, 15, 4);
+    paths_on_node8 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider8 = std_mem_d1(1, 16, 4);
+    path_id_reg8 = std_reg(4);
+    idx8 = std_reg(4);
+    idx_adder8 = std_add(4);
+    idx_neq8 = std_neq(4);
+    depth8 = std_reg(4);
+    depth_temp8 = std_reg(1);
+    depth_pad8 = std_pad(1, 4);
+    depth_depth8 = std_add(4);
+    uniq8 = std_reg(4);
+    uniq_and8 = std_and(1);
+    uniq_and_reg_l8 = std_reg(1);
+    uniq_and_reg_r8 = std_reg(1);
+    uniq_pad8 = std_pad(1, 4);
+    uniq_adder8 = std_add(4);
+    uniq_idx8 = std_reg(4);
+    uniq_idx_neq8 = std_neq(4);
+    uniq_idx_adder8 = std_sub(4);
+    @external(1) path_ids9 = std_mem_d1(4, 15, 4);
+    paths_on_node9 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider9 = std_mem_d1(1, 16, 4);
+    path_id_reg9 = std_reg(4);
+    idx9 = std_reg(4);
+    idx_adder9 = std_add(4);
+    idx_neq9 = std_neq(4);
+    depth9 = std_reg(4);
+    depth_temp9 = std_reg(1);
+    depth_pad9 = std_pad(1, 4);
+    depth_depth9 = std_add(4);
+    uniq9 = std_reg(4);
+    uniq_and9 = std_and(1);
+    uniq_and_reg_l9 = std_reg(1);
+    uniq_and_reg_r9 = std_reg(1);
+    uniq_pad9 = std_pad(1, 4);
+    uniq_adder9 = std_add(4);
+    uniq_idx9 = std_reg(4);
+    uniq_idx_neq9 = std_neq(4);
+    uniq_idx_adder9 = std_sub(4);
+    @external(1) path_ids10 = std_mem_d1(4, 15, 4);
+    paths_on_node10 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider10 = std_mem_d1(1, 16, 4);
+    path_id_reg10 = std_reg(4);
+    idx10 = std_reg(4);
+    idx_adder10 = std_add(4);
+    idx_neq10 = std_neq(4);
+    depth10 = std_reg(4);
+    depth_temp10 = std_reg(1);
+    depth_pad10 = std_pad(1, 4);
+    depth_depth10 = std_add(4);
+    uniq10 = std_reg(4);
+    uniq_and10 = std_and(1);
+    uniq_and_reg_l10 = std_reg(1);
+    uniq_and_reg_r10 = std_reg(1);
+    uniq_pad10 = std_pad(1, 4);
+    uniq_adder10 = std_add(4);
+    uniq_idx10 = std_reg(4);
+    uniq_idx_neq10 = std_neq(4);
+    uniq_idx_adder10 = std_sub(4);
+    @external(1) path_ids11 = std_mem_d1(4, 15, 4);
+    paths_on_node11 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider11 = std_mem_d1(1, 16, 4);
+    path_id_reg11 = std_reg(4);
+    idx11 = std_reg(4);
+    idx_adder11 = std_add(4);
+    idx_neq11 = std_neq(4);
+    depth11 = std_reg(4);
+    depth_temp11 = std_reg(1);
+    depth_pad11 = std_pad(1, 4);
+    depth_depth11 = std_add(4);
+    uniq11 = std_reg(4);
+    uniq_and11 = std_and(1);
+    uniq_and_reg_l11 = std_reg(1);
+    uniq_and_reg_r11 = std_reg(1);
+    uniq_pad11 = std_pad(1, 4);
+    uniq_adder11 = std_add(4);
+    uniq_idx11 = std_reg(4);
+    uniq_idx_neq11 = std_neq(4);
+    uniq_idx_adder11 = std_sub(4);
+    @external(1) path_ids12 = std_mem_d1(4, 15, 4);
+    paths_on_node12 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider12 = std_mem_d1(1, 16, 4);
+    path_id_reg12 = std_reg(4);
+    idx12 = std_reg(4);
+    idx_adder12 = std_add(4);
+    idx_neq12 = std_neq(4);
+    depth12 = std_reg(4);
+    depth_temp12 = std_reg(1);
+    depth_pad12 = std_pad(1, 4);
+    depth_depth12 = std_add(4);
+    uniq12 = std_reg(4);
+    uniq_and12 = std_and(1);
+    uniq_and_reg_l12 = std_reg(1);
+    uniq_and_reg_r12 = std_reg(1);
+    uniq_pad12 = std_pad(1, 4);
+    uniq_adder12 = std_add(4);
+    uniq_idx12 = std_reg(4);
+    uniq_idx_neq12 = std_neq(4);
+    uniq_idx_adder12 = std_sub(4);
+    @external(1) path_ids13 = std_mem_d1(4, 15, 4);
+    paths_on_node13 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider13 = std_mem_d1(1, 16, 4);
+    path_id_reg13 = std_reg(4);
+    idx13 = std_reg(4);
+    idx_adder13 = std_add(4);
+    idx_neq13 = std_neq(4);
+    depth13 = std_reg(4);
+    depth_temp13 = std_reg(1);
+    depth_pad13 = std_pad(1, 4);
+    depth_depth13 = std_add(4);
+    uniq13 = std_reg(4);
+    uniq_and13 = std_and(1);
+    uniq_and_reg_l13 = std_reg(1);
+    uniq_and_reg_r13 = std_reg(1);
+    uniq_pad13 = std_pad(1, 4);
+    uniq_adder13 = std_add(4);
+    uniq_idx13 = std_reg(4);
+    uniq_idx_neq13 = std_neq(4);
+    uniq_idx_adder13 = std_sub(4);
+    @external(1) path_ids14 = std_mem_d1(4, 15, 4);
+    paths_on_node14 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider14 = std_mem_d1(1, 16, 4);
+    path_id_reg14 = std_reg(4);
+    idx14 = std_reg(4);
+    idx_adder14 = std_add(4);
+    idx_neq14 = std_neq(4);
+    depth14 = std_reg(4);
+    depth_temp14 = std_reg(1);
+    depth_pad14 = std_pad(1, 4);
+    depth_depth14 = std_add(4);
+    uniq14 = std_reg(4);
+    uniq_and14 = std_and(1);
+    uniq_and_reg_l14 = std_reg(1);
+    uniq_and_reg_r14 = std_reg(1);
+    uniq_pad14 = std_pad(1, 4);
+    uniq_adder14 = std_add(4);
+    uniq_idx14 = std_reg(4);
+    uniq_idx_neq14 = std_neq(4);
+    uniq_idx_adder14 = std_sub(4);
+    @external(1) path_ids15 = std_mem_d1(4, 15, 4);
+    paths_on_node15 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider15 = std_mem_d1(1, 16, 4);
+    path_id_reg15 = std_reg(4);
+    idx15 = std_reg(4);
+    idx_adder15 = std_add(4);
+    idx_neq15 = std_neq(4);
+    depth15 = std_reg(4);
+    depth_temp15 = std_reg(1);
+    depth_pad15 = std_pad(1, 4);
+    depth_depth15 = std_add(4);
+    uniq15 = std_reg(4);
+    uniq_and15 = std_and(1);
+    uniq_and_reg_l15 = std_reg(1);
+    uniq_and_reg_r15 = std_reg(1);
+    uniq_pad15 = std_pad(1, 4);
+    uniq_adder15 = std_add(4);
+    uniq_idx15 = std_reg(4);
+    uniq_idx_neq15 = std_neq(4);
+    uniq_idx_adder15 = std_sub(4);
+    @external(1) path_ids16 = std_mem_d1(4, 15, 4);
+    paths_on_node16 = std_mem_d1(1, 16, 4);
+    @external(1) paths_to_consider16 = std_mem_d1(1, 16, 4);
+    path_id_reg16 = std_reg(4);
+    idx16 = std_reg(4);
+    idx_adder16 = std_add(4);
+    idx_neq16 = std_neq(4);
+    depth16 = std_reg(4);
+    depth_temp16 = std_reg(1);
+    depth_pad16 = std_pad(1, 4);
+    depth_depth16 = std_add(4);
+    uniq16 = std_reg(4);
+    uniq_and16 = std_and(1);
+    uniq_and_reg_l16 = std_reg(1);
+    uniq_and_reg_r16 = std_reg(1);
+    uniq_pad16 = std_pad(1, 4);
+    uniq_adder16 = std_add(4);
+    uniq_idx16 = std_reg(4);
+    uniq_idx_neq16 = std_neq(4);
+    uniq_idx_adder16 = std_sub(4);
+  }
+  wires {
+    group init_idx0 {
+      idx1.in = 4'd0;
+      idx1.write_en = 1'd1;
+      init_idx0[done] = idx1.done;
+    }
+    group load_path_id0 {
+      path_ids1.addr0 = idx1.out;
+      path_id_reg1.in = path_ids1.read_data;
+      path_id_reg1.write_en = 1'd1;
+      load_path_id0[done] = path_id_reg1.done;
+    }
+    group inc_idx0 {
+      idx_adder1.left = idx1.out;
+      idx_adder1.right = 4'd1;
+      idx1.in = idx_adder1.out;
+      idx1.write_en = 1'd1;
+      inc_idx0[done] = idx1.done;
+    }
+    comb group compare_idx0 {
+      idx_neq1.left = idx1.out;
+      idx_neq1.right = 4'd14;
+    }
+    group load_consider_path0 {
+      paths_to_consider1.addr0 = path_id_reg1.out;
+      depth_temp1.in = paths_to_consider1.read_data;
+      depth_temp1.write_en = 1'd1;
+      load_consider_path0[done] = depth_temp1.done;
+    }
+    group inc_depth0 {
+      depth_depth1.left = depth1.out;
+      depth_pad1.in = depth_temp1.out;
+      depth_depth1.right = depth_pad1.out;
+      depth1.in = depth_depth1.out;
+      depth1.write_en = 1'd1;
+      inc_depth0[done] = depth1.done;
+    }
+    group store_depth0 {
+      depth_output.addr0 = 4'd0;
+      depth_output.write_data = depth1.out;
+      depth_output.write_en = 1'd1;
+      store_depth0[done] = depth_output.done;
+    }
+    group init_uniq_idx0 {
+      uniq_idx1.in = 4'd15;
+      uniq_idx1.write_en = 1'd1;
+      init_uniq_idx0[done] = uniq_idx1.done;
+    }
+    comb group compare_uniq_idx0 {
+      uniq_idx_neq1.left = uniq_idx1.out;
+      uniq_idx_neq1.right = 4'd0;
+    }
+    group dec_uniq_idx0 {
+      uniq_idx_adder1.left = uniq_idx1.out;
+      uniq_idx_adder1.right = 4'd1;
+      uniq_idx1.in = uniq_idx_adder1.out;
+      uniq_idx1.write_en = 1'd1;
+      dec_uniq_idx0[done] = uniq_idx1.done;
+    }
+    group update_pon0 {
+      paths_on_node1.addr0 = path_id_reg1.out;
+      paths_on_node1.write_data = 1'd1;
+      paths_on_node1.write_en = 1'd1;
+      update_pon0[done] = paths_on_node1.done;
+    }
+    group load_and_l0 {
+      paths_on_node1.addr0 = uniq_idx1.out;
+      uniq_and_reg_l1.in = paths_on_node1.read_data;
+      uniq_and_reg_l1.write_en = 1'd1;
+      load_and_l0[done] = uniq_and_reg_l1.done;
+    }
+    group load_and_r0 {
+      paths_to_consider1.addr0 = uniq_idx1.out;
+      uniq_and_reg_r1.in = paths_to_consider1.read_data;
+      uniq_and_reg_r1.write_en = 1'd1;
+      load_and_r0[done] = uniq_and_reg_r1.done;
+    }
+    group inc_uniq0 {
+      uniq_and1.left = uniq_and_reg_l1.out;
+      uniq_and1.right = uniq_and_reg_r1.out;
+      uniq_adder1.left = uniq1.out;
+      uniq_pad1.in = uniq_and1.out;
+      uniq_adder1.right = uniq_pad1.out;
+      uniq1.in = uniq_adder1.out;
+      uniq1.write_en = 1'd1;
+      inc_uniq0[done] = uniq1.done;
+    }
+    group store_uniq0 {
+      uniq_output.addr0 = 4'd0;
+      uniq_output.write_data = uniq1.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq0[done] = uniq_output.done;
+    }
+    group init_idx1 {
+      idx2.in = 4'd0;
+      idx2.write_en = 1'd1;
+      init_idx1[done] = idx2.done;
+    }
+    group load_path_id1 {
+      path_ids2.addr0 = idx2.out;
+      path_id_reg2.in = path_ids2.read_data;
+      path_id_reg2.write_en = 1'd1;
+      load_path_id1[done] = path_id_reg2.done;
+    }
+    group inc_idx1 {
+      idx_adder2.left = idx2.out;
+      idx_adder2.right = 4'd1;
+      idx2.in = idx_adder2.out;
+      idx2.write_en = 1'd1;
+      inc_idx1[done] = idx2.done;
+    }
+    comb group compare_idx1 {
+      idx_neq2.left = idx2.out;
+      idx_neq2.right = 4'd14;
+    }
+    group load_consider_path1 {
+      paths_to_consider2.addr0 = path_id_reg2.out;
+      depth_temp2.in = paths_to_consider2.read_data;
+      depth_temp2.write_en = 1'd1;
+      load_consider_path1[done] = depth_temp2.done;
+    }
+    group inc_depth1 {
+      depth_depth2.left = depth2.out;
+      depth_pad2.in = depth_temp2.out;
+      depth_depth2.right = depth_pad2.out;
+      depth2.in = depth_depth2.out;
+      depth2.write_en = 1'd1;
+      inc_depth1[done] = depth2.done;
+    }
+    group store_depth1 {
+      depth_output.addr0 = 4'd1;
+      depth_output.write_data = depth2.out;
+      depth_output.write_en = 1'd1;
+      store_depth1[done] = depth_output.done;
+    }
+    group init_uniq_idx1 {
+      uniq_idx2.in = 4'd15;
+      uniq_idx2.write_en = 1'd1;
+      init_uniq_idx1[done] = uniq_idx2.done;
+    }
+    comb group compare_uniq_idx1 {
+      uniq_idx_neq2.left = uniq_idx2.out;
+      uniq_idx_neq2.right = 4'd0;
+    }
+    group dec_uniq_idx1 {
+      uniq_idx_adder2.left = uniq_idx2.out;
+      uniq_idx_adder2.right = 4'd1;
+      uniq_idx2.in = uniq_idx_adder2.out;
+      uniq_idx2.write_en = 1'd1;
+      dec_uniq_idx1[done] = uniq_idx2.done;
+    }
+    group update_pon1 {
+      paths_on_node2.addr0 = path_id_reg2.out;
+      paths_on_node2.write_data = 1'd1;
+      paths_on_node2.write_en = 1'd1;
+      update_pon1[done] = paths_on_node2.done;
+    }
+    group load_and_l1 {
+      paths_on_node2.addr0 = uniq_idx2.out;
+      uniq_and_reg_l2.in = paths_on_node2.read_data;
+      uniq_and_reg_l2.write_en = 1'd1;
+      load_and_l1[done] = uniq_and_reg_l2.done;
+    }
+    group load_and_r1 {
+      paths_to_consider2.addr0 = uniq_idx2.out;
+      uniq_and_reg_r2.in = paths_to_consider2.read_data;
+      uniq_and_reg_r2.write_en = 1'd1;
+      load_and_r1[done] = uniq_and_reg_r2.done;
+    }
+    group inc_uniq1 {
+      uniq_and2.left = uniq_and_reg_l2.out;
+      uniq_and2.right = uniq_and_reg_r2.out;
+      uniq_adder2.left = uniq2.out;
+      uniq_pad2.in = uniq_and2.out;
+      uniq_adder2.right = uniq_pad2.out;
+      uniq2.in = uniq_adder2.out;
+      uniq2.write_en = 1'd1;
+      inc_uniq1[done] = uniq2.done;
+    }
+    group store_uniq1 {
+      uniq_output.addr0 = 4'd1;
+      uniq_output.write_data = uniq2.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq1[done] = uniq_output.done;
+    }
+    group init_idx2 {
+      idx3.in = 4'd0;
+      idx3.write_en = 1'd1;
+      init_idx2[done] = idx3.done;
+    }
+    group load_path_id2 {
+      path_ids3.addr0 = idx3.out;
+      path_id_reg3.in = path_ids3.read_data;
+      path_id_reg3.write_en = 1'd1;
+      load_path_id2[done] = path_id_reg3.done;
+    }
+    group inc_idx2 {
+      idx_adder3.left = idx3.out;
+      idx_adder3.right = 4'd1;
+      idx3.in = idx_adder3.out;
+      idx3.write_en = 1'd1;
+      inc_idx2[done] = idx3.done;
+    }
+    comb group compare_idx2 {
+      idx_neq3.left = idx3.out;
+      idx_neq3.right = 4'd14;
+    }
+    group load_consider_path2 {
+      paths_to_consider3.addr0 = path_id_reg3.out;
+      depth_temp3.in = paths_to_consider3.read_data;
+      depth_temp3.write_en = 1'd1;
+      load_consider_path2[done] = depth_temp3.done;
+    }
+    group inc_depth2 {
+      depth_depth3.left = depth3.out;
+      depth_pad3.in = depth_temp3.out;
+      depth_depth3.right = depth_pad3.out;
+      depth3.in = depth_depth3.out;
+      depth3.write_en = 1'd1;
+      inc_depth2[done] = depth3.done;
+    }
+    group store_depth2 {
+      depth_output.addr0 = 4'd2;
+      depth_output.write_data = depth3.out;
+      depth_output.write_en = 1'd1;
+      store_depth2[done] = depth_output.done;
+    }
+    group init_uniq_idx2 {
+      uniq_idx3.in = 4'd15;
+      uniq_idx3.write_en = 1'd1;
+      init_uniq_idx2[done] = uniq_idx3.done;
+    }
+    comb group compare_uniq_idx2 {
+      uniq_idx_neq3.left = uniq_idx3.out;
+      uniq_idx_neq3.right = 4'd0;
+    }
+    group dec_uniq_idx2 {
+      uniq_idx_adder3.left = uniq_idx3.out;
+      uniq_idx_adder3.right = 4'd1;
+      uniq_idx3.in = uniq_idx_adder3.out;
+      uniq_idx3.write_en = 1'd1;
+      dec_uniq_idx2[done] = uniq_idx3.done;
+    }
+    group update_pon2 {
+      paths_on_node3.addr0 = path_id_reg3.out;
+      paths_on_node3.write_data = 1'd1;
+      paths_on_node3.write_en = 1'd1;
+      update_pon2[done] = paths_on_node3.done;
+    }
+    group load_and_l2 {
+      paths_on_node3.addr0 = uniq_idx3.out;
+      uniq_and_reg_l3.in = paths_on_node3.read_data;
+      uniq_and_reg_l3.write_en = 1'd1;
+      load_and_l2[done] = uniq_and_reg_l3.done;
+    }
+    group load_and_r2 {
+      paths_to_consider3.addr0 = uniq_idx3.out;
+      uniq_and_reg_r3.in = paths_to_consider3.read_data;
+      uniq_and_reg_r3.write_en = 1'd1;
+      load_and_r2[done] = uniq_and_reg_r3.done;
+    }
+    group inc_uniq2 {
+      uniq_and3.left = uniq_and_reg_l3.out;
+      uniq_and3.right = uniq_and_reg_r3.out;
+      uniq_adder3.left = uniq3.out;
+      uniq_pad3.in = uniq_and3.out;
+      uniq_adder3.right = uniq_pad3.out;
+      uniq3.in = uniq_adder3.out;
+      uniq3.write_en = 1'd1;
+      inc_uniq2[done] = uniq3.done;
+    }
+    group store_uniq2 {
+      uniq_output.addr0 = 4'd2;
+      uniq_output.write_data = uniq3.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq2[done] = uniq_output.done;
+    }
+    group init_idx3 {
+      idx4.in = 4'd0;
+      idx4.write_en = 1'd1;
+      init_idx3[done] = idx4.done;
+    }
+    group load_path_id3 {
+      path_ids4.addr0 = idx4.out;
+      path_id_reg4.in = path_ids4.read_data;
+      path_id_reg4.write_en = 1'd1;
+      load_path_id3[done] = path_id_reg4.done;
+    }
+    group inc_idx3 {
+      idx_adder4.left = idx4.out;
+      idx_adder4.right = 4'd1;
+      idx4.in = idx_adder4.out;
+      idx4.write_en = 1'd1;
+      inc_idx3[done] = idx4.done;
+    }
+    comb group compare_idx3 {
+      idx_neq4.left = idx4.out;
+      idx_neq4.right = 4'd14;
+    }
+    group load_consider_path3 {
+      paths_to_consider4.addr0 = path_id_reg4.out;
+      depth_temp4.in = paths_to_consider4.read_data;
+      depth_temp4.write_en = 1'd1;
+      load_consider_path3[done] = depth_temp4.done;
+    }
+    group inc_depth3 {
+      depth_depth4.left = depth4.out;
+      depth_pad4.in = depth_temp4.out;
+      depth_depth4.right = depth_pad4.out;
+      depth4.in = depth_depth4.out;
+      depth4.write_en = 1'd1;
+      inc_depth3[done] = depth4.done;
+    }
+    group store_depth3 {
+      depth_output.addr0 = 4'd3;
+      depth_output.write_data = depth4.out;
+      depth_output.write_en = 1'd1;
+      store_depth3[done] = depth_output.done;
+    }
+    group init_uniq_idx3 {
+      uniq_idx4.in = 4'd15;
+      uniq_idx4.write_en = 1'd1;
+      init_uniq_idx3[done] = uniq_idx4.done;
+    }
+    comb group compare_uniq_idx3 {
+      uniq_idx_neq4.left = uniq_idx4.out;
+      uniq_idx_neq4.right = 4'd0;
+    }
+    group dec_uniq_idx3 {
+      uniq_idx_adder4.left = uniq_idx4.out;
+      uniq_idx_adder4.right = 4'd1;
+      uniq_idx4.in = uniq_idx_adder4.out;
+      uniq_idx4.write_en = 1'd1;
+      dec_uniq_idx3[done] = uniq_idx4.done;
+    }
+    group update_pon3 {
+      paths_on_node4.addr0 = path_id_reg4.out;
+      paths_on_node4.write_data = 1'd1;
+      paths_on_node4.write_en = 1'd1;
+      update_pon3[done] = paths_on_node4.done;
+    }
+    group load_and_l3 {
+      paths_on_node4.addr0 = uniq_idx4.out;
+      uniq_and_reg_l4.in = paths_on_node4.read_data;
+      uniq_and_reg_l4.write_en = 1'd1;
+      load_and_l3[done] = uniq_and_reg_l4.done;
+    }
+    group load_and_r3 {
+      paths_to_consider4.addr0 = uniq_idx4.out;
+      uniq_and_reg_r4.in = paths_to_consider4.read_data;
+      uniq_and_reg_r4.write_en = 1'd1;
+      load_and_r3[done] = uniq_and_reg_r4.done;
+    }
+    group inc_uniq3 {
+      uniq_and4.left = uniq_and_reg_l4.out;
+      uniq_and4.right = uniq_and_reg_r4.out;
+      uniq_adder4.left = uniq4.out;
+      uniq_pad4.in = uniq_and4.out;
+      uniq_adder4.right = uniq_pad4.out;
+      uniq4.in = uniq_adder4.out;
+      uniq4.write_en = 1'd1;
+      inc_uniq3[done] = uniq4.done;
+    }
+    group store_uniq3 {
+      uniq_output.addr0 = 4'd3;
+      uniq_output.write_data = uniq4.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq3[done] = uniq_output.done;
+    }
+    group init_idx4 {
+      idx5.in = 4'd0;
+      idx5.write_en = 1'd1;
+      init_idx4[done] = idx5.done;
+    }
+    group load_path_id4 {
+      path_ids5.addr0 = idx5.out;
+      path_id_reg5.in = path_ids5.read_data;
+      path_id_reg5.write_en = 1'd1;
+      load_path_id4[done] = path_id_reg5.done;
+    }
+    group inc_idx4 {
+      idx_adder5.left = idx5.out;
+      idx_adder5.right = 4'd1;
+      idx5.in = idx_adder5.out;
+      idx5.write_en = 1'd1;
+      inc_idx4[done] = idx5.done;
+    }
+    comb group compare_idx4 {
+      idx_neq5.left = idx5.out;
+      idx_neq5.right = 4'd14;
+    }
+    group load_consider_path4 {
+      paths_to_consider5.addr0 = path_id_reg5.out;
+      depth_temp5.in = paths_to_consider5.read_data;
+      depth_temp5.write_en = 1'd1;
+      load_consider_path4[done] = depth_temp5.done;
+    }
+    group inc_depth4 {
+      depth_depth5.left = depth5.out;
+      depth_pad5.in = depth_temp5.out;
+      depth_depth5.right = depth_pad5.out;
+      depth5.in = depth_depth5.out;
+      depth5.write_en = 1'd1;
+      inc_depth4[done] = depth5.done;
+    }
+    group store_depth4 {
+      depth_output.addr0 = 4'd4;
+      depth_output.write_data = depth5.out;
+      depth_output.write_en = 1'd1;
+      store_depth4[done] = depth_output.done;
+    }
+    group init_uniq_idx4 {
+      uniq_idx5.in = 4'd15;
+      uniq_idx5.write_en = 1'd1;
+      init_uniq_idx4[done] = uniq_idx5.done;
+    }
+    comb group compare_uniq_idx4 {
+      uniq_idx_neq5.left = uniq_idx5.out;
+      uniq_idx_neq5.right = 4'd0;
+    }
+    group dec_uniq_idx4 {
+      uniq_idx_adder5.left = uniq_idx5.out;
+      uniq_idx_adder5.right = 4'd1;
+      uniq_idx5.in = uniq_idx_adder5.out;
+      uniq_idx5.write_en = 1'd1;
+      dec_uniq_idx4[done] = uniq_idx5.done;
+    }
+    group update_pon4 {
+      paths_on_node5.addr0 = path_id_reg5.out;
+      paths_on_node5.write_data = 1'd1;
+      paths_on_node5.write_en = 1'd1;
+      update_pon4[done] = paths_on_node5.done;
+    }
+    group load_and_l4 {
+      paths_on_node5.addr0 = uniq_idx5.out;
+      uniq_and_reg_l5.in = paths_on_node5.read_data;
+      uniq_and_reg_l5.write_en = 1'd1;
+      load_and_l4[done] = uniq_and_reg_l5.done;
+    }
+    group load_and_r4 {
+      paths_to_consider5.addr0 = uniq_idx5.out;
+      uniq_and_reg_r5.in = paths_to_consider5.read_data;
+      uniq_and_reg_r5.write_en = 1'd1;
+      load_and_r4[done] = uniq_and_reg_r5.done;
+    }
+    group inc_uniq4 {
+      uniq_and5.left = uniq_and_reg_l5.out;
+      uniq_and5.right = uniq_and_reg_r5.out;
+      uniq_adder5.left = uniq5.out;
+      uniq_pad5.in = uniq_and5.out;
+      uniq_adder5.right = uniq_pad5.out;
+      uniq5.in = uniq_adder5.out;
+      uniq5.write_en = 1'd1;
+      inc_uniq4[done] = uniq5.done;
+    }
+    group store_uniq4 {
+      uniq_output.addr0 = 4'd4;
+      uniq_output.write_data = uniq5.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq4[done] = uniq_output.done;
+    }
+    group init_idx5 {
+      idx6.in = 4'd0;
+      idx6.write_en = 1'd1;
+      init_idx5[done] = idx6.done;
+    }
+    group load_path_id5 {
+      path_ids6.addr0 = idx6.out;
+      path_id_reg6.in = path_ids6.read_data;
+      path_id_reg6.write_en = 1'd1;
+      load_path_id5[done] = path_id_reg6.done;
+    }
+    group inc_idx5 {
+      idx_adder6.left = idx6.out;
+      idx_adder6.right = 4'd1;
+      idx6.in = idx_adder6.out;
+      idx6.write_en = 1'd1;
+      inc_idx5[done] = idx6.done;
+    }
+    comb group compare_idx5 {
+      idx_neq6.left = idx6.out;
+      idx_neq6.right = 4'd14;
+    }
+    group load_consider_path5 {
+      paths_to_consider6.addr0 = path_id_reg6.out;
+      depth_temp6.in = paths_to_consider6.read_data;
+      depth_temp6.write_en = 1'd1;
+      load_consider_path5[done] = depth_temp6.done;
+    }
+    group inc_depth5 {
+      depth_depth6.left = depth6.out;
+      depth_pad6.in = depth_temp6.out;
+      depth_depth6.right = depth_pad6.out;
+      depth6.in = depth_depth6.out;
+      depth6.write_en = 1'd1;
+      inc_depth5[done] = depth6.done;
+    }
+    group store_depth5 {
+      depth_output.addr0 = 4'd5;
+      depth_output.write_data = depth6.out;
+      depth_output.write_en = 1'd1;
+      store_depth5[done] = depth_output.done;
+    }
+    group init_uniq_idx5 {
+      uniq_idx6.in = 4'd15;
+      uniq_idx6.write_en = 1'd1;
+      init_uniq_idx5[done] = uniq_idx6.done;
+    }
+    comb group compare_uniq_idx5 {
+      uniq_idx_neq6.left = uniq_idx6.out;
+      uniq_idx_neq6.right = 4'd0;
+    }
+    group dec_uniq_idx5 {
+      uniq_idx_adder6.left = uniq_idx6.out;
+      uniq_idx_adder6.right = 4'd1;
+      uniq_idx6.in = uniq_idx_adder6.out;
+      uniq_idx6.write_en = 1'd1;
+      dec_uniq_idx5[done] = uniq_idx6.done;
+    }
+    group update_pon5 {
+      paths_on_node6.addr0 = path_id_reg6.out;
+      paths_on_node6.write_data = 1'd1;
+      paths_on_node6.write_en = 1'd1;
+      update_pon5[done] = paths_on_node6.done;
+    }
+    group load_and_l5 {
+      paths_on_node6.addr0 = uniq_idx6.out;
+      uniq_and_reg_l6.in = paths_on_node6.read_data;
+      uniq_and_reg_l6.write_en = 1'd1;
+      load_and_l5[done] = uniq_and_reg_l6.done;
+    }
+    group load_and_r5 {
+      paths_to_consider6.addr0 = uniq_idx6.out;
+      uniq_and_reg_r6.in = paths_to_consider6.read_data;
+      uniq_and_reg_r6.write_en = 1'd1;
+      load_and_r5[done] = uniq_and_reg_r6.done;
+    }
+    group inc_uniq5 {
+      uniq_and6.left = uniq_and_reg_l6.out;
+      uniq_and6.right = uniq_and_reg_r6.out;
+      uniq_adder6.left = uniq6.out;
+      uniq_pad6.in = uniq_and6.out;
+      uniq_adder6.right = uniq_pad6.out;
+      uniq6.in = uniq_adder6.out;
+      uniq6.write_en = 1'd1;
+      inc_uniq5[done] = uniq6.done;
+    }
+    group store_uniq5 {
+      uniq_output.addr0 = 4'd5;
+      uniq_output.write_data = uniq6.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq5[done] = uniq_output.done;
+    }
+    group init_idx6 {
+      idx7.in = 4'd0;
+      idx7.write_en = 1'd1;
+      init_idx6[done] = idx7.done;
+    }
+    group load_path_id6 {
+      path_ids7.addr0 = idx7.out;
+      path_id_reg7.in = path_ids7.read_data;
+      path_id_reg7.write_en = 1'd1;
+      load_path_id6[done] = path_id_reg7.done;
+    }
+    group inc_idx6 {
+      idx_adder7.left = idx7.out;
+      idx_adder7.right = 4'd1;
+      idx7.in = idx_adder7.out;
+      idx7.write_en = 1'd1;
+      inc_idx6[done] = idx7.done;
+    }
+    comb group compare_idx6 {
+      idx_neq7.left = idx7.out;
+      idx_neq7.right = 4'd14;
+    }
+    group load_consider_path6 {
+      paths_to_consider7.addr0 = path_id_reg7.out;
+      depth_temp7.in = paths_to_consider7.read_data;
+      depth_temp7.write_en = 1'd1;
+      load_consider_path6[done] = depth_temp7.done;
+    }
+    group inc_depth6 {
+      depth_depth7.left = depth7.out;
+      depth_pad7.in = depth_temp7.out;
+      depth_depth7.right = depth_pad7.out;
+      depth7.in = depth_depth7.out;
+      depth7.write_en = 1'd1;
+      inc_depth6[done] = depth7.done;
+    }
+    group store_depth6 {
+      depth_output.addr0 = 4'd6;
+      depth_output.write_data = depth7.out;
+      depth_output.write_en = 1'd1;
+      store_depth6[done] = depth_output.done;
+    }
+    group init_uniq_idx6 {
+      uniq_idx7.in = 4'd15;
+      uniq_idx7.write_en = 1'd1;
+      init_uniq_idx6[done] = uniq_idx7.done;
+    }
+    comb group compare_uniq_idx6 {
+      uniq_idx_neq7.left = uniq_idx7.out;
+      uniq_idx_neq7.right = 4'd0;
+    }
+    group dec_uniq_idx6 {
+      uniq_idx_adder7.left = uniq_idx7.out;
+      uniq_idx_adder7.right = 4'd1;
+      uniq_idx7.in = uniq_idx_adder7.out;
+      uniq_idx7.write_en = 1'd1;
+      dec_uniq_idx6[done] = uniq_idx7.done;
+    }
+    group update_pon6 {
+      paths_on_node7.addr0 = path_id_reg7.out;
+      paths_on_node7.write_data = 1'd1;
+      paths_on_node7.write_en = 1'd1;
+      update_pon6[done] = paths_on_node7.done;
+    }
+    group load_and_l6 {
+      paths_on_node7.addr0 = uniq_idx7.out;
+      uniq_and_reg_l7.in = paths_on_node7.read_data;
+      uniq_and_reg_l7.write_en = 1'd1;
+      load_and_l6[done] = uniq_and_reg_l7.done;
+    }
+    group load_and_r6 {
+      paths_to_consider7.addr0 = uniq_idx7.out;
+      uniq_and_reg_r7.in = paths_to_consider7.read_data;
+      uniq_and_reg_r7.write_en = 1'd1;
+      load_and_r6[done] = uniq_and_reg_r7.done;
+    }
+    group inc_uniq6 {
+      uniq_and7.left = uniq_and_reg_l7.out;
+      uniq_and7.right = uniq_and_reg_r7.out;
+      uniq_adder7.left = uniq7.out;
+      uniq_pad7.in = uniq_and7.out;
+      uniq_adder7.right = uniq_pad7.out;
+      uniq7.in = uniq_adder7.out;
+      uniq7.write_en = 1'd1;
+      inc_uniq6[done] = uniq7.done;
+    }
+    group store_uniq6 {
+      uniq_output.addr0 = 4'd6;
+      uniq_output.write_data = uniq7.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq6[done] = uniq_output.done;
+    }
+    group init_idx7 {
+      idx8.in = 4'd0;
+      idx8.write_en = 1'd1;
+      init_idx7[done] = idx8.done;
+    }
+    group load_path_id7 {
+      path_ids8.addr0 = idx8.out;
+      path_id_reg8.in = path_ids8.read_data;
+      path_id_reg8.write_en = 1'd1;
+      load_path_id7[done] = path_id_reg8.done;
+    }
+    group inc_idx7 {
+      idx_adder8.left = idx8.out;
+      idx_adder8.right = 4'd1;
+      idx8.in = idx_adder8.out;
+      idx8.write_en = 1'd1;
+      inc_idx7[done] = idx8.done;
+    }
+    comb group compare_idx7 {
+      idx_neq8.left = idx8.out;
+      idx_neq8.right = 4'd14;
+    }
+    group load_consider_path7 {
+      paths_to_consider8.addr0 = path_id_reg8.out;
+      depth_temp8.in = paths_to_consider8.read_data;
+      depth_temp8.write_en = 1'd1;
+      load_consider_path7[done] = depth_temp8.done;
+    }
+    group inc_depth7 {
+      depth_depth8.left = depth8.out;
+      depth_pad8.in = depth_temp8.out;
+      depth_depth8.right = depth_pad8.out;
+      depth8.in = depth_depth8.out;
+      depth8.write_en = 1'd1;
+      inc_depth7[done] = depth8.done;
+    }
+    group store_depth7 {
+      depth_output.addr0 = 4'd7;
+      depth_output.write_data = depth8.out;
+      depth_output.write_en = 1'd1;
+      store_depth7[done] = depth_output.done;
+    }
+    group init_uniq_idx7 {
+      uniq_idx8.in = 4'd15;
+      uniq_idx8.write_en = 1'd1;
+      init_uniq_idx7[done] = uniq_idx8.done;
+    }
+    comb group compare_uniq_idx7 {
+      uniq_idx_neq8.left = uniq_idx8.out;
+      uniq_idx_neq8.right = 4'd0;
+    }
+    group dec_uniq_idx7 {
+      uniq_idx_adder8.left = uniq_idx8.out;
+      uniq_idx_adder8.right = 4'd1;
+      uniq_idx8.in = uniq_idx_adder8.out;
+      uniq_idx8.write_en = 1'd1;
+      dec_uniq_idx7[done] = uniq_idx8.done;
+    }
+    group update_pon7 {
+      paths_on_node8.addr0 = path_id_reg8.out;
+      paths_on_node8.write_data = 1'd1;
+      paths_on_node8.write_en = 1'd1;
+      update_pon7[done] = paths_on_node8.done;
+    }
+    group load_and_l7 {
+      paths_on_node8.addr0 = uniq_idx8.out;
+      uniq_and_reg_l8.in = paths_on_node8.read_data;
+      uniq_and_reg_l8.write_en = 1'd1;
+      load_and_l7[done] = uniq_and_reg_l8.done;
+    }
+    group load_and_r7 {
+      paths_to_consider8.addr0 = uniq_idx8.out;
+      uniq_and_reg_r8.in = paths_to_consider8.read_data;
+      uniq_and_reg_r8.write_en = 1'd1;
+      load_and_r7[done] = uniq_and_reg_r8.done;
+    }
+    group inc_uniq7 {
+      uniq_and8.left = uniq_and_reg_l8.out;
+      uniq_and8.right = uniq_and_reg_r8.out;
+      uniq_adder8.left = uniq8.out;
+      uniq_pad8.in = uniq_and8.out;
+      uniq_adder8.right = uniq_pad8.out;
+      uniq8.in = uniq_adder8.out;
+      uniq8.write_en = 1'd1;
+      inc_uniq7[done] = uniq8.done;
+    }
+    group store_uniq7 {
+      uniq_output.addr0 = 4'd7;
+      uniq_output.write_data = uniq8.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq7[done] = uniq_output.done;
+    }
+    group init_idx8 {
+      idx9.in = 4'd0;
+      idx9.write_en = 1'd1;
+      init_idx8[done] = idx9.done;
+    }
+    group load_path_id8 {
+      path_ids9.addr0 = idx9.out;
+      path_id_reg9.in = path_ids9.read_data;
+      path_id_reg9.write_en = 1'd1;
+      load_path_id8[done] = path_id_reg9.done;
+    }
+    group inc_idx8 {
+      idx_adder9.left = idx9.out;
+      idx_adder9.right = 4'd1;
+      idx9.in = idx_adder9.out;
+      idx9.write_en = 1'd1;
+      inc_idx8[done] = idx9.done;
+    }
+    comb group compare_idx8 {
+      idx_neq9.left = idx9.out;
+      idx_neq9.right = 4'd14;
+    }
+    group load_consider_path8 {
+      paths_to_consider9.addr0 = path_id_reg9.out;
+      depth_temp9.in = paths_to_consider9.read_data;
+      depth_temp9.write_en = 1'd1;
+      load_consider_path8[done] = depth_temp9.done;
+    }
+    group inc_depth8 {
+      depth_depth9.left = depth9.out;
+      depth_pad9.in = depth_temp9.out;
+      depth_depth9.right = depth_pad9.out;
+      depth9.in = depth_depth9.out;
+      depth9.write_en = 1'd1;
+      inc_depth8[done] = depth9.done;
+    }
+    group store_depth8 {
+      depth_output.addr0 = 4'd8;
+      depth_output.write_data = depth9.out;
+      depth_output.write_en = 1'd1;
+      store_depth8[done] = depth_output.done;
+    }
+    group init_uniq_idx8 {
+      uniq_idx9.in = 4'd15;
+      uniq_idx9.write_en = 1'd1;
+      init_uniq_idx8[done] = uniq_idx9.done;
+    }
+    comb group compare_uniq_idx8 {
+      uniq_idx_neq9.left = uniq_idx9.out;
+      uniq_idx_neq9.right = 4'd0;
+    }
+    group dec_uniq_idx8 {
+      uniq_idx_adder9.left = uniq_idx9.out;
+      uniq_idx_adder9.right = 4'd1;
+      uniq_idx9.in = uniq_idx_adder9.out;
+      uniq_idx9.write_en = 1'd1;
+      dec_uniq_idx8[done] = uniq_idx9.done;
+    }
+    group update_pon8 {
+      paths_on_node9.addr0 = path_id_reg9.out;
+      paths_on_node9.write_data = 1'd1;
+      paths_on_node9.write_en = 1'd1;
+      update_pon8[done] = paths_on_node9.done;
+    }
+    group load_and_l8 {
+      paths_on_node9.addr0 = uniq_idx9.out;
+      uniq_and_reg_l9.in = paths_on_node9.read_data;
+      uniq_and_reg_l9.write_en = 1'd1;
+      load_and_l8[done] = uniq_and_reg_l9.done;
+    }
+    group load_and_r8 {
+      paths_to_consider9.addr0 = uniq_idx9.out;
+      uniq_and_reg_r9.in = paths_to_consider9.read_data;
+      uniq_and_reg_r9.write_en = 1'd1;
+      load_and_r8[done] = uniq_and_reg_r9.done;
+    }
+    group inc_uniq8 {
+      uniq_and9.left = uniq_and_reg_l9.out;
+      uniq_and9.right = uniq_and_reg_r9.out;
+      uniq_adder9.left = uniq9.out;
+      uniq_pad9.in = uniq_and9.out;
+      uniq_adder9.right = uniq_pad9.out;
+      uniq9.in = uniq_adder9.out;
+      uniq9.write_en = 1'd1;
+      inc_uniq8[done] = uniq9.done;
+    }
+    group store_uniq8 {
+      uniq_output.addr0 = 4'd8;
+      uniq_output.write_data = uniq9.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq8[done] = uniq_output.done;
+    }
+    group init_idx9 {
+      idx10.in = 4'd0;
+      idx10.write_en = 1'd1;
+      init_idx9[done] = idx10.done;
+    }
+    group load_path_id9 {
+      path_ids10.addr0 = idx10.out;
+      path_id_reg10.in = path_ids10.read_data;
+      path_id_reg10.write_en = 1'd1;
+      load_path_id9[done] = path_id_reg10.done;
+    }
+    group inc_idx9 {
+      idx_adder10.left = idx10.out;
+      idx_adder10.right = 4'd1;
+      idx10.in = idx_adder10.out;
+      idx10.write_en = 1'd1;
+      inc_idx9[done] = idx10.done;
+    }
+    comb group compare_idx9 {
+      idx_neq10.left = idx10.out;
+      idx_neq10.right = 4'd14;
+    }
+    group load_consider_path9 {
+      paths_to_consider10.addr0 = path_id_reg10.out;
+      depth_temp10.in = paths_to_consider10.read_data;
+      depth_temp10.write_en = 1'd1;
+      load_consider_path9[done] = depth_temp10.done;
+    }
+    group inc_depth9 {
+      depth_depth10.left = depth10.out;
+      depth_pad10.in = depth_temp10.out;
+      depth_depth10.right = depth_pad10.out;
+      depth10.in = depth_depth10.out;
+      depth10.write_en = 1'd1;
+      inc_depth9[done] = depth10.done;
+    }
+    group store_depth9 {
+      depth_output.addr0 = 4'd9;
+      depth_output.write_data = depth10.out;
+      depth_output.write_en = 1'd1;
+      store_depth9[done] = depth_output.done;
+    }
+    group init_uniq_idx9 {
+      uniq_idx10.in = 4'd15;
+      uniq_idx10.write_en = 1'd1;
+      init_uniq_idx9[done] = uniq_idx10.done;
+    }
+    comb group compare_uniq_idx9 {
+      uniq_idx_neq10.left = uniq_idx10.out;
+      uniq_idx_neq10.right = 4'd0;
+    }
+    group dec_uniq_idx9 {
+      uniq_idx_adder10.left = uniq_idx10.out;
+      uniq_idx_adder10.right = 4'd1;
+      uniq_idx10.in = uniq_idx_adder10.out;
+      uniq_idx10.write_en = 1'd1;
+      dec_uniq_idx9[done] = uniq_idx10.done;
+    }
+    group update_pon9 {
+      paths_on_node10.addr0 = path_id_reg10.out;
+      paths_on_node10.write_data = 1'd1;
+      paths_on_node10.write_en = 1'd1;
+      update_pon9[done] = paths_on_node10.done;
+    }
+    group load_and_l9 {
+      paths_on_node10.addr0 = uniq_idx10.out;
+      uniq_and_reg_l10.in = paths_on_node10.read_data;
+      uniq_and_reg_l10.write_en = 1'd1;
+      load_and_l9[done] = uniq_and_reg_l10.done;
+    }
+    group load_and_r9 {
+      paths_to_consider10.addr0 = uniq_idx10.out;
+      uniq_and_reg_r10.in = paths_to_consider10.read_data;
+      uniq_and_reg_r10.write_en = 1'd1;
+      load_and_r9[done] = uniq_and_reg_r10.done;
+    }
+    group inc_uniq9 {
+      uniq_and10.left = uniq_and_reg_l10.out;
+      uniq_and10.right = uniq_and_reg_r10.out;
+      uniq_adder10.left = uniq10.out;
+      uniq_pad10.in = uniq_and10.out;
+      uniq_adder10.right = uniq_pad10.out;
+      uniq10.in = uniq_adder10.out;
+      uniq10.write_en = 1'd1;
+      inc_uniq9[done] = uniq10.done;
+    }
+    group store_uniq9 {
+      uniq_output.addr0 = 4'd9;
+      uniq_output.write_data = uniq10.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq9[done] = uniq_output.done;
+    }
+    group init_idx10 {
+      idx11.in = 4'd0;
+      idx11.write_en = 1'd1;
+      init_idx10[done] = idx11.done;
+    }
+    group load_path_id10 {
+      path_ids11.addr0 = idx11.out;
+      path_id_reg11.in = path_ids11.read_data;
+      path_id_reg11.write_en = 1'd1;
+      load_path_id10[done] = path_id_reg11.done;
+    }
+    group inc_idx10 {
+      idx_adder11.left = idx11.out;
+      idx_adder11.right = 4'd1;
+      idx11.in = idx_adder11.out;
+      idx11.write_en = 1'd1;
+      inc_idx10[done] = idx11.done;
+    }
+    comb group compare_idx10 {
+      idx_neq11.left = idx11.out;
+      idx_neq11.right = 4'd14;
+    }
+    group load_consider_path10 {
+      paths_to_consider11.addr0 = path_id_reg11.out;
+      depth_temp11.in = paths_to_consider11.read_data;
+      depth_temp11.write_en = 1'd1;
+      load_consider_path10[done] = depth_temp11.done;
+    }
+    group inc_depth10 {
+      depth_depth11.left = depth11.out;
+      depth_pad11.in = depth_temp11.out;
+      depth_depth11.right = depth_pad11.out;
+      depth11.in = depth_depth11.out;
+      depth11.write_en = 1'd1;
+      inc_depth10[done] = depth11.done;
+    }
+    group store_depth10 {
+      depth_output.addr0 = 4'd10;
+      depth_output.write_data = depth11.out;
+      depth_output.write_en = 1'd1;
+      store_depth10[done] = depth_output.done;
+    }
+    group init_uniq_idx10 {
+      uniq_idx11.in = 4'd15;
+      uniq_idx11.write_en = 1'd1;
+      init_uniq_idx10[done] = uniq_idx11.done;
+    }
+    comb group compare_uniq_idx10 {
+      uniq_idx_neq11.left = uniq_idx11.out;
+      uniq_idx_neq11.right = 4'd0;
+    }
+    group dec_uniq_idx10 {
+      uniq_idx_adder11.left = uniq_idx11.out;
+      uniq_idx_adder11.right = 4'd1;
+      uniq_idx11.in = uniq_idx_adder11.out;
+      uniq_idx11.write_en = 1'd1;
+      dec_uniq_idx10[done] = uniq_idx11.done;
+    }
+    group update_pon10 {
+      paths_on_node11.addr0 = path_id_reg11.out;
+      paths_on_node11.write_data = 1'd1;
+      paths_on_node11.write_en = 1'd1;
+      update_pon10[done] = paths_on_node11.done;
+    }
+    group load_and_l10 {
+      paths_on_node11.addr0 = uniq_idx11.out;
+      uniq_and_reg_l11.in = paths_on_node11.read_data;
+      uniq_and_reg_l11.write_en = 1'd1;
+      load_and_l10[done] = uniq_and_reg_l11.done;
+    }
+    group load_and_r10 {
+      paths_to_consider11.addr0 = uniq_idx11.out;
+      uniq_and_reg_r11.in = paths_to_consider11.read_data;
+      uniq_and_reg_r11.write_en = 1'd1;
+      load_and_r10[done] = uniq_and_reg_r11.done;
+    }
+    group inc_uniq10 {
+      uniq_and11.left = uniq_and_reg_l11.out;
+      uniq_and11.right = uniq_and_reg_r11.out;
+      uniq_adder11.left = uniq11.out;
+      uniq_pad11.in = uniq_and11.out;
+      uniq_adder11.right = uniq_pad11.out;
+      uniq11.in = uniq_adder11.out;
+      uniq11.write_en = 1'd1;
+      inc_uniq10[done] = uniq11.done;
+    }
+    group store_uniq10 {
+      uniq_output.addr0 = 4'd10;
+      uniq_output.write_data = uniq11.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq10[done] = uniq_output.done;
+    }
+    group init_idx11 {
+      idx12.in = 4'd0;
+      idx12.write_en = 1'd1;
+      init_idx11[done] = idx12.done;
+    }
+    group load_path_id11 {
+      path_ids12.addr0 = idx12.out;
+      path_id_reg12.in = path_ids12.read_data;
+      path_id_reg12.write_en = 1'd1;
+      load_path_id11[done] = path_id_reg12.done;
+    }
+    group inc_idx11 {
+      idx_adder12.left = idx12.out;
+      idx_adder12.right = 4'd1;
+      idx12.in = idx_adder12.out;
+      idx12.write_en = 1'd1;
+      inc_idx11[done] = idx12.done;
+    }
+    comb group compare_idx11 {
+      idx_neq12.left = idx12.out;
+      idx_neq12.right = 4'd14;
+    }
+    group load_consider_path11 {
+      paths_to_consider12.addr0 = path_id_reg12.out;
+      depth_temp12.in = paths_to_consider12.read_data;
+      depth_temp12.write_en = 1'd1;
+      load_consider_path11[done] = depth_temp12.done;
+    }
+    group inc_depth11 {
+      depth_depth12.left = depth12.out;
+      depth_pad12.in = depth_temp12.out;
+      depth_depth12.right = depth_pad12.out;
+      depth12.in = depth_depth12.out;
+      depth12.write_en = 1'd1;
+      inc_depth11[done] = depth12.done;
+    }
+    group store_depth11 {
+      depth_output.addr0 = 4'd11;
+      depth_output.write_data = depth12.out;
+      depth_output.write_en = 1'd1;
+      store_depth11[done] = depth_output.done;
+    }
+    group init_uniq_idx11 {
+      uniq_idx12.in = 4'd15;
+      uniq_idx12.write_en = 1'd1;
+      init_uniq_idx11[done] = uniq_idx12.done;
+    }
+    comb group compare_uniq_idx11 {
+      uniq_idx_neq12.left = uniq_idx12.out;
+      uniq_idx_neq12.right = 4'd0;
+    }
+    group dec_uniq_idx11 {
+      uniq_idx_adder12.left = uniq_idx12.out;
+      uniq_idx_adder12.right = 4'd1;
+      uniq_idx12.in = uniq_idx_adder12.out;
+      uniq_idx12.write_en = 1'd1;
+      dec_uniq_idx11[done] = uniq_idx12.done;
+    }
+    group update_pon11 {
+      paths_on_node12.addr0 = path_id_reg12.out;
+      paths_on_node12.write_data = 1'd1;
+      paths_on_node12.write_en = 1'd1;
+      update_pon11[done] = paths_on_node12.done;
+    }
+    group load_and_l11 {
+      paths_on_node12.addr0 = uniq_idx12.out;
+      uniq_and_reg_l12.in = paths_on_node12.read_data;
+      uniq_and_reg_l12.write_en = 1'd1;
+      load_and_l11[done] = uniq_and_reg_l12.done;
+    }
+    group load_and_r11 {
+      paths_to_consider12.addr0 = uniq_idx12.out;
+      uniq_and_reg_r12.in = paths_to_consider12.read_data;
+      uniq_and_reg_r12.write_en = 1'd1;
+      load_and_r11[done] = uniq_and_reg_r12.done;
+    }
+    group inc_uniq11 {
+      uniq_and12.left = uniq_and_reg_l12.out;
+      uniq_and12.right = uniq_and_reg_r12.out;
+      uniq_adder12.left = uniq12.out;
+      uniq_pad12.in = uniq_and12.out;
+      uniq_adder12.right = uniq_pad12.out;
+      uniq12.in = uniq_adder12.out;
+      uniq12.write_en = 1'd1;
+      inc_uniq11[done] = uniq12.done;
+    }
+    group store_uniq11 {
+      uniq_output.addr0 = 4'd11;
+      uniq_output.write_data = uniq12.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq11[done] = uniq_output.done;
+    }
+    group init_idx12 {
+      idx13.in = 4'd0;
+      idx13.write_en = 1'd1;
+      init_idx12[done] = idx13.done;
+    }
+    group load_path_id12 {
+      path_ids13.addr0 = idx13.out;
+      path_id_reg13.in = path_ids13.read_data;
+      path_id_reg13.write_en = 1'd1;
+      load_path_id12[done] = path_id_reg13.done;
+    }
+    group inc_idx12 {
+      idx_adder13.left = idx13.out;
+      idx_adder13.right = 4'd1;
+      idx13.in = idx_adder13.out;
+      idx13.write_en = 1'd1;
+      inc_idx12[done] = idx13.done;
+    }
+    comb group compare_idx12 {
+      idx_neq13.left = idx13.out;
+      idx_neq13.right = 4'd14;
+    }
+    group load_consider_path12 {
+      paths_to_consider13.addr0 = path_id_reg13.out;
+      depth_temp13.in = paths_to_consider13.read_data;
+      depth_temp13.write_en = 1'd1;
+      load_consider_path12[done] = depth_temp13.done;
+    }
+    group inc_depth12 {
+      depth_depth13.left = depth13.out;
+      depth_pad13.in = depth_temp13.out;
+      depth_depth13.right = depth_pad13.out;
+      depth13.in = depth_depth13.out;
+      depth13.write_en = 1'd1;
+      inc_depth12[done] = depth13.done;
+    }
+    group store_depth12 {
+      depth_output.addr0 = 4'd12;
+      depth_output.write_data = depth13.out;
+      depth_output.write_en = 1'd1;
+      store_depth12[done] = depth_output.done;
+    }
+    group init_uniq_idx12 {
+      uniq_idx13.in = 4'd15;
+      uniq_idx13.write_en = 1'd1;
+      init_uniq_idx12[done] = uniq_idx13.done;
+    }
+    comb group compare_uniq_idx12 {
+      uniq_idx_neq13.left = uniq_idx13.out;
+      uniq_idx_neq13.right = 4'd0;
+    }
+    group dec_uniq_idx12 {
+      uniq_idx_adder13.left = uniq_idx13.out;
+      uniq_idx_adder13.right = 4'd1;
+      uniq_idx13.in = uniq_idx_adder13.out;
+      uniq_idx13.write_en = 1'd1;
+      dec_uniq_idx12[done] = uniq_idx13.done;
+    }
+    group update_pon12 {
+      paths_on_node13.addr0 = path_id_reg13.out;
+      paths_on_node13.write_data = 1'd1;
+      paths_on_node13.write_en = 1'd1;
+      update_pon12[done] = paths_on_node13.done;
+    }
+    group load_and_l12 {
+      paths_on_node13.addr0 = uniq_idx13.out;
+      uniq_and_reg_l13.in = paths_on_node13.read_data;
+      uniq_and_reg_l13.write_en = 1'd1;
+      load_and_l12[done] = uniq_and_reg_l13.done;
+    }
+    group load_and_r12 {
+      paths_to_consider13.addr0 = uniq_idx13.out;
+      uniq_and_reg_r13.in = paths_to_consider13.read_data;
+      uniq_and_reg_r13.write_en = 1'd1;
+      load_and_r12[done] = uniq_and_reg_r13.done;
+    }
+    group inc_uniq12 {
+      uniq_and13.left = uniq_and_reg_l13.out;
+      uniq_and13.right = uniq_and_reg_r13.out;
+      uniq_adder13.left = uniq13.out;
+      uniq_pad13.in = uniq_and13.out;
+      uniq_adder13.right = uniq_pad13.out;
+      uniq13.in = uniq_adder13.out;
+      uniq13.write_en = 1'd1;
+      inc_uniq12[done] = uniq13.done;
+    }
+    group store_uniq12 {
+      uniq_output.addr0 = 4'd12;
+      uniq_output.write_data = uniq13.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq12[done] = uniq_output.done;
+    }
+    group init_idx13 {
+      idx14.in = 4'd0;
+      idx14.write_en = 1'd1;
+      init_idx13[done] = idx14.done;
+    }
+    group load_path_id13 {
+      path_ids14.addr0 = idx14.out;
+      path_id_reg14.in = path_ids14.read_data;
+      path_id_reg14.write_en = 1'd1;
+      load_path_id13[done] = path_id_reg14.done;
+    }
+    group inc_idx13 {
+      idx_adder14.left = idx14.out;
+      idx_adder14.right = 4'd1;
+      idx14.in = idx_adder14.out;
+      idx14.write_en = 1'd1;
+      inc_idx13[done] = idx14.done;
+    }
+    comb group compare_idx13 {
+      idx_neq14.left = idx14.out;
+      idx_neq14.right = 4'd14;
+    }
+    group load_consider_path13 {
+      paths_to_consider14.addr0 = path_id_reg14.out;
+      depth_temp14.in = paths_to_consider14.read_data;
+      depth_temp14.write_en = 1'd1;
+      load_consider_path13[done] = depth_temp14.done;
+    }
+    group inc_depth13 {
+      depth_depth14.left = depth14.out;
+      depth_pad14.in = depth_temp14.out;
+      depth_depth14.right = depth_pad14.out;
+      depth14.in = depth_depth14.out;
+      depth14.write_en = 1'd1;
+      inc_depth13[done] = depth14.done;
+    }
+    group store_depth13 {
+      depth_output.addr0 = 4'd13;
+      depth_output.write_data = depth14.out;
+      depth_output.write_en = 1'd1;
+      store_depth13[done] = depth_output.done;
+    }
+    group init_uniq_idx13 {
+      uniq_idx14.in = 4'd15;
+      uniq_idx14.write_en = 1'd1;
+      init_uniq_idx13[done] = uniq_idx14.done;
+    }
+    comb group compare_uniq_idx13 {
+      uniq_idx_neq14.left = uniq_idx14.out;
+      uniq_idx_neq14.right = 4'd0;
+    }
+    group dec_uniq_idx13 {
+      uniq_idx_adder14.left = uniq_idx14.out;
+      uniq_idx_adder14.right = 4'd1;
+      uniq_idx14.in = uniq_idx_adder14.out;
+      uniq_idx14.write_en = 1'd1;
+      dec_uniq_idx13[done] = uniq_idx14.done;
+    }
+    group update_pon13 {
+      paths_on_node14.addr0 = path_id_reg14.out;
+      paths_on_node14.write_data = 1'd1;
+      paths_on_node14.write_en = 1'd1;
+      update_pon13[done] = paths_on_node14.done;
+    }
+    group load_and_l13 {
+      paths_on_node14.addr0 = uniq_idx14.out;
+      uniq_and_reg_l14.in = paths_on_node14.read_data;
+      uniq_and_reg_l14.write_en = 1'd1;
+      load_and_l13[done] = uniq_and_reg_l14.done;
+    }
+    group load_and_r13 {
+      paths_to_consider14.addr0 = uniq_idx14.out;
+      uniq_and_reg_r14.in = paths_to_consider14.read_data;
+      uniq_and_reg_r14.write_en = 1'd1;
+      load_and_r13[done] = uniq_and_reg_r14.done;
+    }
+    group inc_uniq13 {
+      uniq_and14.left = uniq_and_reg_l14.out;
+      uniq_and14.right = uniq_and_reg_r14.out;
+      uniq_adder14.left = uniq14.out;
+      uniq_pad14.in = uniq_and14.out;
+      uniq_adder14.right = uniq_pad14.out;
+      uniq14.in = uniq_adder14.out;
+      uniq14.write_en = 1'd1;
+      inc_uniq13[done] = uniq14.done;
+    }
+    group store_uniq13 {
+      uniq_output.addr0 = 4'd13;
+      uniq_output.write_data = uniq14.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq13[done] = uniq_output.done;
+    }
+    group init_idx14 {
+      idx15.in = 4'd0;
+      idx15.write_en = 1'd1;
+      init_idx14[done] = idx15.done;
+    }
+    group load_path_id14 {
+      path_ids15.addr0 = idx15.out;
+      path_id_reg15.in = path_ids15.read_data;
+      path_id_reg15.write_en = 1'd1;
+      load_path_id14[done] = path_id_reg15.done;
+    }
+    group inc_idx14 {
+      idx_adder15.left = idx15.out;
+      idx_adder15.right = 4'd1;
+      idx15.in = idx_adder15.out;
+      idx15.write_en = 1'd1;
+      inc_idx14[done] = idx15.done;
+    }
+    comb group compare_idx14 {
+      idx_neq15.left = idx15.out;
+      idx_neq15.right = 4'd14;
+    }
+    group load_consider_path14 {
+      paths_to_consider15.addr0 = path_id_reg15.out;
+      depth_temp15.in = paths_to_consider15.read_data;
+      depth_temp15.write_en = 1'd1;
+      load_consider_path14[done] = depth_temp15.done;
+    }
+    group inc_depth14 {
+      depth_depth15.left = depth15.out;
+      depth_pad15.in = depth_temp15.out;
+      depth_depth15.right = depth_pad15.out;
+      depth15.in = depth_depth15.out;
+      depth15.write_en = 1'd1;
+      inc_depth14[done] = depth15.done;
+    }
+    group store_depth14 {
+      depth_output.addr0 = 4'd14;
+      depth_output.write_data = depth15.out;
+      depth_output.write_en = 1'd1;
+      store_depth14[done] = depth_output.done;
+    }
+    group init_uniq_idx14 {
+      uniq_idx15.in = 4'd15;
+      uniq_idx15.write_en = 1'd1;
+      init_uniq_idx14[done] = uniq_idx15.done;
+    }
+    comb group compare_uniq_idx14 {
+      uniq_idx_neq15.left = uniq_idx15.out;
+      uniq_idx_neq15.right = 4'd0;
+    }
+    group dec_uniq_idx14 {
+      uniq_idx_adder15.left = uniq_idx15.out;
+      uniq_idx_adder15.right = 4'd1;
+      uniq_idx15.in = uniq_idx_adder15.out;
+      uniq_idx15.write_en = 1'd1;
+      dec_uniq_idx14[done] = uniq_idx15.done;
+    }
+    group update_pon14 {
+      paths_on_node15.addr0 = path_id_reg15.out;
+      paths_on_node15.write_data = 1'd1;
+      paths_on_node15.write_en = 1'd1;
+      update_pon14[done] = paths_on_node15.done;
+    }
+    group load_and_l14 {
+      paths_on_node15.addr0 = uniq_idx15.out;
+      uniq_and_reg_l15.in = paths_on_node15.read_data;
+      uniq_and_reg_l15.write_en = 1'd1;
+      load_and_l14[done] = uniq_and_reg_l15.done;
+    }
+    group load_and_r14 {
+      paths_to_consider15.addr0 = uniq_idx15.out;
+      uniq_and_reg_r15.in = paths_to_consider15.read_data;
+      uniq_and_reg_r15.write_en = 1'd1;
+      load_and_r14[done] = uniq_and_reg_r15.done;
+    }
+    group inc_uniq14 {
+      uniq_and15.left = uniq_and_reg_l15.out;
+      uniq_and15.right = uniq_and_reg_r15.out;
+      uniq_adder15.left = uniq15.out;
+      uniq_pad15.in = uniq_and15.out;
+      uniq_adder15.right = uniq_pad15.out;
+      uniq15.in = uniq_adder15.out;
+      uniq15.write_en = 1'd1;
+      inc_uniq14[done] = uniq15.done;
+    }
+    group store_uniq14 {
+      uniq_output.addr0 = 4'd14;
+      uniq_output.write_data = uniq15.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq14[done] = uniq_output.done;
+    }
+    group init_idx15 {
+      idx16.in = 4'd0;
+      idx16.write_en = 1'd1;
+      init_idx15[done] = idx16.done;
+    }
+    group load_path_id15 {
+      path_ids16.addr0 = idx16.out;
+      path_id_reg16.in = path_ids16.read_data;
+      path_id_reg16.write_en = 1'd1;
+      load_path_id15[done] = path_id_reg16.done;
+    }
+    group inc_idx15 {
+      idx_adder16.left = idx16.out;
+      idx_adder16.right = 4'd1;
+      idx16.in = idx_adder16.out;
+      idx16.write_en = 1'd1;
+      inc_idx15[done] = idx16.done;
+    }
+    comb group compare_idx15 {
+      idx_neq16.left = idx16.out;
+      idx_neq16.right = 4'd14;
+    }
+    group load_consider_path15 {
+      paths_to_consider16.addr0 = path_id_reg16.out;
+      depth_temp16.in = paths_to_consider16.read_data;
+      depth_temp16.write_en = 1'd1;
+      load_consider_path15[done] = depth_temp16.done;
+    }
+    group inc_depth15 {
+      depth_depth16.left = depth16.out;
+      depth_pad16.in = depth_temp16.out;
+      depth_depth16.right = depth_pad16.out;
+      depth16.in = depth_depth16.out;
+      depth16.write_en = 1'd1;
+      inc_depth15[done] = depth16.done;
+    }
+    group store_depth15 {
+      depth_output.addr0 = 4'd15;
+      depth_output.write_data = depth16.out;
+      depth_output.write_en = 1'd1;
+      store_depth15[done] = depth_output.done;
+    }
+    group init_uniq_idx15 {
+      uniq_idx16.in = 4'd15;
+      uniq_idx16.write_en = 1'd1;
+      init_uniq_idx15[done] = uniq_idx16.done;
+    }
+    comb group compare_uniq_idx15 {
+      uniq_idx_neq16.left = uniq_idx16.out;
+      uniq_idx_neq16.right = 4'd0;
+    }
+    group dec_uniq_idx15 {
+      uniq_idx_adder16.left = uniq_idx16.out;
+      uniq_idx_adder16.right = 4'd1;
+      uniq_idx16.in = uniq_idx_adder16.out;
+      uniq_idx16.write_en = 1'd1;
+      dec_uniq_idx15[done] = uniq_idx16.done;
+    }
+    group update_pon15 {
+      paths_on_node16.addr0 = path_id_reg16.out;
+      paths_on_node16.write_data = 1'd1;
+      paths_on_node16.write_en = 1'd1;
+      update_pon15[done] = paths_on_node16.done;
+    }
+    group load_and_l15 {
+      paths_on_node16.addr0 = uniq_idx16.out;
+      uniq_and_reg_l16.in = paths_on_node16.read_data;
+      uniq_and_reg_l16.write_en = 1'd1;
+      load_and_l15[done] = uniq_and_reg_l16.done;
+    }
+    group load_and_r15 {
+      paths_to_consider16.addr0 = uniq_idx16.out;
+      uniq_and_reg_r16.in = paths_to_consider16.read_data;
+      uniq_and_reg_r16.write_en = 1'd1;
+      load_and_r15[done] = uniq_and_reg_r16.done;
+    }
+    group inc_uniq15 {
+      uniq_and16.left = uniq_and_reg_l16.out;
+      uniq_and16.right = uniq_and_reg_r16.out;
+      uniq_adder16.left = uniq16.out;
+      uniq_pad16.in = uniq_and16.out;
+      uniq_adder16.right = uniq_pad16.out;
+      uniq16.in = uniq_adder16.out;
+      uniq16.write_en = 1'd1;
+      inc_uniq15[done] = uniq16.done;
+    }
+    group store_uniq15 {
+      uniq_output.addr0 = 4'd15;
+      uniq_output.write_data = uniq16.out;
+      uniq_output.write_en = 1'd1;
+      store_uniq15[done] = uniq_output.done;
+    }
+  }
+  control {
+    seq {
+      par {
+        seq {
+          init_idx0;
+          par {
+            init_uniq_idx0;
+            while idx_neq1.out with compare_idx0 {
+              seq {
+                load_path_id0;
+                par {
+                  inc_idx0;
+                  seq {
+                    load_consider_path0;
+                    inc_depth0;
+                  }
+                  update_pon0;
+                }
+              }
+            }
+          }
+          load_path_id0;
+          load_consider_path0;
+          inc_depth0;
+          update_pon0;
+          while uniq_idx_neq1.out with compare_uniq_idx0 {
+            seq {
+              par {
+                load_and_l0;
+                load_and_r0;
+              }
+              inc_uniq0;
+              dec_uniq_idx0;
+            }
+          }
+        }
+        seq {
+          init_idx1;
+          par {
+            init_uniq_idx1;
+            while idx_neq2.out with compare_idx1 {
+              seq {
+                load_path_id1;
+                par {
+                  inc_idx1;
+                  seq {
+                    load_consider_path1;
+                    inc_depth1;
+                  }
+                  update_pon1;
+                }
+              }
+            }
+          }
+          load_path_id1;
+          load_consider_path1;
+          inc_depth1;
+          update_pon1;
+          while uniq_idx_neq2.out with compare_uniq_idx1 {
+            seq {
+              par {
+                load_and_l1;
+                load_and_r1;
+              }
+              inc_uniq1;
+              dec_uniq_idx1;
+            }
+          }
+        }
+        seq {
+          init_idx2;
+          par {
+            init_uniq_idx2;
+            while idx_neq3.out with compare_idx2 {
+              seq {
+                load_path_id2;
+                par {
+                  inc_idx2;
+                  seq {
+                    load_consider_path2;
+                    inc_depth2;
+                  }
+                  update_pon2;
+                }
+              }
+            }
+          }
+          load_path_id2;
+          load_consider_path2;
+          inc_depth2;
+          update_pon2;
+          while uniq_idx_neq3.out with compare_uniq_idx2 {
+            seq {
+              par {
+                load_and_l2;
+                load_and_r2;
+              }
+              inc_uniq2;
+              dec_uniq_idx2;
+            }
+          }
+        }
+        seq {
+          init_idx3;
+          par {
+            init_uniq_idx3;
+            while idx_neq4.out with compare_idx3 {
+              seq {
+                load_path_id3;
+                par {
+                  inc_idx3;
+                  seq {
+                    load_consider_path3;
+                    inc_depth3;
+                  }
+                  update_pon3;
+                }
+              }
+            }
+          }
+          load_path_id3;
+          load_consider_path3;
+          inc_depth3;
+          update_pon3;
+          while uniq_idx_neq4.out with compare_uniq_idx3 {
+            seq {
+              par {
+                load_and_l3;
+                load_and_r3;
+              }
+              inc_uniq3;
+              dec_uniq_idx3;
+            }
+          }
+        }
+        seq {
+          init_idx4;
+          par {
+            init_uniq_idx4;
+            while idx_neq5.out with compare_idx4 {
+              seq {
+                load_path_id4;
+                par {
+                  inc_idx4;
+                  seq {
+                    load_consider_path4;
+                    inc_depth4;
+                  }
+                  update_pon4;
+                }
+              }
+            }
+          }
+          load_path_id4;
+          load_consider_path4;
+          inc_depth4;
+          update_pon4;
+          while uniq_idx_neq5.out with compare_uniq_idx4 {
+            seq {
+              par {
+                load_and_l4;
+                load_and_r4;
+              }
+              inc_uniq4;
+              dec_uniq_idx4;
+            }
+          }
+        }
+        seq {
+          init_idx5;
+          par {
+            init_uniq_idx5;
+            while idx_neq6.out with compare_idx5 {
+              seq {
+                load_path_id5;
+                par {
+                  inc_idx5;
+                  seq {
+                    load_consider_path5;
+                    inc_depth5;
+                  }
+                  update_pon5;
+                }
+              }
+            }
+          }
+          load_path_id5;
+          load_consider_path5;
+          inc_depth5;
+          update_pon5;
+          while uniq_idx_neq6.out with compare_uniq_idx5 {
+            seq {
+              par {
+                load_and_l5;
+                load_and_r5;
+              }
+              inc_uniq5;
+              dec_uniq_idx5;
+            }
+          }
+        }
+        seq {
+          init_idx6;
+          par {
+            init_uniq_idx6;
+            while idx_neq7.out with compare_idx6 {
+              seq {
+                load_path_id6;
+                par {
+                  inc_idx6;
+                  seq {
+                    load_consider_path6;
+                    inc_depth6;
+                  }
+                  update_pon6;
+                }
+              }
+            }
+          }
+          load_path_id6;
+          load_consider_path6;
+          inc_depth6;
+          update_pon6;
+          while uniq_idx_neq7.out with compare_uniq_idx6 {
+            seq {
+              par {
+                load_and_l6;
+                load_and_r6;
+              }
+              inc_uniq6;
+              dec_uniq_idx6;
+            }
+          }
+        }
+        seq {
+          init_idx7;
+          par {
+            init_uniq_idx7;
+            while idx_neq8.out with compare_idx7 {
+              seq {
+                load_path_id7;
+                par {
+                  inc_idx7;
+                  seq {
+                    load_consider_path7;
+                    inc_depth7;
+                  }
+                  update_pon7;
+                }
+              }
+            }
+          }
+          load_path_id7;
+          load_consider_path7;
+          inc_depth7;
+          update_pon7;
+          while uniq_idx_neq8.out with compare_uniq_idx7 {
+            seq {
+              par {
+                load_and_l7;
+                load_and_r7;
+              }
+              inc_uniq7;
+              dec_uniq_idx7;
+            }
+          }
+        }
+        seq {
+          init_idx8;
+          par {
+            init_uniq_idx8;
+            while idx_neq9.out with compare_idx8 {
+              seq {
+                load_path_id8;
+                par {
+                  inc_idx8;
+                  seq {
+                    load_consider_path8;
+                    inc_depth8;
+                  }
+                  update_pon8;
+                }
+              }
+            }
+          }
+          load_path_id8;
+          load_consider_path8;
+          inc_depth8;
+          update_pon8;
+          while uniq_idx_neq9.out with compare_uniq_idx8 {
+            seq {
+              par {
+                load_and_l8;
+                load_and_r8;
+              }
+              inc_uniq8;
+              dec_uniq_idx8;
+            }
+          }
+        }
+        seq {
+          init_idx9;
+          par {
+            init_uniq_idx9;
+            while idx_neq10.out with compare_idx9 {
+              seq {
+                load_path_id9;
+                par {
+                  inc_idx9;
+                  seq {
+                    load_consider_path9;
+                    inc_depth9;
+                  }
+                  update_pon9;
+                }
+              }
+            }
+          }
+          load_path_id9;
+          load_consider_path9;
+          inc_depth9;
+          update_pon9;
+          while uniq_idx_neq10.out with compare_uniq_idx9 {
+            seq {
+              par {
+                load_and_l9;
+                load_and_r9;
+              }
+              inc_uniq9;
+              dec_uniq_idx9;
+            }
+          }
+        }
+        seq {
+          init_idx10;
+          par {
+            init_uniq_idx10;
+            while idx_neq11.out with compare_idx10 {
+              seq {
+                load_path_id10;
+                par {
+                  inc_idx10;
+                  seq {
+                    load_consider_path10;
+                    inc_depth10;
+                  }
+                  update_pon10;
+                }
+              }
+            }
+          }
+          load_path_id10;
+          load_consider_path10;
+          inc_depth10;
+          update_pon10;
+          while uniq_idx_neq11.out with compare_uniq_idx10 {
+            seq {
+              par {
+                load_and_l10;
+                load_and_r10;
+              }
+              inc_uniq10;
+              dec_uniq_idx10;
+            }
+          }
+        }
+        seq {
+          init_idx11;
+          par {
+            init_uniq_idx11;
+            while idx_neq12.out with compare_idx11 {
+              seq {
+                load_path_id11;
+                par {
+                  inc_idx11;
+                  seq {
+                    load_consider_path11;
+                    inc_depth11;
+                  }
+                  update_pon11;
+                }
+              }
+            }
+          }
+          load_path_id11;
+          load_consider_path11;
+          inc_depth11;
+          update_pon11;
+          while uniq_idx_neq12.out with compare_uniq_idx11 {
+            seq {
+              par {
+                load_and_l11;
+                load_and_r11;
+              }
+              inc_uniq11;
+              dec_uniq_idx11;
+            }
+          }
+        }
+        seq {
+          init_idx12;
+          par {
+            init_uniq_idx12;
+            while idx_neq13.out with compare_idx12 {
+              seq {
+                load_path_id12;
+                par {
+                  inc_idx12;
+                  seq {
+                    load_consider_path12;
+                    inc_depth12;
+                  }
+                  update_pon12;
+                }
+              }
+            }
+          }
+          load_path_id12;
+          load_consider_path12;
+          inc_depth12;
+          update_pon12;
+          while uniq_idx_neq13.out with compare_uniq_idx12 {
+            seq {
+              par {
+                load_and_l12;
+                load_and_r12;
+              }
+              inc_uniq12;
+              dec_uniq_idx12;
+            }
+          }
+        }
+        seq {
+          init_idx13;
+          par {
+            init_uniq_idx13;
+            while idx_neq14.out with compare_idx13 {
+              seq {
+                load_path_id13;
+                par {
+                  inc_idx13;
+                  seq {
+                    load_consider_path13;
+                    inc_depth13;
+                  }
+                  update_pon13;
+                }
+              }
+            }
+          }
+          load_path_id13;
+          load_consider_path13;
+          inc_depth13;
+          update_pon13;
+          while uniq_idx_neq14.out with compare_uniq_idx13 {
+            seq {
+              par {
+                load_and_l13;
+                load_and_r13;
+              }
+              inc_uniq13;
+              dec_uniq_idx13;
+            }
+          }
+        }
+        seq {
+          init_idx14;
+          par {
+            init_uniq_idx14;
+            while idx_neq15.out with compare_idx14 {
+              seq {
+                load_path_id14;
+                par {
+                  inc_idx14;
+                  seq {
+                    load_consider_path14;
+                    inc_depth14;
+                  }
+                  update_pon14;
+                }
+              }
+            }
+          }
+          load_path_id14;
+          load_consider_path14;
+          inc_depth14;
+          update_pon14;
+          while uniq_idx_neq15.out with compare_uniq_idx14 {
+            seq {
+              par {
+                load_and_l14;
+                load_and_r14;
+              }
+              inc_uniq14;
+              dec_uniq_idx14;
+            }
+          }
+        }
+        seq {
+          init_idx15;
+          par {
+            init_uniq_idx15;
+            while idx_neq16.out with compare_idx15 {
+              seq {
+                load_path_id15;
+                par {
+                  inc_idx15;
+                  seq {
+                    load_consider_path15;
+                    inc_depth15;
+                  }
+                  update_pon15;
+                }
+              }
+            }
+          }
+          load_path_id15;
+          load_consider_path15;
+          inc_depth15;
+          update_pon15;
+          while uniq_idx_neq16.out with compare_uniq_idx15 {
+            seq {
+              par {
+                load_and_l15;
+                load_and_r15;
+              }
+              inc_uniq15;
+              dec_uniq_idx15;
+            }
+          }
+        }
+      }
+      par {
+        store_uniq0;
+        store_depth0;
+      }
+      par {
+        store_uniq1;
+        store_depth1;
+      }
+      par {
+        store_uniq2;
+        store_depth2;
+      }
+      par {
+        store_uniq3;
+        store_depth3;
+      }
+      par {
+        store_uniq4;
+        store_depth4;
+      }
+      par {
+        store_uniq5;
+        store_depth5;
+      }
+      par {
+        store_uniq6;
+        store_depth6;
+      }
+      par {
+        store_uniq7;
+        store_depth7;
+      }
+      par {
+        store_uniq8;
+        store_depth8;
+      }
+      par {
+        store_uniq9;
+        store_depth9;
+      }
+      par {
+        store_uniq10;
+        store_depth10;
+      }
+      par {
+        store_uniq11;
+        store_depth11;
+      }
+      par {
+        store_uniq12;
+        store_depth12;
+      }
+      par {
+        store_uniq13;
+        store_depth13;
+      }
+      par {
+        store_uniq14;
+        store_depth14;
+      }
+      par {
+        store_uniq15;
+        store_depth15;
+      }
+    }
+  }
+}
