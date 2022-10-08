@@ -1,6 +1,8 @@
-from calyx.py_ast import *
-from parse_data import get_maxes
 import argparse
+import subprocess
+
+from calyx.py_ast import *
+from . import parse_data
 
 
 MAX_NODES=16
@@ -373,31 +375,65 @@ def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
 
     return program
 
-            
+
+def config_parser(parser):
+    
+    parser.add_argument(
+        '-a',
+        '--auto-size',
+        help='Provide an odgi file that will be used to calculate the hardware dimensions.'
+    )
+    parser.add_argument(
+        '-n',
+        '--max-nodes',
+        type=int,
+        default=MAX_NODES,
+        help='Specify the maximum number of nodes that the hardware can support.'
+    )
+    parser.add_argument(
+        '-e',
+        '--max-steps',
+        type=int,
+        default=MAX_STEPS,
+        help='Specify the maximum number of steps per node that the hardware can support.'
+    )
+    parser.add_argument(
+        '-p',
+        '--max-paths',
+        type=int,
+        default=MAX_PATHS,
+        help='Specify the maximum number of paths that the hardware can support.'
+    )
+    parser.add_argument(
+        '-o',
+        '--out',
+        help='Specify the output file. If not specified, will dump to stdout.'
+    )
+
+
+def run(args):
+
+    if args.auto_size:
+        max_nodes, max_steps, max_paths = parse_data.get_maxes(args.auto_size)
+        program = node_depth(max_nodes, max_steps, max_paths)
+        
+    else:
+        program = node_depth(args.max_nodes, args.max_steps, args.max_paths)
+    output = program.doc()
+
+    # Ouput the program
+    if (args.out):
+        with open(args.out, 'w') as out_file:
+            out_file.write(output)
+    else:
+        print(output)
+
+        
 if __name__ == '__main__':
 
     # Parse commandline input
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--auto-size', help='Provide an odgi file that will be used to calculate the hardware dimensions.')
-    parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
-    parser.add_argument('-e', '--max-steps', type=int, default=MAX_STEPS, help='Specify the maximum number of steps per node that the hardware can support.')
-    parser.add_argument('-p', '--max-paths', type=int, default=MAX_PATHS, help='Specify the maximum number of paths that the hardware can support.')
-    parser.add_argument('-o', '--out', help='Specify the output file. If not specified, will dump to stdout.')
-
+    config_parser(parser)
     args = parser.parse_args()
 
-
-    if args.auto_size:
-        max_nodes, max_steps, max_paths = get_maxes(args.auto_size)
-        program = node_depth(max_nodes, max_steps, max_paths)
-    else:
-        # Generate calyx code
-        program = node_depth(args.max_nodes, args.max_steps, args.max_paths)
-
-        
-    # Emit the code
-    if (args.out):
-        with open(args.out, 'w') as out_file:
-            out_file.write(program.doc())
-    else:
-        program.emit()
+    run(args)
