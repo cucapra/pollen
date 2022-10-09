@@ -189,17 +189,17 @@ def get_maxes(filename):
     return max_nodes, max_steps, max_paths
 
 
-def from_data(data, from_interp, max_nodes=None):
+def from_calyx(calyx_out, from_interp, max_nodes=None):
     '''
     Parse a calyx output file to the odgi format
     '''
 
     if from_interp:
-        depths = data['main']['depth_output']
-        uniqs = data['main']['uniq_output']
+        depths = calyx_out['main']['depth_output']
+        uniqs = calyx_out['main']['uniq_output']
     else:
-        depths = data['memories']['depth_output']
-        uniqs = data['memories']['uniq_output']
+        depths = calyx_out['memories']['depth_output']
+        uniqs = calyx_out['memories']['uniq_output']
 
     if not max_nodes:
         max_nodes = len(depths)
@@ -221,8 +221,8 @@ def config_parser(parser):
         help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.'
     )
     parser.add_argument(
-        '-d',
-        '--from-data',
+        '-v',
+        '--from-verilog',
         action='store_true',
         help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.'
     )
@@ -266,10 +266,10 @@ def config_parser(parser):
     )
 
 def run(args):
-    if args.from_data or args.from_interp:
+    if args.from_verilog or args.from_interp:
         with open(filename, 'r') as fp:
             data = json.load(fp)
-        ouput = from_data(data, args.from_interp)
+        ouput = from_calyx(data, args.from_interp)
     else:
         if args.auto_size:
             filename = args.filename if args.auto_size=='d' else args.auto_size

@@ -51,6 +51,7 @@ def config_parser(parser):
     
 
 def run(args):
+    
     if args.action == 'gen': # Generate an accelerator
         if args.filename or args.subset_paths or args.accelerator or args.pr:
             warnings.warn('--file, --subset-paths, --accelerator, and --pr will be ignored if action is gen.', SyntaxWarning)
@@ -58,28 +59,37 @@ def run(args):
         depth.run(args)
         return
 
+    
+    # Check for valid commandline input
+    if not (args.action == 'parse' or args.action == 'run'):
+        raise Exception('action should be gen, parse, or run')
+        
     if not args.filename:
         raise Exception('--file must be provided when action is parse or run.')
     base, ext = os.path.splitext(args.filename)
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out')
+    parser.add_argument('-v', '--from-verilog')
+    parser.add_argument('-i', '--from-interp')    
+    
     if args.action == 'parse': # Generate a data file
         if args.accelerator or args.pr:
             warnings.warn('--accelerator and --pr will be ignored if action is not run.', SyntaxWarning)
+
+        parser.parse_args([], namespace=args)
         parse_data.run(args)
         
-    else: # Run the accelerator
+    elif args.action == 'run': # Run the accelerator
 
         # Parse the data file if necessary
         out_file = args.out
         _, ext = os.path.splitext(args.filename)
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--out')
-        if ext == 'data':
+        
+        if ext == '.data':
             data_file = args.filename
         else:
             data_file = 'tmp.data'
-            parser.add_argument('--from-data')
-            parser.add_argument('--from-interp')
             parser.parse_args(['--out', data_file], namespace=args)
             parse_data.run(args)
         
@@ -95,23 +105,26 @@ def run(args):
         cmd = ['fud', 'e', futil_file, '--to', 'interpreter-out',
                '-s', 'verilog.data', data_file]
         if args.pr:
-            cmd.append('--pr')
-        calyx_out = subprocess.run(cmd,
-                                   capture_output=True)
+            cmd.append('-pr')
+            calyx_out = subprocess.run(cmd, capture_output=True, text=True)
+            output = calyx_out.stdout
 
-        # Convert calyx output to a node depth table
-        calyx_out = json.loads(calyx_out.stdout)
-        ndt = parse_data.from_data(calyx_out, True)
+        else:
+            calyx_out = subprocess.run(cmd, capture_output=True, text=True)
+            # Convert calyx output to a node depth table
+            calyx_out = json.loads(calyx_out.stdout)
+            output = parse_data.from_calyx(calyx_out, True) # ndt
         
         # Output the ndt
         if out_file:
             with open(out_file, 'w') as out_file:
-                out_file.write(ndt)
+                out_file.write(output)
         else:
-            print(ndt)
+            print(output)
 
         # Remove temporary files
         subprocess.run(['rm', 'tmp.*'], capture_output=True)
+
 
 def main():
     parser = argparse.ArgumentParser()
