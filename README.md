@@ -26,54 +26,54 @@ You will need to install the python bindings for [odgi]. Instructions for instal
 
 To verify that you have the python bindings, open up a python shell and try `import odgi`. If this doesn't work, you can try a different method of installation, or you can download the `.so` files from [bioconda](https://anaconda.org/bioconda/odgi/files) for the version of python you are running (`python3 --version`) and add them to your `PYTHONPATH` instead.
 
+To finish the setup, run `flit install --user -s` from the root directory.
+
 ### Generating an Accelerator
 
-To generator and run an accelerator to compute the node depth for `k.og`, first navigate to the root directory of this repository. Then run
+To generate and run an accelerator to compute the node depth for `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
-python3 calyx_depth.py -o depth.futil
-python3 parse_data.py test/k.og
-fud exec depth.futil --to interpreter-out -s verilog.data depth.data > depth.txt
-python3 parse_data.py -di temp.txt
+pollen depth -o depth.futil
+pollen depth --action=parse --file test/k.og -o depth.data
+pollen depth --action=run --file depth.data --accelerator depth.futil
 ```
 
-First, `make fetch` downloads some [GFA][] data files into the `./test` directory.
+First, `make fetch` downloads some [GFA][] data files into the `./test` directory. Then `make test/*.og` builds the odgi graph files from the GFA files.
 
-To build the odgi graph files from the GFA files, run `make test/*.og`.
-
-Then, `python3 calyx_depth.py -o depth.futil` generates the hardware accelerator and writes it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+Then, `pollen depth -o depth.futil` generates a hardware accelerator and writes it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
 
 ```
-python3 calyx_depth.py -o depth.futil
-python3 calyx_depth.py -a <filename> -o depth.futil
-python3 calxy_depth.py -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil
+pollen depth -o depth.futil
+pollen depth -a <filename> -o depth.futil
+pollen depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil
 ```
 
-The first command uses default hardware parameters; the second automatically infers them from a `.og` file; the third takes the parameters as input. Automatically inferred parameters take precedence over manually specified ones, and just a subset of parameters may be specified.
+The first command uses default hardware parameters; the second automatically infers them from a `.og` file; the third takes the parameters as input. Manually specified parameters take precedence over automatically inferred ones, and just a subset of parameters may be specified.
 
 To run the hardware accelerator, we need to generate some input using one of the following commands:
 
 ```
-python3 parse_data.py <filename> -o depth.data
-python3 parse_data.py <filename> -a -o depth.data
-python3 parse_data.py <filename> -a <filename2> -o depth.data
-python3 calxy_depth.py <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data
+pollen depth --action=parse -f <filename> -o depth.data
+pollen depth --action=parse -f <filename> -a <filename2> -o depth.data
+pollen depth --action=parse -f <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data
 ```
     
-This is similar to the previous command except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. The dimensions of the input must be the same as that of the hardware accelerator.
+The `--action=parse` option indicates that we are generating input from `<filename>`. The `-f` flag must be specified. The dimensions of the input must match the dimensions of the hardware accelerator.
 
 Now you can run your hardware accelerator: 
 
 ``` 
-fud exec depth.futil --to interpreter-out -s verilog.data depth.data > depth.txt
+pollen depth --action=run -f <data_file> --accelerator <futil_file>
 ```
     
-will simulate the calyx code for the hardware accelerator. To parse the output in a more readable format, run
-    
+will simulate the calyx code for the hardware accelerator. If you want to quickly compute node depth, try
+
 ```
-python3 parse_data.py -di temp.txt
+pollen depth --action=run -f <filename> -a <filename>
 ```
+
+This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
