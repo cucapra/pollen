@@ -14,21 +14,21 @@ Then follow the instructions below to set up `calyx` and `odgi`.
 ### Installing Dependencies
 
 #### Calyx
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You will need to configure the calyx driver, `fud`. We recommend using the native calyx interpreter, so once `fud` is set up, run
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You will need to complete the Installing the Commandline Driver section, but can skip Running the Core Tests. We recommend using the native calyx interpreter, so once `fud` is set up, run
 ```
-fud config stages.interpreter $ABSOLUTE_PATH_TO_CALYX_REPO/target/debug/interp
+fud config stages.interpreter <full path to Calyx repository>/target/debug/interp
 ```
-where `$ABSOLUTE_PATH_TO_CALYX_REPO` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/target/debug/interp`.
+where `<full path to Calyx repo` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/calyx/target/debug/interp`.
 
 #### Odgi
 
-You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). If you compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings.
+You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings. 
 
-To verify that you have the python bindings, open up a python shell and try `import odgi`. If this doesn't work, you can try a different method of installation, or you can download the `.so` files from [bioconda](https://anaconda.org/bioconda/odgi/files) for the version of python you are running (`python3 --version`) and add them to your `PYTHONPATH` instead.
+To verify that the python bindings are working, open up a python shell and try `import odgi`. If this doesn't work, you can also download the `.so` files from [bioconda](https://anaconda.org/bioconda/odgi/files) for the version of python you are running and add them to your `PYTHONPATH`. For example, if `python --version` is 3.7, fetch `odgi...py37....tar.bz2`. You will have to extract the `.so` files by unzipping the `.tar.bz2` file.
 
 ### Generating an Accelerator
 
-To generator and run an accelerator to compute the node depth for `k.og`, first navigate to the root directory of this repository. Then run
+Take node depth as an example. To generate and run a node depth accelerator for `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
