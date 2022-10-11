@@ -40,6 +40,7 @@ def config_parser(parser):
     )
 
     parser.add_argument(
+        '-x',
         '--accelerator',
         help='Specify a node depth accelerator to run. Should only be set if action is run.'
     )
@@ -123,9 +124,9 @@ def run(args):
             print(output)
 
         # Remove temporary files
-        subprocess.run(['rm', 'tmp.*'], capture_output=True)
+        subprocess.run(['rm', 'tmp.data', 'tmp.futil'], capture_output=True)
 
-
+        
 def main():
     parser = argparse.ArgumentParser()
     
