@@ -50,7 +50,7 @@ Then, `python3 calyx_depth.py -o depth.futil` generates the hardware accelerator
 2. `python3 calyx_depth.py -a <filename> -o depth.futil`
 3. `python3 calxy_depth.py -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
 
-The commands compute the hardware parameters as follows:
+The commands use the hardware parameters as follows:
 1. Uses default hardware parameters
 2. Automatically infers the hardware parameters from a `.og` file
 3. Takes the hardware parameters as input.
