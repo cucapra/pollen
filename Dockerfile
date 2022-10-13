@@ -25,8 +25,10 @@ RUN cmake -H. -Bbuild && cmake --build build -- -j7
 # return to root directory
 WORKDIR /root
 
-# Add ODGI to path
+# Add ODGI to paths
 ENV PATH="/root/odgi/bin:$PATH"
+ENV PYTHONPATH=$PYTHONPATH:/root/odgi/lib
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
 # Install Calyx-Pangenome (TODO-AM: rename when repo is renamed)
 # dependencies:
