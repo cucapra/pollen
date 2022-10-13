@@ -198,8 +198,8 @@ def from_data(filename, from_interp, max_nodes=None):
         data = json.load(fp)
 
     if from_interp:
-        depths = data['memories']['main']['depth_output']
-        uniqs = data['memories']['main']['uniq_output']
+        depths = data['main']['depth_output']
+        uniqs = data['main']['uniq_output']
     else:
         depths = data['memories']['depth_output']
         uniqs = data['memories']['uniq_output']
