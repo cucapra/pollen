@@ -14,11 +14,11 @@ Then follow the instructions below to set up `calyx` and `odgi`.
 ### Installing Dependencies
 
 #### Calyx
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third] (https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. We recommend using the native calyx interpreter, so once `fud` is set up, run
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. We recommend using the native calyx interpreter, so once `fud` is set up, run
 ```
 fud config stages.interpreter <full path to Calyx repository>/target/debug/interp
 ```
-where `<full path to Calyx repository` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/calyx/target/debug/interp`.
+where `<full path to Calyx repository>` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/calyx/target/debug/interp`.
 
 #### Odgi
 
@@ -26,7 +26,15 @@ You will need to install the python bindings for [odgi]. Instructions for instal
 
 Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings.
 
-To verify that the python bindings are working, open up a python shell and try `import odgi`. If this doesn't work, you can also download the `.so` files from [bioconda](https://anaconda.org/bioconda/odgi/files) for the version of python you are running and add them to your `PYTHONPATH`. For example, if `python --version` is 3.7, fetch `odgi...py37....tar.bz2`. Then, after unzipping the `.tar.bz2` file, the `.so` files would be located in `lib/python3.7/site-packages`, so you could run `export PYTHONPATH=$PYTHONPATH:$(pwd)/lib/python3.7/site-packages` to add this to your python path.
+To verify that the python bindings are working, open up a python shell and try `import odgi`. If this doesn't work, you can also download the `.so` file from [bioconda][]:
+1. Check your python version with `python --version`. We use python 3.9 for the rest of this example.
+2. Run `mkdir odgi-py; cd odgi-py`.
+3. Download the appropriate tarball from [bioconda][].
+4. Untar it, and run `ls lib/python3.9/site-packages/` to ensure that `odgi.cpython*.so` is there. If it is elsewhere, make note of the location and substitute in the next step.
+5. Add this to your `PYTHONPATH` with `export PYTHONPATH=...odgi-py/lib/python3.9/site-packages/`.
+6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
+7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
+8. Run `python` and then `import odgi`.
 
 ### Generating an Accelerator
 
@@ -81,3 +89,4 @@ python3 parse_data.py -di temp.txt
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
 [gfa]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8006571/#FN8
+[bioconda]: https://anaconda.org/bioconda/odgi/files
