@@ -14,17 +14,27 @@ Then follow the instructions below to set up `calyx` and `odgi`.
 ### Installing Dependencies
 
 #### Calyx
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You will need to complete the Installing the Commandline Driver section, but can skip Running the Core Tests. We recommend using the native calyx interpreter, so once `fud` is set up, run
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. We recommend using the native calyx interpreter, so once `fud` is set up, run
 ```
 fud config stages.interpreter <full path to Calyx repository>/target/debug/interp
 ```
-where `<full path to Calyx repo` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/calyx/target/debug/interp`.
+where `<full path to Calyx repository>` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/calyx/target/debug/interp`.
 
 #### Odgi
 
-You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings. 
+You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). You might also need to [preload `jemalloc`](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html#optimise).
 
-To verify that the python bindings are working, open up a python shell and try `import odgi`. If this doesn't work, you can also download the `.so` files from [bioconda](https://anaconda.org/bioconda/odgi/files) for the version of python you are running and add them to your `PYTHONPATH`. For example, if `python --version` is 3.7, fetch `odgi...py37....tar.bz2`. You will have to extract the `.so` files by unzipping the `.tar.bz2` file.
+Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings.
+
+To verify that the python bindings are working, open up a python shell and try `import odgi`. If this doesn't work, you can also download the `.so` file from [bioconda][]:
+1. Check your python version with `python --version`. We use python 3.9 for the rest of this example.
+2. Run `mkdir odgi-py; cd odgi-py`.
+3. Download the appropriate tarball from [bioconda][].
+4. Untar it, and run `ls lib/python3.9/site-packages/` to ensure that `odgi.cpython*.so` is there. If it is elsewhere, make note of the location and substitute in the next step.
+5. Add this to your `PYTHONPATH` with `export PYTHONPATH=...odgi-py/lib/python3.9/site-packages/`.
+6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
+7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
+8. Run `python` and then `import odgi`.
 
 To finish the setup, run `flit install --user -s` from the root directory.
 
@@ -43,35 +53,35 @@ pollen depth --action=run --file depth.data --accelerator depth.futil
 First, `make fetch` downloads some [GFA][] data files into the `./test` directory. Then `make test/*.og` builds the odgi graph files from the GFA files.
 
 Then, `pollen depth -o depth.futil` generates a hardware accelerator and writes it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+1. `pollen depth -o depth.futil`
+2. `pollen depth -a <filename> -o depth.futil`
+3. `pollen depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
 
-```
-pollen depth -o depth.futil
-pollen depth -a <filename> -o depth.futil
-pollen depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil
-```
+The commands use the hardware parameters as follows:
+1. Uses default hardware parameters
+2. Automatically infers the hardware parameters from a `.og` file
+3. Takes the hardware parameters as input.
 
-The first command uses default hardware parameters; the second automatically infers them from a `.og` file; the third takes the parameters as input. Manually specified parameters take precedence over automatically inferred ones, and just a subset of parameters may be specified.
+Automatically inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
 
 To run the hardware accelerator, we need to generate some input using one of the following commands:
-
-```
-pollen depth --action=parse -f <filename> -o depth.data
-pollen depth --action=parse -f <filename> -a <filename2> -o depth.data
-pollen depth --action=parse -f <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data
-```
+1. `pollen depth -df <filename> -o depth.data`
+2. `pollen depth -df <filename> -a <filename2> -o depth.data`
+3. `pollen depth -df <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+4. `pollen depth -da -f <filename> -o depth.data`
     
-The `--action=parse` option indicates that we are generating input from `<filename>`. The `-f` flag must be specified. The dimensions of the input must match the dimensions of the hardware accelerator.
+This is similar to the previous command except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
 Now you can run your hardware accelerator: 
 
 ``` 
-pollen depth --action=run -f <data_file> --accelerator <futil_file>
+pollen depth -rf depth.data -x depth.futil
 ```
     
 will simulate the calyx code for the hardware accelerator. If you want to quickly compute node depth, try
 
 ```
-pollen depth --action=run -f <filename> -a <filename>
+pollen depth -ra -f <filename>
 ```
 
 This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
@@ -79,3 +89,4 @@ This will automatically generate a `.futil` file whose dimensions match the inpu
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
 [gfa]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8006571/#FN8
+[bioconda]: https://anaconda.org/bioconda/odgi/files
