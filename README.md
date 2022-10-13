@@ -7,9 +7,7 @@ It is very much a work in progress.
 Getting Started
 ---------------
 
-First, clone the repo using 
-```git clone https://github.com/cucapra/calyx-pangenome.git```
-Then follow the instructions below to set up `calyx` and `odgi`.
+Follow the instructions below to set up `calyx` and `odgi`.
 
 ### Installing Dependencies
 
@@ -36,7 +34,12 @@ To verify that the python bindings are working, open up a python shell and try `
 7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
 8. Run `python` and then `import odgi`.
 
-To finish the setup, run `flit install --user -s` from the root directory.
+Now you can set up calyx-pangenome. Clone the repo using 
+```git clone https://github.com/cucapra/calyx-pangenome.git```
+then run
+```flit install --user -s```
+from the root directory.
+
 
 ### Generating an Accelerator
 
@@ -45,43 +48,45 @@ Take node depth as an example. To generate and run a node depth accelerator for 
 ```
 make fetch
 make test/k.og
-pollen depth -o depth.futil
-pollen depth --action=parse --file test/k.og -o depth.data
-pollen depth --action=run --file depth.data --accelerator depth.futil
+exine depth -o depth.futil
+exine depth --action=parse --file test/k.og -o depth.data
+exine depth --action=run --file depth.data --accelerator depth.futil
 ```
 
 First, `make fetch` downloads some [GFA][] data files into the `./test` directory. Then `make test/*.og` builds the odgi graph files from the GFA files.
 
-Then, `pollen depth -o depth.futil` generates a hardware accelerator and writes it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
-1. `pollen depth -o depth.futil`
-2. `pollen depth -a <filename> -o depth.futil`
-3. `pollen depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
+Then, `exine depth -o depth.futil` generates a hardware accelerator and writes it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+1. `exine depth -o depth.futil`
+2. `exine depth -a <filename> -o depth.futil`
+3. `exine depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
 
 The commands use the hardware parameters as follows:
 1. Uses default hardware parameters
 2. Automatically infers the hardware parameters from a `.og` file
 3. Takes the hardware parameters as input.
 
-Automatically inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
+Automatically inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `exine depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
 
 To run the hardware accelerator, we need to generate some input using one of the following commands:
-1. `pollen depth -df <filename> -o depth.data`
-2. `pollen depth -df <filename> -a <filename2> -o depth.data`
-3. `pollen depth -df <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
-4. `pollen depth -da -f <filename> -o depth.data`
+1. `exine depth -df <filename> -o depth.data`
+2. `exine depth -df <filename> -a <filename2> -o depth.data`
+3. `exine depth -df <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+4. `exine depth -da -f <filename> -o depth.data`
     
 This is similar to the previous command except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
 Now you can run your hardware accelerator: 
 
 ``` 
-pollen depth -rf depth.data -x depth.futil
+exine depth -rf depth.data -x depth.futil
 ```
     
-will simulate the calyx code for the hardware accelerator. If you want to quickly compute node depth, try
+will simulate the calyx code for the hardware accelerator.
+
+If you want to quickly compute node depth, try
 
 ```
-pollen depth -ra -f <filename>
+exine depth -ra -f <filename>
 ```
 
 This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
