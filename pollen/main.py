@@ -11,7 +11,7 @@ def main():
 
     subparsers = parser.add_subparsers()
 
-    depth_parser = subparsers.add_parser("depth", help="Compute node depth")
+    depth_parser = subparsers.add_parser("depth", help="Compute node depth", conflict_handler='resolve')
     depth.config_parser(depth_parser)
     depth_parser.set_defaults(command="depth")
     
