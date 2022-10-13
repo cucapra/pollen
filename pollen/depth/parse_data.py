@@ -237,7 +237,7 @@ def config_parser(parser):
         '--auto-size',
         nargs='?',
         const='d',
-        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is specified with no argument, use the file to be parsed. Takes precedence over specified hardware dimensions.'
+        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is specified with no argument, use the file to be parsed. Specified hardware dimensions take precedence.'
     )
     parser.add_argument(
         '-n',
