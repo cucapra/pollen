@@ -2,4 +2,4 @@
 command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d; rm temp.og"
 
 [envs.calyx]
-command = "odgi build -g {filename} -o temp.og; pollen depth --action=run -f temp.og -a temp.og; rm temp.og"
+command = "odgi build -g {filename} -o temp.og; exine depth -ra -f temp.og; rm temp.og"
