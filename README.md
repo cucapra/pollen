@@ -8,7 +8,7 @@ Getting Started
 ---------------
 
 First, clone the repo using 
-```git clone https://github.com/cucapra/calyx-pangenome.git```
+```git clone https://github.com/cucapra/pollen.git```
 Then follow the instructions below to set up `calyx` and `odgi`.
 
 ### Installing Dependencies
