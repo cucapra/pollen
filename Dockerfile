@@ -26,14 +26,14 @@ ENV PATH="/root/odgi/bin:$PATH"
 ENV PYTHONPATH=$PYTHONPATH:/root/odgi/lib
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
-# Install Calyx-Pangenome (TODO-AM: rename when repo is renamed)
+# Install Calyx-Pangenome
 # dependencies:
 RUN pip install --user turnt
 
 # clone:
-RUN git clone https://github.com/cucapra/calyx-pangenome.git
+RUN git clone https://github.com/cucapra/pollen.git
 # build:
-WORKDIR /root/calyx-pangenome
+WORKDIR /root/pollen
 RUN make fetch
 
 # return to root directory
