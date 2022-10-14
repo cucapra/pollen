@@ -6,10 +6,6 @@
 
 # Start with latest Calyx image
 FROM ghcr.io/cucapra/calyx:latest
-# TODO-AM: 
-#    part of the point is to be "stable".
-#    pick a version of this and everything else,
-#    updating only when stable?
 
 # return to root directory
 WORKDIR /root
@@ -39,9 +35,6 @@ RUN git clone https://github.com/cucapra/calyx-pangenome.git
 # build:
 WORKDIR /root/calyx-pangenome
 RUN make fetch
-# TODO: 
-# RUN make test-all
-# many failures; not sure why 
 
 # return to root directory
 WORKDIR /root
