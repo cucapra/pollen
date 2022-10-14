@@ -2,7 +2,7 @@
 command = "odgi depth -i ../{args} -d -s {base}.paths"
 
 [envs.py-odgi]
-command = "python ../../depth.py ../{args} -s {base}.paths"
+command = "python3 ../../depth.py ../{args} -s {base}.paths"
 
 [envs.calyx-depth]
 command = "python3 ../../calyx_depth.py -a ../{args} > temp.futil; python3 ../../parse_data.py ../{args} -a -s {base}.paths -o temp.data; fud e temp.futil --to interpreter-out -s verilog.data temp.data > temp.txt; python3 ../../parse_data.py -i temp.txt; rm temp.*"
