@@ -1,6 +1,6 @@
 <h1>
 <p align="center">
-<img src="https://github.com/cucapra/pollen/blob/main/pollen_icon.png" width="300">
+<img src="https://github.com/cucapra/pollen/blob/add-icon/pollen_icon.png" width="300">
 </h1>
 
 Pangenome Graph Queries in Calyx
