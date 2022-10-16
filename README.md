@@ -11,11 +11,17 @@ This is a nascent project to build a DSL-to-hardware compiler using [Calyx][] to
 Getting Started
 ---------------
 
-First, clone the repo using 
-```git clone https://github.com/cucapra/pollen.git```
-Then follow the instructions below to set up `calyx` and `odgi`.
+### Installation
 
-### Installing Dependencies
+
+#### Pollen
+
+Clone this repository using 
+```
+git clone https://github.com/cucapra/pollen.git
+```
+and then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+
 
 #### Calyx
 
@@ -29,7 +35,7 @@ where `<full path to calyx repository>` is the absolute path to the calyx root d
 
 You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
 
-To verify that odgi is installed and the python bindings are working, open up a python shell and try `import odgi`. If this works, move on.
+To verify that odgi is installed and the python bindings are working, open up a python shell and try `import odgi`. If this works, move on to the next section.
 
 We have encountered two gotchas when installing odgi: a version clash with python, and an issue with odgi's memory manager. Below we describe what we think is a complete installation of odgi that circumvents both of these issues.
 
@@ -44,7 +50,7 @@ We have encountered two gotchas when installing odgi: a version clash with pytho
 
 ### Generating an Accelerator
 
-Take node depth as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
+Take [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
