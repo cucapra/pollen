@@ -29,15 +29,14 @@ Follow these [instructions](https://docs.calyxir.org/) to install calyx. You mus
 ```
 fud config stages.interpreter <full path to calyx repository>/target/debug/interp
 ```
-where `<full path to calyx repository>` is the absolute path to the calyx root directory, ending in `/calyx/`. 
 
 #### Odgi
 
-You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
+Installing odgi [via bioconda](https://odgi.readthedocs.io/en/latest/rst/installation.html#bioconda) seems to be the most straightforward option. If you instead [compile odgi from source](https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source), you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
 
 To verify that odgi is installed and the python bindings are working, open up a python shell and try `import odgi`. If this works, move on to the next section.
 
-We have encountered two gotchas when installing odgi: a version clash with python, and an issue with odgi's memory manager. Below we describe what we think is a complete installation of odgi that circumvents both of these issues.
+We have encountered two gotchas when installing odgi: a version clash with python, and an issue with odgi's memory manager. Below we describe what we think is a complete installation of odgi that addresses both of these issues.
 
 1. Check your python version with `python --version`. We use python 3.9.12 for the rest of this example.
 2. Run `mkdir odgi-py; cd odgi-py`.
@@ -46,7 +45,7 @@ We have encountered two gotchas when installing odgi: a version clash with pytho
 5. Add this to your `PYTHONPATH` with `export PYTHONPATH=<full path to odgi-py>/lib/python3.9/site-packages/`.
 6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
 7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
-8. Run `python` and then `import odgi`.
+8. Open up a python shell and try `import odgi`.
 
 ### Generating an Accelerator
 
@@ -60,7 +59,7 @@ fud exec depth.futil --to interpreter-out -s verilog.data depth.data > depth.txt
 python3 parse_data.py -di temp.txt
 ```
 
-What just happened? Below we walk through the six commands we issued above, pointing out the other options that we could have used.
+What just happened? Below, we walk through the six commands we issued above, pointing out the other options that we could have used.
 
 First, `make fetch` downloads some [GFA][] data files into the `./test` directory.
 
@@ -77,7 +76,7 @@ The commands use the hardware parameters as follows:
 2. Takes the hardware parameters as input.
 3. Automatically infers the hardware parameters from a `.og` file.
 
-Automatically inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
+Automatically-inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
 
 Fourth, we need to generate some input from our odgi file. This is what we will feed to the hardware accelerator. The following variations all accomplish this:
 
@@ -86,7 +85,7 @@ Fourth, we need to generate some input from our odgi file. This is what we will 
 3. `python3 parse_data.py <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
 4. `python3 parse_data.py <filename> -a -o depth.data`
     
-The flags work in a manner similar to the previous command, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
+The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
 Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator:
 
