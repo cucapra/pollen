@@ -1,0 +1,104 @@
+\documentclass[acmsmall, screen]{acmart}
+
+\settopmatter{printacmref=false}
+\setcopyright{none}
+
+\usepackage{eucal}
+
+\usepackage{enumerate,xspace}
+\usepackage[capitalise]{cleveref}
+
+%% Bibliography style
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}   %% For author/year citations
+
+\begin{document}
+
+\title{Constructing ODGI Graphs: Annotated Bibliography}
+\author{Anshuman Mohan}
+\affiliation{
+\department{Bowers CIS}
+\institution{Cornell University}
+\city{Ithaca}
+\country{USA}
+}
+\email{amohan@cs.cornell.edu}
+
+
+\maketitle
+
+\section{Introduction}
+
+In the field of computational biology, there is much excitement about the
+\emph{pangenome} graph. The traditional approach has long been to 
+compare the given sample to a single reference genome, but this has a 
+severe drawback: it is inherently overfitted to one reference.
+In contrast, the pangenome allows for a many-to-many comparison of samples, 
+thus allowing a much richer exploration of the similarities and differences
+between organisms.
+
+Once constructed, these graphs can be quieried to yield results that help 
+identify aberrations in the human genome that may be the sources of diseases and
+genetic proclivities. Used at its full potential, this technology could 
+radically change medicial diagnoses and treatment. This has a 
+direct tie to Sustainable Development Goal 3, ``Good Health and Well-Being'' 
+\cite{sdg}.
+
+Traditional genomic sequencing is famously expensive in terms of time and money, 
+and the pangenome graph is even more so. The \emph{efficient} construction of 
+pangenome graphs is an area of active development. 
+This document surveys a few existing methods and summarizes their approaches. 
+A more direct comparison, along with opportunities for a combination of these
+approaches, will follow in future work.
+
+\section{Constructing GFAs}
+
+\subsection{Two Techniques}
+
+The Graphical Fragment Assembly (GFA) format \cite{gfa} has 
+emerged as the research standard for representing pangenome graphs.
+Broadly, there are two techniques for the construction of these graphs. 
+
+\cite{poa} 
+
+\cite{genome_alignment}
+
+\subsection{The Bleeding Edge}
+
+\cite{minigraph}
+
+\cite{progcactus}
+
+\section{Variation graphs and ODGI}
+
+\citet{variationgraphs}
+
+Building atop of GFAs, \citet{odgi} introduce ODGI 
+(Optimized Dynamic Genome/Graph Implementation),
+which is (1) a way to represent pangenomes as variation graphs, 
+and (2) a suite of commands that analyze these graphs efficiently. 
+One of the novel contributions of the ODGI representation is that it does 
+significant preprocessing on the graph and maintains a rich amount of 
+information to hand. The set of nodes and the set of paths
+are maintained at the top level, and further, every node maintains lists
+of in- and out-edges, paths that traverse that node, and so on. 
+This unlocks the potential for various kinds of parallelization
+(nodewise, pathwise, or edgewise), depending on the command we wish to optimize. 
+Note that ODGI's variation-graph-based representation is nonstandard; 
+the ODGI project offers conversion methods to and from the GFA format.
+
+
+\section{Monolithic Solutions}
+
+\cite{pangolin}
+
+\cite{panx}
+
+\section{Efforts in other Domains}
+
+\citet{drnets} or some other Carla paper, plus their genomic link.
+
+
+\bibliography{gfa}
+
+\end{document}
