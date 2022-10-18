@@ -68,7 +68,7 @@ def config_parser(parser):
     parser.add_argument(
         '-x',
         '--accelerator',
-        help='Specify a node depth accelerator to run. Should only be set if action is run.'
+        help='Specify a node depth accelerator to run. Should only be set if the --run flag is set.'
     )
     parser.add_argument(
         '--pr',
@@ -143,7 +143,7 @@ def run_accel(args, tmp_dir_name):
             
 
 def run(args):
-    
+
     if args.action == 'gen': # Generate an accelerator
         if args.filename or args.subset_paths or args.accelerator or args.pr:
             warnings.warn('--file, --subset-paths, --accelerator, and --pr will be ignored if action is gen.', SyntaxWarning)
