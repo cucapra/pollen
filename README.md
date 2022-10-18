@@ -25,7 +25,7 @@ and then follow the instructions below to set up our dependencies, `calyx` and `
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`. Note that it is expected that some tools will not be available; this is okay for our purposes.
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
 
 We recommend using the native calyx interpreter. After completing the above, run
 ```
