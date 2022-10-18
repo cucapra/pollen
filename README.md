@@ -82,10 +82,10 @@ Parameters that are specified manually take precedence over those that are infer
 
 Fourth, we need to generate some input from our odgi file. This is what we will feed to the hardware accelerator. The following variations all accomplish this:
 
-1. `python3 parse_data.py <filename> -o depth.data`
-2. `python3 parse_data.py <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
-3. `python3 parse_data.py <filename> -a <filename2> -o depth.data`
-4. `python3 parse_data.py <filename> -a -o depth.data`
+1. `python3 parse_data.py <filename.og> -o depth.data`
+2. `python3 parse_data.py <filename.og> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+3. `python3 parse_data.py <filename.og> -a <filename2.og> -o depth.data`
+4. `python3 parse_data.py <filename.og> -a -o depth.data`
     
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
