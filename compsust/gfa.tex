@@ -14,7 +14,7 @@
 
 \begin{document}
 
-\title{Constructing ODGI Graphs: Annotated Bibliography}
+\title[Constructing and Analyzing Pangenome Graphs]{Constructing and Analyzing Pangenome Graphs: \\ Annotated Bibliography}
 \author{Anshuman Mohan}
 \affiliation{
 \department{Bowers CIS}
@@ -27,17 +27,17 @@
 
 \maketitle
 
-\section{Introduction}
+\section{Overview}
 
 In the field of computational biology, there is much excitement about the
-\emph{pangenome} graph. The traditional approach has long been to 
-compare the given sample to a single reference genome, but this has a 
-severe drawback: it is inherently overfitted to one reference.
+\emph{pangenome}. The traditional approach in genomics has long been to 
+compare a given sample to a single reference genome, but this has a 
+severe drawback: it is inherently overfitted to the reference.
 In contrast, the pangenome allows for a many-to-many comparison of samples, 
 thus allowing a much richer exploration of the similarities and differences
 between organisms.
 
-Once constructed, these graphs can be quieried to yield results that help 
+Once constructed, a pangenome can be queried to yield results that help 
 identify aberrations in the human genome that may be the sources of diseases and
 genetic proclivities. Used at its full potential, this technology could 
 radically change medicial diagnoses and treatment. This has a 
@@ -45,39 +45,90 @@ direct tie to Sustainable Development Goal 3, ``Good Health and Well-Being''
 \cite{sdg}.
 
 Traditional genomic sequencing is famously expensive in terms of time and money, 
-and the pangenome graph is even more so. The \emph{efficient} construction of 
-pangenome graphs is an area of active development. 
+and the pangenome graph is even more so. We do not wish to create a health
+solution that is open exclusively to the rich and powerful,
+so the \emph{efficient} construction of 
+pangenomes is an area of active development. 
 This document surveys a few existing methods and summarizes their approaches. 
 A more direct comparison, along with opportunities for a combination of these
 approaches, will follow in future work.
 
-\section{Constructing GFAs}
+\section{GFA Construction}
 
 \subsection{Two Techniques}
 
-The Graphical Fragment Assembly (GFA) format \cite{gfa} has 
-emerged as the research standard for representing pangenome graphs.
+The pangenome is typically represented as a graph, and the
+Graphical Fragment Assembly (GFA) format \cite{gfa} has 
+emerged as the research standard.
 Broadly, there are two techniques for the construction of these graphs. 
 
-\cite{poa} 
+The first is multiple sequence alignment (MSA).
+There exists a dynamic programming algorithm to align $N$ genetic sequences, 
+but the algorithm runs in $O(L^N)$ (where $L$ is the length of the 
+sequences and $N$ the number of sequences), so it is typically only used 
+for pairwise alignment ($N=2$). There are ways to approximate the true result of
+aligning $N$ sequences, but these methods are lossy and failure-prone.
+\citet{poa} provide an answer via \emph{partial order mutliple sequence 
+alignment}: the MSA graph they create after the first pairwise dynamic 
+alignment can itself be aligned, as a first-class citizen,
+by pairwise dynamic programming.
+When a new sequence is aligned against the MSA, it is guaranteed to be compared
+against each sequence already in the MSA. This leads to a lossless graphical
+representation that is truly extensible. 
+Their solution is also faster to compute 
+than the state of the art: linear instead of exponential.
 
-\cite{genome_alignment}
+\citet{genome_alignment} proceed by conducting a survey of four graphical 
+representations of the pangenome. They find shortcomings in the construction
+strategies of many of these, and propose a six-step process framework, 
+which they call the ABC to G-enome alignment, that applies to all the 
+representations. The basic idea is to think about alignable sequences in a 
+principled and transitive way. Their work is more of a guiding light than a 
+fully-formed solutions---some of the six steps are not fully fleshed out---but
+this survey is a helpful reminder of what makes pangenome graphs similar to 
+one other.
 
 \subsection{The Bleeding Edge}
 
-\cite{minigraph}
+We now look at two projects that have taken a step beyond GFAs.
 
-\cite{progcactus}
+\citet{minigraph} observe that there is an additional kind of lossiness
+that pangenomes have not cared about so far: after folding a sample into a 
+reference graph and querying the graph, it is hard to go back to the 
+sample's original coordinate. Their solution is to introduce the 
+\emph{reference GFA} format (rGFA) that extends GFAs with three tags.
+This gives rGFAs an unchanging and unambigious coordinate system that does not
+change as the pangenome is grown, extended, and modified. 
+
+One of the tools surveyed by \citet{genome_alignment} is called Cactus.
+\citet{progcactus} extend Cactus with a progressive aligner. 
+They instantiate a ``guide tree'' that gives Cactus a principled way to 
+break down a massive alignment task into smaller, more tractable, tasks.
+The same tree is then used to stitch the answers back together. 
+While Cactus ``scales quadratically with the number of bases in the alignment
+problem'' \cite{progcactus}, Progressive Cactus scales linearly.
 
 \section{Variation graphs and ODGI}
 
-\citet{variationgraphs}
+The ODGI project takes an opinionated step away from GFAs, 
+but still maintains compatability. This project is our link to this 
+area, so let us study it for a moment.
 
-Building atop of GFAs, \citet{odgi} introduce ODGI 
+\citet{variationgraphs} introduce \emph{variation graphs}, 
+which are sequence graphs (themselves standard in pangenome studies) combined
+with a set of paths through that graph that are possible in that 
+organism's population. Variation graphs are very general, not requiring 
+a directionality or an initial reference to build on. 
+For instance, they can represent duplication in the genome 
+using cycles in the graph. 
+The authors provide a technique for mapping a genome on to a variation graph
+efficiently and accurately.
+
+\citet{odgi} introduce ODGI 
 (Optimized Dynamic Genome/Graph Implementation),
 which is (1) a way to represent pangenomes as variation graphs, 
 and (2) a suite of commands that analyze these graphs efficiently. 
-One of the novel contributions of the ODGI representation is that it does 
+One of the contributions of the ODGI representation is that it does 
 significant preprocessing on the graph and maintains a rich amount of 
 information to hand. The set of nodes and the set of paths
 are maintained at the top level, and further, every node maintains lists
@@ -88,16 +139,50 @@ Note that ODGI's variation-graph-based representation is nonstandard;
 the ODGI project offers conversion methods to and from the GFA format.
 
 
-\section{Monolithic Solutions}
+\section{Graph Analysis}
 
-\cite{pangolin}
+The works above represent general solutions at a low level, but 
+there also exist toolkits that try to serve as a ``complete package''.
 
-\cite{panx}
+A well-loved solution in this space is PPanGGolin, due to \citet{pangolin}.
+It is used to study bacterial pangenomes. After constructing a pangenome
+graph, PPanGGolin helps partition the nodes into sensible regions of similarity
+and difference using an expectation-minimization algorithm.
+By the end, a nodes of the new graph corresponds to a \emph{gene family},
+which an edge between two nodes means that the two gene families 
+share at least one adjacent pair of genes.
+
+\section{Pangenome Without a Graph}
+
+A very interesting contribution comes from \citet{panx}, who present panX.
+PanX does not actually build a pangenome graph, preferring to do a 
+protein alignment search using another tool called \textsc{diamond}.
+The chief contribution is a web-based GUI that focusses on visualizing 
+pangenomes in a manner that is appealing and helpful for science.
 
 \section{Efforts in other Domains}
 
-\citet{drnets} or some other Carla paper, plus their genomic link.
+As we have seen, there are two major steps to the pangenome puzzle:
+construction and analysis. The conventional wisdom is that the two are 
+deeply connected because decisions made at one one level impact the other.
 
+Can we take a different approach? 
+Even while staying ignorant of the underlying construction algorithm, 
+can we use an ML framework to analyze a pangenome graph?
+It would be interesting to study the applicability of frameworks such as 
+DRNets and CLR-DRNets \cite{drnets, clrdrnets}, 
+which have a track record of success in 
+solving complex tasks in unsupervised or weakly-supervised settings. 
+The frameworks have been deployed on 
+sudoku demixing and crystal structure phase mapping, and it would be 
+interesting to see if the analysis of a pangenome can also be 
+rephrased as a demixing problem. 
+DRNets and CLR-DRNets require the availability of a few logical rules 
+about the domain they are working in. As with the examples above, the human
+pangenome has a number of well-studied maxims that hold true as 
+a form of prior knowledge. Perhaps DRNets or CLR-DRNets can exploit these to 
+construct rich graphs in the style of PPanGGolin, where a node 
+represents not just a genetic sequence but a gene family?
 
 \bibliography{gfa}
 
