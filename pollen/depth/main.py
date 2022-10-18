@@ -56,12 +56,12 @@ def config_parser(parser):
         '-f',
         '--file',
         dest='filename',
-        help='A .og or .data file. If --action=parse, this must be an odgi file.'
+        help='A .og or .data file. If the --parse-data flag is set, this must be an odgi file.'
     )
     parser.add_argument(
         '-s',
         '--subset-paths',
-        help='Should only be set if the action is not gen. Specifies a\
+        help='Should only be used if the --run or --parse-data flag is set. Specifies a\
  subset of paths whose node depth to compute.'
     )
 
