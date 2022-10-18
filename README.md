@@ -25,7 +25,9 @@ and then follow the instructions below to set up our dependencies, `calyx` and `
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. We recommend using the native calyx interpreter, so once `fud check` has passed, run
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`. Note that it is expected that some tools will not be available; this is okay for our purposes.
+
+We recommend using the native calyx interpreter. After completing the above, run
 ```
 fud config stages.interpreter <full path to calyx repository>/target/debug/interp
 ```
@@ -76,13 +78,13 @@ The commands use the hardware parameters as follows:
 2. Takes the hardware parameters as input.
 3. Automatically infers the hardware parameters from a `.og` file.
 
-Automatically-inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
+Parameters that are specified manually take precedence over those that are inferred automatically, and it is legal to specify just a subset of parameters. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator will only handle one node.
 
 Fourth, we need to generate some input from our odgi file. This is what we will feed to the hardware accelerator. The following variations all accomplish this:
 
 1. `python3 parse_data.py <filename> -o depth.data`
-2. `python3 parse_data.py <filename> -a <filename2> -o depth.data`
-3. `python3 parse_data.py <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+2. `python3 parse_data.py <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+3. `python3 parse_data.py <filename> -a <filename2> -o depth.data`
 4. `python3 parse_data.py <filename> -a -o depth.data`
     
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
