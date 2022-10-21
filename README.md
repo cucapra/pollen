@@ -20,7 +20,7 @@ Clone this repository using
 ```
 git clone https://github.com/cucapra/pollen.git
 ```
-and then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+and run `flit install -s --user` from the root directory. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
 
 
 #### Calyx
@@ -48,12 +48,6 @@ We have encountered two gotchas when installing odgi: a version clash with pytho
 6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
 7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
 8. Open up a python shell and try `import odgi`.
-
-Now you can set up calyx-pangenome. Clone the repo using 
-```git clone https://github.com/cucapra/calyx-pangenome.git```
-then run
-```flit install --user -s```
-from the root directory.
 
 
 ### Generating an Accelerator
