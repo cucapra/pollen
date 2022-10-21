@@ -49,8 +49,24 @@ We have encountered two gotchas when installing odgi: a version clash with pytho
 7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
 8. Open up a python shell and try `import odgi`.
 
+### Generating an Accelerator: Quick
 
-### Generating an Accelerator
+If you want to quickly compute node depth, the following command will generate and run a node depth accelerator:
+```
+exine depth -a -r <filename.og>
+```
+
+This will automatically generate a node depth accelerator whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
+
+To save the files generated from the previous command in `<path>`, use the `--tmp-dir` flag:
+```
+exine depth -a -r <filename.og> --tmpdir <path>
+```
+The node depth accelerator will be saved at `<path>/<filename.futil>` and the input data will be saved at `<path>/<filename.data>`.
+
+
+Generating an Accelerator: Full Walkthrough
+-------------------------------------------
 
 Take [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
 ```
@@ -89,23 +105,12 @@ Fourth, we need to generate some input from our odgi file. This is what we will 
     
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
-Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator:
+Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator and outputs the node depth table:
 
 ```
 exine depth -r depth.data -x depth.futil
 ```
 
-If you want to quickly compute node depth, the following command will generate and run a node depth accelerator, outputting the node depth table:
-```
-exine depth -a -r <filename.og>
-```
-
-To save the files generated from the previous command in `<path>`, use the `--tmp-dir` flag:
-```
-exine depth -a -r <filename.og> --tmpdir <path>
-```
-
-This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
