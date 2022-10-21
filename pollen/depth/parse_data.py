@@ -14,11 +14,11 @@ MAX_PATHS=15
 
 def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     '''
-    Create a calyx node depth input file using the graph in './{filename}' and the paths listed in './subset_paths'
+    Create a calyx node depth input file using the graph in './{filename}' and the paths listed in './{subset_paths}'
     '''
 
     graph = odgi.graph()
-    graph.load(args.filename)
+    graph.load(filename)
     
     # Check that the number of paths on the graph does not exceed max_paths
     if graph.get_path_count() > max_paths:
@@ -36,7 +36,7 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     path_name_to_id = {path:count for count, path in enumerate(paths, start=1)}
 
     
-    paths_to_consider = parse_paths_file(args.subset_paths, path_name_to_id, max_paths)
+    paths_to_consider = parse_paths_file(subset_paths, path_name_to_id, max_paths)
 
     data = parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths)
 
@@ -128,7 +128,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
         "format": {
             "numeric_type": "bitnum",
             "is_signed": False,
-            "width": args.max_steps.bit_length()
+            "width": max_steps.bit_length()
         }
     }
 
@@ -137,7 +137,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
         "format": {
             "numeric_type": "bitnum",
             "is_signed": False,
-            "width": args.max_paths.bit_length()
+            "width": max_paths.bit_length()
         }
     }
         
@@ -189,60 +189,110 @@ def get_maxes(filename):
     return max_nodes, max_steps, max_paths
 
 
-def from_data(filename, from_interp, max_nodes=None):
+def from_calyx(calyx_out, from_interp, max_nodes=None):
     '''
     Parse a calyx output file to the odgi format
     '''
 
-    with open(filename, 'r') as fp:
-        data = json.load(fp)
-
     if from_interp:
-        depths = data['main']['depth_output']
-        uniqs = data['main']['uniq_output']
+        depths = calyx_out['main']['depth_output']
+        uniqs = calyx_out['main']['uniq_output']
     else:
-        depths = data['memories']['depth_output']
-        uniqs = data['memories']['uniq_output']
+        depths = calyx_out['memories']['depth_output']
+        uniqs = calyx_out['memories']['uniq_output']
 
     if not max_nodes:
         max_nodes = len(depths)
-    
-    print("#node.id\tdepth\tdepth.uniq")
-    for i in range(max_nodes):
-        print(f'{i + 1}\t{depths[i]}\t{uniqs[i]}')
+
+    header = "#node.id\tdepth\tdepth.uniq"
+    rows = '\n'.join([f'{i + 1}\t{depths[i]}\t{uniqs[i]}' for i in range(max_nodes)])
+    return '\n'.join([header, rows])
 
 
-if __name__ == '__main__':
+def config_parser(parser):
     
-    # Parse commandline arguments                                              
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename', help='The file to be parsed. If the -d and -i flags are not specified, this must be a .og file.')
-    parser.add_argument('-s', '--subset-paths', help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.')
-    parser.add_argument('-d', '--from-data', action='store_true', help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.')
-    parser.add_argument('-i', '--from-interp', action='store_true', help='Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.')
-    
-    parser.add_argument('-a', '--auto-size', nargs='?', const='d', help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is specified with no argument, use the file to be parsed. Takes precedence over specified hardware dimensions.')
-    parser.add_argument('-n', '--max-nodes', type=int, default=MAX_NODES, help='Specify the maximum number of nodes that the hardware can support.')
-    parser.add_argument('-e', '--max-steps', type=int, default=MAX_STEPS, help='Specify the maximum number of steps per node that the hardware can support.')
-    parser.add_argument('-p', '--max-paths', type=int, default=MAX_PATHS, help='Specify the maximum number of paths that the hardware can support.')
-    parser.add_argument('-o', '--out', help='Specify the output file. If not specified, will dump to stdout.')
-    
-    args = parser.parse_args()
+    parser.add_argument(
+        'filename',
+        help='The file to be parsed. If the -d and -i flags are not specified, this must be an odgi file.'
+    )
+    parser.add_argument(
+        '-s',
+        '--subset-paths',
+        help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.'
+    )
+    parser.add_argument(
+        '-v',
+        '--from-verilog',
+        action='store_true',
+        help='Specify that the given file is a calyx data file to be converted to the odgi ouput format.'
+    )
+    parser.add_argument(
+        '-i',
+        '--from-interp',
+        action='store_true',
+        help='Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.'
+    )
+    parser.add_argument(
+        '-a',
+        '--auto-size',
+        nargs='?',
+        const='d',
+        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is specified with no argument, use the file to be parsed. Specified hardware dimensions take precedence.'
+    )
+    parser.add_argument(
+        '-n',
+        '--max-nodes',
+        type=int,
+        default=MAX_NODES,
+        help='Specify the maximum number of nodes that the hardware can support.'
+    )
+    parser.add_argument(
+        '-e',
+        '--max-steps',
+        type=int,
+        default=MAX_STEPS,
+        help='Specify the maximum number of steps per node that the hardware can support.')
+    parser.add_argument(
+        '-p',
+        '--max-paths',
+        type=int,
+        default=MAX_PATHS,
+        help='Specify the maximum number of paths that the hardware can support.'
+    )
+    parser.add_argument(
+        '-o',
+        '--out',
+        help='Specify the output file. If not specified, will dump to stdout.'
+    )
 
-    
-    if args.from_data or args.from_interp:
-        from_data(args.filename, args.from_interp)
+def run(args):
+    if args.from_verilog or args.from_interp:
+        with open(filename, 'r') as fp:
+            data = json.load(fp)
+        ouput = from_calyx(data, args.from_interp)
     else:
         if args.auto_size:
             filename = args.filename if args.auto_size=='d' else args.auto_size
             max_nodes, max_steps, max_paths = get_maxes(filename)
         else:
-            max_nodes, max_seps, max_paths = args.max_nodes, args.max_steps, args.max_paths
+            max_nodes = args.max_nodes
+            max_steps = args.max_steps
+            max_paths = args.max_paths
 
         data = parse_odgi(args.filename, args.subset_paths, max_nodes, max_steps, max_paths)
+        output = json.dumps(data, indent=2, sort_keys=True) 
 
-        if args.out:
-            with open(args.out, 'w') as out_file:
-                json.dump(data, out_file, indent=2, sort_keys=True)
-        else:
-            json.dump(data, sys.stdout, indent=2, sort_keys=True)
+    if args.out:
+        with open(args.out, 'w') as out_file:
+            out_file.write(output)
+    else:
+        print(output)
+        
+
+if __name__ == '__main__':
+    
+    # Parse commandline arguments                                              
+    parser = argparse.ArgumentParser()
+    config_parser(parser)
+    args = parser.parse_args()
+    run(args)
