@@ -49,8 +49,8 @@ Take node depth as an example. To generate and run a node depth accelerator for 
 make fetch
 make test/k.og
 exine depth -o depth.futil
-exine depth --action=parse --file test/k.og -o depth.data
-exine depth --action=run --file depth.data --accelerator depth.futil
+exine depth -d test/k.og -o depth.data
+exine depth -r depth.data --accelerator depth.futil
 ```
 
 First, `make fetch` downloads some [GFA][] data files into the `./test` directory. Then `make test/*.og` builds the odgi graph files from the GFA files.
@@ -68,17 +68,17 @@ The commands use the hardware parameters as follows:
 Automatically inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `exine depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
 
 To run the hardware accelerator, we need to generate some input using one of the following commands:
-1. `exine depth -df <filename> -o depth.data`
-2. `exine depth -df <filename> -a <filename2> -o depth.data`
-3. `exine depth -df <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
-4. `exine depth -da -f <filename> -o depth.data`
+1. `exine depth -d <filename> -o depth.data`
+2. `exine depth -d <filename> -a <filename2> -o depth.data`
+3. `exine depth -d <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+4. `exine depth -d <filename> -a -o depth.data`
     
 This is similar to the previous command except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
 Now you can run your hardware accelerator: 
 
 ``` 
-exine depth -rf depth.data -x depth.futil
+exine depth -r depth.data -x depth.futil
 ```
     
 will simulate the calyx code for the hardware accelerator.
@@ -86,7 +86,7 @@ will simulate the calyx code for the hardware accelerator.
 If you want to quickly compute node depth, try
 
 ```
-exine depth -ra -f <filename>
+exine depth -a -r <filename>
 ```
 
 This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.

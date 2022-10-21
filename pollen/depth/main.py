@@ -10,7 +10,7 @@ import tempfile
 import warnings
 
 import pollen.depth.calyx_depth as depth
-import pollen.depth.parse_data
+import pollen.depth.parse_data as parse_data
 from pollen.argparse_custom import store_const_and_arg
 
 def config_parser(parser):
