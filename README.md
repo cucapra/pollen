@@ -49,19 +49,25 @@ We have encountered two gotchas when installing odgi: a version clash with pytho
 7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
 8. Open up a python shell and try `import odgi`.
 
+Now you can set up calyx-pangenome. Clone the repo using 
+```git clone https://github.com/cucapra/calyx-pangenome.git```
+then run
+```flit install --user -s```
+from the root directory.
+
+
 ### Generating an Accelerator
 
 Take [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
-python3 calyx_depth.py -o depth.futil
-python3 parse_data.py test/k.og
-fud exec depth.futil --to interpreter-out -s verilog.data depth.data > depth.txt
-python3 parse_data.py -di temp.txt
+exine depth -o depth.futil
+exine depth -d test/k.og -o depth.data
+exine depth -r depth.data --accelerator depth.futil
 ```
 
-What just happened? Below, we walk through the six commands we issued above, pointing out the other options that we could have used.
+What just happened? Below, we walk through the five commands we issued above, pointing out the other options that we could have used.
 
 First, `make fetch` downloads some [GFA][] data files into the `./test` directory.
 
@@ -69,33 +75,43 @@ Second, `make test/*.og` builds the odgi graph files from those GFA files.
 
 Third, we generate the hardware accelerator and write it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
 
-1. `python3 calyx_depth.py -o depth.futil`
-2. `python3 calxy_depth.py -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
-3. `python3 calyx_depth.py -a <filename.og> -o depth.futil`
+1. `exine depth -o depth.futil`
+2. `exine depth -a <filename.og> -o depth.futil`
+3. `exine depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
 
 The commands use the hardware parameters as follows:
 1. Uses default hardware parameters.
 2. Takes the hardware parameters as input.
 3. Automatically infers the hardware parameters from a `.og` file.
 
-Parameters that are specified manually take precedence over those that are inferred automatically, and it is legal to specify just a subset of parameters. For example, `python3 calyx_depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator will only handle one node.
+Parameters that are specified manually take precedence over those that are inferred automatically, and it is legal to specify just a subset of parameters. For example, `exine depth -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator will only handle one node.
 
 Fourth, we need to generate some input from our odgi file. This is what we will feed to the hardware accelerator. The following variations all accomplish this:
 
-1. `python3 parse_data.py <filename.og> -o depth.data`
-2. `python3 parse_data.py <filename.og> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
-3. `python3 parse_data.py <filename.og> -a <filename2.og> -o depth.data`
-4. `python3 parse_data.py <filename.og> -a -o depth.data`
+1. `exine depth -d <filename.og> -o depth.data`
+2. `exine depth -d <filename.og> -a <filename2.og> -o depth.data`
+3. `exine depth -d <filename.og> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+4. `exine depth -d <filename.og> -a -o depth.data`
     
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
 Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator:
 
-`fud exec depth.futil --to interpreter-out -s verilog.data depth.data > depth.txt`
-    
-Sixth, we parse the output into a more readable format.
+```
+exine depth -r depth.data -x depth.futil
+```
 
-`python3 parse_data.py -di temp.txt`
+If you want to quickly compute node depth, the following command will generate and run a node depth accelerator, outputting the node depth table:
+```
+exine depth -a -r <filename.og>
+```
+
+To save the files generated from the previous command in `<path>`, use the `--tmp-dir` flag:
+```
+exine depth -a -r <filename.og> --tmpdir <path>
+```
+
+This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
