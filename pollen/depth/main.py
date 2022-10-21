@@ -9,8 +9,9 @@ import subprocess
 import tempfile
 import warnings
 
-from . import calyx_depth as depth
-from . import parse_data
+import pollen.depth.calyx_depth as depth
+import pollen.depth.parse_data
+from pollen.argparse_custom import store_const_and_arg
 
 def config_parser(parser):
 
@@ -21,7 +22,7 @@ def config_parser(parser):
         '--auto-size',
         nargs='?',
         const='d',
-        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is set with no argument, the argument of --file is used instead. Specified hardware dimensions take precedence.'
+        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is set with no argument, the argument of --parse-data or --run will be used instead. Specified hardware dimensions take precedence.'
     )
 
     parser.set_defaults(action='gen')
@@ -37,7 +38,7 @@ def config_parser(parser):
         '-r',
         '--run',
         dest='action',
-        action='store_const',
+        action=store_const_and_arg,
         const='run',
         default='gen',
         help='Run node depth on the .og or .data --file. Outputs the node depth table. Should not be used with --gen or --parser-data.'
@@ -46,18 +47,12 @@ def config_parser(parser):
         '-d',
         '--parse-data',
         dest='action',
-        action='store_const',
+        action=store_const_and_arg,
         const='parse',
         default='gen',
-        help='Parse the .og --file to accelerator input. Should not be used with --gen or --run.'
+        help='Parse a .og --file to accelerator input. Should not be used with --gen or --run.'
     )
     
-    parser.add_argument(
-        '-f',
-        '--file',
-        dest='filename',
-        help='A .og or .data file. If the --parse-data flag is set, this must be an odgi file.'
-    )
     parser.add_argument(
         '-s',
         '--subset-paths',
@@ -81,6 +76,7 @@ def config_parser(parser):
         help='Specify a directory to store temporary files in. The files will not be deleted at the end of execution.'
     )
 
+    
 def run_accel(args, tmp_dir_name):
     """
     Run the node depth accelerator
@@ -89,21 +85,21 @@ def run_accel(args, tmp_dir_name):
     # Data parser
     parser = argparse.ArgumentParser()
     parse_data.config_parser(parser) 
-
     
     # Parse the data file if necessary
+    filename = arg.run
     out_file = args.out
-    basename = os.path.basename(args.filename)
+    basename = os.path.basename(filename)
     base, ext = os.path.splitext(basename)
 
     if ext == '.data':
         if args.auto_size == 'd':
             warnings.warn('Cannot infer dimensions from .data file.',
                           SyntaxWarning)
-        data_file = args.filename
+        data_file = filename
     else:
         data_file = f'{tmp_dir_name}/{base}.data'
-        new_args = [args.filename, '--out', data_file]
+        new_args = [filename, '--out', data_file]
         parser.parse_args(new_args, namespace=args)
         parse_data.run(args)
         
@@ -113,9 +109,9 @@ def run_accel(args, tmp_dir_name):
         futil_file = args.accelerator
     else:
         futil_file = f'{tmp_dir_name}/{base}.futil'
-        new_args = [args.filename, '--out', futil_file]
+        new_args = [filename, '--out', futil_file]
         if args.auto_size == 'd':
-            new_args.extend(['-a', args.filename])
+            new_args.extend(['-a', filename])
         parser.parse_args(new_args, namespace=args)
         depth.run(args)
 
@@ -145,16 +141,12 @@ def run_accel(args, tmp_dir_name):
 def run(args):
 
     if args.action == 'gen': # Generate an accelerator
-        if args.filename or args.subset_paths or args.accelerator or args.pr:
-            warnings.warn('--file, --subset-paths, --accelerator, and --pr will be ignored if action is gen.', SyntaxWarning)
+        if args.subset_paths or args.accelerator or args.pr:
+            warnings.warn('--subset-paths, --accelerator, and --pr will be ignored if action is gen.', SyntaxWarning)
         if args.auto_size == 'd':
             raise Exception('When action is gen, -a <file> must be specified.')
         
         depth.run(args)
-
-    # Action is run or parse
-    elif not args.filename:
-        raise Exception('--file must be provided when action is parse or run.')
     
     elif args.action == 'parse': # Generate a data file
         if args.accelerator or args.pr:
@@ -162,7 +154,7 @@ def run(args):
 
         parser = argparse.ArgumentParser()
         parse_data.config_parser(parser)
-        parser.parse_args([args.filename], namespace=args) # Set defaults for all arguments
+        parser.parse_args([args.parse_args], namespace=args) # Set defaults for all arguments
         parse_data.run(args)
         
     elif args.action == 'run': # Run the accelerator
@@ -172,7 +164,6 @@ def run(args):
                 run_accel(args, tmp_dir_name)
         else:
             with tempfile.TemporaryDirectory() as tmp_dir_name:
-#                print(os.path.isdir(tmp_dir_name))
                 run_accel(args, tmp_dir_name)
             
         
