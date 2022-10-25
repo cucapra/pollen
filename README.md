@@ -1,95 +1,116 @@
+<h1>
+<p align="center">
+<img src="https://github.com/cucapra/pollen/blob/main/pollen_icon.png">
+</h1>
+
 Pangenome Graph Queries in Calyx
 ================================
 
 This is a nascent project to build a DSL-to-hardware compiler using [Calyx][] to implement pangenomic graph queries in the vein of [odgi][].
-It is very much a work in progress.
 
 Getting Started
 ---------------
 
-Follow the instructions below to set up `calyx` and `odgi`.
+### Installation
 
-### Installing Dependencies
+
+#### Pollen
+
+Clone this repository using 
+```
+git clone https://github.com/cucapra/pollen.git
+```
+and run `flit install -s --user` from the root directory. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+
 
 #### Calyx
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. We recommend using the native calyx interpreter, so once `fud` is set up, run
+
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
+
+We recommend using the native calyx interpreter. After completing the above, run
 ```
-fud config stages.interpreter <full path to Calyx repository>/target/debug/interp
+fud config stages.interpreter <full path to calyx repository>/target/debug/interp
 ```
-where `<full path to Calyx repository>` is the absolute path to the root directory. For example, if you downloaded calyx in `/Users/username/project`, you would run `fud config stages.interpreter /Users/username/project/calyx/target/debug/interp`.
 
 #### Odgi
 
-You will need to install the python bindings for [odgi]. Instructions for installing odgi can be found [here](https://odgi.readthedocs.io/en/latest/rst/installation.html). You might also need to [preload `jemalloc`](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html#optimise).
+Installing odgi [via bioconda](https://odgi.readthedocs.io/en/latest/rst/installation.html#bioconda) seems to be the most straightforward option. If you instead [compile odgi from source](https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source), you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
 
-Installing odgi via `bioconda` seems to be the most straightforward option. If you instead compile odgi from its source, you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) to use the python bindings.
+To verify that odgi is installed and the python bindings are working, open up a python shell and try `import odgi`. If this works, move on to the next section.
 
-To verify that the python bindings are working, open up a python shell and try `import odgi`. If this doesn't work, you can also download the `.so` file from [bioconda][]:
-1. Check your python version with `python --version`. We use python 3.9 for the rest of this example.
+We have encountered two gotchas when installing odgi: a version clash with python, and an issue with odgi's memory manager. Below we describe what we think is a complete installation of odgi that addresses both of these issues.
+
+1. Check your python version with `python --version`. We use python 3.9.12 for the rest of this example.
 2. Run `mkdir odgi-py; cd odgi-py`.
-3. Download the appropriate tarball from [bioconda][].
+3. Download the appropriate tarball (in this example, it will have `py39` in its name) from [bioconda][].
 4. Untar it, and run `ls lib/python3.9/site-packages/` to ensure that `odgi.cpython*.so` is there. If it is elsewhere, make note of the location and substitute in the next step.
-5. Add this to your `PYTHONPATH` with `export PYTHONPATH=...odgi-py/lib/python3.9/site-packages/`.
+5. Add this to your `PYTHONPATH` with `export PYTHONPATH=<full path to odgi-py>/lib/python3.9/site-packages/`.
 6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
 7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
-8. Run `python` and then `import odgi`.
+8. Open up a python shell and try `import odgi`.
 
-Now you can set up calyx-pangenome. Clone the repo using 
-```git clone https://github.com/cucapra/calyx-pangenome.git```
-then run
-```flit install --user -s```
-from the root directory.
+### Generating an Accelerator: Quick
+
+If you want to quickly compute node depth, the following command will generate and run a node depth accelerator:
+```
+exine depth -a -r <filename.og>
+```
+
+This will automatically generate a node depth accelerator whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
+
+To save the files generated from the previous command in `<path>`, use the `--tmp-dir` flag:
+```
+exine depth -a -r <filename.og> --tmpdir <path>
+```
+The node depth accelerator will be saved at `<path>/<filename.futil>` and the input data will be saved at `<path>/<filename.data>`.
 
 
-### Generating an Accelerator
+Generating an Accelerator: Full Walkthrough
+-------------------------------------------
 
-Take node depth as an example. To generate and run a node depth accelerator for `k.og`, first navigate to the root directory of this repository. Then run
-
+Take [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
 exine depth -o depth.futil
-exine depth --action=parse --file test/k.og -o depth.data
-exine depth --action=run --file depth.data --accelerator depth.futil
+exine depth -d test/k.og -o depth.data
+exine depth -r depth.data --accelerator depth.futil
 ```
 
-First, `make fetch` downloads some [GFA][] data files into the `./test` directory. Then `make test/*.og` builds the odgi graph files from the GFA files.
+What just happened? Below, we walk through the five commands we issued above, pointing out the other options that we could have used.
 
-Then, `exine depth -o depth.futil` generates a hardware accelerator and writes it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+First, `make fetch` downloads some [GFA][] data files into the `./test` directory.
+
+Second, `make test/*.og` builds the odgi graph files from those GFA files.
+
+Third, we generate the hardware accelerator and write it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+
 1. `exine depth -o depth.futil`
-2. `exine depth -a <filename> -o depth.futil`
+2. `exine depth -a <filename.og> -o depth.futil`
 3. `exine depth -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.futil`
 
 The commands use the hardware parameters as follows:
-1. Uses default hardware parameters
-2. Automatically infers the hardware parameters from a `.og` file
-3. Takes the hardware parameters as input.
+1. Uses default hardware parameters.
+2. Takes the hardware parameters as input.
+3. Automatically infers the hardware parameters from a `.og` file.
 
-Automatically inferred parameters take precedence over manually specified ones, and a subset of parameters may be specified. For example, `exine depth.py -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator can only handle one node.
+Parameters that are specified manually take precedence over those that are inferred automatically, and it is legal to specify just a subset of parameters. For example, `exine depth -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator will only handle one node.
 
-To run the hardware accelerator, we need to generate some input using one of the following commands:
-1. `exine depth -df <filename> -o depth.data`
-2. `exine depth -df <filename> -a <filename2> -o depth.data`
-3. `exine depth -df <filename> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
-4. `exine depth -da -f <filename> -o depth.data`
+Fourth, we need to generate some input from our odgi file. This is what we will feed to the hardware accelerator. The following variations all accomplish this:
+
+1. `exine depth -d <filename.og> -o depth.data`
+2. `exine depth -d <filename.og> -a <filename2.og> -o depth.data`
+3. `exine depth -d <filename.og> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
+4. `exine depth -d <filename.og> -a -o depth.data`
     
-This is similar to the previous command except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
+The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
-Now you can run your hardware accelerator: 
-
-``` 
-exine depth -rf depth.data -x depth.futil
-```
-    
-will simulate the calyx code for the hardware accelerator.
-
-If you want to quickly compute node depth, try
+Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator and outputs the node depth table:
 
 ```
-exine depth -ra -f <filename>
+exine depth -r depth.data -x depth.futil
 ```
 
-This will automatically generate a `.futil` file whose dimensions match the input data, compute the node depth, and remove the accelerator once the computation is done.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/

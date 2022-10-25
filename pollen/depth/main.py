@@ -10,7 +10,7 @@ import tempfile
 import warnings
 
 import pollen.depth.calyx_depth as depth
-import pollen.depth.parse_data
+import pollen.depth.parse_data as parse_data
 from pollen.argparse_custom import store_const_and_arg
 
 def config_parser(parser):
@@ -22,7 +22,7 @@ def config_parser(parser):
         '--auto-size',
         nargs='?',
         const='d',
-        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is set with no argument, the argument of --parse-data or --run will be used instead. Specified hardware dimensions take precedence.'
+        help='Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is set with no argument, the argument of --parse-data or --run is used instead. Specified hardware dimensions take precedence.'
     )
 
     parser.set_defaults(action='gen')
@@ -41,7 +41,7 @@ def config_parser(parser):
         action=store_const_and_arg,
         const='run',
         default='gen',
-        help='Run node depth on the .og or .data --file. Outputs the node depth table. Should not be used with --gen or --parser-data.'
+        help='Run node depth on the given .og or .data file. Outputs the node depth table. Should not be used with --gen or --parse-data.'
     )
     parser.add_argument(
         '-d',
@@ -50,7 +50,7 @@ def config_parser(parser):
         action=store_const_and_arg,
         const='parse',
         default='gen',
-        help='Parse a .og --file to accelerator input. Should not be used with --gen or --run.'
+        help='Parse the .og file to accelerator input. Should not be used with --gen or --run.'
     )
     
     parser.add_argument(
@@ -59,7 +59,7 @@ def config_parser(parser):
         help='Should only be used if the --run or --parse-data flag is set. Specifies a\
  subset of paths whose node depth to compute.'
     )
-
+    
     parser.add_argument(
         '-x',
         '--accelerator',
@@ -85,6 +85,8 @@ def run_accel(args, tmp_dir_name):
     # Data parser
     parser = argparse.ArgumentParser()
     parse_data.config_parser(parser) 
+
+    filename=args.run
     
     # Parse the data file if necessary
     filename = arg.run
@@ -102,7 +104,6 @@ def run_accel(args, tmp_dir_name):
         new_args = [filename, '--out', data_file]
         parser.parse_args(new_args, namespace=args)
         parse_data.run(args)
-        
 
     # Generate the accelerator if necessary
     if args.accelerator:
@@ -115,7 +116,6 @@ def run_accel(args, tmp_dir_name):
         parser.parse_args(new_args, namespace=args)
         depth.run(args)
 
-        
     # Compute the node depth
     cmd = ['fud', 'e', futil_file, '--to', 'interpreter-out',
            '-s', 'verilog.data', data_file]
@@ -123,7 +123,6 @@ def run_accel(args, tmp_dir_name):
         cmd.append('-pr')
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
         output = calyx_out.stdout
-
     else:
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
         # Convert calyx output to a node depth table
@@ -145,7 +144,6 @@ def run(args):
             warnings.warn('--subset-paths, --accelerator, and --pr will be ignored if action is gen.', SyntaxWarning)
         if args.auto_size == 'd':
             raise Exception('When action is gen, -a <file> must be specified.')
-        
         depth.run(args)
     
     elif args.action == 'parse': # Generate a data file
@@ -154,7 +152,7 @@ def run(args):
 
         parser = argparse.ArgumentParser()
         parse_data.config_parser(parser)
-        parser.parse_args([args.parse_args], namespace=args) # Set defaults for all arguments
+        parser.parse_args([args.parse_data], namespace=args) # Set defaults for all arguments
         parse_data.run(args)
         
     elif args.action == 'run': # Run the accelerator

@@ -1,10 +1,10 @@
 import argparse
 
 class store_const_and_arg(argparse.Action):
-    """
-    An argparse action which stores a constant and stores the argument(s)
-    passed to this flag. Useful when using flags as mutually exclusive switches
-    that also need to accept an argument.
+    """                                                                     
+    An argparse action which stores a constant and stores the argument(s)    
+    passed to this flag. Useful when using flags as mutually exclusive
+    switches that also need to accept an argument.                           
     """
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         if dest==None:
@@ -12,7 +12,7 @@ class store_const_and_arg(argparse.Action):
         self.const_dest = dest
 
         # Convert an option string to a valid attribute name
-        # Assume that no option string contains extra leading '-' chars
+        # Assume that no option string contains extra leading '-' chars       
         gen_dest = lambda s: s.lstrip('-').replace('-', '_')
 
         # Generate arg_dest according to the argparse rules for dest
