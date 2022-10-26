@@ -2,7 +2,7 @@
 command = "odgi depth -i ../{args} -d -s {base}.paths"
 
 [envs.calyx-depth]
-command = "exine depth -ra -f ../{args} -s {base}.paths"
+command = "exine depth -a -r ../{args} -s {base}.paths"
 
 #[envs.py-odgi]
 #command = "python3 ../../depth.py ../{args} -s {base}.paths"

@@ -37,7 +37,8 @@ def config_parser(parser):
     parser.add_argument(
         '-r',
         '--run',
-        dest='action',
+        dest='filename',
+        dest2='action',
         action=store_const_and_arg,
         const='run',
         default='gen',
@@ -46,7 +47,8 @@ def config_parser(parser):
     parser.add_argument(
         '-d',
         '--parse-data',
-        dest='action',
+        dest='filename',
+        dest2='action',
         action=store_const_and_arg,
         const='parse',
         default='gen',
@@ -76,6 +78,7 @@ def config_parser(parser):
         help='Specify a directory to store temporary files in. The files will not be deleted at the end of execution.'
     )
 
+    
 def run_accel(args, tmp_dir_name):
     """
     Run the node depth accelerator
@@ -84,22 +87,20 @@ def run_accel(args, tmp_dir_name):
     # Data parser
     parser = argparse.ArgumentParser()
     parse_data.config_parser(parser) 
-
-    filename=args.run
     
     # Parse the data file if necessary
     out_file = args.out
-    basename = os.path.basename(filename)
+    basename = os.path.basename(args.filename)
     base, ext = os.path.splitext(basename)
 
     if ext == '.data':
         if args.auto_size == 'd':
             warnings.warn('Cannot infer dimensions from .data file.',
                           SyntaxWarning)
-        data_file = filename
+        data_file = args.filename
     else:
         data_file = f'{tmp_dir_name}/{base}.data'
-        new_args = [filename, '--out', data_file]
+        new_args = [args.filename, '--out', data_file]
         parser.parse_args(new_args, namespace=args)
         parse_data.run(args)
 
@@ -108,9 +109,9 @@ def run_accel(args, tmp_dir_name):
         futil_file = args.accelerator
     else:
         futil_file = f'{tmp_dir_name}/{base}.futil'
-        new_args = [filename, '--out', futil_file]
+        new_args = [args.filename, '--out', futil_file]
         if args.auto_size == 'd':
-            new_args.extend(['-a', filename])
+            new_args.extend(['-a', args.filename])
         parser.parse_args(new_args, namespace=args)
         depth.run(args)
 
