@@ -5,11 +5,7 @@ from calyx.py_ast import *
 from . import parse_data
 
 
-MAX_NODES=16
-MAX_STEPS=15
-MAX_PATHS=15
-
-def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
+def node_depth(max_nodes, max_steps, max_paths):
 
     stdlib = Stdlib()
     
@@ -387,21 +383,18 @@ def config_parser(parser):
         '-n',
         '--max-nodes',
         type=int,
-        default=MAX_NODES,
         help='Specify the maximum number of nodes that the hardware can support.'
     )
     parser.add_argument(
         '-e',
         '--max-steps',
         type=int,
-        default=MAX_STEPS,
         help='Specify the maximum number of steps per node that the hardware can support.'
     )
     parser.add_argument(
         '-p',
         '--max-paths',
         type=int,
-        default=MAX_PATHS,
         help='Specify the maximum number of paths that the hardware can support.'
     )
     parser.add_argument(
@@ -413,12 +406,9 @@ def config_parser(parser):
 
 def run(args):
 
-    if args.auto_size:
-        max_nodes, max_steps, max_paths = parse_data.get_maxes(args.auto_size)
-        program = node_depth(max_nodes, max_steps, max_paths)
+    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
         
-    else:
-        program = node_depth(args.max_nodes, args.max_steps, args.max_paths)
+    program = node_depth(max_nodes, max_steps, max_paths)
     output = program.doc()
 
     # Ouput the program
