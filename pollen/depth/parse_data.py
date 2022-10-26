@@ -53,7 +53,7 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     return data
     
 
-def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
+def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths):
     '''
     Generate input data containing the path ids for each step on each node in the graph, e.g.
     {path_ids1: 
@@ -144,7 +144,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes=MAX_NODES, max_steps=
     return data
 
 
-def parse_paths_file(filename, path_name_to_id, max_paths=MAX_PATHS):
+def parse_paths_file(filename, path_name_to_id, max_paths):
     '''
     Return paths_to_consider, a list of length max_paths, where 
     paths_to_consider[i] is 1 if i is a path id and we include path i in our
@@ -185,6 +185,23 @@ def get_maxes(filename):
             max_steps = num_steps
 
     graph.for_each_handle(update_max_steps)
+
+    return max_nodes, max_steps, max_paths
+
+
+def get_dimensions(args):
+    '''
+    Compute the node depth accelerator dimensions from commandline input
+    '''
+    if args.auto_size:
+        filename = args.filename if args.auto_size=='d' else args.auto_size
+        max_nodes, max_steps, max_paths = get_maxes(filename)
+    else:
+        max_nodes, max_steps, max_paths = MAX_NODES, MAX_STEPS, MAX_PATHS
+        
+    max_nodes = args.max_nodes if args.max_nodes else max_nodes
+    max_steps = args.max_steps if args.max_steps else max_steps
+    max_paths = args.max_paths if args.max_paths else max_paths
 
     return max_nodes, max_steps, max_paths
 
@@ -243,20 +260,17 @@ def config_parser(parser):
         '-n',
         '--max-nodes',
         type=int,
-        default=MAX_NODES,
         help='Specify the maximum number of nodes that the hardware can support.'
     )
     parser.add_argument(
         '-e',
         '--max-steps',
         type=int,
-        default=MAX_STEPS,
         help='Specify the maximum number of steps per node that the hardware can support.')
     parser.add_argument(
         '-p',
         '--max-paths',
         type=int,
-        default=MAX_PATHS,
         help='Specify the maximum number of paths that the hardware can support.'
     )
     parser.add_argument(
@@ -271,13 +285,7 @@ def run(args):
             data = json.load(fp)
         ouput = from_calyx(data, args.from_interp)
     else:
-        if args.auto_size:
-            filename = args.filename if args.auto_size=='d' else args.auto_size
-            max_nodes, max_steps, max_paths = get_maxes(filename)
-        else:
-            max_nodes = args.max_nodes
-            max_steps = args.max_steps
-            max_paths = args.max_paths
+        max_nodes, max_steps, max_paths = get_dimensions(args)
 
         data = parse_odgi(args.filename, args.subset_paths, max_nodes, max_steps, max_paths)
         output = json.dumps(data, indent=2, sort_keys=True) 
