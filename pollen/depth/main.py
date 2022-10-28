@@ -78,6 +78,12 @@ def config_parser(parser):
         help='Specify a directory to store temporary files in. The files will not be deleted at the end of execution.'
     )
 
+    parser.add_argument(
+        '-v',
+        '--verilog',
+        action='store_true',
+        help='When --run is given, the node depth accelerator will be run through verilog. Defaults to the calyx interpreter.'
+    )
     
 def run_accel(args, tmp_dir_name):
     """
@@ -116,8 +122,13 @@ def run_accel(args, tmp_dir_name):
         depth.run(args)
 
     # Compute the node depth
-    cmd = ['fud', 'e', futil_file, '--to', 'interpreter-out',
-           '-s', 'verilog.data', data_file]
+    if args.verilog:
+        cmd = ['fud', 'e', futil_file, '--to', 'dat', '--through', 'verilog',
+               '-s', 'verilog.data', data_file]
+    else: # Use the interpreter
+        cmd = ['fud', 'e', futil_file, '--to', 'interpreter-out',
+               '-s', 'verilog.data', data_file]
+        
     if args.pr:
         cmd.append('-pr')
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
@@ -126,7 +137,7 @@ def run_accel(args, tmp_dir_name):
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
         # Convert calyx output to a node depth table
         calyx_out = json.loads(calyx_out.stdout)
-        output = parse_data.from_calyx(calyx_out, True) # ndt
+        output = parse_data.from_calyx(calyx_out, not args.verilog) # ndt
 
     # Output the ndt
     if out_file:
@@ -151,7 +162,7 @@ def run(args):
 
         parser = argparse.ArgumentParser()
         parse_data.config_parser(parser)
-        parser.parse_args([args.parse_data], namespace=args) # Set defaults for all arguments
+        parser.parse_args([args.filename], namespace=args) # Set defaults for all arguments
         parse_data.run(args)
         
     elif args.action == 'run': # Run the accelerator
