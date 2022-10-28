@@ -24,9 +24,10 @@ clean:
 	rm -rf $(TEST_FILES:%=test/%.*)
 
 	rm -rf test/basic/*.og
-	rm -rf test/basic/*.out
 
-	rm -rf test/subset-paths/*.out
+	rm -rf test/depth/*.out
+	rm -rf test/depth/basic/*.out
+	rm -rf test/depth/subset-paths/*.out
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
