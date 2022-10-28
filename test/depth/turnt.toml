@@ -1,7 +1,7 @@
 [envs.baseline]
 binary = true
-command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d; rm temp.og"
+command = "odgi depth -i {filename} -d"
 
 [envs.calyx]
 binary = true
-command = "odgi build -g {filename} -o temp.og; pollen depth --action=run -f temp.og -a temp.og; rm temp.og"
+command = "pollen depth -a -r {filename}"

@@ -1,5 +1,0 @@
-[envs.baseline]
-command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d; rm temp.og"
-
-[envs.calyx]
-command = "odgi build -g {filename} -o temp.og; exine depth -a -r temp.og; rm temp.og"
