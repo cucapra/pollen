@@ -1,9 +1,11 @@
-quick: gfa.tex
-	xelatex gfa.tex
+main: full
 
-full: gfa.tex
-	xelatex gfa.tex; bibtex gfa; xelatex gfa.tex; xelatex gfa.tex; open gfa.pdf
+quick: proposal.tex
+	xelatex proposal.tex
 
-.PHONY: clean
+full: proposal.tex
+	latexmk -pdf proposal.tex
+
+.PHONY: clean quick main full
 clean:
-	rm -f *.aux *.xcp *.blg *.log *.pdf *.bbl *.dvi *.out
+	rm -f *.aux *.xcp *.blg *.log *.pdf *.bbl *.dvi *.out *.fls *.fdb_latexmk
