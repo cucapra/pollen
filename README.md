@@ -114,19 +114,9 @@ exine depth -r depth.data -x depth.futil
 Testing
 -------
 
-We use [Turnt][] to test the accelerator generators. To install Turnt, clone the source code and install Turnt via [flit]: 
-```
-git clone https://github.com/cucapra/turnt.git
-cd turnt
-flit install --symlink --user
-```
-We rely on version 1.9.0, which is unpublished, so installing Turnt via `pip` is not sufficient.
+To run the core tests, you will need to install [Turnt][]. We rely on version 1.9.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
 
-To run the core tests, navigative to the root directory of the pollen repository. Then execute:
-```
-make test
-```
-Warning: this takes approximately 2 hours.
+Warning: the tests take approximately 2 hours to complete.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
