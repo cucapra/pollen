@@ -20,7 +20,7 @@ Clone this repository using
 ```
 git clone https://github.com/cucapra/pollen.git
 ```
-and run `flit install -s --user` from the root directory. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+and run `flit install -s --user` from the root directory. You may need to install [flit]. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
 
 
 #### Calyx
@@ -111,8 +111,16 @@ Fifth, we run our hardware accelerator. The following code simulates the calyx c
 exine depth -r depth.data -x depth.futil
 ```
 
+Testing
+-------
+
+To run the core tests, you will need to install [Turnt][]. We rely on version 1.9.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
+
+Warning: the tests take approximately 2 hours to complete.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
 [gfa]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8006571/#FN8
 [bioconda]: https://anaconda.org/bioconda/odgi/files
+[flit]: https://flit.pypa.io/en/stable/
+[turnt]: https://github.com/cucapra/turnt
