@@ -130,28 +130,16 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
     for i in range(num_pes):
         pe_i_controls = []
         for j in range(i, max_nodes, num_pes):
-            in_connects = [
-                ('pids_read_data', CompPort(path_ids[j], 'read_data')),
-                ('ptc_read_data', CompPort(paths_to_consider[j], 'read_data')),
-                ('depth_out', CompPort(depth[j], 'out')),
-                ('depth_done', CompPort(depth[j], 'done')),
-                ('uniq_out', CompPort(uniq[j], 'out')),
-                ('uniq_done', CompPort(uniq[j], 'done')),                
-            ]
-
-            out_connects = [
-                ('pids_addr0', CompPort(path_ids[j], 'addr0')),
-                ('ptc_addr0', CompPort(paths_to_consider[j], 'addr0')),
-                ('depth_in', CompPort(depth[j], 'in')),
-                ('depth_write_en', CompPort(depth[j], 'write_en')),
-                ('uniq_in', CompPort(uniq[j], 'in')),
-                ('uniq_write_en', CompPort(uniq[j], 'write_en')),
-            ]
-            
             pe_i_controls.append(
                 Invoke(id=pe[i],
-                       in_connects=in_connects,
-                       out_connects=out_connects,
+                       in_connects=[],
+                       out_connects=[],
+                       ref_cells=[
+                           ('path_ids', path_ids[j]),
+                           ('paths_to_consider', paths_to_consider[j]),
+                           ('depth', depth[j]),
+                           ('uniq', uniq[j])
+                       ]
                 )
             )
         pe_controls.append(SeqComp(pe_i_controls))

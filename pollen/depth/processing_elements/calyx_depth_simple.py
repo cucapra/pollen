@@ -5,11 +5,23 @@ def node_depth_pe(max_steps, max_paths):
     stdlib = Stdlib()
     
     # Variable identifiers
-    path_ids = CompVar('path_ids') # path_id for each step on the node
-    paths_to_consider = CompVar('paths_to_consider') 
-    depth = CompVar('depth')
-    uniq = CompVar('uniq')
 
+    # Input and Output ports
+    depth_in = CompVar('depth_in')
+    depth_write_en = CompVar('depth_write_en')
+    depth_out = CompVar('depth_out')
+    depth_done = CompVar('depth_done')
+    uniq_in = CompVar('uniq_in')
+    uniq_write_en = CompVar('uniq_write_en')
+    uniq_out = CompVar('uniq_out')
+    uniq_done = CompVar('uniq_done')
+    # path_id for each step on the node
+    pids_addr0 = CompVar('pids_addr0')    
+    pids_read_data = CompVar('pids_read_data')
+    # paths to consider
+    ptc_addr0 = CompVar('ptc_addr0')
+    ptc_read_data = CompVar('ptc_read_data')
+    
     path_id_reg = CompVar('path_id_reg')
     idx = CompVar('idx')
     idx_adder = CompVar('idx_adder')
@@ -40,20 +52,6 @@ def node_depth_pe(max_steps, max_paths):
     uniq_width = path_id_width # number of bits to represent uniq depth
     
     cells = [
-        # Ref memory cells
-        Cell(depth, stdlib.register(depth_width), is_ref=True),
-        Cell(uniq, stdlib.register(uniq_width), is_ref=True),
-        
-        Cell(
-            path_ids,
-            stdlib.mem_d1(path_id_width, max_steps, steps_width),
-            is_ref=True
-        ),
-        Cell(
-            paths_to_consider,
-            stdlib.mem_d1(1, ptc_size, path_id_width),
-            is_ref=True
-        ),
 
         # Idx cells
         Cell(idx, stdlib.register(steps_width)),
@@ -100,10 +98,10 @@ def node_depth_pe(max_steps, max_paths):
         Group(
             CompVar("load_path_id"),
             [
-                Connect(CompPort(path_ids, "addr0"), CompPort(idx, "out")),
+                Connect(ThisPort(pids_addr0), CompPort(idx, "out")),
                 Connect(
                     CompPort(path_id_reg, "in"),
-                    CompPort(path_ids, "read_data")
+                    ThisPort(pids_read_data)
                 ),
                 Connect(CompPort(path_id_reg, "write_en"), ConstantPort(1,1)),
                 Connect(
@@ -142,12 +140,12 @@ def node_depth_pe(max_steps, max_paths):
             CompVar("load_consider_path"),
             [
                 Connect(
-                    CompPort(paths_to_consider, "addr0"),
+                    ThisPort(ptc_addr0),
                     CompPort(path_id_reg, "out")
                 ),
                 Connect(
                     CompPort(depth_temp, "in"),
-                    CompPort(paths_to_consider, "read_data")
+                    ThisPort(ptc_read_data)
                 ),
                 Connect(CompPort(depth_temp, "write_en"), ConstantPort(1, 1)),
                 Connect(
@@ -161,7 +159,7 @@ def node_depth_pe(max_steps, max_paths):
             CompVar("inc_depth"),
             [
                 #If path_id is not 0, add 1 to depth
-                Connect(CompPort(depth_adder, "left"), CompPort(depth, "out")),
+                Connect(CompPort(depth_adder, "left"), ThisPort(depth_out)),
                 Connect(
                     CompPort(depth_pad, 'in'),
                     CompPort(depth_temp, 'out')
@@ -170,11 +168,11 @@ def node_depth_pe(max_steps, max_paths):
                     CompPort(depth_adder, "right"),
                     CompPort(depth_pad, 'out')
                 ),
-                Connect(CompPort(depth, "in"), CompPort(depth_adder, "out")),
-                Connect(CompPort(depth, "write_en"), ConstantPort(1, 1)),
+                Connect(ThisPort(depth_in), CompPort(depth_adder, "out")),
+                Connect(ThisPort(depth_write_en), ConstantPort(1, 1)),
                 Connect(
                     HolePort(CompVar("inc_depth"), "done"),
-                    CompPort(depth, "done")
+                    ThisPort(depth_done)
                 )
             ]
         ),
@@ -284,12 +282,12 @@ def node_depth_pe(max_steps, max_paths):
             CompVar("load_and_r"),
             [
                 Connect(
-                    CompPort(paths_to_consider, "addr0"),
+                    ThisPort(ptc_addr0),
                     CompPort(uniq_idx, "out")
                 ),
                 Connect(
                     CompPort(uniq_and_reg_r, "in"),
-                    CompPort(paths_to_consider, "read_data")
+                    ThisPort(ptc_read_data)
                 ),
                 Connect(
                     CompPort(uniq_and_reg_r, "write_en"),
@@ -313,17 +311,17 @@ def node_depth_pe(max_steps, max_paths):
                     CompPort(uniq_and, "right"),
                     CompPort(uniq_and_reg_r, "out")
                 ),
-                Connect(CompPort(uniq_adder, "left"), CompPort(uniq, "out")),
+                Connect(CompPort(uniq_adder, "left"), ThisPort(uniq_out)),
                 Connect(CompPort(uniq_pad, 'in'), CompPort(uniq_and, 'out')),
                 Connect(
                     CompPort(uniq_adder, "right"),
                     CompPort(uniq_pad, 'out')
                 ),
-                Connect(CompPort(uniq, "in"), CompPort(uniq_adder, "out")),
-                Connect(CompPort(uniq, "write_en"), ConstantPort(1, 1)),
+                Connect(ThisPort(uniq_in), CompPort(uniq_adder, "out")),
+                Connect(ThisPort(uniq_write_en), ConstantPort(1, 1)),
                 Connect(
                     HolePort(CompVar("inc_uniq"), "done"),
-                    CompPort(uniq, "done")
+                    ThisPort(uniq_done)
                 )
             ]
         ),
@@ -371,8 +369,18 @@ def node_depth_pe(max_steps, max_paths):
 
     pe_component = Component(
         name="node_depth_pe",
-        inputs=[],
-        outputs=[],
+        inputs=[
+            PortDef(depth_out, depth_width), PortDef(depth_done, 1),
+            PortDef(uniq_out, uniq_width), PortDef(uniq_done, 1),
+            PortDef(pids_read_data, path_id_width),
+            PortDef(ptc_read_data, 1)
+        ],
+        outputs=[
+            PortDef(depth_in, depth_width), PortDef(depth_write_en, 1),
+            PortDef(uniq_in, uniq_width), PortDef(uniq_write_en, 1),
+            PortDef(pids_addr0, steps_width),
+            PortDef(ptc_addr0, path_id_width)
+        ],
         structs=cells + wires,
         controls=controls,
     )

@@ -41,19 +41,17 @@ def node_depth_pe(max_steps, max_paths):
     
     cells = [
         # Ref memory cells
-        Cell(depth, stdlib.register(depth_width), is_external=False, is_ref=True),
+        Cell(depth, stdlib.register(depth_width), is_ref=True),
         Cell(uniq, stdlib.register(uniq_width), is_ref=True),
         
         Cell(
             path_ids,
             stdlib.mem_d1(path_id_width, max_steps, steps_width),
-            is_external=False,
             is_ref=True
         ),
         Cell(
             paths_to_consider,
             stdlib.mem_d1(1, ptc_size, path_id_width),
-            is_external=False,
             is_ref=True
         ),
 
