@@ -6,6 +6,7 @@ import sys
 import argparse
 import json
 import odgi
+import warnings
 
 # Defaults for the maximum possible number of nodes, steps per node, and paths to consider
 MAX_NODES=16
@@ -70,7 +71,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
     
     # Check that the number of steps on the node does not exceed max_steps
     if num_nodes > max_nodes:
-        raise Exception(f'The number of nodes in the graph exceeds the maximum number of nodes the hardware can process. Hint: try setting the maximum number of nodes manually using the -n flag.')
+        warnings.warn('The number of nodes on the graph exceeds the maximum number of nodes the hardware can process. Hint: try setting the maximum number of nodes manually using the -n flag.')
     
     data = {}
     width = max_paths.bit_length()
@@ -80,6 +81,10 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
         '''
         Get a list of path ids for each step on node_h.
         '''
+
+        node_id = graph.get_id(node_h)
+        if node_id > max_nodes:
+            return
 
         # Check that the number of steps on the node does not exceed max_steps
         if graph.get_step_count(node_h) > max_steps:
@@ -98,7 +103,6 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
         path_ids = path_ids + [0] * (max_steps - len(path_ids))
         
         # 'path_ids{id}' is the list of path ids for each step crossing node {id}
-        node_id = graph.get_id(node_h)
         data[f'path_ids{node_id}'] = {
             "data": path_ids,
             "format": {

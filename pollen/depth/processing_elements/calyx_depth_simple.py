@@ -38,7 +38,7 @@ def node_depth_pe(max_steps, max_paths):
     uniq_adder = CompVar('uniq_adder')
     
     uniq_idx = CompVar('uniq_idx')
-    uniq_idx_neq = CompVar('unid_idx_neq')
+    uniq_idx_neq = CompVar('uniq_idx_neq')
     uniq_idx_adder = CompVar('uniq_idx_adder')
     
     paths_on_node = CompVar('paths_on_node') # computed by depth.uniq

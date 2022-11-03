@@ -4,4 +4,4 @@ command = "odgi depth -i {filename} -d"
 
 [envs.calyx]
 binary = true
-command = "pollen depth -a -r {filename}"
+command = "exine depth -va -r {filename}"
