@@ -1,8 +1,0 @@
-
-[envs.baseline]
-command = "odgi build -g {filename} -o temp.og; odgi depth -i temp.og -d; rm temp.og"
-
-[envs.calyx]
-# command = "odgi build -g {filename} -o temp.og; exine depth -a -r temp.og; rm temp.og"
-# command = "odgi build -g {filename} -o temp.og; exine depth -a temp.og -o temp.futil; exine depth -a -d temp.og -o temp.data; fud e temp.futil --to dat --through verilog -s verilog.data temp.data > temp.txt; python ../pollen/pollen/depth/parse_data.py '
-command = "odgi build -g {filename} -o temp.og; exine depth -va -r temp.og; rm temp.og"

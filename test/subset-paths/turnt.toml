@@ -1,8 +1,0 @@
-[envs.baseline]
-command = "odgi depth -i ../{args} -d -s {base}.paths"
-
-[envs.calyx-depth]
-command = "exine depth -va -r ../{args} -s {base}.paths"
-
-#[envs.py-odgi]
-#command = "python3 ../../depth.py ../{args} -s {base}.paths"
