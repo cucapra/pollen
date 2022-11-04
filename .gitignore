@@ -13,6 +13,7 @@ test/subset-paths/*.out
 test/depth/*.out
 test/depth/basic/*.out
 test/depth/subset-paths/*.out
+test/depth/multiplexing/*.out
 
 *.json
 og_to_gfa.py

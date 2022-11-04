@@ -1,0 +1,6 @@
+[envs.baseline]
+command = "odgi depth -i ../{base}.og -d"
+binary = true
+
+[envs.calyx]
+command = "exine depth -va --num-pes {args} -r ../{base}.og"

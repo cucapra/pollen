@@ -16,6 +16,9 @@ test-depth: og
 	-turnt --save --env baseline test/depth/subset-paths/*.txt
 	turnt test/depth/subset-paths/*.txt
 
+	-turnt --save --env baseline test/depth/multiplexing/*.txt
+	turnt test/depth/multiplexing/*.txt
+
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
@@ -28,6 +31,7 @@ clean:
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
+	rm -rf test/depth/multiplexing/*.out
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)

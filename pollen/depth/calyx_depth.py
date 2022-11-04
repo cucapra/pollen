@@ -21,6 +21,7 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
     uniq = []
     path_ids = [] # path_id for each step on the node
     paths_to_consider = [] # duplicated, each node gets its own array
+    paths_on_node = []
 
     pe = [] #processing elements
     
@@ -29,6 +30,7 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
         uniq.append(CompVar(f'uniq{i}'))
         path_ids.append(CompVar(f'path_ids{i}'))
         paths_to_consider.append(CompVar(f'paths_to_consider{i}'))
+        paths_on_node.append(CompVar(f'paths_on_node{i}'))
 
     for i in range(1, num_pes + 1):
         pe.append(CompVar(f'pe{i}'))
@@ -70,8 +72,14 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                 stdlib.mem_d1(1, ptc_size, path_id_width),
                 is_external=True
             ),
-            Cell(pe[i], CompInst('node_depth_pe', []))
+            Cell(
+                paths_on_node[i],
+                stdlib.mem_d1(1, ptc_size, path_id_width)
+            )
         ])
+
+    for i in range(num_pes):
+        cells.append(Cell(pe[i], CompInst('node_depth_pe', [])))
     
     # Initialize the wires
     wires = []
@@ -136,7 +144,9 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                 ('depth_out', CompPort(depth[j], 'out')),
                 ('depth_done', CompPort(depth[j], 'done')),
                 ('uniq_out', CompPort(uniq[j], 'out')),
-                ('uniq_done', CompPort(uniq[j], 'done')),                
+                ('uniq_done', CompPort(uniq[j], 'done')),
+                ('pon_read_data', CompPort(paths_on_node[j], 'read_data')),
+                ('pon_done', CompPort(paths_on_node[j], 'done'))
             ]
 
             out_connects = [
@@ -146,6 +156,9 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                 ('depth_write_en', CompPort(depth[j], 'write_en')),
                 ('uniq_in', CompPort(uniq[j], 'in')),
                 ('uniq_write_en', CompPort(uniq[j], 'write_en')),
+                ('pon_addr0', CompPort(paths_on_node[j], 'addr0')),
+                ('pon_write_data', CompPort(paths_on_node[j], 'write_data')),
+                ('pon_write_en', CompPort(paths_on_node[j], 'write_en'))
             ]
             
             pe_i_controls.append(
@@ -212,6 +225,13 @@ def config_parser(parser):
         type=int,
         help='Specify the maximum number of paths that the hardware can support.'
     )
+
+    parser.add_argument(
+        '--num-pes',
+        type=int,
+        help='Specify the number of processing elements that the generated hardware will use.'
+    )
+    
     parser.add_argument(
         '-o',
         '--out',
@@ -223,7 +243,7 @@ def run(args):
 
     max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
         
-    program = node_depth(max_nodes, max_steps, max_paths)
+    program = node_depth(max_nodes, max_steps, max_paths, args.num_pes)
     output = program.doc()
 
     # Ouput the program
