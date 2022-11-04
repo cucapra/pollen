@@ -1,13 +1,14 @@
 import argparse
+import importlib
 from math import ceil
+from os.path import (isabs, splitext)
 import subprocess
 
 from calyx.py_ast import *
-from . import parse_data
-from .processing_elements.calyx_depth_simple import node_depth_pe
+from pollen.depth import parse_data
 
 
-def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
+def node_depth(max_nodes, max_steps, max_paths, pe_component, num_pes=None):
 
     num_pes = num_pes if num_pes else max_nodes
 
@@ -186,8 +187,6 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
         controls=SeqComp(controls),
     )
 
-    pe_component = node_depth_pe(max_steps, max_paths)
-
     # Create the Calyx program.
     program = Program(
         imports=[
@@ -227,6 +226,12 @@ def config_parser(parser):
     )
 
     parser.add_argument(
+        '--pe',
+        '--processing-element',
+        default='processing_elements/calyx_depth_simple.py',
+        help='Provide a file containing the method node_depth_pe which outputs a node depth processing element.'
+    )
+    parser.add_argument(
         '--num-pes',
         type=int,
         help='Specify the number of processing elements that the generated hardware will use.'
@@ -242,8 +247,18 @@ def config_parser(parser):
 def run(args):
 
     max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
+
+    is_abs = isabs(args.pe)
+    pe_module_name = splitext(args.pe)[0].replace('/', '.')
+    if is_abs:
+        pe_module = importlib.import_module(pe_module_name)
+    else:
+        pe_module = importlib.import_module(f'pollen.depth.{pe_module_name}')
+
+    pe_component = pe_module.node_depth_pe(max_steps, max_paths)
         
-    program = node_depth(max_nodes, max_steps, max_paths, args.num_pes)
+    program = node_depth(max_nodes, max_steps, max_paths,
+                         pe_component, args.num_pes)
     output = program.doc()
 
     # Ouput the program
