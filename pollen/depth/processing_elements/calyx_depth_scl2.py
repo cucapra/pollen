@@ -7,12 +7,7 @@ MAX_NODES=32
 MAX_STEPS=15
 MAX_PATHS=7
 
-def node_depth_pe(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
-    """
-    Short circuits the main while loop by checking if the path id of
-    the current element is 0. The list of steps includes an additional element
-    at the end which is always 0 (the length is max_steps + 1).
-    """
+def node_depth(max_nodes=MAX_NODES, max_steps=MAX_STEPS, max_paths=MAX_PATHS):
     
     stdlib = Stdlib()
     
