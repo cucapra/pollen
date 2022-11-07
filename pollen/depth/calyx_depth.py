@@ -1,8 +1,9 @@
 import argparse
 import importlib
 from math import ceil
-from os.path import (isabs, splitext)
+from os.path import abspath, split, splitext
 import subprocess
+import sys
 
 from calyx.py_ast import *
 from pollen.depth import parse_data
@@ -228,7 +229,7 @@ def config_parser(parser):
     parser.add_argument(
         '--pe',
         '--processing-element',
-        default='processing_elements/calyx_depth_simple.py',
+        default='default',
         help='Provide a file containing the method node_depth_pe which outputs a node depth processing element.'
     )
     parser.add_argument(
@@ -246,15 +247,18 @@ def config_parser(parser):
 
 def run(args):
 
-    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
-
-    is_abs = isabs(args.pe)
-    pe_module_name = splitext(args.pe)[0].replace('/', '.')
-    if is_abs:
-        pe_module = importlib.import_module(pe_module_name)
+    # Import the processing element generator
+    if args.pe == 'default':
+        pe_module = importlib.import_module('pollen.depth.processing_elements.calyx_depth_simple')
     else:
-        pe_module = importlib.import_module(f'pollen.depth.{pe_module_name}')
+        pe_path, pe_file = split(args.pe)
+        pe_abspath = abspath(pe_path)
+        pe_basename = splitext(pe_file)[0]
+        # Add pe generator path to PYTHONPATH
+        sys.path.append(pe_abspath)
+        pe_module = importlib.import_module(pe_basename)
 
+    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)        
     pe_component = pe_module.node_depth_pe(max_steps, max_paths)
         
     program = node_depth(max_nodes, max_steps, max_paths,
