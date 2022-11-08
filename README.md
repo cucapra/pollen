@@ -32,6 +32,11 @@ We recommend using the native calyx interpreter. After completing the above, run
 fud config stages.interpreter <full path to calyx repository>/target/debug/interp
 ```
 
+Finally, install the [python interface](https://docs.calyxir.org/calyx-py.html) with
+```
+cd calyx-py && flit install -s
+```
+
 #### Odgi
 
 Installing odgi [via bioconda](https://odgi.readthedocs.io/en/latest/rst/installation.html#bioconda) seems to be the most straightforward option. If you instead [compile odgi from source](https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source), you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
