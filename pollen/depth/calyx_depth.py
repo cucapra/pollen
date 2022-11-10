@@ -76,7 +76,8 @@ def node_depth(max_nodes, max_steps, max_paths, pe_component, num_pes=None):
             ),
             Cell(
                 paths_on_node[i],
-                stdlib.mem_d1(1, ptc_size, path_id_width)
+                stdlib.mem_d1(1, ptc_size, path_id_width),
+                is_external=True
             )
         ])
 
@@ -249,7 +250,7 @@ def run(args):
 
     # Import the processing element generator
     if args.pe == 'default':
-        pe_module = importlib.import_module('pollen.depth.processing_elements.calyx_depth_simple')
+        pe_module = importlib.import_module('pollen.depth.processing_elements.simple')
     else:
         pe_path, pe_file = split(args.pe)
         pe_abspath = abspath(pe_path)
@@ -258,7 +259,8 @@ def run(args):
         sys.path.append(pe_abspath)
         pe_module = importlib.import_module(pe_basename)
 
-    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)        
+    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
+
     pe_component = pe_module.node_depth_pe(max_steps, max_paths)
         
     program = node_depth(max_nodes, max_steps, max_paths,

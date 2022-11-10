@@ -58,8 +58,8 @@ def config_parser(parser):
     parser.add_argument(
         '-s',
         '--subset-paths',
-        help='Should only be used if the --run or --parse-data flag is set. Specifies a\
- subset of paths whose node depth to compute.'
+        help='Should only be used if the --run or --parse-data flag is set. \
+              Specifies a subset of paths whose node depth to compute.'
     )
     
     parser.add_argument(
@@ -89,10 +89,6 @@ def run_accel(args, tmp_dir_name):
     """
     Run the node depth accelerator
     """
-
-    # Data parser
-    parser = argparse.ArgumentParser()
-    parse_data.config_parser(parser) 
     
     # Parse the data file if necessary
     out_file = args.out
@@ -108,7 +104,6 @@ def run_accel(args, tmp_dir_name):
         data_file = f'{tmp_dir_name}/{base}.data'
         new_args = [args.filename, '--out', data_file]
         parser.parse_args(new_args, namespace=args)
-        parse_data.run(args)
 
     # Generate the accelerator if necessary
     if args.accelerator:
@@ -136,8 +131,11 @@ def run_accel(args, tmp_dir_name):
     else:
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
         # Convert calyx output to a node depth table
-        calyx_out = json.loads(calyx_out.stdout)
-        output = parse_data.from_calyx(calyx_out, not args.verilog) # ndt
+        try:
+            calyx_out = json.loads(calyx_out.stdout)
+            output = parse_data.from_calyx(calyx_out, not args.verilog) # ndt
+        except:
+            output = calyx_out.stdout
 
     # Output the ndt
     if out_file:
@@ -149,21 +147,33 @@ def run_accel(args, tmp_dir_name):
 
 def run(args):
 
+    # Import the processing element generator                                   
+    if args.pe == 'default':
+        pe_import_path = 'pollen.depth.processing_elements.simple'
+    else:
+        pe_path, pe_file = split(args.pe)
+        pe_abspath = abspath(pe_path)
+        pe_import_path = splitext(pe_file)[0] # basename of pe_file
+        # Add pe generator path to PYTHONPATH                                   
+	sys.path.append(pe_abspath)
+
+    pe_module = importlib.import_module(pe_import_path)
+
+    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
+    pe = pe_module.DepthPE(max_nodes, max_steps, max_paths)
+        
     if args.action == 'gen': # Generate an accelerator
         if args.subset_paths or args.accelerator or args.pr:
             warnings.warn('--subset-paths, --accelerator, and --pr will be ignored if action is gen.', SyntaxWarning)
         if args.auto_size == 'd':
             raise Exception('When action is gen, -a <file> must be specified.')
+            # TODO: parse_data.get_dimensions should check for this error
         depth.run(args)
     
     elif args.action == 'parse': # Generate a data file
         if args.accelerator or args.pr:
             warnings.warn('--accelerator and --pr will be ignored if action is not run.', SyntaxWarning)
-
-        parser = argparse.ArgumentParser()
-        parse_data.config_parser(parser)
-        parser.parse_args([args.filename], namespace=args) # Set defaults for all arguments
-        parse_data.run(args)
+        parse_data.parse_odgi(args.filename, args.subset_paths, pe)
         
     elif args.action == 'run': # Run the accelerator
 

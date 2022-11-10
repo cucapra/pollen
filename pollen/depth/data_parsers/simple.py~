@@ -1,0 +1,73 @@
+'''
+This file converts an odgi graph to numerical JSON data that can be used by calyx hardware simulators.
+'''
+
+import sys
+import argparse
+import json
+import odgi
+import warnings
+    
+
+def parse_node(graph, node_h, path_name_to_id, max_steps, max_paths):
+    '''
+    Generate input data containing the path ids for each step on the in the graph, e.g.
+    {
+      "path_ids": {
+        "data": [0, 1, 1, 2],
+        "format": {
+          "numeric_type": "bitnum",
+          "is_signed": False,
+          "width": 2
+        }
+      },
+      "paths_on_node": {
+        "data": [0, 0],
+        "format": {
+          "numeric_type": "bitnum",
+          "is_signed": False,
+          "width": 1
+        }
+      }
+    }
+    '''
+    
+    # Get a list of path ids for each step on node_h.
+    
+    # Check that the number of steps on the node does not exceed max_steps
+    if graph.get_step_count(node_h) > max_steps:
+        raise Exception(f'The number of paths in the graph exceeds the maximum number of paths the hardware can process. {graph.get_step_count(node_h)} > {max_steps}. Hint: try setting the maximum number of steps manually using the -e flag.')
+        
+    path_ids = [] #list of path ids for each step crossing node_h
+
+    def parse_step(step_h):
+        path_h = graph.get_path(step_h)
+        path_id = path_name_to_id[graph.get_path_name(path_h)]
+        path_ids.append(path_id)
+            
+    graph.for_each_step_on_handle(node_h, parse_step)
+
+    # Pad path_ids with 0s
+    path_ids = path_ids + [0] * (max_steps - len(path_ids))
+    
+    # format the data
+    node_data = {
+        "path_ids" : { 
+            "data": path_ids,
+            "format": {
+                "numeric_type": "bitnum",
+                "is_signed": False,
+                "width": max_paths.bit_length()
+            }
+        },
+        "paths_on_node": {
+            "data": [0] * (max_paths + 1)
+            "format": {
+                "numeric_type": "bitnum",
+                "is_signed": False,
+                "width": 1
+            }
+        },
+    }
+
+    return node_data
