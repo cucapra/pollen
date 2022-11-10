@@ -9,6 +9,7 @@ def node_depth_pe(max_steps, max_paths):
     paths_to_consider = CompVar('paths_to_consider') 
     depth = CompVar('depth')
     uniq = CompVar('uniq')
+    paths_on_node = CompVar('paths_on_node') # computed by depth.uniq
 
     path_id_reg = CompVar('path_id_reg')
     idx = CompVar('idx')
@@ -26,11 +27,9 @@ def node_depth_pe(max_steps, max_paths):
     uniq_adder = CompVar('uniq_adder')
     
     uniq_idx = CompVar('uniq_idx')
-    uniq_idx_neq = CompVar('unid_idx_neq')
+    uniq_idx_neq = CompVar('uniq_idx_neq')
     uniq_idx_adder = CompVar('uniq_idx_adder')
     
-    paths_on_node = CompVar('paths_on_node') # computed by depth.uniq
-
     
     # Initialize the cells
     ptc_size = max_paths + 1
@@ -43,7 +42,11 @@ def node_depth_pe(max_steps, max_paths):
         # Ref memory cells
         Cell(depth, stdlib.register(depth_width), is_ref=True),
         Cell(uniq, stdlib.register(uniq_width), is_ref=True),
-        
+        Cell(
+            paths_on_node,
+            stdlib.mem_d1(1, ptc_size, path_id_width),
+            is_ref=True
+        ),
         Cell(
             path_ids,
             stdlib.mem_d1(path_id_width, max_steps, steps_width),
@@ -78,10 +81,7 @@ def node_depth_pe(max_steps, max_paths):
         Cell(uniq_idx, stdlib.register(path_id_width)),
         Cell(uniq_idx_neq, stdlib.op("neq", path_id_width, signed=False)),
         Cell(uniq_idx_adder, stdlib.op("sub", path_id_width, signed=False)),
-
-        Cell(paths_on_node, stdlib.mem_d1(1, ptc_size, path_id_width)),
 ]
-
     
     # Initialize the wires
     wires = [

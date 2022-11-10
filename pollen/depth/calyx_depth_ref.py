@@ -3,8 +3,8 @@ from math import ceil
 import subprocess
 
 from calyx.py_ast import *
-from . import parse_data
-from .processing_elements.calyx_depth_simple import node_depth_pe
+from pollen.depth import parse_data
+from pollen.depth.processing_elements.simple_ref import node_depth_pe
 
 
 def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
@@ -19,6 +19,7 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
 
     depth = [] # registers for storing depth
     uniq = []
+    paths_on_node = []
     path_ids = [] # path_id for each step on the node
     paths_to_consider = [] # duplicated, each node gets its own array
 
@@ -27,6 +28,7 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
     for i in range(1, max_nodes + 1):
         depth.append(CompVar(f'depth{i}'))
         uniq.append(CompVar(f'uniq{i}'))
+        paths_on_node.append(CompVar(f'paths_on_node{i}'))
         path_ids.append(CompVar(f'path_ids{i}'))
         paths_to_consider.append(CompVar(f'paths_to_consider{i}'))
 
@@ -61,6 +63,11 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
             Cell(depth[i], stdlib.register(depth_width)),
             Cell(uniq[i], stdlib.register(uniq_width)),
             Cell(
+                paths_on_node[i],
+                stdlib.mem_d1(1, ptc_size, path_id_width),
+                is_external=True
+            ),
+            Cell(
                 path_ids[i],
                 stdlib.mem_d1(path_id_width, max_steps, steps_width),
                 is_external=True
@@ -70,9 +77,11 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                 stdlib.mem_d1(1, ptc_size, path_id_width),
                 is_external=True
             ),
-            Cell(pe[i], CompInst('node_depth_pe', []))
         ])
-    
+
+    for i in range(num_pes):
+        cells.append(Cell(pe[i], CompInst('node_depth_pe', [])))
+        
     # Initialize the wires
     wires = []
 
@@ -138,7 +147,8 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                            ('path_ids', path_ids[j]),
                            ('paths_to_consider', paths_to_consider[j]),
                            ('depth', depth[j]),
-                           ('uniq', uniq[j])
+                           ('uniq', uniq[j]),
+                           ('paths_on_node', paths_on_node[j])
                        ]
                 )
             )
@@ -201,6 +211,11 @@ def config_parser(parser):
         help='Specify the maximum number of paths that the hardware can support.'
     )
     parser.add_argument(
+        '--num-pes',
+        type=int,
+        help='Specify the number of processing elements that the generated hardware will use.'
+    )
+    parser.add_argument(
         '-o',
         '--out',
         help='Specify the output file. If not specified, will dump to stdout.'
@@ -211,7 +226,7 @@ def run(args):
 
     max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
         
-    program = node_depth(max_nodes, max_steps, max_paths)
+    program = node_depth(max_nodes, max_steps, max_paths, args.num_pes)
     output = program.doc()
 
     # Ouput the program
