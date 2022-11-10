@@ -249,7 +249,7 @@ def run(args):
 
     # Import the processing element generator
     if args.pe == 'default':
-        pe_module = importlib.import_module('pollen.depth.processing_elements.calyx_depth_simple')
+        pe_module = importlib.import_module('pollen.depth.processing_elements.simple')
     else:
         pe_path, pe_file = split(args.pe)
         pe_abspath = abspath(pe_path)

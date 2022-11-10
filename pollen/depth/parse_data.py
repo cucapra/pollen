@@ -50,6 +50,14 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
                 "width": 1
             }
         }
+        data[f'paths_on_node{i}'] = {
+            "data": [0] * (max_nodes + 1),
+            "format": {
+                "numeric_type": "bitnum",
+                "is_signed": False,
+                "width": 1
+            }
+        }
 
     return data
     

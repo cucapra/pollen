@@ -135,9 +135,12 @@ def run_accel(args, tmp_dir_name):
         output = calyx_out.stdout
     else:
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
-        # Convert calyx output to a node depth table
-        calyx_out = json.loads(calyx_out.stdout)
-        output = parse_data.from_calyx(calyx_out, not args.verilog) # ndt
+        try:
+            # Convert calyx output to a node depth table
+            calyx_out = json.loads(calyx_out.stdout)
+            output = parse_data.from_calyx(calyx_out, not args.verilog) # ndt
+        except:
+            output = calyx_out.stderr
 
     # Output the ndt
     if out_file:
@@ -168,8 +171,7 @@ def run(args):
     elif args.action == 'run': # Run the accelerator
 
         if args.tmp_dir:
-            with open(args.tmp_dir, 'w') as tmp_dir_name:
-                run_accel(args, tmp_dir_name)
+                run_accel(args, args.tmp_dir)
         else:
             with tempfile.TemporaryDirectory() as tmp_dir_name:
                 run_accel(args, tmp_dir_name)
