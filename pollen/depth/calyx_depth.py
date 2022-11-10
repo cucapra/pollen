@@ -76,7 +76,8 @@ def node_depth(max_nodes, max_steps, max_paths, pe_component, num_pes=None):
             ),
             Cell(
                 paths_on_node[i],
-                stdlib.mem_d1(1, ptc_size, path_id_width)
+                stdlib.mem_d1(1, ptc_size, path_id_width),
+                is_external=True
             )
         ])
 
