@@ -26,9 +26,13 @@ ENV PATH="/root/odgi/bin:$PATH"
 ENV PYTHONPATH=$PYTHONPATH:/root/odgi/lib
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
-# Install Calyx-Pangenome
+# Install Pollen
 # dependencies:
 RUN pip install --user turnt
+
+# good to have:
+RUN apt install emacs -y
+RUN apt install vim -y
 
 # clone:
 RUN git clone https://github.com/cucapra/pollen.git
@@ -38,3 +42,4 @@ RUN make fetch
 
 # return to root directory
 WORKDIR /root
+
