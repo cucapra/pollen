@@ -25,10 +25,14 @@ WORKDIR /root
 ENV PATH="/root/odgi/bin:$PATH"
 ENV PYTHONPATH=$PYTHONPATH:/root/odgi/lib
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+ENV FLIT_ROOT_INSTALL=1
 
 # Install Pollen
 # dependencies:
-RUN pip install --user turnt
+RUN git clone https://github.com/cucapra/turnt.git
+WORKDIR /root/turnt
+RUN flit install --symlink --user
+WORKDIR /root
 
 # good to have:
 RUN apt install emacs -y
@@ -39,6 +43,7 @@ RUN git clone https://github.com/cucapra/pollen.git
 # build:
 WORKDIR /root/pollen
 RUN make fetch
+RUN make og
 
 # return to root directory
 WORKDIR /root
