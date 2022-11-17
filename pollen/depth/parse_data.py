@@ -37,27 +37,16 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     path_name_to_id = {path:count for count, path in enumerate(paths, start=1)}
 
     
-    paths_to_consider = parse_paths_file(subset_paths, path_name_to_id, max_paths)
-
     data = parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths)
-
-    for i in range(1, max_nodes + 1):
-        data[f'paths_to_consider{i}'] = {
-            "data": paths_to_consider,
-            "format": {
-                "numeric_type": "bitnum",
-                "is_signed": False,
-                "width": 1
-            }
+    paths_to_consider = parse_paths_file(subset_paths, path_name_to_id, max_paths)
+    data[f'paths_to_consider1'] = {
+        "data": paths_to_consider,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": 1
         }
-        data[f'paths_on_node{i}'] = {
-            "data": [0] * (max_paths + 1),
-            "format": {
-                "numeric_type": "bitnum",
-                "is_signed": False,
-                "width": 1
-            }
-        }
+    }
 
     return data
     
