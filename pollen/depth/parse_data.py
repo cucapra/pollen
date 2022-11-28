@@ -12,6 +12,18 @@ MAX_NODES=16
 MAX_STEPS=15
 MAX_PATHS=15
 
+'''
+import odgi
+import parse_data
+graph = odgi.graph()
+name = './processing-elements/test/k.og'
+graph.load(name)
+paths = []
+graph.for_each_path_handle(lambda h: paths.append(graph.get_path_name(h)))
+path_name_to_id = {path:count for count, path in enumerate(paths, start=1)}
+parse_data.parse_edges_on_nodes(graph, path_name_to_id, 16, 15, 15)
+'''
+
 def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     '''
     Create a calyx node depth input file using the graph in './{filename}' and the paths listed in './{subset_paths}'
