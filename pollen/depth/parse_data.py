@@ -11,7 +11,6 @@ import odgi
 MAX_NODES=16
 MAX_STEPS=15
 MAX_PATHS=15
-MAX_EDGES=16
 
 def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     '''
@@ -53,7 +52,7 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
 
     return data
     
-def parse_edges_on_nodes(graph, path_name_to_id, max_nodes):
+def parse_edges_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths):
     '''
     Generate input data containing the path ids for each edge for the nodes on the graph
     {path_ids1: 
@@ -86,12 +85,11 @@ def parse_edges_on_nodes(graph, path_name_to_id, max_nodes):
         
         path_ids = []
 
-        def parse_step(step_h):
-            path_h = graph.get_path(step_h)
-            path_id = path_name_to_id[graph.get_path_name(path_h)]
-            path_ids.append(path_id)
+        def parse_edges(handle):
+            path_ids.append(graph.get_id(handle))
             
-        graph.for_each_step_on_handle(node_h, parse_step)
+        graph.follow_edges(node_h, False, parse_edges)
+        graph.follow_edges(node_h, True, parse_edges)
 
         # Pad path_ids with 0s
         path_ids = path_ids + [0] * (max_steps - len(path_ids))

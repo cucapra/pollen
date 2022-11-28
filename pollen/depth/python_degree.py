@@ -34,7 +34,7 @@ def get_degree_table(graph):
         node_id = graph.get_id(handle)
         degree = 0
 
-        def sum_edges(node):
+        def sum_edges(handle):
             nonlocal degree
             degree += 1
         graph.follow_edges(handle, False, sum_edges)
