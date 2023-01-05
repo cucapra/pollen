@@ -1,0 +1,56 @@
+The calyx node depth accelerator expects input of the following format,
+illustrated below. It conforms to the JSON format, and consists of two sets of input. In the first set is depth_output, uniq_output, and path_ids1-N, which always exist and do not depend on the individual processing elements; in the second set is paths_to_consider.
+
+{
+  // depth_output and uniq_output are needed once, and PEs do not rely on them
+  "depth_output": {
+    "data": [0, 0, ... 0] // Len MAX_NODES, initialized w/ 0s,
+    "format": {
+      "is_signed": false,
+      "numeric_type": "bitnum",
+      "width": 2 // Min number of bits needed to represent MAX_STEPS
+    }
+  },
+  "uniq_output": {
+    "data": [0, 0, ... 0] // Len MAX_NODES, initialized w/ 0s,
+    "format": {
+      "is_signed": false,
+      "numeric_type": "bitnum",
+      "width": 2 // Min number of bits needed to represent MAX_PATHS
+    }
+  },
+  // paths_idsi is the list of path ids, where each path id corresponds to a
+  // step on node i
+  "paths_ids1": {
+    "data": [3, 1, ... 3, 0, ..., 0 ], // Len MAX_STEPS
+    	    // if paths_ids1[j] == 0, then this path does not exist.
+	    // the end of paths_ids1 is padded with 0, and a nonzero value
+	    // cannot follow a 0
+    "format": {
+      "is_signed": false,
+      "numeric_type": "bitnum",
+      "width": 1
+    }
+  },
+  .
+  .
+  .
+  "paths_idsMAX_NODES": {
+    "data": [2, 1, ... 0 ],
+    "format": {
+      "is_signed": false,
+      "numeric_type": "bitnum",
+      "width": 1
+    }
+  },
+  "paths_to_consider1": {
+    "data": [0, 1, ... 1 ], // Len MAX_PATHS + 1
+    	    //paths_to_consider[i] == 1 iff we include path i in calculations
+	    //paths_to_consider[0] == 0 always. 0 represents a nonexistent path
+    "format": {
+      "is_signed": false,
+      "numeric_type": "bitnum",
+      "width": 1
+    }
+  }
+}

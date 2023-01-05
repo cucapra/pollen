@@ -65,7 +65,6 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
             Cell(
                 paths_on_node[i],
                 stdlib.mem_d1(1, ptc_size, path_id_width),
-                is_external=True
             ),
             Cell(
                 path_ids[i],
@@ -145,14 +144,18 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                        out_connects=[],
                        ref_cells=[
                            ('path_ids', path_ids[j]),
-                           ('paths_to_consider', paths_to_consider[j]),
+                           ('paths_to_consider', paths_to_consider[i]),
                            ('depth', depth[j]),
                            ('uniq', uniq[j]),
-                           ('paths_on_node', paths_on_node[j])
+                           ('paths_on_node', paths_on_node[i])
                        ]
                 )
             )
+            #print(j)
+            #print(path_ids[j])
+            #print(pe_i_controls)
         pe_controls.append(SeqComp(pe_i_controls))
+        #print(pe_controls)
     controls = [ParComp(pe_controls)]
                 
     for i in range(max_nodes):

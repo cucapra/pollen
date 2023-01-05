@@ -13,9 +13,10 @@ MAX_NODES=16
 MAX_STEPS=15
 MAX_PATHS=15
 
-def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
+def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths, num_pes):
     '''
-    Create a calyx node depth input file using the graph in './{filename}' and the paths listed in './{subset_paths}'
+    Create a calyx node depth input file using the graph in './{filename}' and 
+    the paths listed in './{subset_paths}'
     '''
 
     graph = odgi.graph()
@@ -39,14 +40,15 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     
     data = parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths)
     paths_to_consider = parse_paths_file(subset_paths, path_name_to_id, max_paths)
-    data[f'paths_to_consider1'] = {
-        "data": paths_to_consider,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": 1
+    for i in range(1, num_pes + 1):
+        data[f'paths_to_consider{i}'] = {
+            "data": paths_to_consider,
+            "format": {
+                "numeric_type": "bitnum",
+                "is_signed": False,
+                "width": 1
+            }
         }
-    }
 
     return data
     
@@ -57,7 +59,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
     {path_ids1: 
         "data": [0, 1, 1, 2],
             "format": {
-                "numeric_type": "bitnum",8kklkskl
+                "numeric_type": "bitnum",
                 "is_signed": False,
                 "width": 2
             }
@@ -71,6 +73,26 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
         warnings.warn('The number of nodes on the graph exceeds the maximum number of nodes the hardware can process. Hint: try setting the maximum number of nodes manually using the -n flag.')
     
     data = {}
+
+    # Initialize "global" data
+    data['depth_output'] = {
+        "data": [0] * max_nodes,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": max_steps.bit_length()
+        }
+    }
+
+    data['uniq_output'] = {
+        "data": [0] * max_nodes,
+        "format": {
+            "numeric_type": "bitnum",
+            "is_signed": False,
+            "width": max_paths.bit_length()
+        }
+    }
+
     width = max_paths.bit_length()
 
     # Initialize the data for each node
@@ -123,24 +145,6 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
                 "width": width
             }
         }
-
-    data['depth_output'] = {
-        "data": [0] * max_nodes,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": max_steps.bit_length()
-        }
-    }
-
-    data['uniq_output'] = {
-        "data": [0] * max_nodes,
-        "format": {
-            "numeric_type": "bitnum",
-            "is_signed": False,
-            "width": max_paths.bit_length()
-        }
-    }
         
     return data
 
@@ -171,7 +175,7 @@ def parse_paths_file(filename, path_name_to_id, max_paths):
 
 
 def get_maxes(filename):
-    
+
     graph = odgi.graph()
     graph.load(filename)
     
@@ -287,8 +291,9 @@ def run(args):
         ouput = from_calyx(data, args.from_interp)
     else:
         max_nodes, max_steps, max_paths = get_dimensions(args)
-
-        data = parse_odgi(args.filename, args.subset_paths, max_nodes, max_steps, max_paths)
+        num_pes = args.num_pes if args.num_pes else max_nodes
+        
+        data = parse_odgi(args.filename, args.subset_paths, max_nodes, max_steps, max_paths, num_pes)
         output = json.dumps(data, indent=2, sort_keys=True) 
 
     if args.out:

@@ -195,6 +195,28 @@ def node_depth_pe(max_steps, max_paths):
             ]
         ),
 
+        Group(
+            CompVar("init_pon_elt"), # Set pon[uniq_idx] = 0
+            [
+                Connect(
+                    CompPort(paths_on_node, 'addr0'),
+                    CompPort(uniq_idx, 'out')
+                ),
+                Connect(
+                    CompPort(paths_on_node, 'write_data'),
+                    ConstantPort(1, 0)
+                ),
+                Connect(
+                    CompPort(paths_on_node, 'write_en'),
+                    ConstantPort(1, 1)
+                ),
+                Connect(
+                    HolePort(CompVar('init_pon_elt'), 'done'),
+                    CompPort(paths_on_node, 'done')
+                )
+            ]
+        ),      
+
         CombGroup(
             CompVar('compare_uniq_idx'),
             [
@@ -332,20 +354,29 @@ def node_depth_pe(max_steps, max_paths):
 
     # Define control flow
     controls = SeqComp([
-        Enable("init_idx"),
+        Enable('init_uniq_idx'),
+        ParComp([
+	    Enable('init_idx'),
+            # Initialize paths_on_node with 0s
+            While(
+                CompPort(uniq_idx_neq, 'out'),
+	        CompVar('compare_uniq_idx'),
+                SeqComp([Enable('init_pon_elt'), Enable('dec_uniq_idx')])
+            )
+        ]),
         ParComp([
             Enable('init_uniq_idx'),
             While(
-                CompPort(idx_neq, "out"),
-                CompVar("compare_idx"),
+                CompPort(idx_neq, 'out'),
+                CompVar('compare_idx'),
                 SeqComp([
-                    Enable("load_path_id"),
+                    Enable('load_path_id'),
                     ParComp([
                         Enable('inc_idx'),
                         # Depth computation
                         SeqComp([
-                            Enable("load_consider_path"),
-                            Enable("inc_depth"),
+                            Enable('load_consider_path'),
+                            Enable('inc_depth'),
                         ]),
                         # Uniq computation
                         Enable('update_pon')
@@ -377,4 +408,4 @@ def node_depth_pe(max_steps, max_paths):
         controls=controls,
     )
 
-    return pe_component
+    return pe_component    

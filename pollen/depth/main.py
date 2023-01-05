@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 import warnings
 
-import pollen.depth.calyx_depth as depth
+import pollen.depth.calyx_depth_ref as depth
 import pollen.depth.parse_data as parse_data
 from pollen.argparse_custom import store_const_and_arg
 
