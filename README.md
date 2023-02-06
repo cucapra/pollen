@@ -125,7 +125,7 @@ Warning: the tests take approximately 2 hours to complete.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
-[gfa]: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8006571/#FN8
+[gfa]: https://github.com/lh3/gfatools/blob/master/doc/rGFA.md#the-reference-gfa-rgfa-format
 [bioconda]: https://anaconda.org/bioconda/odgi/files
 [flit]: https://flit.pypa.io/en/stable/
 [turnt]: https://github.com/cucapra/turnt
