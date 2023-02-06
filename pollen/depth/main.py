@@ -124,9 +124,12 @@ def run_accel(args, tmp_dir_name):
         output = calyx_out.stdout
     else:
         calyx_out = subprocess.run(cmd, capture_output=True, text=True)
-        # Convert calyx output to a node depth table
-        calyx_out = json.loads(calyx_out.stdout)
-        output = parse_data.from_calyx(calyx_out, True) # ndt
+        try:
+            # Convert calyx output to a node depth table
+            calyx_out = json.loads(calyx_out.stdout)
+            output = parse_data.from_calyx(calyx_out, True) # ndt
+        except:
+            output = calyx_out.stderr
 
     # Output the ndt
     if out_file:
@@ -151,7 +154,7 @@ def run(args):
 
         parser = argparse.ArgumentParser()
         parse_data.config_parser(parser)
-        parser.parse_args([args.parse_data], namespace=args) # Set defaults for all arguments
+        parser.parse_args([args.filename], namespace=args) # Set defaults for all arguments
         parse_data.run(args)
         
     elif args.action == 'run': # Run the accelerator
