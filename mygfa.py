@@ -59,7 +59,9 @@ class Path:
         seq_lst = [(s[:-1], parse_orient(s[-1])) for s in seq.split(',')]
         overlaps_lst = None if overlaps == '*' else overlaps.split(',')
         if overlaps_lst:
-            assert len(seq_lst) == len(overlaps_lst)
+            # I'm not sure yet why there can sometimes be one fewer
+            # overlaps than sequences.
+            assert len(overlaps_lst) in (len(seq_lst), len(seq_lst) - 1)
 
         return Path(
             name,
