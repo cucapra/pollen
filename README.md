@@ -27,9 +27,11 @@ and run `flit install -s --user` from the root directory. You may need to instal
 
 Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
 
-We recommend using the native calyx interpreter. After completing the above, run
+After completing the above, run
 ```
-fud config stages.interpreter <full path to calyx repository>/target/debug/interp
+fud config stages.futil.exec <full path to calyx repository>/target/debug/futil
+fud config stages.interpreter.exec <full path to calyx repository>/target/debug/interp
+fud check
 ```
 
 Finally, install the [python interface](https://docs.calyxir.org/calyx-py.html) with
@@ -96,8 +98,8 @@ Third, we generate the hardware accelerator and write it to a file named `depth.
 
 The commands use the hardware parameters as follows:
 1. Uses default hardware parameters.
-2. Takes the hardware parameters as input.
-3. Automatically infers the hardware parameters from a `.og` file.
+2. Automatically infers the hardware parameters from a `.og` file.
+3. Takes the hardware parameters as input.
 
 Parameters that are specified manually take precedence over those that are inferred automatically, and it is legal to specify just a subset of parameters. For example, `exine depth -a test/k.og -n=1` will infer `MAX_STEPS` and `MAX_PATHS` from `test/k.og`, but the resulting accelerator will only handle one node.
 
