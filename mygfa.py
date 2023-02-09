@@ -1,6 +1,8 @@
 import sys
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Dict, TextIO, Iterator
+from enum import Enum
+import re
 
 
 def parse_orient(s) -> bool:
@@ -23,6 +25,41 @@ class Segment:
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
+    def __str__(self):
+        return '\t'.join([
+            "S",
+            self.name,
+            self.seq,
+        ])
+
+
+class AlignOp(Enum):
+    """An operator in an Alignment."""
+    MATCH = 'M'
+    GAP = 'N'
+    DELETION = 'D'
+    INSERTION = 'I'
+
+
+@dataclass
+class Alignment:
+    """CIGAR representation of a sequence alignment."""
+    ops: List[Tuple[int, AlignOp]]
+
+    @classmethod
+    def parse(cls, s: str) -> "Alignment":
+        """Parse a CIGAR string, which looks like 3M7N4M."""
+        ops = [
+            (int(amount_str), AlignOp(op_str))
+            for amount_str, op_str in re.findall(r'(\d+)([^\d])', s)
+        ]
+        return Alignment(ops)
+
+    def __str__(self):
+        return ''.join(
+            f'{amount}{op.value}' for (amount, op) in self.ops
+        )
+
 
 @dataclass
 class Link:
@@ -31,7 +68,7 @@ class Link:
     from_orient: bool
     to: str  # Also a segment name.
     to_orient: bool
-    overlap: str  # "CIGAR string."
+    overlap: Alignment
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Link":
@@ -41,8 +78,18 @@ class Link:
             parse_orient(from_orient),
             to,
             parse_orient(to_orient),
-            overlap,
+            Alignment.parse(overlap),
         )
+
+    def __str__(self):
+        return '\t'.join([
+            "L",
+            self.from_,
+            "+" if self.from_orient else "-",
+            self.to,
+            "+" if self.to_orient else "-",
+            str(self.overlap),
+        ])
 
 
 @dataclass
@@ -50,14 +97,15 @@ class Path:
     """A GFA path is an ordered series of links."""
     name: str
     segments: List[Tuple[str, bool]]  # Segment names and orientations.
-    overlaps: Optional[List[str]]  # "CIGAR strings."
+    overlaps: Optional[List[Alignment]]
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         _, name, seq, overlaps = fields[:4]
 
         seq_lst = [(s[:-1], parse_orient(s[-1])) for s in seq.split(',')]
-        overlaps_lst = None if overlaps == '*' else overlaps.split(',')
+        overlaps_lst = None if overlaps == '*' else \
+            [Alignment.parse(s) for s in overlaps.split(',')]
         if overlaps_lst:
             # I'm not sure yet why there can sometimes be one fewer
             # overlaps than sequences.
@@ -68,6 +116,13 @@ class Path:
             seq_lst,
             overlaps_lst,
         )
+
+    def __str__(self):
+        return '\t'.join([
+            "P",
+            ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
+            ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+        ])
 
 
 def nonblanks(f: TextIO) -> Iterator[str]:
@@ -106,7 +161,15 @@ class Graph:
 
         return graph
 
+    def emit(self, outfile: TextIO):
+        for segment in self.segments.values():
+            print(str(segment), file=outfile)
+        for link in self.links:
+            print(str(link), file=outfile)
+        for path in self.paths.values():
+            print(str(path), file=outfile)
+
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    print(graph)
+    graph.emit(sys.stdout)
