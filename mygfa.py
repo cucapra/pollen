@@ -61,7 +61,7 @@ class Link:
     from_orient: bool
     to: str  # Also a segment name.
     to_orient: bool
-    overlap: str  # "CIGAR string."
+    overlap: Alignment
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Link":
@@ -71,7 +71,7 @@ class Link:
             parse_orient(from_orient),
             to,
             parse_orient(to_orient),
-            overlap,
+            Alignment.parse(overlap),
         )
 
 
@@ -80,14 +80,15 @@ class Path:
     """A GFA path is an ordered series of links."""
     name: str
     segments: List[Tuple[str, bool]]  # Segment names and orientations.
-    overlaps: Optional[List[str]]  # "CIGAR strings."
+    overlaps: Optional[List[Alignment]]
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         _, name, seq, overlaps = fields[:4]
 
         seq_lst = [(s[:-1], parse_orient(s[-1])) for s in seq.split(',')]
-        overlaps_lst = None if overlaps == '*' else overlaps.split(',')
+        overlaps_lst = None if overlaps == '*' else \
+            [Alignment.parse(s) for s in overlaps.split(',')]
         if overlaps_lst:
             # I'm not sure yet why there can sometimes be one fewer
             # overlaps than sequences.
