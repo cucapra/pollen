@@ -25,6 +25,13 @@ class Segment:
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
+    def __str__(self):
+        return '\t'.join([
+            "S",
+            self.name,
+            self.seq,
+        ])
+
 
 class AlignOp(Enum):
     """An operator in an Alignment."""
@@ -74,6 +81,16 @@ class Link:
             Alignment.parse(overlap),
         )
 
+    def __str__(self):
+        return '\t'.join([
+            "L",
+            self.from_,
+            "+" if self.from_orient else "-",
+            self.to,
+            "+" if self.to_orient else "-",
+            str(self.overlap),
+        ])
+
 
 @dataclass
 class Path:
@@ -99,6 +116,13 @@ class Path:
             seq_lst,
             overlaps_lst,
         )
+
+    def __str__(self):
+        return '\t'.join([
+            "P",
+            ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
+            ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+        ])
 
 
 def nonblanks(f: TextIO) -> Iterator[str]:
@@ -137,7 +161,15 @@ class Graph:
 
         return graph
 
+    def emit(self, outfile: TextIO):
+        for segment in self.segments.values():
+            print(str(segment), file=outfile)
+        for link in self.links:
+            print(str(link), file=outfile)
+        for path in self.paths.values():
+            print(str(path), file=outfile)
+
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    print(graph)
+    graph.emit(sys.stdout)
