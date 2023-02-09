@@ -1,6 +1,8 @@
 import sys
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Dict, TextIO, Iterator
+from enum import Enum
+import re
 
 
 def parse_orient(s) -> bool:
@@ -22,6 +24,34 @@ class Segment:
     def parse(cls, fields: List[str]) -> "Segment":
         _, name, seq = fields[:3]
         return Segment(name, seq)
+
+
+class AlignOp(Enum):
+    """An operator in an Alignment."""
+    MATCH = 'M'
+    GAP = 'N'
+    DELETION = 'D'
+    INSERTION = 'I'
+
+
+@dataclass
+class Alignment:
+    """CIGAR representation of a sequence alignment."""
+    ops: List[Tuple[int, AlignOp]]
+
+    @classmethod
+    def parse(cls, s: str) -> "Alignment":
+        """Parse a CIGAR string, which looks like 3M7N4M."""
+        ops = [
+            (int(amount_str), AlignOp(op_str))
+            for amount_str, op_str in re.findall(r'(\d+)([^\d])', s)
+        ]
+        return Alignment(ops)
+
+    def __str__(self):
+        return ''.join(
+            f'{amount}{op.value}' for (amount, op) in self.ops
+        )
 
 
 @dataclass
