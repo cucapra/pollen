@@ -120,6 +120,7 @@ class Path:
     def __str__(self):
         return '\t'.join([
             "P",
+            self.name,
             ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
             ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
@@ -170,6 +171,35 @@ class Graph:
             print(str(path), file=outfile)
 
 
+def node_steps(graph):
+    """For each segment in the graph,
+       list the times the segment was crossed by a path"""
+
+    # segment name, (path name, index on path, direction) list
+    crossings: Dict[str, List[Tuple[str, int, bool]]] = {}
+    for segment in graph.segments.values():
+        crossings[segment.name] = []
+
+    for path in graph.paths.values():
+        for id, (seg_name, seg_orient) in enumerate(path.segments):
+            crossings[seg_name].append((path.name, id, seg_orient))
+
+    return crossings
+    # Feel free to
+    # print(crossings)
+    # to test it by eye, but it's pretty ugly.
+    # This is essentially the (p,i,d) table imagined here:
+    # https://github.com/cucapra/notes/blob/main/Pollen/relational.md#indexes
+
+
+def node_depth(graph):
+    # Here I show that node_depth is just the cardinality of the above,
+    # again as observed in the note.
+    for (segment, crossings) in node_steps(graph).items():
+        print('\t'.join([segment, str(len(crossings))]))
+
+
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    graph.emit(sys.stdout)
+    # graph.emit(sys.stdout)
+    node_depth(graph)
