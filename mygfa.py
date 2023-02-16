@@ -25,6 +25,21 @@ class Segment:
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
+    """Compact any "runs" of N down to a single N."""
+    def crush_n(self):
+        seq = "" # the crushed sequence will be built up here
+        in_n = False
+        for char in self.seq:
+            if char == 'N':
+                if in_n:
+                    continue
+                else:
+                    in_n = True
+            else:
+                in_n = False
+            seq += char
+        return Segment(self.name, seq)
+
     def __str__(self):
         return '\t'.join([
             "S",
@@ -162,6 +177,11 @@ class Graph:
 
         return graph
 
+    def crush_n(self):
+        crushed_segments = \
+            {name: Segment.crush_n(seg) for name, seg in self.segments.items()}
+        return Graph(crushed_segments, self.links, self.paths)
+
     def emit(self, outfile: TextIO):
         for segment in self.segments.values():
             print(str(segment), file=outfile)
@@ -201,5 +221,6 @@ def node_depth(graph):
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    # graph.emit(sys.stdout)
-    node_depth(graph)
+    graph = Graph.crush_n(graph)
+    graph.emit(sys.stdout)
+    # node_depth(graph)
