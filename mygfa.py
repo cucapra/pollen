@@ -208,13 +208,6 @@ def node_steps(graph):
     return crossings
 
 
-def node_depth(graph):
-    # Here I show that node_depth is just the cardinality of the above,
-    # again as observed in the note.
-    for (segment, crossings) in node_steps(graph).items():
-        print('\t'.join([segment, str(len(crossings))]))
-
-
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
     graph.emit(sys.stdout)
