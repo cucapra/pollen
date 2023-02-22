@@ -26,8 +26,9 @@ class Segment:
         return Segment(name, seq)
 
     """Compact any "runs" of N down to a single N."""
-    def crush_n(self):
-        seq = "" # the crushed sequence will be built up here
+
+    def crush_n(self) -> "Segment":
+        seq = ""  # the crushed sequence will be built up here
         in_n = False
         for char in self.seq:
             if char == 'N':
@@ -177,9 +178,9 @@ class Graph:
 
         return graph
 
-    def crush_n(self):
+    def crush_n(self) -> "Graph":
         crushed_segments = \
-            {name: Segment.crush_n(seg) for name, seg in self.segments.items()}
+            {name: seg.crush_n() for name, seg in self.segments.items()}
         return Graph(crushed_segments, self.links, self.paths)
 
     def emit(self, outfile: TextIO):
@@ -205,11 +206,6 @@ def node_steps(graph):
             crossings[seg_name].append((path.name, id, seg_orient))
 
     return crossings
-    # Feel free to
-    # print(crossings)
-    # to test it by eye, but it's pretty ugly.
-    # This is essentially the (p,i,d) table imagined here:
-    # https://github.com/cucapra/notes/blob/main/Pollen/relational.md#indexes
 
 
 def node_depth(graph):
@@ -221,6 +217,4 @@ def node_depth(graph):
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    graph = Graph.crush_n(graph)
     graph.emit(sys.stdout)
-    # node_depth(graph)
