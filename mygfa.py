@@ -25,22 +25,6 @@ class Segment:
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
-    """Compact any "runs" of N down to a single N."""
-
-    def crush_n(self) -> "Segment":
-        seq = ""  # the crushed sequence will be built up here
-        in_n = False
-        for char in self.seq:
-            if char == 'N':
-                if in_n:
-                    continue
-                else:
-                    in_n = True
-            else:
-                in_n = False
-            seq += char
-        return Segment(self.name, seq)
-
     def __str__(self):
         return '\t'.join([
             "S",
@@ -178,11 +162,6 @@ class Graph:
 
         return graph
 
-    def crush_n(self) -> "Graph":
-        crushed_segments = \
-            {name: seg.crush_n() for name, seg in self.segments.items()}
-        return Graph(crushed_segments, self.links, self.paths)
-
     def emit(self, outfile: TextIO):
         for segment in self.segments.values():
             print(str(segment), file=outfile)
@@ -190,22 +169,6 @@ class Graph:
             print(str(link), file=outfile)
         for path in self.paths.values():
             print(str(path), file=outfile)
-
-
-def node_steps(graph):
-    """For each segment in the graph,
-       list the times the segment was crossed by a path"""
-
-    # segment name, (path name, index on path, direction) list
-    crossings: Dict[str, List[Tuple[str, int, bool]]] = {}
-    for segment in graph.segments.values():
-        crossings[segment.name] = []
-
-    for path in graph.paths.values():
-        for id, (seg_name, seg_orient) in enumerate(path.segments):
-            crossings[seg_name].append((path.name, id, seg_orient))
-
-    return crossings
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 import sys
 import mygfa
+import preprocess
 
 
 def node_depth(graph):
     # The depth of a node is just the cardinality of node_step for that node
-    for (segment, crossings) in mygfa.node_steps(graph).items():
+    for (segment, crossings) in preprocess.node_steps(graph).items():
         print('\t'.join([segment, str(len(crossings))]))
 
 
