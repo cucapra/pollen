@@ -86,6 +86,6 @@ if __name__ == '__main__':
     ndt = get_depth_table(graph, subset_paths)
 
     # Print the ndt to the standard output
-    print("node.id\tdepth\tdepth.uniq")
+    print("#node.id\tdepth\tdepth.uniq")
     for id, (depth, uniq) in sorted(ndt.items()):
         print(f'{id}\t{depth}\t{uniq}')
