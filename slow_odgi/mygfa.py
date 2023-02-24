@@ -120,6 +120,7 @@ class Path:
     def __str__(self):
         return '\t'.join([
             "P",
+            self.name,
             ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
             ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
