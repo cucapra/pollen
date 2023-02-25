@@ -2,11 +2,26 @@ import sys
 import json
 from json import JSONEncoder
 import mygfa
+import preprocess
 
 
 class SegmentEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
+
+
+MAX_STEPS = 15
+
+
+class PathsAsViewedByNodesEncoder(JSONEncoder):
+    def default(self, o):
+        path2id = {path: id for id, path in enumerate(o.paths, start=1)}
+        output = {}
+        for (seg, crossings) in preprocess.node_steps(graph).items():
+            data = list(path2id[c[0]] for c in crossings)
+            # data = data + [0] * (MAX_STEPS - len(data))
+            output[f'path_ids{seg}'] = data
+        print(json.dumps(output, indent=4))
 
 
 class AlignmentEncoder(JSONEncoder):
@@ -41,6 +56,10 @@ def simple_dump(graph):
     print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
 
 
+def nodes_eye_view_of_paths(graph):
+    json.dumps(graph, indent=4, cls=PathsAsViewedByNodesEncoder)
+
+
 if __name__ == "__main__":
     graph = mygfa.Graph.parse(sys.stdin)
-    simple_dump(graph)
+    nodes_eye_view_of_paths(graph)
