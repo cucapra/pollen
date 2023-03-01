@@ -13,13 +13,13 @@ class SegmentEncoder(JSONEncoder):
 MAX_STEPS = 15
 MAX_NODES = 16
 
-format = {"is_signed": False,
-          "numeric_type": "bitnum",
-          "width": 4}
+format_width4 = {"is_signed": False,
+                 "numeric_type": "bitnum",
+                 "width": 4}
 
-format_p2c = {"is_signed": False,
-              "numeric_type": "bitnum",
-              "width": 1}
+format_width1 = {"is_signed": False,
+                 "numeric_type": "bitnum",
+                 "width": 1}
 
 
 def paths_viewed_from_nodes(graph):
@@ -28,16 +28,23 @@ def paths_viewed_from_nodes(graph):
     for (seg, crossings) in preprocess.node_steps(graph).items():
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (MAX_STEPS - len(data))
-        output[f'path_ids{seg}'] = {"data": data, "format": format}
+        output[f'path_ids{seg}'] = {"data": data, "format": format_width4}
     return output
 
 
-def paths_to_consider():
+def paths_to_consider(o):
+    """Currently just a stub; later we will populate this with a
+    bitvector of length MAX_PATHS, where the i'th index will be 1 if
+    the i'th path is to be considered during depth calculation
+
+    Somewhat annoyingly, we need as many copies of this bitvector as there
+    are nodes in the graph.
+    """
     output = {}
-    for i in range(1, MAX_NODES + 1):  # tinker
+    for i in range(1, len(o.segments) + 1):  # tinker
         data = [0] + [1] * (MAX_NODES - 1)  # tinker
         output[f'paths_to_consider{i}'] = {
-            "data": data, "format": format_p2c}
+            "data": data, "format": format_width1}
     return output
 
 
@@ -45,10 +52,10 @@ class NodeDepthEncoder(JSONEncoder):
 
     def default(self, o):
         answer_field = {"depth_output": {"data": list([0]*MAX_NODES),
-                                         "format": format}}
+                                         "format": format_width4}}
         answer_field_uniq = {"uniq_output": {"data": list([0]*MAX_NODES),
-                                             "format": format}}
-        paths = paths_viewed_from_nodes(o) | paths_to_consider()
+                                             "format": format_width4}}
+        paths = paths_viewed_from_nodes(o) | paths_to_consider(o)
         print(json.dumps(answer_field | paths |
               answer_field_uniq, indent=2, sort_keys=True))
 
