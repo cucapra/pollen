@@ -14,14 +14,18 @@ MAX_STEPS = 15
 
 
 class PathsAsViewedByNodesEncoder(JSONEncoder):
+
     def default(self, o):
+        format = {"is_signed": False,
+                  "numeric_type": "bitnum",
+                  "width": 4}
         path2id = {path: id for id, path in enumerate(o.paths, start=1)}
         output = {}
         for (seg, crossings) in preprocess.node_steps(graph).items():
             data = list(path2id[c[0]] for c in crossings)
-            # data = data + [0] * (MAX_STEPS - len(data))
-            output[f'path_ids{seg}'] = data
-        print(json.dumps(output, indent=4))
+            data = data + [0] * (MAX_STEPS - len(data))
+            output[f'path_ids{seg}'] = {"data": data, "format": format}
+        print(json.dumps(output, indent=2))
 
 
 class AlignmentEncoder(JSONEncoder):
