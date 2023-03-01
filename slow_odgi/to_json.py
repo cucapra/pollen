@@ -29,6 +29,10 @@ def paths_viewed_from_nodes(graph):
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (MAX_STEPS - len(data))
         output[f'path_ids{seg}'] = {"data": data, "format": format_width4}
+    # Would rather not have the four lines below. See issue 24
+    data = [0] * MAX_STEPS
+    for i in range (len (graph.segments) + 1, MAX_NODES + 1):
+        output[f'path_ids{i}'] = {"data": data, "format": format_width4}
     return output
 
 
@@ -41,8 +45,9 @@ def paths_to_consider(o):
     are nodes in the graph.
     """
     output = {}
-    for i in range(1, len(o.segments) + 1):  # tinker
-        data = [0] + [1] * (MAX_NODES - 1)  # tinker
+    for i in range(1, MAX_NODES + 1):
+        # Would rather do the above for size(g). See issue 24
+        data = [0] + [1] * (MAX_NODES - 1)
         output[f'paths_to_consider{i}'] = {
             "data": data, "format": format_width1}
     return output
