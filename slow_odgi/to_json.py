@@ -11,10 +11,15 @@ class SegmentEncoder(JSONEncoder):
 
 
 MAX_STEPS = 15
+MAX_NODES = 16
 
 format = {"is_signed": False,
           "numeric_type": "bitnum",
           "width": 4}
+
+format_p2c = {"is_signed": False,
+              "numeric_type": "bitnum",
+              "width": 1}
 
 
 def paths_viewed_from_nodes(graph):
@@ -27,13 +32,25 @@ def paths_viewed_from_nodes(graph):
     return output
 
 
+def paths_to_consider():
+    output = {}
+    for i in range(1, MAX_NODES + 1):  # tinker
+        data = [0] + [1] * (MAX_NODES - 1)  # tinker
+        output[f'paths_to_consider{i}'] = {
+            "data": data, "format": format_p2c}
+    return output
+
+
 class NodeDepthEncoder(JSONEncoder):
 
     def default(self, o):
-        answer_field = {"depth_output": {"data": list([0]*MAX_STEPS),
+        answer_field = {"depth_output": {"data": list([0]*MAX_NODES),
                                          "format": format}}
-        paths = paths_viewed_from_nodes(o)
-        print(json.dumps(answer_field | paths, indent=2))
+        answer_field_uniq = {"uniq_output": {"data": list([0]*MAX_NODES),
+                                             "format": format}}
+        paths = paths_viewed_from_nodes(o) | paths_to_consider()
+        print(json.dumps(answer_field | paths |
+              answer_field_uniq, indent=2, sort_keys=True))
 
 
 class AlignmentEncoder(JSONEncoder):
