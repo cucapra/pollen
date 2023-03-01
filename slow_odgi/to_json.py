@@ -12,20 +12,28 @@ class SegmentEncoder(JSONEncoder):
 
 MAX_STEPS = 15
 
+format = {"is_signed": False,
+          "numeric_type": "bitnum",
+          "width": 4}
 
-class PathsAsViewedByNodesEncoder(JSONEncoder):
+
+def paths_viewed_from_nodes(graph):
+    path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
+    output = {}
+    for (seg, crossings) in preprocess.node_steps(graph).items():
+        data = list(path2id[c[0]] for c in crossings)
+        data = data + [0] * (MAX_STEPS - len(data))
+        output[f'path_ids{seg}'] = {"data": data, "format": format}
+    return output
+
+
+class NodeDepthEncoder(JSONEncoder):
 
     def default(self, o):
-        format = {"is_signed": False,
-                  "numeric_type": "bitnum",
-                  "width": 4}
-        path2id = {path: id for id, path in enumerate(o.paths, start=1)}
-        output = {}
-        for (seg, crossings) in preprocess.node_steps(graph).items():
-            data = list(path2id[c[0]] for c in crossings)
-            data = data + [0] * (MAX_STEPS - len(data))
-            output[f'path_ids{seg}'] = {"data": data, "format": format}
-        print(json.dumps(output, indent=2))
+        answer_field = {"depth_output": {"data": list([0]*MAX_STEPS),
+                                         "format": format}}
+        paths = paths_viewed_from_nodes(o)
+        print(json.dumps(answer_field | paths, indent=2))
 
 
 class AlignmentEncoder(JSONEncoder):
@@ -60,10 +68,10 @@ def simple_dump(graph):
     print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
 
 
-def nodes_eye_view_of_paths(graph):
-    json.dumps(graph, indent=4, cls=PathsAsViewedByNodesEncoder)
+def json_for_node_depth(graph):
+    json.dumps(graph, indent=4, cls=NodeDepthEncoder)
 
 
 if __name__ == "__main__":
     graph = mygfa.Graph.parse(sys.stdin)
-    nodes_eye_view_of_paths(graph)
+    json_for_node_depth(graph)
