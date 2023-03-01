@@ -86,17 +86,38 @@ def node_depth_pe(max_steps, max_paths):
     # Initialize the wires
     wires = [
         Group(
-            CompVar("init_idx"),
+            CompVar('init_idx'),
             [
-                Connect(CompPort(idx, "in"), ConstantPort(steps_width, 0)),
-                Connect(CompPort(idx, "write_en"), ConstantPort(1, 1)),
+                Connect(CompPort(idx, 'in'), ConstantPort(steps_width, 0)),
+                Connect(CompPort(idx, 'write_en'), ConstantPort(1, 1)),
                 Connect(
-                    HolePort(CompVar("init_idx"), "done"),
-                    CompPort(idx, "done")
+                    HolePort(CompVar('init_idx'), 'done'),
+                    CompPort(idx, 'done')
                 )
             ]
         ),
-        
+        Group(
+            CompVar('init_depth'),
+            [
+                Connect(CompPort(depth, 'in'), ConstantPort(depth_width, 0)),
+                Connect(CompPort(depth, 'write_en'), ConstantPort(1, 1)),
+                Connect(
+                    HolePort(CompVar('init_depth'), 'done'),
+                    CompPort(depth, 'done')
+                )
+            ]
+        ),
+        Group(
+            CompVar('init_uniq'),
+            [
+                Connect(CompPort(uniq, 'in'), ConstantPort(uniq_width, 0)),
+                Connect(CompPort(uniq, 'write_en'), ConstantPort(1, 1)),
+                Connect(
+                    HolePort(CompVar('init_uniq'), 'done'),
+                    CompPort(uniq, 'done')
+                )
+            ]
+        ),
         Group(
             CompVar("load_path_id"),
             [
@@ -356,11 +377,13 @@ def node_depth_pe(max_steps, max_paths):
     controls = SeqComp([
         Enable('init_uniq_idx'),
         ParComp([
-	    Enable('init_idx'),
+            Enable('init_depth'),
+            Enable('init_uniq'),
+            Enable('init_idx'),
             # Initialize paths_on_node with 0s
             While(
                 CompPort(uniq_idx_neq, 'out'),
-	        CompVar('compare_uniq_idx'),
+                CompVar('compare_uniq_idx'),
                 SeqComp([Enable('init_pon_elt'), Enable('dec_uniq_idx')])
             )
         ]),

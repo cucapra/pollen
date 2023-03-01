@@ -124,7 +124,8 @@ def run_accel(args, tmp_dir_name):
     # Compute the node depth
     if args.verilog:
         cmd = ['fud', 'e', futil_file, '--to', 'dat', '--through', 'verilog',
-               '-s', 'verilog.data', data_file]
+               '-s', 'verilog.data', data_file,
+               '-s', 'flags', "'-d cell-share'"]
     else: # Use the interpreter
         cmd = ['fud', 'e', futil_file, '--to', 'interpreter-out',
                '-s', 'verilog.data', data_file]

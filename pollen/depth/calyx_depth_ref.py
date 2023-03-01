@@ -1,6 +1,4 @@
 import argparse
-from math import ceil
-import subprocess
 
 from calyx.py_ast import *
 from pollen.depth import parse_data
@@ -17,23 +15,32 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
     depth_output = CompVar('depth_output')
     uniq_output = CompVar('uniq_output')
 
+    batch = CompVar('batch')
+    batch_adder = CompVar('batch_adder')
+    batch_neq = CompVar('batch_neq')
+
+    # Keep track of each pe's place in depth_output and uniq_output
+    output_idx = CompVar('output_idx')
+    output_idx_adder = CompVar('output_idx_addr')
+
     depth = [] # registers for storing depth
     uniq = []
     paths_on_node = []
+
     path_ids = [] # path_id for each step on the node
-    paths_to_consider = [] # duplicated, each node gets its own array
+    paths_to_consider = [] # duplicated, each processing element gets its own array
 
     pe = [] #processing elements
     
     for i in range(1, max_nodes + 1):
-        depth.append(CompVar(f'depth{i}'))
-        uniq.append(CompVar(f'uniq{i}'))
-        paths_on_node.append(CompVar(f'paths_on_node{i}'))
         path_ids.append(CompVar(f'path_ids{i}'))
-        paths_to_consider.append(CompVar(f'paths_to_consider{i}'))
 
     for i in range(1, num_pes + 1):
         pe.append(CompVar(f'pe{i}'))
+        depth.append(CompVar(f'depth{i}'))
+        uniq.append(CompVar(f'uniq{i}'))
+        paths_on_node.append(CompVar(f'paths_on_node{i}'))
+        paths_to_consider.append(CompVar(f'paths_to_consider{i}'))
 
 
     # Initialize the cells
@@ -43,6 +50,8 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
     uniq_width = path_id_width # number of bits to represent uniq depth
     steps_width = max((max_steps - 1).bit_length(), 1)
     node_width = max((max_nodes - 1).bit_length(), 1)
+    num_batches = max_nodes // num_pes
+    batch_width = (num_batches + 1).bit_length()
     
     cells = [
         # External memory cells for the output
@@ -55,21 +64,31 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
             uniq_output,
             stdlib.mem_d1(uniq_width, max_nodes, node_width),
             is_external=True
-        )
+        ),
+        Cell(batch, stdlib.register(batch_width)),
+        Cell(batch_adder, stdlib.op('add', batch_width, signed=False)),
+        Cell(batch_neq, stdlib.op('neq', batch_width, signed=False)),
+        Cell(output_idx_adder, stdlib.op('add', node_width, signed=False)),
+        Cell(output_idx, stdlib.register(node_width)),
     ]
 
     for i in range(max_nodes):
-        cells.extend([
-            Cell(depth[i], stdlib.register(depth_width)),
-            Cell(uniq[i], stdlib.register(uniq_width)),
-            Cell(
-                paths_on_node[i],
-                stdlib.mem_d1(1, ptc_size, path_id_width),
-            ),
+        cells.append(
             Cell(
                 path_ids[i],
                 stdlib.mem_d1(path_id_width, max_steps, steps_width),
                 is_external=True
+            )
+        )
+
+    for i in range(num_pes):
+        cells.extend([
+            Cell(pe[i], CompInst('node_depth_pe', [])),
+            Cell(depth[i], stdlib.register(depth_width)),
+            Cell(uniq[i], stdlib.register(uniq_width)),
+            Cell(
+                paths_on_node[i],
+                stdlib.mem_d1(1, ptc_size, path_id_width)
             ),
             Cell(
                 paths_to_consider[i],
@@ -77,21 +96,62 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                 is_external=True
             ),
         ])
-
-    for i in range(num_pes):
-        cells.append(Cell(pe[i], CompInst('node_depth_pe', [])))
         
     # Initialize the wires
-    wires = []
-
-    for i in range(max_nodes):
-        wires.extend([
-            Group(
-                CompVar(f'store_depth{i}'),
+    wires = [
+        Group(
+                CompVar('init_output_idx'),
                 [
                     Connect(
-                        CompPort(depth_output, "addr0"),
-                        ConstantPort(node_width, i)
+                        CompPort(output_idx, 'in'),
+                        ConstantPort(node_width, 0)
+                    ),
+                    Connect(
+                        CompPort(output_idx, 'write_en'),
+                        ConstantPort(1, 1)
+                    ),
+                    Connect(
+                        HolePort(CompVar('init_output_idx'), 'done'),
+                        CompPort(output_idx, 'done')
+                    )
+                ]
+            ),
+        Group(
+            CompVar('inc_output_idx'),
+            [
+                Connect(
+                    CompPort(output_idx_adder, 'left'),
+                    CompPort(output_idx, 'out')
+                ),
+                Connect(
+                    CompPort(output_idx_adder, 'right'),
+                    ConstantPort(node_width, 1)
+                ),
+                Connect(
+                    CompPort(output_idx, 'in'),
+                    CompPort(output_idx_adder, 'out')
+                ),
+                Connect(
+                    CompPort(output_idx, 'write_en'),
+                    ConstantPort(1, 1)
+                ),
+                Connect(
+                    HolePort(CompVar('inc_output_idx'), 'done'),
+                    CompPort(output_idx, 'done')
+                ),
+            ]
+        ),
+    ]
+
+    for i in range(num_pes):
+        wires.append(
+            Group(
+                CompVar(f'store_output{i}'),
+                [
+                    # store depth
+                    Connect(
+                        CompPort(depth_output, 'addr0'),
+                        CompPort(output_idx, 'out')
                     ),
                     Connect(
                         CompPort(depth_output, 'write_data'),
@@ -101,18 +161,10 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                         CompPort(depth_output, 'write_en'),
                         ConstantPort(1, 1)
                     ),
-                    Connect(
-                        HolePort(CompVar(f'store_depth{i}'), 'done'),
-                        CompPort(depth_output, 'done')
-                    )
-                ]
-            ),
-            Group(
-                CompVar(f"store_uniq{i}"),
-                [
+                    # store depth.uniq
                     Connect(
                         CompPort(uniq_output, 'addr0'),
-                        ConstantPort(node_width, i)
+                        CompPort(output_idx, 'out')
                     ),
                     Connect(
                         CompPort(uniq_output, 'write_data'),
@@ -123,48 +175,62 @@ def node_depth(max_nodes, max_steps, max_paths, num_pes=None):
                         ConstantPort(1, 1)
                     ),
                     Connect(
-                        HolePort(CompVar(f'store_uniq{i}'), 'done'),
-                        CompPort(uniq_output, 'done')
+                        HolePort(CompVar(f'store_output{i}'), 'done'),
+                        CompPort(depth_output, 'done'),
+                        guard = Atom(CompPort(uniq_output, 'done'))
                     )
                 ]
             )
-        ])
-    
+        )
 
     # Define control flow
 
+    controls = [ Enable('init_output_idx') ]
+
     # Compute depth and uniq depth
     pe_controls = []
-    for i in range(num_pes):
-        pe_i_controls = []
-        for j in range(i, max_nodes, num_pes):
-            pe_i_controls.append(
-                Invoke(id=pe[i],
-                       in_connects=[],
-                       out_connects=[],
-                       ref_cells=[
-                           ('path_ids', path_ids[j]),
-                           ('paths_to_consider', paths_to_consider[i]),
-                           ('depth', depth[j]),
-                           ('uniq', uniq[j]),
-                           ('paths_on_node', paths_on_node[i])
-                       ]
+
+    # Run every processing element unless max_nodes has been reached
+    nid = 0 # Num of nodes whose depth has been computed
+    batch_controls = []
+
+    while nid < max_nodes:
+
+        # Calculate the batch size based on the number of nodes left
+        if nid + num_pes < max_nodes:
+            batch_size = num_pes
+        else:
+            batch_size = max_nodes - nid
+
+        # Assign each node in batch to a processor
+        for pe_id in range(batch_size):
+            batch_controls.append(
+                Invoke(id=pe[pe_id],
+                        in_connects=[],
+                        out_connects=[],
+                        ref_cells=[
+                            ('path_ids', path_ids[nid]),
+                            ('paths_to_consider', paths_to_consider[pe_id]),
+                            ('depth', depth[pe_id]),
+                            ('uniq', uniq[pe_id]),
+                            ('paths_on_node', paths_on_node[pe_id])
+                        ]
                 )
             )
-            #print(j)
-            #print(path_ids[j])
-            #print(pe_i_controls)
-        pe_controls.append(SeqComp(pe_i_controls))
-        #print(pe_controls)
-    controls = [ParComp(pe_controls)]
-                
-    for i in range(max_nodes):
-        controls.append(
-            ParComp([
-                Enable(f'store_uniq{i}'),
-                Enable(f'store_depth{i}')
+            nid += 1
+
+        pe_controls.append(ParComp(batch_controls))
+        batch_controls = []
+
+        # Store the node depth and uniq depth results in depth_output and
+        # uniq_output
+        for pe_id in range(batch_size):
+            pe_controls.extend([
+                    Enable(f'store_output{pe_id}'),
+                    Enable('inc_output_idx')
             ])
-        )
+
+    controls.extend(pe_controls)
     
     main_component = Component(
         name="main",
