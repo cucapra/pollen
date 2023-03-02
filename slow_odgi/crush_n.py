@@ -23,7 +23,7 @@ def crush_n_graph(graph):
     crushed_segments = \
         {name: crush_n_seg(seg)
          for name, seg in graph.segments.items()}
-    return mygfa.Graph(crushed_segments, graph.links, graph.paths)
+    return mygfa.Graph(graph.headers, crushed_segments, graph.links, graph.paths)
 
 
 if __name__ == "__main__":
