@@ -122,7 +122,8 @@ class Path:
             "P",
             self.name,
             ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
-            ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+            "*"
+            # ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
 
 
