@@ -22,7 +22,7 @@ test-depth: og
 test-slow-odgi: og test-emit
 
 test-emit: og
-	-turnt -v --save --env emit_oracle test/*.gfa
+	-turnt -v --save --env emit_oracle test/*.og
 	turnt --env emit_test test/*.gfa
 
 clean:
