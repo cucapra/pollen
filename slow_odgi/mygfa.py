@@ -122,7 +122,8 @@ class Path:
             "P",
             self.name,
             ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
-            ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+            "*",
+            # ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
 
 
@@ -137,18 +138,19 @@ def nonblanks(f: TextIO) -> Iterator[str]:
 @dataclass
 class Graph:
     """An entire GFA file."""
+    headers: List[str]
     segments: Dict[str, Segment]
     links: List[Link]
     paths: Dict[str, Path]
 
     @classmethod
     def parse(cls, infile: TextIO) -> "Graph":
-        graph = Graph({}, [], {})
+        graph = Graph([], {}, [], {})
 
         for line in nonblanks(infile):
             fields = line.split()
             if fields[0] == 'H':
-                pass  # Ignore headers for now.
+                graph.headers.append(line)  # Stash headers verbatim for now.
             elif fields[0] == 'S':
                 segment = Segment.parse(fields)
                 graph.segments[segment.name] = segment
@@ -163,12 +165,14 @@ class Graph:
         return graph
 
     def emit(self, outfile: TextIO):
+        for header in self.headers:
+            print(header, file=outfile)
         for segment in self.segments.values():
             print(str(segment), file=outfile)
-        for link in self.links:
-            print(str(link), file=outfile)
         for path in self.paths.values():
             print(str(path), file=outfile)
+        for link in sorted(self.links, key=lambda l: (l.from_, l.to)):
+            print(str(link), file=outfile)
 
 
 if __name__ == "__main__":
