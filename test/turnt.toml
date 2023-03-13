@@ -1,6 +1,6 @@
 [envs.emit_oracle]
 binary = true
-command = "cat {filename}"
+command = "odgi view -i./{filename} -g | python3 ../slow_odgi/mygfa.py"
 
 [envs.emit_test]
 binary = true
