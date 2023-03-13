@@ -171,7 +171,7 @@ class Graph:
             print(str(segment), file=outfile)
         for path in self.paths.values():
             print(str(path), file=outfile)
-        for link in self.links:
+        for link in sorted(self.links, key=lambda l: (l.from_, l.to)):
             print(str(link), file=outfile)
 
 
