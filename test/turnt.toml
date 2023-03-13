@@ -1,0 +1,7 @@
+[envs.emit_oracle]
+binary = true
+command = "cat {filename}"
+
+[envs.emit_test]
+binary = true
+command = "python3 ../slow_odgi/mygfa.py < {filename}"

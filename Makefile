@@ -19,6 +19,12 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
+test-slow-odgi: og test-emit
+
+test-emit: og
+	-turnt -v --save --env emit_oracle test/*.gfa
+	turnt --env emit_test test/*.gfa
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
