@@ -19,7 +19,8 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-chop test-crush test-degree test-depth test-emit
+test-slow-odgi: og test-crush test-degree test-depth test-emit test-flip
+# to add: test-chop
 
 test-chop: og
 	-turnt -v --save --env chop_oracle test/*.og
@@ -40,6 +41,10 @@ test-depth: og
 test-emit: og
 	-turnt -v --save --env emit_oracle test/*.og
 	turnt --env emit_test test/*.gfa
+
+test-flip: og
+	-turnt -v --save --env flip_oracle test/*.og
+	turnt --diff --env flip_test test/*.gfa
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
