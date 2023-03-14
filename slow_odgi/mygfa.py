@@ -81,6 +81,9 @@ class Link:
             Alignment.parse(overlap),
         )
 
+    def cmp(link):
+        return (link.from_, link.to, link.from_orient, link.to_orient)
+
     def __str__(self):
         return '\t'.join([
             "L",
@@ -171,7 +174,7 @@ class Graph:
             print(str(segment), file=outfile)
         for path in self.paths.values():
             print(str(path), file=outfile)
-        for link in sorted(self.links, key=lambda l: (l.from_, l.to)):
+        for link in sorted(self.links, key=Link.cmp):
             print(str(link), file=outfile)
 
 
