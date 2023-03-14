@@ -19,9 +19,8 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-slow-crush test-slow-degree test-slow-depth test-slow-emit
+test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit
 # to add: test-slow-flip
-# to add: test-slow-chop
 
 test-slow-chop: og
 	-turnt --save --env chop_oracle test/*.og

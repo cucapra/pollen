@@ -167,17 +167,21 @@ class Graph:
 
         return graph
 
-    def emit(self, outfile: TextIO):
+    def emit(self, outfile: TextIO, showlinks = True):
         for header in self.headers:
             print(header, file=outfile)
         for segment in self.segments.values():
             print(str(segment), file=outfile)
         for path in self.paths.values():
             print(str(path), file=outfile)
-        for link in sorted(self.links, key=Link.cmp):
-            print(str(link), file=outfile)
+        if showlinks:
+            for link in sorted(self.links, key=Link.cmp):
+                print(str(link), file=outfile)
 
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    graph.emit(sys.stdout)
+    if len(sys.argv) > 1 and sys.argv[1] == "--nl":
+        graph.emit(sys.stdout, False)
+    else:
+        graph.emit(sys.stdout)

@@ -47,10 +47,8 @@ def chop_graph(graph):
         new_path_segments = []
         for (segname, o) in path.segments:
             r = seg_2_start_end[segname]
-            if o: # forward direction
-                new_path_segments += [(s,o) for s in range(r[0], r[1])]
-            else: # reverse direction
-                new_path_segments += [(s,o) for s in range(r[1], r[0])]
+            segments = [(s,o) for s in range(r[0], r[1])]
+            new_path_segments += segments if o else list(reversed(segments))
         new_paths[path.name] = mygfa.Path(path.name, new_path_segments, path.overlaps)
 
     return mygfa.Graph(graph.headers, new_segments, new_links, new_paths)
@@ -60,4 +58,4 @@ if __name__ == "__main__":
     name = sys.stdin
     graph = mygfa.Graph.parse(sys.stdin)
     chopped_graph = chop_graph(graph)
-    chopped_graph.emit(sys.stdout)
+    chopped_graph.emit(sys.stdout, False)
