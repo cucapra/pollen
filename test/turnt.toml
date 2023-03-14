@@ -14,6 +14,14 @@ command = "odgi crush -i {filename} --out=temp.og; odgi view -g -i temp.og | pyt
 binary = true
 command = "python3 ../slow_odgi/crush_n.py < {filename}"
 
+[envs.degree_oracle]
+binary = true
+command = "odgi degree -d --input={filename}"
+
+[envs.degree_test]
+binary = true
+command = "python3 ../slow_odgi/node_degree.py < {filename}"
+
 [envs.emit_oracle]
 binary = true
 command = "odgi view -g -i {filename} | python3 ../slow_odgi/mygfa.py"
