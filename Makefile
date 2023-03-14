@@ -46,6 +46,10 @@ test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
 	turnt --diff --env flip_test test/*.gfa
 
+test-slow-kmers: og
+	-turnt --save --env kmers_oracle test/*.og
+# turnt --diff --env kmers_test test/*.gfa
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
