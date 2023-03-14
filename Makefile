@@ -19,31 +19,31 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-crush test-degree test-depth test-emit
-# to add: test-flip
-# to add: test-chop
+test-slow-odgi: og test-slow-crush test-slow-degree test-slow-depth test-slow-emit
+# to add: test-slow-flip
+# to add: test-slow-chop
 
-test-chop: og
+test-slow-chop: og
 	-turnt -v --save --env chop_oracle test/*.og
 	turnt --env chop_test test/*.gfa
 
-test-crush: og
+test-slow-crush: og
 	-turnt -v --save --env crush_oracle test/*.og
 	turnt --env crush_test test/*.gfa
 
-test-degree: og
+test-slow-degree: og
 	-turnt -v --save --env degree_oracle test/*.og
 	turnt --env degree_test test/*.gfa
 
-test-depth: og
+test-slow-depth: og
 	-turnt -v --save --env depth_oracle test/*.og
 	turnt --env depth_test test/*.gfa
 
-test-emit: og
+test-slow-emit: og
 	-turnt -v --save --env emit_oracle test/*.og
 	turnt --env emit_test test/*.gfa
 
-test-flip: og
+test-slow-flip: og
 	-turnt -v --save --env flip_oracle test/*.og
 	turnt --diff --env flip_test test/*.gfa
 
