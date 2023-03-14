@@ -19,7 +19,8 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-crush test-degree test-depth test-emit test-flip
+test-slow-odgi: og test-crush test-degree test-depth test-emit
+# to add: test-flip
 # to add: test-chop
 
 test-chop: og
