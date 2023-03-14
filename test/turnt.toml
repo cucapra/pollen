@@ -1,6 +1,6 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c3 --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi chop -i {filename} -c 3 --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
 
 [envs.chop_test]
 binary = true
@@ -40,7 +40,7 @@ command = "python3 ../slow_odgi/mygfa.py < {filename}"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
 
 [envs.flip_test]
 binary = true
