@@ -1,7 +1,47 @@
+[envs.chop_oracle]
+binary = true
+command = "odgi chop -i {filename} -c 3 --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py --nl"
+
+[envs.chop_test]
+binary = true
+command = "python3 ../slow_odgi/chop.py < {filename}"
+
+[envs.crush_oracle]
+binary = true
+command = "odgi crush -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+
+[envs.crush_test]
+binary = true
+command = "python3 ../slow_odgi/crush_n.py < {filename}"
+
+[envs.degree_oracle]
+binary = true
+command = "odgi degree -d --input={filename}"
+
+[envs.degree_test]
+binary = true
+command = "python3 ../slow_odgi/node_degree.py < {filename}"
+
+[envs.depth_oracle]
+binary = true
+command = "odgi depth -d --input={filename}"
+
+[envs.depth_test]
+binary = true
+command = "python3 ../slow_odgi/node_depth.py < {filename}"
+
 [envs.emit_oracle]
 binary = true
-command = "odgi view -i./{filename} -g | python3 ../slow_odgi/mygfa.py"
+command = "odgi view -g -i {filename} | python3 ../slow_odgi/mygfa.py"
 
 [envs.emit_test]
 binary = true
 command = "python3 ../slow_odgi/mygfa.py < {filename}"
+
+[envs.flip_oracle]
+binary = true
+command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
+
+[envs.flip_test]
+binary = true
+command = "python3 ../slow_odgi/flip.py < {filename}"
