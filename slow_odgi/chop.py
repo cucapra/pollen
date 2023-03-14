@@ -1,8 +1,7 @@
 import sys
 import mygfa
-import re
 
-limit = 3 # TODO: takes this as a CLI input
+n = 3 # TODO: take this as a CLI input
 
 def chop_graph(graph):
     new_segments = {}
@@ -10,36 +9,49 @@ def chop_graph(graph):
     new_paths = {}
 
     seg_2_start_end = {}
-    # Dict[str, Tuple[str, str]]
-    # Maps an old segment name to the first and last of its new avatar.
-    # For example,
-    # S 3 = ATGGCCC was chopped into
-    # S 7 = AT
-    # S 8 = GG
-    # S 9 = CC
-    # S 10 = C
-    # then seg_2_start_end[3] = (7,10)
+    """Dict[str, Tuple[str, str]]
+    Maps an old segment name to the first and last of its new avatar.
 
-    seg_count = 0  # will be used to generate names for the new segments
+    For example, if
+    ...
+    S 3 = ATGGCCC
+    ...
+    was chopped into
+    ...
+    S 7 = AT
+    S 8 = GG
+    S 9 = CC
+    S 10 = C
+    ...
+    then seg_2_start_end[3] = (7,11).
+    Later, if 3+ occurs in a path, we will replace it with 7+,8+,9+,10+.
+    If 3- occurs in a path, we will replace it with 10-,9-,8-,7-.
+    """
+
+    seg_count = 1  # will be used to generate names for the new segments
 
     for (name, segment) in graph.segments.items():
-        chopped_segs = re.findall('...?', segment.seq)
-        chopped_segs_with_names = {}
+        seq = segment.seq
+        chopped_seqs = [seq[i:i+n] for i in range(0, len(seq), n)]
+        chopped_segments = {}
         seg_count_start = seg_count
-        for cs in chopped_segs:
+        for cs in chopped_seqs:
+            seg_name = str(seg_count)
+            chopped_segments[seg_name]=(mygfa.Segment(seg_name, cs))
             seg_count += 1
-            chopped_segs_with_names[(str(seg_count))]=(mygfa.Segment((str(seg_count)), cs))
+        seg_2_start_end[segment.name] = (seg_count_start, seg_count)
 
-        # Now let's do some link-work...
-        if len (chopped_segs_with_names) > 1:
-            # link up all these in a row
-            pass
+        new_segments = new_segments | chopped_segments
 
-        seg_2_start_end[segment.name] = (str(seg_count_start), str(seg_count))
-        # later, if segname linked to something else, then we'll look in this
-        # table to see what the corresponding links should be in the new graph
-
-        new_segments = new_segments | chopped_segs_with_names
+    for path in graph.paths.values():
+        new_path_segments = []
+        for (segname, o) in path.segments:
+            r = seg_2_start_end[segname]
+            if o: # forward direction
+                new_path_segments += [(s,o) for s in range(r[0], r[1])]
+            else: # reverse direction
+                new_path_segments += [(s,o) for s in range(r[1], r[0])]
+        new_paths[path.name] = mygfa.Path(path.name, new_path_segments, path.overlaps)
 
     return mygfa.Graph(graph.headers, new_segments, new_links, new_paths)
 

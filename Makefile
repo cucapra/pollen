@@ -24,27 +24,27 @@ test-slow-odgi: og test-slow-crush test-slow-degree test-slow-depth test-slow-em
 # to add: test-slow-chop
 
 test-slow-chop: og
-	-turnt -v --save --env chop_oracle test/*.og
+	-turnt --save --env chop_oracle test/*.og
 	turnt --env chop_test test/*.gfa
 
 test-slow-crush: og
-	-turnt -v --save --env crush_oracle test/*.og
+	-turnt --save --env crush_oracle test/*.og
 	turnt --env crush_test test/*.gfa
 
 test-slow-degree: og
-	-turnt -v --save --env degree_oracle test/*.og
+	-turnt --save --env degree_oracle test/*.og
 	turnt --env degree_test test/*.gfa
 
 test-slow-depth: og
-	-turnt -v --save --env depth_oracle test/*.og
+	-turnt --save --env depth_oracle test/*.og
 	turnt --env depth_test test/*.gfa
 
 test-slow-emit: og
-	-turnt -v --save --env emit_oracle test/*.og
+	-turnt --save --env emit_oracle test/*.og
 	turnt --env emit_test test/*.gfa
 
 test-slow-flip: og
-	-turnt -v --save --env flip_oracle test/*.og
+	-turnt --save --env flip_oracle test/*.og
 	turnt --diff --env flip_test test/*.gfa
 
 clean:
