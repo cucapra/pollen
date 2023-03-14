@@ -52,6 +52,7 @@ clean:
 
 	rm -rf test/basic/*.og
 
+	rm -rf test/temp.*
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
