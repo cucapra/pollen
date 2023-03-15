@@ -81,6 +81,9 @@ class Link:
             Alignment.parse(overlap),
         )
 
+    def cmp(link):
+        return (link.from_, link.to, link.from_orient, link.to_orient)
+
     def __str__(self):
         return '\t'.join([
             "L",
@@ -122,7 +125,8 @@ class Path:
             "P",
             self.name,
             ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
-            ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+            "*",
+            # ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
 
 
@@ -163,17 +167,21 @@ class Graph:
 
         return graph
 
-    def emit(self, outfile: TextIO):
+    def emit(self, outfile: TextIO, showlinks = True):
         for header in self.headers:
             print(header, file=outfile)
         for segment in self.segments.values():
             print(str(segment), file=outfile)
         for path in self.paths.values():
             print(str(path), file=outfile)
-        for link in self.links:
-            print(str(link), file=outfile)
+        if showlinks:
+            for link in sorted(self.links, key=Link.cmp):
+                print(str(link), file=outfile)
 
-
+                
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    graph.emit(sys.stdout)
+    if len(sys.argv) > 1 and sys.argv[1] == "--nl":
+        graph.emit(sys.stdout, False)
+    else:
+        graph.emit(sys.stdout)
