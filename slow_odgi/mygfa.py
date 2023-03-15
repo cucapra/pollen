@@ -25,13 +25,17 @@ class Segment:
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
+    def rev_comp(self):
+        comp = {"A": "T", "T": "A", "G": "C", "C": "G"}
+        compseq = [comp[char] for char in self.seq] # the complement
+        return "".join(str(c) for c in reversed(compseq))  # the reverse complement
+
     def __str__(self):
         return '\t'.join([
             "S",
             self.name,
             self.seq,
         ])
-
 
 class AlignOp(Enum):
     """An operator in an Alignment."""
