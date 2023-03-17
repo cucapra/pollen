@@ -48,7 +48,7 @@ test-slow-flip: og
 
 test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
-# turnt --env matrix_test test/*.gfa
+	turnt --diff -v --env matrix_test test/*.gfa
 
 
 
