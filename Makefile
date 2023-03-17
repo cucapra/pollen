@@ -46,6 +46,12 @@ test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
 	turnt --diff --env flip_test test/*.gfa
 
+test-slow-matrix: og
+	-turnt --save --env matrix_oracle test/*.og
+# turnt --env matrix_test test/*.gfa
+
+
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)

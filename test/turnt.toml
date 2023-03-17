@@ -45,3 +45,11 @@ command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
 [envs.flip_test]
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
+
+[envs.matrix_oracle]
+binary = true
+command = "odgi matrix -i {filename}"
+
+[envs.matrix_test]
+binary = true
+command = "python3 ../slow_odgi/matrix.py < {filename}"
