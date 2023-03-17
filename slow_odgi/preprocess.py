@@ -19,13 +19,14 @@ def node_steps(graph):
 def in_out(graph):
     """
     key: segment name i.e. me
-    value: list of (segment name i.e. you, edge_is_from_me_to_you)
+    value: list of (segment name i.e. you,
+                    edge_is_from_me_to_you)
 
     We take each step into account, regardless of whether it is on a path.
     We could add a further, optional, item to the key with which to indicate
     whether the link is on a path.
     """
-    in_out: Dict[str, List[Tuple[str, bool]]] = {}
+    in_out: Dict[str, List[Tuple[str, bool, List[str]]]] = {}
     for segment in graph.segments.values():
         in_out[segment.name] = []
 
