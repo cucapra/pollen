@@ -1,7 +1,6 @@
 import sys
 import mygfa
 
-
 def crush_n_seg(seg):
     """Compact any "runs" of N down to a single N."""
     seq = ""  # the crushed sequence will be built up here
