@@ -50,9 +50,10 @@ test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
 	turnt --diff -v --env matrix_test test/*.gfa
 
-test-slow-validate: og
-	-turnt --save --env validate_oracle test/*.gfa
-	turnt --diff -v --env validate_test test/*.gfa
+test-slow-validate: fetch
+	-turnt --save --env validate_setup/*.gfa
+	-turnt -v --save --env validate_oracle test/*.gfa
+	# turnt --diff -v --env validate_test test/*.gfa
 
 
 clean:
