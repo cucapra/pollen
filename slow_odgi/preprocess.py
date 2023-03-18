@@ -26,13 +26,12 @@ def in_out(graph):
     We could add a further, optional, item to the key with which to indicate
     whether the link is on a path.
     """
-    in_out: Dict[str, List[Tuple[str, bool, List[str]]]] = {}
+    in_out: Dict[str, List[Tuple[str, bool]]] = {}
     for segment in graph.segments.values():
         in_out[segment.name] = []
 
     for link in graph.links:
         in_out[link.from_].append((link.to, True))
-        # Can add this symmetric information separately...
         in_out[link.to].append((link.from_, False))
 
     return in_out
