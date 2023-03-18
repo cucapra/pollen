@@ -51,7 +51,7 @@ test-slow-matrix: og
 	turnt --diff -v --env matrix_test test/*.gfa
 
 test-slow-validate: og
-	-turnt --save --env validate_oracle test/*.og
+	-turnt --save --env validate_oracle test/*.gfa
 	turnt --diff -v --env validate_test test/*.gfa
 
 
