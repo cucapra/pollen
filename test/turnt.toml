@@ -54,10 +54,14 @@ command = "odgi matrix -i {filename}"
 binary = true
 command = "python3 ../slow_odgi/matrix.py < {filename}"
 
+[envs.validate_setup]
+binary = true
+command = "python3 ../slow_odgi/perturb.py < {filename} > temp.{filename}"
+
 [envs.validate_oracle]
 binary = true
-command = "odgi validate -i {filename}"
+command = "odgi validate -i temp.{filename} 2>temp.txt; cat temp.txt"
 
 [envs.validate_test]
 binary = true
-command = "python3 ../slow_odgi/validate.py < {filename}"
+command = "python3 ../slow_odgi/validate.py < temp.{filename}"
