@@ -16,22 +16,24 @@ def node_steps(graph):
 
     return crossings
 
-def in_out(graph):
+def in_out_edges(graph):
     """
-    key: segment name i.e. me
-    value: list of (segment name i.e. you,
-                    edge_is_from_me_to_you)
-
+    key: (segment name, orientation)              # my details
+    value: list of (segment name, orientation)    # neighbor's details
     We take each step into account, regardless of whether it is on a path.
-    We could add a further, optional, item to the key with which to indicate
-    whether the link is on a path.
+    We make two such dicts: one for out-edges and one for in-edges
     """
-    in_out: Dict[str, List[Tuple[str, bool]]] = {}
+
+    outs: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
+    ins: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
     for segment in graph.segments.values():
-        in_out[segment.name] = []
+        outs[(segment.name, True)] = []
+        outs[(segment.name, False)] = []
+        ins[(segment.name, True)] = []
+        ins[(segment.name, False)] = []
 
     for link in graph.links:
-        in_out[link.from_].append((link.to, True))
-        in_out[link.to].append((link.from_, False))
+        outs[(link.from_, link.from_orient)].append((link.to, link.to_orient))
+        ins[(link.to, link.to_orient)].append((link.from_, link.from_orient))
 
-    return in_out
+    return (ins, outs)
