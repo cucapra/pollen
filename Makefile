@@ -46,6 +46,10 @@ test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
 	turnt --env flip_test test/*.gfa
 
+test-slow-flatten: og
+	-turnt --save --env flatten_oracle test/*.og
+# turnt --diff --env flatten_test test/*.gfa
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)

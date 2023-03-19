@@ -45,3 +45,11 @@ command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | pyth
 [envs.flip_test]
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
+
+[envs.flatten_oracle]
+binary = true
+command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+
+[envs.flatten_test]
+binary = true
+command = "python3 ../slow_odgi/flatten.py < {filename}"
