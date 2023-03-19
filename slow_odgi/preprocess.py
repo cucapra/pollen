@@ -23,17 +23,16 @@ def in_out_edges(graph):
     We take each step into account, regardless of whether it is on a path.
     We make two such dicts: one for out-edges and one for in-edges
     """
-
-    outs: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
     ins: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
+    outs: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
     for segment in graph.segments.values():
-        outs[(segment.name, True)] = []
-        outs[(segment.name, False)] = []
         ins[(segment.name, True)] = []
         ins[(segment.name, False)] = []
+        outs[(segment.name, True)] = []
+        outs[(segment.name, False)] = []
 
     for link in graph.links:
-        outs[(link.from_, link.from_orient)].append((link.to, link.to_orient))
         ins[(link.to, link.to_orient)].append((link.from_, link.from_orient))
+        outs[(link.from_, link.from_orient)].append((link.to, link.to_orient))
 
     return (ins, outs)
