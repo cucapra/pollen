@@ -19,7 +19,7 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit
+test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-flatten
 # to add: test-slow-flip
 
 test-slow-chop: og
@@ -48,7 +48,7 @@ test-slow-flip: og
 
 test-slow-flatten: og
 	-turnt --save --env flatten_oracle test/*.og
-	turnt --diff --env flatten_test test/*.gfa
+	turnt --env flatten_test test/*.gfa
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
