@@ -56,6 +56,12 @@ test-slow-inject: og
 	# turnt --env inject_test test/*.gfa
 
 
+test-slow-overlap: og
+	-turnt --env overlap_setup test/*.gfa
+	-turnt -v --save --env overlap_oracle test/*.og
+	# turnt --diff --env overlap_test test/*.gfa
+
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
@@ -63,6 +69,7 @@ clean:
 	rm -rf test/basic/*.og
 
 	rm -rf test/temp.*
+	rm -rf test/*.paths
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
