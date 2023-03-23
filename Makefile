@@ -44,7 +44,7 @@ test-slow-emit: og
 
 test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
-	turnt --diff --env flip_test test/*.gfa
+	turnt --env flip_test test/*.gfa
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
