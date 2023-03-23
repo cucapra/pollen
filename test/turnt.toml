@@ -40,7 +40,7 @@ command = "python3 ../slow_odgi/mygfa.py < {filename}"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
+command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | ../slow_odgi/mygfa.py"
 
 [envs.flip_test]
 binary = true
