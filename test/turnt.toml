@@ -45,3 +45,11 @@ command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
 [envs.flip_test]
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
+
+[envs.groom_setup]
+binary = true
+command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; python3 ../slow_odgi/list_paths.py < {filename} > $pathsname"
+
+[envs.groom_oracle]
+binary = true
+command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; odgi groom -i {filename} -R $pathsname -o temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"

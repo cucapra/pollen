@@ -46,6 +46,11 @@ test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
 	turnt --diff --env flip_test test/*.gfa
 
+test-slow-groom: og
+	-turnt --env groom_setup test/*.gfa
+	-turnt --save --env groom_oracle test/*.og
+	#turnt --diff --env groom_test test/*.gfa
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
