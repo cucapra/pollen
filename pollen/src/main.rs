@@ -105,8 +105,14 @@ fn parse_expr(expression: Pair<Rule>) -> Expr {
             Rule::integer_lit => ast::Expr::Integer(primary.as_str().parse::<i32>().unwrap()),
             Rule::true_lit => Expr::Bool(true),
             Rule::false_lit => Expr::Bool(false),
-            Rule::char_lit => Expr::Char(primary.as_str().chars().nth(0).unwrap()),
-            Rule::string_lit => Expr::StringLit(primary.as_str().to_string()),
+            Rule::char_lit => Expr::Char(parse_char(primary.into_inner().next().unwrap())),
+            Rule::string_lit => {
+                let mut string = String::new();
+                for character in primary.into_inner() {
+                    string.push(parse_char(character));
+                }
+                Expr::StringLit(string)
+            },
             Rule::identifier => Expr::Var(parse_id(primary)),
             Rule::uop => {
                 let mut inner = primary.into_inner();
@@ -222,7 +228,17 @@ fn parse_typ(typ: Pair<Rule>) -> Typ {
     }
 }
 
-
+fn parse_char(character: Pair<Rule>) -> char {
+    match character.as_rule() {
+        Rule::back_backslash => '\\',
+        Rule::back_tab => '\t',
+        Rule::back_newline => '\n',
+        Rule::back_single_quote => '\'',
+        Rule::back_double_quote => '\"',
+        Rule::normal_char => character.as_str().chars().nth(0).unwrap(),
+        rule => unreachable!("Expected char but got {:?}", rule)
+    }
+}
 
 fn extract_file(filename: String) -> String {
     // Create a path to the desired file

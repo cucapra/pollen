@@ -32,10 +32,21 @@ bool_lit = _{ true_lit | false_lit }
 
 single_quote = _{ "'" }
 double_quote = _{ "\"" }
-not_a_char = _{ "\\" | single_quote | double_quote }
-char = _{ "\\" ~ (not_a_char | "n" | "t") | !(not_a_char) ~ ANY }
-char_lit = @{ (single_quote ~ (!single_quote ~ char) ~ single_quote) }
-string_lit = { double_quote ~ (char | single_quote)+ ~ double_quote }
+backslack = _{ "\\" }
+
+backspace_chars = _{ back_backslash | back_tab | back_newline | back_single_quote 
+                    | back_double_quote }
+    back_backslash = { "\\\\" }
+    back_tab = { "\\t" }
+    back_newline = { "\\n" }
+    back_single_quote = @{ "\\" ~ single_quote }
+    back_double_quote = @{ "\\" ~ double_quote }
+
+normal_char = {!backslack ~ ANY}
+
+char = _{ backspace_chars | normal_char }
+char_lit = ${ (single_quote ~ (!single_quote ~ char) ~ single_quote) }
+string_lit = ${ double_quote ~ (!double_quote ~ char)+ ~ double_quote }
 // TODO: Try to find a way to use string_lit and strand_lit via precedence?
 
 // array_lit = { "[" ~ expr? ~ ("," ~ expr)* ~ "]" }

@@ -1,7 +1,7 @@
 // This is a comment. It does not get parsed
 
 int i = 3;
-int id2 = 4;
+int id' = 4;
 bool bool1 = true;
 bool b2 = false;
 
@@ -20,6 +20,8 @@ Base b;
 char c1 = 'a';
 char c2 = 'b';
 char c3 = '?';
+char c_4 = 'n';
+char c_5 = 't';
 
 // Backspace characters
 char c8 = '\\';
@@ -27,6 +29,16 @@ char c4 = '\n';
 char c5 = '\t';
 char c6 = '\'';
 char c7 = '\"';
+char nother_char = '"';
+char also_a_char = ' ';
+
+String s1 = "'";
+String s2 = "Hello world!";
+//Backspace strings
+String s2 = "\\";
+String s3 = "\n";
+String s4 = "\t";
+String s5 = "\"";
 
 /* int binop = i + id2;
 int binop2 = i + 1;
