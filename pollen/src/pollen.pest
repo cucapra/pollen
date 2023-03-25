@@ -1,25 +1,31 @@
-WHITESPACE = _{ " " }
-COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+WHITESPACE = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 // Excludes type keywords
 // keywords = _{ "if" | "elif" | "else" | "for" | "in" | "while" }
 
 /* ----- Program ----- */
-prog = { stmt+ }
+prog = { 
+    SOI
+    ~ stmt+
+    ~ EOI
+}
 
 /* ----- Types ----- */
-atomic_type = { "int" | "bool" | "char" | 
-                "Node" | "Step" | "Edge" | "Handle" | "Base" }
+atomic_typ = { "int" | "bool" | "char" | "String" |
+                "Node" | "Step" | "Edge" | "Base" | "Strand" }
+
+tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
 
 // String and Strand are not atomic types because they cannot be part of tuples
-type = { atomic_type ~ ("*" ~ atomic_type)* | "String" | "Strand" }
+typ = _{ atomic_typ | tuple_typ  /* | typ ~ ( "[]"* ) */ }
 
 /* Record types are not included because the user will never 
     need to explicitly define one */
 
 
 /* ----- Literals ----- */
-integer_lit = @{ ASCII_DIGIT+ }
+integer_lit = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
 bool_lit = _{ true_lit | false_lit }
     true_lit = { "true" }
     false_lit = { "false" }
@@ -39,14 +45,13 @@ literal = _{ integer_lit | bool_lit | char_lit | string_lit /* | array_lit */ }
 
 /* ----- Expressions ----- */
 
-identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | "-" | "'" )+ }
-
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | "-" | "'" )* }
 
 binop = _{ add | sub | mult | div | modulo | exp | lt | gt | geq | leq | eq | neq |
           and | or }
     add = { "+" }
     sub = { "-" }
-    mul = { "*" }
+    mult = { "*" }
     div = { "/" }
     modulo = { "%" }
     exp = { "^" }
@@ -59,23 +64,25 @@ binop = _{ add | sub | mult | div | modulo | exp | lt | gt | geq | leq | eq | ne
     and = { "&&" }
     or = { "||" }
 
-// TODO: Define precedence order for binops
-binop_expr = { expr ~ binop ~ expr }
 
-//uop = _{ not | neg }
+uop = _{ not }
     not = { "!" }
-    neg = { "-" }
-//uop = { uop ~ expr }
 
-//call = { idendifier ~ "(" ~ expr? ~ ("," ~ expr)* ")" }
+//call = { identifier ~ "(" ~ expr? ~ ("," ~ expr)* ")" }
 //array_access = { identifier ~ "[" ~ expr ~ "]"}
 //record_access = { identifier ~ "." ~ identifier }
 
-expr = { literal | identifier | binop_expr | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" /* | uop_expr | call */ }
+term = _{ literal | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
+
+//binop_expr = { expr ~ binop ~ expr }
+
+uop_expr = { uop ~ expr }
+
+expr = { term | uop_expr }
 
 
 /* ----- Statements ---- */
-decl = { type ~ identifier ~ ("=" ~ expr)? ~ ";"}
+decl = { typ ~ identifier ~ ("=" ~ expr)? ~ ";"}
 //assign = { (((identifier | array_access | record_access) ~ ("=" | "+=") ~ expr) | (identifier ~ "++")) ~ ";"}
 // Function call
 //call_stmt = { call ~ ";" }
@@ -88,7 +95,7 @@ decl = { type ~ identifier ~ ("=" ~ expr)? ~ ";"}
 //for_stmt = {}
 
 
-//stmt = { decl | assign | call_stmt | if }
+stmt = { decl /* | assign | call_stmt | if */ }
 
 /* ----- Import ----- */
 //import = {"use" ~ (!";" ~ ANY)+ ~ ";"} 

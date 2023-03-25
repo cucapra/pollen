@@ -1,41 +1,152 @@
+use std::env;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
+
+#[macro_use]
+extern crate lazy_static;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+use pest::iterators::{ Pair, Pairs };
+use pest::pratt_parser::{Assoc::*, Op, PrattParser};
 use pest::Parser;
-use ast::*;
+
+pub mod ast;
+use crate::ast::*;
 
 #[derive(Parser)]
 #[grammar = "pollen.pest"]
 pub struct PollenParser;
 
-lazy_static::lazy_static! {
+lazy_static! {
     static ref PRATT_PARSER: PrattParser<Rule> = {
-        use pest::pratt_parser::{Assoc::*, Op};
-        use Rule::*;
 
         // Precedence is defined lowest to highest
         PrattParser::new()
-            .op(Op::infix(or, left))
-            .op(Op::infix(and, left))
-            .op(Op::infix(eq, left) | Op::infix(neq, left))
-            .op(Op::infix(gt, left) | Op::infix(lt, left) 
-                | Op::infix(geq, left) | Op::infix(leq, left))
+            .op(Op::infix(Rule::or, Left))
+            .op(Op::infix(Rule::and, Left))
+            .op(Op::infix(Rule::eq, Left) | Op::infix(Rule::neq, Left))
+            .op(Op::infix(Rule::gt, Left) | Op::infix(Rule::lt, Left) 
+                | Op::infix(Rule::geq, Left) | Op::infix(Rule::leq, Left))
             // Addition and subtract have equal precedence
-            .op(Op::infix(add, Left) | Op::infix(sub, Left))
-            .op(Op::infix(mul, Left) | Op::infix(div, left) | Op::infix(modulo, Left))
+            .op(Op::infix(Rule::add, Left) | Op::infix(Rule::sub, Left))
+            .op(Op::infix(Rule::mult, Left) | Op::infix(Rule::div, Left) 
+                | Op::infix(Rule::modulo, Left))
     };
 }
 
-pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
+pub fn parse_prog(mut prog: Pairs<Rule>) -> Prog {
+    let mut stmts = Vec::new();
+    while let Some(stmt) = prog.next() {
+        if stmt.as_rule() != Rule::EOI {
+            // TODO: Edit for function defs
+            stmts.push(parse_stmt(stmt)) 
+        }  
+    };
+    Prog{ stmts: stmts }
+}
+
+fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
+    match stmt.as_rule() {
+        Rule::decl => {
+            let mut inner = stmt.into_inner();
+            let typ = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("Expected inner statement, found nothing")
+                };
+                parse_typ(pair)
+            };
+            let id = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A declaration requires an Id")
+                };
+                parse_id(pair)
+            };
+            let expr_opt = {
+                let e = inner.next();
+                if e.is_none() {
+                    None 
+                }
+                else {
+                    let Some(e) = e else {
+                        unreachable!("{:?} is not None but doesn't \n
+                        match with Some", e)
+                    };
+                    Some(parse_expr(e))
+                }
+            };
+            Stmt::Decl {
+                typ: typ,
+                id: id,
+                expr: expr_opt
+            }
+        },
+        Rule::stmt => {
+            let mut inner = stmt.into_inner();
+            let s = {
+                if let Some(pair) = inner.next() {
+                    parse_stmt(pair)
+                } else {
+                    unreachable!("Statement has no inner statement")
+                }
+            };
+            assert!(inner.next().is_none());
+            s
+        }
+        rule => unreachable!("{:?} Not recognized", rule)
+    }
+}
+
+fn parse_expr(expression: Pair<Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
-            Rule::integer_lit => Expr::Integer(primary.as_str().parse::<i32>().unwrap()),
+            Rule::integer_lit => ast::Expr::Integer(primary.as_str().parse::<i32>().unwrap()),
             Rule::true_lit => Expr::Bool(true),
-            Rule::false_lift => Expr::Bool(false),
-            Rule::char_lit => Expr::Char(primary.as_str()[0] as char)
-            Rule::string_lit => Expr::StringLit(primary.as_str().to_string())
-            Rule::identifier => Expr::Id(primary.as_str().to_string())
+            Rule::false_lit => Expr::Bool(false),
+            Rule::char_lit => Expr::Char(primary.as_str().chars().nth(0).unwrap()),
+            Rule::string_lit => Expr::StringLit(primary.as_str().to_string()),
+            Rule::identifier => Expr::Var(parse_id(primary)),
+            Rule::uop => {
+                let mut inner = primary.into_inner();
+                let op = {
+                    if let Some(pair) = inner.next() {
+                        match pair.as_rule() {
+                            Rule::not => UOp::Not,
+                            rule => unreachable!("Uop not recognized: {:?}", rule)
+                        }
+                    } else {
+                        unreachable!("Unary operator expected, but none found")
+                    }
+                };
+                let expr = {
+                    if let Some(pair) = inner.next(){
+                        parse_expr(pair)
+                    } else {
+                        unreachable!("Expression expected, but none found")
+                    }
+                };
+                assert!(inner.next().is_none());
+                Expr::UOpExpr{
+                        op: op,
+                        expr: Box::new(expr)
+                    }
+            }
+            Rule::expr => {
+                // If this rule has been reached then 
+                // this is a parenthesized expression
+                let mut inner = primary.into_inner();
+                let e = {
+                    if let Some(pair) = inner.next() {
+                        parse_expr(pair)
+                    } else {
+                        unreachable!("Expression has no inner expression")
+                    }
+                };
+                assert!(inner.next().is_none());
+                e
+            }
             rule => unreachable!("Expr::parse expected atom, found {:?}", rule)
         })
         .map_infix(|lhs, op, rhs| {
@@ -53,110 +164,114 @@ pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
                 Rule::eq => BinOp::Eq,
                 Rule::neq => BinOp::Neq,
                 Rule::and => BinOp::And,
-                Rule::or => BinOp::Or
+                Rule::or => BinOp::Or,
                 rule => unreachable!("Expr::parse expected infix operation, found {:?}", rule),
             };
-            Expr::BinOp {
-                lhs: Box::new(parse_expr(lhs)),
+            Expr::BinOpExpr {
+                lhs: Box::new(lhs),
                 op,
-                rhs: Box::new(parse_expr(rhs)),
+                rhs: Box::new(rhs),
             }
         })
-        .parse(pairs)
+        .parse(expression.into_inner())
+}
 
+fn parse_id(id: Pair<Rule>) -> Id {
+    match id.as_rule(){
+        Rule::identifier => Id(id.as_str().to_string()),
+        rule => panic!("Identifier expected, but {:?} found", rule)
+    }
+}
+
+fn parse_typ(typ: Pair<Rule>) -> Typ {
+    // println!("Type Pair: {:#?}", typ);
+    match typ.as_rule() {
+        Rule::atomic_typ => match typ.as_str() {
+            "int" => Typ::Int,
+            "bool" => Typ::Bool,
+            "char" => Typ::Char,
+            "Node" => Typ::Node,
+            "Step" => Typ::Step,
+            "Edge" => Typ::Edge,
+            "Base" => Typ::Base,
+            "String" => Typ::String,
+            "Strand" => Typ::Strand,
+            t => unreachable!("Unknown type: {}", t)
+        },
+        Rule::tuple_typ => {
+            let mut inner = typ.into_inner();
+            let t1 = {
+                if let Some(pair) = inner.next() {
+                    parse_typ(pair)
+                } else {
+                    unreachable!("Expected first tuple type but found nothing")
+                }
+            };
+            let t2 = {
+                if let Some(pair) = inner.next() {
+                    parse_typ(pair)
+                } else {
+                    unreachable!("Expected second tuple type but found nothing")
+                }
+            };
+            assert!(inner.next().is_none());
+            Typ::Tuple(Box::new(t1), Box::new(t2))
+        },
+        rule => unreachable!("Unknown type: {:?}", rule)
+        // TODO - probably replace this with a Result<> return type
+    }
+}
+
+
+
+fn extract_file(filename: String) -> String {
+    // Create a path to the desired file
+    let path = Path::new(&filename);
+    let display = path.display();
+
+    // Open the path in read-only mode, returns `io::Result<File>`
+    let mut file = match File::open(&path) {
+        Err(why) => panic!("Couldn't open file {}: {}", display, why),
+        Ok(file) => file,
+    };
+
+    // Read the file contents into a string, returns `io::Result<usize>`
+    let mut s = String::new();
+    match file.read_to_string(&mut s) {
+        Err(why) => panic!("Couldn't read file {}: {}", display, why),
+        Ok(_) => s
+    }
 }
 
 pub fn main() {
-    println!("grammar is valid");
-}
+    let args: Vec<String> = env::args().collect();
 
-#[cfg(test)]
-mod test {
-    use super::*;
+    let mut prog: String = match args.len() {
+        // one argument passed
+        2 => {
+            match args[1].parse() {
+                Ok(filename) => extract_file(filename),
+                Err(e) => panic!("Failed with error: {:?}", e)
+            }
+        },
+        n => {
+            panic!("Expected one argument but found {}", n-1);
+        }
+    };
 
-    #[test]
-    fn bool1() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::true, "true")),
-            "Ok([Pair { rule: bool_lit, span: Span { str: \"true\", start: 0, end: 4 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    fn bool2() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::false, "false")),
-            "Ok([Pair { rule: bool_lit, span: Span { str: \"false\", start: 0, end: 5 }, inner: [] }])"
-        )
-    }
-    
-    // TODO: Make these tests more concise using ? keyword
-    #[test]
-    fn char_lit1() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::char_lit, "'c'")),
-            "Ok([Pair { rule: char_lit, span: Span { str: \"'c'\", start: 0, end: 3 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    fn char_lit2() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::char_lit, "'Z'")),
-            "Ok([Pair { rule: char_lit, span: Span { str: \"'Z'\", start: 0, end: 3 }, inner: [] }])"
-        )
-    }
-
-    // TODO: Test backspace characters once I can parse a file
-    #[test]
-    #[ignore]
-    fn char_lit3() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::char_lit, "'\\''")),
-            "Ok([Pair { rule: char_lit, span: Span { str: \"'\\''\", start: 0, end: 5 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    #[ignore]
-    fn char_lit4() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::char_lit, "'\\'")),
-            "Ok([Pair { rule: char_lit, span: Span { str: \"'\\\\'\", start: 0, end: 4 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    #[ignore] // TODO: Test this when file parsing cababilities are added
-    fn string_lit1() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::string_lit, "\"string\"")),
-            "Ok([Pair { rule: string_lit, span: Span { str: \"\"string\"\", start: 0, end: 8 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    #[ignore] // TODO: Test this when file parsing cababilities are added
-    fn string_lit2() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::string_lit, "\"'\"")),
-            "Ok([Pair { rule: string_lit, span: Span { str: \"\"'\"\", start: 0, end: 3 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    fn id1() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::identifier, "Var1")),
-            "Ok([Pair { rule: identifier, span: Span { str: \"Var1\", start: 0, end: 4 }, inner: [] }])"
-        )
-    }
-
-    #[test]
-    fn id2() {
-        assert_eq!(
-            format!("{:?}", PollenParser::parse(Rule::identifier, "1v")),
-            "Err(Error { variant: ParsingError { positives: [identifier], negatives: [] }, location: Pos(0), line_col: Pos((1, 1)), path: None, line: \"1v\", continued_line: None })"
-        )
+    match PollenParser::parse(Rule::prog, &prog) {
+        Ok(mut pairs) => {
+            println!(
+                "Pre-parsed: {:#?}",
+                pairs
+            );
+            println!(
+                "Parsed: {:#?}",
+                parse_prog(pairs.next().unwrap().into_inner())
+            );
+        }
+        Err(e) => {
+            eprintln!("Parse failed: {:?}", e);
+        }
     }
 }

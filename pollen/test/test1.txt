@@ -1,0 +1,33 @@
+// This is a comment. It does not get parsed
+
+int i = 3;
+int id2 = 4;
+bool bool1 = true;
+bool b2 = false;
+
+int i;
+bool b;
+char c;
+Node n;
+Step s;
+Edge e;
+String str;
+Strand strand;
+Base b;
+
+// Characters... oh boy here we go
+
+char c1 = 'a';
+char c2 = 'b';
+char c3 = '?';
+
+// Backspace characters
+char c8 = '\\';
+char c4 = '\n';
+char c5 = '\t';
+char c6 = '\'';
+char c7 = '\"';
+
+/* int binop = i + id2;
+int binop2 = i + 1;
+*/
