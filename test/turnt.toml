@@ -48,11 +48,11 @@ command = "python3 ../slow_odgi/flip.py < {filename}"
 
 [envs.matrix_oracle]
 binary = true
-command = "odgi matrix -i {filename}"
+command = "odgi matrix -i {filename} | sort"
 
 [envs.matrix_test]
 binary = true
-command = "python3 ../slow_odgi/matrix.py < {filename}"
+command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
 
 [envs.validate_setup]
 binary = true
