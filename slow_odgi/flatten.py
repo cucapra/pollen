@@ -16,7 +16,7 @@ def fasta(graph):
         length = len(segment.seq)
         legend[segment.name] = (ptr, ptr + length)
         ptr += length
-    return(ans, legend)
+    return ans, legend
 
 def print_bed(graph, legend):
     print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
