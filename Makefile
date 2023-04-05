@@ -50,6 +50,12 @@ test-slow-flatten: og
 	-turnt --save --env flatten_oracle test/*.og
 	turnt --env flatten_test test/*.gfa
 
+test-slow-inject: og
+	-turnt -v --env inject_setup test/*.gfa
+	# -turnt --save --env inject_oracle test/*.og
+	# turnt --env inject_test test/*.gfa
+
+
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)

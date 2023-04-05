@@ -53,3 +53,7 @@ command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta;
 [envs.flatten_test]
 binary = true
 command = "python3 ../slow_odgi/flatten.py {filename}"
+
+[envs.inject_setup]
+binary = true
+command = "python3 ../slow_odgi/inject_setup.py {filename}"
