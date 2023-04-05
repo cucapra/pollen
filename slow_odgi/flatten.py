@@ -29,7 +29,7 @@ def insert_newlines(string, every=80):
     return '\n'.join(string[i:i+every] for i in range(0, len(string), every))
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1][-4:] == ".gfa":
+    if len(sys.argv) > 1 and sys.argv[1].endswith(".gfa"):
         infile = open(sys.argv[1], 'r')
         graph = mygfa.Graph.parse(infile)
         odginame = sys.argv[1][:-4] + ".og"
