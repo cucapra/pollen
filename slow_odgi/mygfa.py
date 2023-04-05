@@ -120,6 +120,12 @@ class Path:
             overlaps_lst,
         )
 
+    def seqlen(self) -> int:
+        length = 0
+        for (seg,_) in self.segments:
+            length += len(seg)
+        return length
+
     def __str__(self):
         return '\t'.join([
             "P",

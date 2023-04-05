@@ -19,8 +19,7 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-overlap
-# to add: test-slow-flip
+test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-overlap test-slow-flatten
 
 test-slow-chop: og
 	-turnt --save --env chop_oracle test/*.og
@@ -44,7 +43,17 @@ test-slow-emit: og
 
 test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
-	turnt --diff --env flip_test test/*.gfa
+	turnt --env flip_test test/*.gfa
+
+test-slow-flatten: og
+	-turnt --save --env flatten_oracle test/*.og
+	turnt --env flatten_test test/*.gfa
+
+test-slow-inject: og
+	-turnt -v --env inject_setup test/*.gfa
+	# -turnt --save --env inject_oracle test/*.og
+	# turnt --env inject_test test/*.gfa
+
 
 test-slow-overlap: og
 	-turnt --env overlap_setup test/*.gfa

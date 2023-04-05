@@ -40,7 +40,7 @@ command = "python3 ../slow_odgi/mygfa.py < {filename}"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
+command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
 
 [envs.flip_test]
 binary = true
@@ -57,3 +57,15 @@ command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; odgi ov
 [envs.overlap_test]
 binary = true
 command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; python3 ../slow_odgi/overlap.py $pathsname < {filename}"
+
+[envs.flatten_oracle]
+binary = true
+command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+
+[envs.flatten_test]
+binary = true
+command = "python3 ../slow_odgi/flatten.py {filename}"
+
+[envs.inject_setup]
+binary = true
+command = "python3 ../slow_odgi/inject_setup.py {filename}"
