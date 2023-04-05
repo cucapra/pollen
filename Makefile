@@ -57,7 +57,6 @@ test-slow-validate: fetch
 	-turnt -v --save --env validate_oracle test/*.gfa
 	turnt -v --env validate_test test/*.gfa
 
-
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
