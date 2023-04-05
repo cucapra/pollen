@@ -21,7 +21,7 @@ def in_out_edges(graph):
     key: (segment name, orientation)              # my details
     value: list of (segment name, orientation)    # neighbor's details
     We take each step into account, regardless of whether it is on a path.
-    We make two such dicts: one for out-edges and one for in-edges
+    We make two such dicts: one for in-edges and one for out-edges
     """
     ins: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
     outs: Dict[Tuple[str, bool], List[Tuple[str, bool]]] = {}
