@@ -48,7 +48,8 @@ command = "python3 ../slow_odgi/flip.py < {filename}"
 
 [envs.overlap_setup]
 binary = true
-command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; python3 ../slow_odgi/list_paths.py < {filename} > $pathsname"
+command = "python3 ../slow_odgi/list_paths.py < {filename}"
+output.paths = "-"
 
 [envs.overlap_oracle]
 binary = true
