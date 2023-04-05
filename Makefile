@@ -47,7 +47,7 @@ test-slow-flip: og
 	turnt --diff --env flip_test test/*.gfa
 
 test-slow-overlap: og
-	-turnt --save --env overlap_setup test/*.gfa
+	-turnt --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	turnt --diff --env overlap_test test/*.gfa
 
