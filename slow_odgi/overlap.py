@@ -25,7 +25,7 @@ def pathseqlen(path, graph):
     return length
 
 def print_overlaps(graph, inputpaths):
-    print("\t".join(["#path","path_touched"]))
+    print("\t".join(["#path", "start", "end", "path.touched"]))
     for ip in inputpaths:
         assert (ip in graph.paths)
         for pathname in graph.paths.keys():
