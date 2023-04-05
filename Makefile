@@ -19,10 +19,7 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit
-# to add: test-slow-flip, after playing with Andrea's new branch
-# to add: test-slow-matrix, after investigating issue with LPA
-# to add: test-slow-validate: after investigating extra missing links that I find in DRB1
+test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-matrix test-slow-validate
 
 test-slow-chop: og
 	-turnt --save --env chop_oracle test/*.og
