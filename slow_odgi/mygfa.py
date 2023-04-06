@@ -184,7 +184,4 @@ class Graph:
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    if len(sys.argv) > 1 and sys.argv[1] == "--nl":
-        graph.emit(sys.stdout, False)
-    else:
-        graph.emit(sys.stdout)
+    graph.emit(sys.stdout, "--nl" not in sys.argv[1:])
