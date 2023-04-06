@@ -1,6 +1,6 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py --nl"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py --nl"
 
 [envs.chop_test]
 binary = true
@@ -8,7 +8,7 @@ command = "python3 ../slow_odgi/chop.py < {filename}"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi crush -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py"
 
 [envs.crush_test]
 binary = true
@@ -38,13 +38,25 @@ command = "odgi view -g -i {filename} | python3 ../slow_odgi/mygfa.py"
 binary = true
 command = "python3 ../slow_odgi/mygfa.py < {filename}"
 
+[envs.flatten_oracle]
+binary = true
+command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+
+[envs.flatten_test]
+binary = true
+command = "python3 ../slow_odgi/flatten.py {filename}"
+
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py"
 
 [envs.flip_test]
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
+
+[envs.inject_setup]
+binary = true
+command = "python3 ../slow_odgi/inject_setup.py {filename}"
 
 [envs.matrix_oracle]
 binary = true
@@ -53,6 +65,19 @@ command = "odgi matrix -i {filename} | sort"
 [envs.matrix_test]
 binary = true
 command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
+
+[envs.overlap_setup]
+binary = true
+command = "python3 ../slow_odgi/list_paths.py < {filename}"
+output.paths = "-"
+
+[envs.overlap_oracle]
+binary = true
+command = "odgi overlap -i {filename} -R {base}.paths"
+
+[envs.overlap_test]
+binary = true
+command = "python3 ../slow_odgi/overlap.py {base}.paths < {filename}"
 
 [envs.validate_setup]
 binary = true
@@ -66,14 +91,4 @@ command = "odgi validate -i temp.{filename} 2>temp.txt; cat temp.txt"
 binary = true
 command = "python3 ../slow_odgi/validate.py < temp.{filename}"
 
-[envs.flatten_oracle]
-binary = true
-command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
 
-[envs.flatten_test]
-binary = true
-command = "python3 ../slow_odgi/flatten.py {filename}"
-
-[envs.inject_setup]
-binary = true
-command = "python3 ../slow_odgi/inject_setup.py {filename}"
