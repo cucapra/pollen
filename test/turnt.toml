@@ -65,3 +65,15 @@ command = "odgi validate -i temp.{filename} 2>temp.txt; cat temp.txt"
 [envs.validate_test]
 binary = true
 command = "python3 ../slow_odgi/validate.py < temp.{filename}"
+
+[envs.flatten_oracle]
+binary = true
+command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+
+[envs.flatten_test]
+binary = true
+command = "python3 ../slow_odgi/flatten.py {filename}"
+
+[envs.inject_setup]
+binary = true
+command = "python3 ../slow_odgi/inject_setup.py {filename}"

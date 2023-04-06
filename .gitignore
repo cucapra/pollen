@@ -10,7 +10,7 @@ test/basic/*.out
 
 test/subset-paths/*.out
 
-test/temp.txt
+test/temp.*
 test/depth/*.out
 test/depth/basic/*.out
 test/depth/subset-paths/*.out
