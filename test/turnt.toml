@@ -81,14 +81,13 @@ command = "python3 ../slow_odgi/overlap.py {base}.paths < {filename}"
 
 [envs.validate_setup]
 binary = true
-command = "python3 ../slow_odgi/perturb.py < {filename} > temp.{filename}"
+command = "python3 ../slow_odgi/perturb.py < {filename}"
+output.gfa = "-"
 
 [envs.validate_oracle]
 binary = true
-command = "odgi validate -i temp.{filename} 2>temp.txt; cat temp.txt"
+command = "odgi build -g {filename} -o - | odgi validate -i - 2>temp.txt; cat temp.txt"
 
 [envs.validate_test]
 binary = true
-command = "python3 ../slow_odgi/validate.py < temp.{filename}"
-
-
+command = "python3 ../slow_odgi/validate.py < {filename}"
