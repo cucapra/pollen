@@ -42,11 +42,11 @@ backspace_chars = _{ back_backslash | back_tab | back_newline | back_single_quot
     back_single_quote = @{ "\\" ~ single_quote }
     back_double_quote = @{ "\\" ~ double_quote }
 
-normal_char = {!backslack ~ ANY}
+normal_char = { !backslack ~ ANY }
 
 char = _{ backspace_chars | normal_char }
 char_lit = ${ (single_quote ~ (!single_quote ~ char) ~ single_quote) }
-string_lit = ${ double_quote ~ (!double_quote ~ char)+ ~ double_quote }
+string_lit = ${ double_quote ~ (!double_quote ~ char)* ~ double_quote }
 // TODO: Try to find a way to use string_lit and strand_lit via precedence?
 
 // array_lit = { "[" ~ expr? ~ ("," ~ expr)* ~ "]" }
@@ -58,25 +58,24 @@ literal = _{ integer_lit | bool_lit | char_lit | string_lit /* | array_lit */ }
 
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | "-" | "'" )* }
 
-binop = _{ add | sub | mult | div | modulo | exp | lt | gt | geq | leq | eq | neq |
+binop = _{ add | sub | mult | div | modulo | geq | leq | lt | gt | eq | neq |
           and | or }
     add = { "+" }
     sub = { "-" }
     mult = { "*" }
     div = { "/" }
     modulo = { "%" }
-    exp = { "^" }
-    lt = { "<" }
-    gt = { ">" }
     geq = { "<=" }
     leq = { ">=" }
+    lt = { "<" }
+    gt = { ">" }
     eq = { "==" }
     neq = { "!=" }
     and = { "&&" }
     or = { "||" }
 
-
-uop = _{ not }
+// unary operator(s)
+prefix = _{ not }
     not = { "!" }
 
 //call = { identifier ~ "(" ~ expr? ~ ("," ~ expr)* ")" }
@@ -85,11 +84,7 @@ uop = _{ not }
 
 term = _{ literal | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
-//binop_expr = { expr ~ binop ~ expr }
-
-uop_expr = { uop ~ expr }
-
-expr = { term | uop_expr }
+expr = { prefix* ~ term ~ (binop ~ prefix* ~ term )* }
 
 
 /* ----- Statements ---- */

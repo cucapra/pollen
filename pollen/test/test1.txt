@@ -1,7 +1,12 @@
 // This is a comment. It does not get parsed
 
+// Integer literals
 int i = 3;
 int id' = 4;
+//int i = -3;
+//int i = +2;
+
+// Boolean literals
 bool bool1 = true;
 bool b2 = false;
 
@@ -39,7 +44,34 @@ String s2 = "\\";
 String s3 = "\n";
 String s4 = "\t";
 String s5 = "\"";
+String empty_str = "";
+String s6 = "Hello world!\n";
 
-/* int binop = i + id2;
-int binop2 = i + 1;
+int binop = i + id2;
+int blskdf_ = 3 - (-5); 
+int binop2 = i * 1;
+char sdf = 9 / 3;
+Node n = 5 % 2;
+Step b = 2 < 3;
+Strand TTTT = 5 > true;
+Step b = (2 <= 3);
+Strand TTTT = 5 >= true;
+Step b = 2 == 3;
+Strand TTTT = 5 != true;
+String string = !true && !(!false);
+bool boolean = false || (true && !false);
+
+// Parenthesis
+Strand TTTT = (5 != true);
+Strand TTTT = [5 != true];
+
+/*
+    and = { "&&" }
+    or = { "||" }
 */
+
+bool SD = !(true);
+
+// Parenthesis
+int int1 = 3 * (2 + 4);
+int int1 = [3 * (2 + 4)];

@@ -34,6 +34,7 @@ lazy_static! {
             .op(Op::infix(Rule::add, Left) | Op::infix(Rule::sub, Left))
             .op(Op::infix(Rule::mult, Left) | Op::infix(Rule::div, Left) 
                 | Op::infix(Rule::modulo, Left))
+            .op(Op::prefix(Rule::not))
     };
 }
 
@@ -53,28 +54,27 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
         Rule::decl => {
             let mut inner = stmt.into_inner();
             let typ = {
+                // println!("Stmt: {:?}", inner);
                 let Some(pair) = inner.next() else {
                     unreachable!("Expected inner statement, found nothing")
                 };
                 parse_typ(pair)
             };
             let id = {
+                // println!("Stmt without type: {:?}", inner);
                 let Some(pair) = inner.next() else {
                     unreachable!("A declaration requires an Id")
                 };
                 parse_id(pair)
             };
             let expr_opt = {
-                let e = inner.next();
-                if e.is_none() {
+                println!("Just the expr: {:?}", inner);
+                if inner.peek().is_none() {
+                    // println!("This declaration does not give an initialization");
                     None 
                 }
                 else {
-                    let Some(e) = e else {
-                        unreachable!("{:?} is not None but doesn't \n
-                        match with Some", e)
-                    };
-                    Some(parse_expr(e))
+                    Some(parse_expr(inner))
                 }
             };
             Stmt::Decl {
@@ -99,7 +99,8 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
     }
 }
 
-fn parse_expr(expression: Pair<Rule>) -> Expr {
+fn parse_expr(expression: Pairs<Rule>) -> Expr {
+    println!("Expression: {:?}", expression);
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
             Rule::integer_lit => ast::Expr::Integer(primary.as_str().parse::<i32>().unwrap()),
@@ -114,44 +115,12 @@ fn parse_expr(expression: Pair<Rule>) -> Expr {
                 Expr::StringLit(string)
             },
             Rule::identifier => Expr::Var(parse_id(primary)),
-            Rule::uop => {
-                let mut inner = primary.into_inner();
-                let op = {
-                    if let Some(pair) = inner.next() {
-                        match pair.as_rule() {
-                            Rule::not => UOp::Not,
-                            rule => unreachable!("Uop not recognized: {:?}", rule)
-                        }
-                    } else {
-                        unreachable!("Unary operator expected, but none found")
-                    }
-                };
-                let expr = {
-                    if let Some(pair) = inner.next(){
-                        parse_expr(pair)
-                    } else {
-                        unreachable!("Expression expected, but none found")
-                    }
-                };
-                assert!(inner.next().is_none());
-                Expr::UOpExpr{
-                        op: op,
-                        expr: Box::new(expr)
-                    }
-            }
             Rule::expr => {
                 // If this rule has been reached then 
                 // this is a parenthesized expression
-                let mut inner = primary.into_inner();
-                let e = {
-                    if let Some(pair) = inner.next() {
-                        parse_expr(pair)
-                    } else {
-                        unreachable!("Expression has no inner expression")
-                    }
-                };
-                assert!(inner.next().is_none());
-                e
+
+                // println!("Full expr: {:?}", inner);
+                parse_expr(primary.into_inner())
             }
             rule => unreachable!("Expr::parse expected atom, found {:?}", rule)
         })
@@ -162,7 +131,6 @@ fn parse_expr(expression: Pair<Rule>) -> Expr {
                 Rule::mult => BinOp::Mult,
                 Rule::div => BinOp::Div,
                 Rule::modulo => BinOp::Mod,
-                Rule::exp => BinOp::Exp,
                 Rule::lt => BinOp::Lt,
                 Rule::gt => BinOp::Gt,
                 Rule::leq => BinOp::Leq,
@@ -179,7 +147,17 @@ fn parse_expr(expression: Pair<Rule>) -> Expr {
                 rhs: Box::new(rhs),
             }
         })
-        .parse(expression.into_inner())
+        .map_prefix(|op, exp| {
+            let op = match op.as_rule() {
+                Rule::not => UOp::Not,
+                rule => unreachable!("{:?} not recognized as a uop", rule),
+            };
+            Expr::UOpExpr {
+                op,
+                expr: Box::new(exp),
+            }
+        })
+        .parse(expression)
 }
 
 fn parse_id(id: Pair<Rule>) -> Id {
@@ -277,10 +255,11 @@ pub fn main() {
 
     match PollenParser::parse(Rule::prog, &prog) {
         Ok(mut pairs) => {
-            println!(
-                "Pre-parsed: {:#?}",
-                pairs
-            );
+            // println!(
+            //     "Pre-parsed: {:#?}",
+            //     pairs
+            // );
+            println!("Lexing");
             println!(
                 "Parsed: {:#?}",
                 parse_prog(pairs.next().unwrap().into_inner())
