@@ -46,6 +46,19 @@ command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | pyth
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
 
+[envs.overlap_setup]
+binary = true
+command = "python3 ../slow_odgi/list_paths.py < {filename}"
+output.paths = "-"
+
+[envs.overlap_oracle]
+binary = true
+command = "odgi overlap -i {filename} -R {base}.paths"
+
+[envs.overlap_test]
+binary = true
+command = "python3 ../slow_odgi/overlap.py {base}.paths < {filename}"
+
 [envs.flatten_oracle]
 binary = true
 command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
