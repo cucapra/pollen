@@ -8,9 +8,8 @@ def chop_graph(graph):
     new_links = []
     new_paths = {}
 
-    seg_2_start_end = {}
-    """Dict[str, Tuple[str, str]]
-    Maps an old segment name to the first and last of its new avatar.
+    seg_2_start_end: Dict[str, Tuple[str, str]] = {}
+    """Maps an old segment name to the first and last of its new avatar.
 
     For example, if
     ...
