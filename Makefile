@@ -49,11 +49,6 @@ test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
 	turnt --diff -v --env matrix_test test/*.gfa
 
-test-slow-validate: fetch
-	test/perturb.sh
-	-turnt -v --save --env validate_oracle test/*.gfa
-	turnt -v --env validate_test test/*.gfa
-
 test-slow-flatten: og
 	-turnt --save --env flatten_oracle test/*.og
 	turnt --env flatten_test test/*.gfa
@@ -67,6 +62,12 @@ test-slow-overlap: og
 	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	turnt -v --diff --env overlap_test test/*.gfa
+
+test-slow-validate: fetch
+	-turnt --save --env validate_setup test/*.gfa
+	-turnt --save --env validate_oracle test/*.gfa
+	turnt -v --env validate_test test/*.gfa
+	rm test/*.gfa; rm test/*.og
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)

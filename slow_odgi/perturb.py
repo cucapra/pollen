@@ -8,7 +8,7 @@ def pop90percent(l):
         l.pop(random.randrange(len(l)))
 
 def drop_some_lines(graph):
-    links = sorted(graph.links, key=mygfa.Link.cmp)
+    links = sorted(graph.links)
     pop90percent(links)
     return mygfa.Graph(graph.headers, graph.segments, links, graph.paths)
 
