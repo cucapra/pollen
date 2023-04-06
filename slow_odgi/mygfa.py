@@ -61,7 +61,7 @@ class Alignment:
         )
 
 
-@dataclass
+@dataclass(eq=True, order=True)
 class Link:
     """A GFA link is an edge connecting two sequences."""
     from_: str  # The name of a segment.
@@ -80,9 +80,6 @@ class Link:
             parse_orient(to_orient),
             Alignment.parse(overlap),
         )
-
-    def cmp(link):
-        return (link.from_, link.to, link.from_orient, link.to_orient)
 
     def __str__(self):
         return '\t'.join([
@@ -181,13 +178,10 @@ class Graph:
         for path in self.paths.values():
             print(str(path), file=outfile)
         if showlinks:
-            for link in sorted(self.links, key=Link.cmp):
+            for link in sorted(self.links):
                 print(str(link), file=outfile)
 
 
 if __name__ == "__main__":
     graph = Graph.parse(sys.stdin)
-    if len(sys.argv) > 1 and sys.argv[1] == "--nl":
-        graph.emit(sys.stdout, False)
-    else:
-        graph.emit(sys.stdout)
+    graph.emit(sys.stdout, "--nl" not in sys.argv[1:])
