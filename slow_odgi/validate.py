@@ -3,12 +3,6 @@ import mygfa
 import preprocess
 from typing import List, Tuple, Dict
 
-def sego_str(seg):
-    return seg[0] + ("+" if seg[1] else "-")
-
-def rev_seg(seg):
-    return (seg[0], False if seg[1] else True)
-
 def validate(graph):
     _, outs = preprocess.in_out_edges(graph)
 
@@ -20,8 +14,8 @@ def validate(graph):
             for i in range(length-1):
                 seg_from = path.segments[i]
                 seg_to = path.segments[i+1]
-                if seg_to not in outs[seg_from] and rev_seg(seg_from) not in outs[rev_seg(seg_to)]:
-                    print(f"[odgi::validate] error: the path {path.name} does not respect the graph topology: the link {sego_str(seg_from)},{sego_str(seg_to)} is missing.")
+                if seg_to not in outs[seg_from] and seg_from.rev() not in outs[seg_to.rev()]:
+                    print(f"[odgi::validate] error: the path {path.name} does not respect the graph topology: the link {seg_from},{seg_to} is missing.")
 
 if __name__ == "__main__":
     name = sys.stdin
