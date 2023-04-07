@@ -2,14 +2,9 @@ import sys
 import mygfa
 import random
 
-def pop90percent(l):
-    origlen = len(l)
-    while len(l) > .1 * origlen:
-        l.pop(random.randrange(len(l)))
-
 def drop_some_lines(graph):
-    links = sorted(graph.links)
-    pop90percent(links)
+    links = list(sorted(graph.links))
+    links[:] = random.sample(links, int(0.1 * len(links)))
     return mygfa.Graph(graph.headers, graph.segments, links, graph.paths)
 
 if __name__ == "__main__":

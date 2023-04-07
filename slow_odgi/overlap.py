@@ -12,7 +12,7 @@ def touches(path1, path2, graph):
     return bool(segs1 & segs2)
 
 def pathseqlen(path, graph):
-    return sum(len(graph.segments[seg].seq) for (seg, _) in \
+    return sum(len(graph.segments[seg.name].seq) for seg in \
         graph.paths[path].segments)
 
 def print_overlaps(graph, inputpaths):
