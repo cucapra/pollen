@@ -19,7 +19,7 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
-test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-flatten test-slow-overlap test-slow-paths
+test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-flatten test-slow-matrix test-slow-overlap test-slow-paths test-slow-validate
 
 test-slow-chop: og
 	-turnt --save --env chop_oracle test/*.og
@@ -45,6 +45,10 @@ test-slow-flip: og
 	-turnt --save --env flip_oracle test/*.og
 	turnt --env flip_test test/*.gfa
 
+test-slow-matrix: og
+	-turnt --save --env matrix_oracle test/*.og
+	turnt --diff -v --env matrix_test test/*.gfa
+
 test-slow-flatten: og
 	-turnt --save --env flatten_oracle test/*.og
 	turnt --env flatten_test test/*.gfa
@@ -62,6 +66,12 @@ test-slow-overlap: og
 test-slow-paths: og
 	-turnt --save --env paths_oracle test/*.og
 	turnt --env paths_test test/*.gfa
+
+test-slow-validate: fetch
+	-turnt --save --env validate_setup test/*.gfa
+	-turnt --save --env validate_oracle test/*.gfa
+	turnt -v --env validate_test test/*.gfa
+	rm test/*.gfa; rm test/*.og
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
