@@ -58,6 +58,14 @@ command = "python3 ../slow_odgi/flip.py < {filename}"
 binary = true
 command = "python3 ../slow_odgi/inject_setup.py {filename}"
 
+[envs.matrix_oracle]
+binary = true
+command = "odgi matrix -i {filename} | sort"
+
+[envs.matrix_test]
+binary = true
+command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
+
 [envs.overlap_setup]
 binary = true
 command = "python3 ../slow_odgi/paths.py < {filename}"
@@ -78,3 +86,16 @@ command = "odgi paths -i {filename} -L"
 [envs.paths_test]
 binary = true
 command = "python3 ../slow_odgi/paths.py < {filename}"
+
+[envs.validate_setup]
+binary = true
+command = "python3 ../slow_odgi/perturb.py < {filename}"
+output.gfa = "-"
+
+[envs.validate_oracle]
+binary = true
+command = "odgi build -g {filename} -o - | odgi validate -i - 2>temp.txt; cat temp.txt"
+
+[envs.validate_test]
+binary = true
+command = "python3 ../slow_odgi/validate.py < {filename}"

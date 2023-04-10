@@ -91,19 +91,41 @@ class Link:
             str(self.overlap),
         ])
 
+@dataclass
+class SegO:
+    """A segment's name and its orientation"""
+    name: str
+    orientation: bool
+
+    @classmethod
+    def parse(cls, s) -> "SegO":
+        return SegO(s[:-1], parse_orient(s[-1]))
+
+    def rev(self) -> "SegO":
+        return SegO (self.name, not self.orientation)
+
+    def __str__(self):
+        return self.name + ("+" if self.orientation else "-")
+
+    def __key(self):
+        return (self.name, self.orientation)
+
+    def __hash__(self):
+        return hash(self.__key())
+
 
 @dataclass
 class Path:
     """A GFA path is an ordered series of links."""
     name: str
-    segments: List[Tuple[str, bool]]  # Segment names and orientations.
+    segments: List[SegO]  # Segment names and orientations.
     overlaps: Optional[List[Alignment]]
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         _, name, seq, overlaps = fields[:4]
 
-        seq_lst = [(s[:-1], parse_orient(s[-1])) for s in seq.split(',')]
+        seq_lst = [SegO.parse(s) for s in seq.split(',')]
         overlaps_lst = None if overlaps == '*' else \
             [Alignment.parse(s) for s in overlaps.split(',')]
         if overlaps_lst:
@@ -117,17 +139,11 @@ class Path:
             overlaps_lst,
         )
 
-    def seqlen(self) -> int:
-        length = 0
-        for (seg,_) in self.segments:
-            length += len(seg)
-        return length
-
     def __str__(self):
         return '\t'.join([
             "P",
             self.name,
-            ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
+            ",".join(str(seg) for seg in self.segments),
             "*",
             # ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
