@@ -5,6 +5,7 @@ __pycache__/
 test/*.og
 test/*.gfa
 test/*.out
+test/*.paths
 
 test/basic/*.og
 test/basic/*.out

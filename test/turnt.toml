@@ -1,6 +1,6 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py --nl"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py --nl"
 
 [envs.chop_test]
 binary = true
@@ -8,7 +8,7 @@ command = "python3 ../slow_odgi/chop.py < {filename}"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi crush -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py"
 
 [envs.crush_test]
 binary = true
@@ -40,7 +40,7 @@ command = "python3 ../slow_odgi/mygfa.py < {filename}"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py"
 
 [envs.flip_test]
 binary = true
@@ -48,15 +48,16 @@ command = "python3 ../slow_odgi/flip.py < {filename}"
 
 [envs.overlap_setup]
 binary = true
-command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; python3 ../slow_odgi/list_paths.py < {filename} > $pathsname"
+command = "python3 ../slow_odgi/list_paths.py < {filename}"
+output.paths = "-"
 
 [envs.overlap_oracle]
 binary = true
-command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; odgi overlap -i {filename} -R $pathsname"
+command = "odgi overlap -i {filename} -R {base}.paths"
 
 [envs.overlap_test]
 binary = true
-command = "fn={filename}; pathsname=$(echo $fn | cut -f 1 -d '.').paths; python3 ../slow_odgi/overlap.py $pathsname < {filename}"
+command = "python3 ../slow_odgi/overlap.py {base}.paths < {filename}"
 
 [envs.flatten_oracle]
 binary = true
