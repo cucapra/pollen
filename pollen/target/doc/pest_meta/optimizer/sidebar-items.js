@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":[["OptimizedExpr","The optimized version of the pest AST’s `Expr`."]],"fn":[["optimize","Takes pest’s ASTs and optimizes them"]],"struct":[["OptimizedExprTopDownIterator","A top-down iterator over an `OptimizedExpr`."],["OptimizedRule","The optimized version of the pest AST’s `Rule`."]]};
