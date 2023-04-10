@@ -91,9 +91,10 @@ class Link:
             str(self.overlap),
         ])
 
-@dataclass
+
+@dataclass(eq=True, frozen=True)
 class SegO:
-    """A segment's name and its orientation"""
+    """A specific orientation for a segment, referenced by name."""
     name: str
     orientation: bool
 
@@ -102,16 +103,10 @@ class SegO:
         return SegO(s[:-1], parse_orient(s[-1]))
 
     def rev(self) -> "SegO":
-        return SegO (self.name, not self.orientation)
+        return SegO(self.name, not self.orientation)
 
     def __str__(self):
         return self.name + ("+" if self.orientation else "-")
-
-    def __key(self):
-        return (self.name, self.orientation)
-
-    def __hash__(self):
-        return hash(self.__key())
 
 
 @dataclass
