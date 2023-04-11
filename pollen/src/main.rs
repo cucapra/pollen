@@ -53,19 +53,17 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
     match stmt.as_rule() {
         Rule::decl => {
             let mut inner = stmt.into_inner();
-            let typ = {
-                // println!("Stmt: {:?}", inner);
-                let Some(pair) = inner.next() else {
-                    unreachable!("Expected inner statement, found nothing")
-                };
-                parse_typ(pair)
-            };
             let id = {
-                // println!("Stmt without type: {:?}", inner);
                 let Some(pair) = inner.next() else {
                     unreachable!("A declaration requires an Id")
                 };
                 parse_id(pair)
+            };
+            let typ = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("Expected inner statement, found nothing")
+                };
+                parse_typ(pair)
             };
             let expr_opt = {
                 println!("Just the expr: {:?}", inner);
@@ -255,10 +253,10 @@ pub fn main() {
 
     match PollenParser::parse(Rule::prog, &prog) {
         Ok(mut pairs) => {
-            // println!(
-            //     "Pre-parsed: {:#?}",
-            //     pairs
-            // );
+            println!(
+                "Pre-parsed: {:#?}",
+                pairs
+            );
             println!("Lexing");
             println!(
                 "Parsed: {:#?}",

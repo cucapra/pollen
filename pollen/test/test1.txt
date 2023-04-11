@@ -1,77 +1,77 @@
 // This is a comment. It does not get parsed
 
 // Integer literals
-int i = 3;
-int id' = 4;
-//int i = -3;
-//int i = +2;
+i: int = 3;
+id': int = 4;
+i: int = -3;
+i: int = +2;
 
 // Boolean literals
-bool bool1 = true;
-bool b2 = false;
+bool1: bool = true;
+b2: bool = false;
 
-int i;
-bool b;
-char c;
-Node n;
-Step s;
-Edge e;
-String str;
-Strand strand;
-Base b;
+i: int;
+b: bool;
+c: char;
+n: Node;
+s: Step;
+e: Edge;
+str: String;
+strand: Strand;
+b: Base;
 
 // Characters... oh boy here we go
 
-char c1 = 'a';
-char c2 = 'b';
-char c3 = '?';
-char c_4 = 'n';
-char c_5 = 't';
+c1: char = 'a';
+c2 : char = 'b';
+c3 : char = '?';
+c_4 : char = 'n';
+c_5 : char = 't';
 
 // Backspace characters
-char c8 = '\\';
-char c4 = '\n';
-char c5 = '\t';
-char c6 = '\'';
-char c7 = '\"';
-char nother_char = '"';
-char also_a_char = ' ';
+c8: char = '\\';
+c4: char = '\n';
+c5: char = '\t';
+c6: char = '\'';
+c7: char = '\"';
+nother_char : char = '"';
+also_a_char : char = ' ';
 
-String s1 = "'";
-String s2 = "Hello world!";
+s1: String = "'";
+s2: String = "Hello world!";
 //Backspace strings
-String s2 = "\\";
-String s3 = "\n";
-String s4 = "\t";
-String s5 = "\"";
-String empty_str = "";
-String s6 = "Hello world!\n";
+s2: String = "\\";
+s3: String = "\n";
+s4: String = "\t";
+s5: String = "\"";
+empty_str : String = "";
+s6: String = "Hello world!\n";
 
-int binop = i + id2;
-int blskdf_ = 3 - (-5); 
-int binop2 = i * 1;
-char sdf = 9 / 3;
-Node n = 5 % 2;
-Step b = 2 < 3;
-Strand TTTT = 5 > true;
-Step b = (2 <= 3);
-Strand TTTT = 5 >= true;
-Step b = 2 == 3;
-Strand TTTT = 5 != true;
-String string = !true && !(!false);
-bool boolean = false || (true && !false);
+binop : int = i + id2;
+blskdf_ : int = 3 - (-5); 
+binop2: int = i * 1;
+sdf:char = 9 / 3;
+n: Node = 5 % 2;
+b: Step = 2 < 3;
+TTTT: Strand = 5 > true;
+b: Step = (2 <= 3);
+TTTT: Strand = 5 >= true;
+b: Step = 2 == 3;
+TTTT: Strand = 5 != true;
+string : Strand = !true && !(!false);
+boolean : bool = false || (true && !false);
 
 // Parenthesis
-Strand TTTT = (5 != true);
-Strand TTTT = [5 != true];
+TTTT : Strand = (5 != true);
+TTTT : Strand = [5 != true];
 
 /*
     and = { "&&" }
     or = { "||" }
 */
 
-bool SD = !(true);
+SD : bool = !(true);
 
 // Parenthesis
-int int1 = 3 * (2 + 4);
-int int1 = [3 * (2 + 4)];
+int1 : int = 3 * (2 + 4);
+int1 : int = [3 * (2 + 4)];

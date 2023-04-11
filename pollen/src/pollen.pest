@@ -80,7 +80,7 @@ prefix = _{ not }
 
 //call = { identifier ~ "(" ~ expr? ~ ("," ~ expr)* ")" }
 //array_access = { identifier ~ "[" ~ expr ~ "]"}
-//record_access = { identifier ~ "." ~ identifier }
+// record_access = { identifier ~ "." ~ identifier }
 
 term = _{ literal | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
@@ -88,8 +88,8 @@ expr = { prefix* ~ term ~ (binop ~ prefix* ~ term )* }
 
 
 /* ----- Statements ---- */
-decl = { typ ~ identifier ~ ("=" ~ expr)? ~ ";"}
-//assign = { (((identifier | array_access | record_access) ~ ("=" | "+=") ~ expr) | (identifier ~ "++")) ~ ";"}
+decl = { identifier ~ ":" ~ typ ~ ("=" ~ expr)? ~ ";"}
+// assign = { (((identifier | array_access | record_access) ~ ("=" | "+=") ~ expr) | (identifier ~ "++")) ~ ";"}
 // Function call
 //call_stmt = { call ~ ";" }
 
