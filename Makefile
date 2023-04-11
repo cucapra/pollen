@@ -69,9 +69,10 @@ test-slow-paths: og
 
 test-slow-validate: fetch
 	-turnt --save --env validate_setup test/*.gfa
-	-turnt --save --env validate_oracle test/*.gfa
-	turnt -v --env validate_test test/*.gfa
-	rm test/*.gfa; rm test/*.og
+	for fn in `ls test/*.temp`; do `mv $$fn $${fn%.*}_temp.gfa`; done
+	-turnt --save --env validate_oracle test/*_temp.gfa
+	turnt -v --env validate_test test/*_temp.gfa
+	rm test/*_temp.gfa
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
@@ -79,7 +80,7 @@ clean:
 
 	rm -rf test/basic/*.og
 
-	rm -rf test/temp.*
+	rm -rf test/*temp.*
 	rm -rf test/*.paths
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
