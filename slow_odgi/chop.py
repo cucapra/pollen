@@ -47,7 +47,7 @@ def chop_graph(graph):
         for seg in path.segments:
             o = seg.orientation
             r = seg_2_start_end[seg.name]
-            segments = [mygfa.SegO(str(s), o) for s in range(r[0], r[1])]
+            segments = [mygfa.Handle(str(s), o) for s in range(r[0], r[1])]
             new_path_segments += segments if o else list(reversed(segments))
         new_paths[path.name] = mygfa.Path(path.name, new_path_segments, path.overlaps)
 
