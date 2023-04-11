@@ -17,21 +17,21 @@ def node_steps(graph):
 
 def in_out_edges(graph):
     """
-    key: SegO              # my details
-    value: list of SegO    # neighbor's details
+    key: Handle              # my details
+    value: list of Handle    # neighbor's details
     We take each step into account, regardless of whether it is on a path.
     We make two such dicts: one for in-edges and one for out-edges
     """
     ins = {}
     outs = {}
     for segment in graph.segments.values():
-        ins[mygfa.SegO(segment.name, True)] = []
-        ins[mygfa.SegO(segment.name, False)] = []
-        outs[mygfa.SegO(segment.name, True)] = []
-        outs[mygfa.SegO(segment.name, False)] = []
+        ins[mygfa.Handle(segment.name, True)] = []
+        ins[mygfa.Handle(segment.name, False)] = []
+        outs[mygfa.Handle(segment.name, True)] = []
+        outs[mygfa.Handle(segment.name, False)] = []
 
     for link in graph.links:
-        ins[mygfa.SegO(link.to, link.to_orient)].append(mygfa.SegO(link.from_, link.from_orient))
-        outs[mygfa.SegO(link.from_, link.from_orient)].append(mygfa.SegO(link.to, link.to_orient))
+        ins[link.to].append(link.from_)
+        outs[link.from_].append(link.to)
 
     return (ins, outs)

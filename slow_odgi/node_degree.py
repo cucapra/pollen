@@ -9,8 +9,8 @@ def node_degree(graph):
     ins, outs = preprocess.in_out_edges(graph)
     for seg in graph.segments.values():
         seg = seg.name
-        out_degree = len(outs[mygfa.SegO(seg, True)]) + len(outs[mygfa.SegO(seg, False)])
-        in_degree = len(ins[mygfa.SegO(seg, True)]) + len(ins[mygfa.SegO(seg, False)])
+        out_degree = len(outs[mygfa.Handle(seg, True)]) + len(outs[mygfa.Handle(seg, False)])
+        in_degree = len(ins[mygfa.Handle(seg, True)]) + len(ins[mygfa.Handle(seg, False)])
         print('\t'.join([seg, str(in_degree + out_degree)]))
 
 
