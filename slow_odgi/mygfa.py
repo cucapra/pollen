@@ -61,19 +61,19 @@ class Alignment:
 
 
 @dataclass(eq=True, frozen=True, order=True)
-class SegO:
+class Handle:
     """A specific orientation for a segment, referenced by name."""
     name: str
     orientation: bool
 
     @classmethod
-    def parse(cls, s, o) -> "SegO":
-        return SegO(s, parse_orient(o))
+    def parse(cls, s, o) -> "Handle":
+        return Handle(s, parse_orient(o))
 
-    def rev(self) -> "SegO":
-        return SegO(self.name, not self.orientation)
+    def rev(self) -> "Handle":
+        return Handle(self.name, not self.orientation)
 
-    # We need two str methods because Links and Paths prefer SegOs to be
+    # We need two str methods because Links and Paths prefer Handles to be
     # string-ified in different formats.
 
     # This is what a path wants
@@ -88,16 +88,16 @@ class SegO:
 @dataclass(eq=True, order=True)
 class Link:
     """A GFA link is an edge connecting two sequences."""
-    from_: SegO
-    to: SegO
+    from_: Handle
+    to: Handle
     overlap: Alignment
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Link":
         _, from_, from_orient, to, to_orient, overlap = fields[:6]
         return Link(
-            SegO.parse(from_, from_orient),
-            SegO.parse(to, to_orient),
+            Handle.parse(from_, from_orient),
+            Handle.parse(to, to_orient),
             Alignment.parse(overlap),
         )
 
@@ -114,13 +114,13 @@ class Link:
 class Path:
     """A GFA path is an ordered series of links."""
     name: str
-    segments: List[SegO]  # Segment names and orientations.
+    segments: List[Handle]  # Segment names and orientations.
     overlaps: Optional[List[Alignment]]
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         _, name, seq, overlaps = fields[:4]
-        seq_lst = [SegO.parse(s[:-1], s[-1]) for s in seq.split(',')]
+        seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(',')]
         overlaps_lst = None if overlaps == '*' else \
             [Alignment.parse(s) for s in overlaps.split(',')]
         if overlaps_lst:
