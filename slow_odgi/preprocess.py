@@ -31,7 +31,7 @@ def in_out_edges(graph):
         outs[mygfa.SegO(segment.name, False)] = []
 
     for link in graph.links:
-        ins[mygfa.SegO(link.to, link.to_orient)].append(mygfa.SegO(link.from_, link.from_orient))
-        outs[mygfa.SegO(link.from_, link.from_orient)].append(mygfa.SegO(link.to, link.to_orient))
+        ins[link.to].append(link.from_)
+        outs[link.from_].append(link.to)
 
     return (ins, outs)
