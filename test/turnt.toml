@@ -54,6 +54,11 @@ command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_od
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
 
+[envs.groom_oracle]
+binary = true
+command = "odgi groom -i {filename} -R {base}.paths -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py"
+output.groomed = "-"
+
 [envs.inject_setup]
 binary = true
 command = "python3 ../slow_odgi/inject_setup.py {filename}"
