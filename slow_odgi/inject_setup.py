@@ -3,6 +3,7 @@ import mygfa
 import random
 
 def print_bed(graph, outfile):
+  random.seed(4)
   for path in graph.paths.values():
     length = mygfa.Path.seqlen(path)
     for i in range(random.randint(0,5)):
