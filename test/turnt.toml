@@ -90,7 +90,7 @@ command = "python3 ../slow_odgi/paths.py < {filename}"
 [envs.validate_setup]
 binary = true
 command = "python3 ../slow_odgi/perturb.py < {filename}"
-output.gfa = "-"
+output.temp = "-"
 
 [envs.validate_oracle]
 binary = true
