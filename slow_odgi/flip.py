@@ -8,9 +8,9 @@ def path_is_rev(path, graph):
     """Is this path more reverse-oriented than it is forward-oriented?"""
     fwd = 0
     rev = 0
-    for (segname, orientation) in path.segments:
-        length = len (graph.segments[segname].seq)
-        if orientation:
+    for seg in path.segments:
+        length = len (graph.segments[seg.name].seq)
+        if seg.orientation:
             fwd += length
         else:
             rev += length
@@ -19,8 +19,8 @@ def path_is_rev(path, graph):
 def flip_path(path, graph):
     if path_is_rev(path, graph):
         segments = []
-        for (segname, orientation) in reversed(path.segments):
-            segments.append ((segname, not orientation))
+        for seg in reversed(path.segments):
+            segments.append (mygfa.Handle(seg.name, not seg.orientation))
         return mygfa.Path(path.name+"_inv", segments, path.overlaps)
     else:
         return path
