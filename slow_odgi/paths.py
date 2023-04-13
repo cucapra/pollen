@@ -1,9 +1,12 @@
 import sys
 import mygfa
 
+
 def print_paths(graph):
-  for name in graph.paths.keys():
-    print (name)
+    """Just the names of the paths found in this graph."""
+    for name in graph.paths.keys():
+        print (name)
+
 
 if __name__ == "__main__":
     name = sys.stdin
