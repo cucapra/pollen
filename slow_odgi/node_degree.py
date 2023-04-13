@@ -3,10 +3,11 @@ import mygfa
 import preprocess
 from typing import List, Tuple, Dict
 
+
 def node_degree(graph):
-    # The degree of a node is just the cardinality of in_out for that node
+    """The degree of a node is just the cardinality of adjlist for that node."""
     print('\t'.join(["#node.id", "node.degree"]))
-    ins, outs = preprocess.in_out_edges(graph)
+    ins, outs = preprocess.adjlist(graph)
     for seg in graph.segments.values():
         seg = seg.name
         out_degree = len(outs[mygfa.Handle(seg, True)]) \

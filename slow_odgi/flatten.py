@@ -1,10 +1,10 @@
 import sys
 import mygfa
 
+
 def fasta(graph):
-    """ The main deliverable is the FASTA:
-    Simply, for all segments, the seqs glued together.
-    Traverse segments in order.
+    """The main deliverable is the FASTA:
+    Simply traverse the segments in order and glue their seqs together.
     However, it pays to do some bookkeeping now.
     legend[segname] stores the [start, end) of the spot in the FASTA that
     segname's seq is featured.
@@ -19,7 +19,10 @@ def fasta(graph):
         ptr += length
     return ans, legend
 
+
 def print_bed(graph, legend):
+    """With the legend computed during FASTA-building, this is easy."""
+
     print("\t".join(["#name", "start", "end",
                      "path.name", "strand", "step.rank"]))
     for path in graph.paths.values():
@@ -28,8 +31,11 @@ def print_bed(graph, legend):
             print ("\t".join([odginame, str(start), str(end), path.name,
                               "+" if seg.orientation else "-", str(i)]))
 
+
 def insert_newlines(string, every=80):
+    """odgi's output does this for this algorithm, so we follow them."""
     return '\n'.join(string[i:i+every] for i in range(0, len(string), every))
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].endswith(".gfa"):

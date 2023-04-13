@@ -3,13 +3,15 @@ import mygfa
 import preprocess
 from typing import List, Tuple, Dict
 
+
 def validate(graph):
-    _, outs = preprocess.in_out_edges(graph)
+    """Does the underlying set of Links support the paths that the graph has?"""
+    _, outs = preprocess.adjlist(graph)
 
     for path in graph.paths.values():
         length = len(path.segments)
         if length < 2:
-            continue # success: done with this path
+            continue # Success: done with this path. TODO hrmm...
         else:
             for i in range(length-1):
                 seg_from = path.segments[i]
@@ -19,6 +21,7 @@ def validate(graph):
                     print(f"[odgi::validate] error: the path {path.name} "\
                            "does not respect the graph topology: the link "\
                            f"{seg_from},{seg_to} is missing.")
+
 
 if __name__ == "__main__":
     name = sys.stdin
