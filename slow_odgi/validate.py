@@ -11,7 +11,7 @@ def validate(graph):
     for path in graph.paths.values():
         length = len(path.segments)
         if length < 2:
-            continue # Success: done with this path. TODO hrmm...
+            continue # Success: done with this path.
         else:
             for i in range(length-1):
                 seg_from = path.segments[i]

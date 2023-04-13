@@ -73,15 +73,14 @@ class Handle:
     def rev(self) -> "Handle":
         return Handle(self.name, not self.orientation)
 
-    # We need two str methods because Links and Paths prefer Handles to be
-    # string-ified in different formats.
+    """We need two str methods because Links and Paths
+    have different preferences when converting Handles to string
+    """
 
-    # This is what a path wants
-    def __str__(self):
+    def __str__(self):     # This is what a path wants.
         return ''.join([self.name, ("+" if self.orientation else "-")])
 
-    # While this is what a link wants
-    def linkstr(self):
+    def linkstr(self):    # While this is what a link wants.
         return '\t'.join([self.name, ("+" if self.orientation else "-")])
 
 
@@ -139,8 +138,7 @@ class Path:
             "P",
             self.name,
             ",".join(str(seg) for seg in self.segments),
-            "*",
-            # ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+            "*"
         ])
 
 
@@ -167,7 +165,7 @@ class Graph:
         for line in nonblanks(infile):
             fields = line.split()
             if fields[0] == 'H':
-                graph.headers.append(line)  # Stash headers verbatim for now.
+                graph.headers.append(line)  # Parse headers verbatim.
             elif fields[0] == 'S':
                 segment = Segment.parse(fields)
                 graph.segments[segment.name] = segment
