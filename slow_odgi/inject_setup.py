@@ -3,10 +3,11 @@ import mygfa
 import random
 import preprocess
 
+
 def print_bed(graph, outfile):
   random.seed(4)
   for path in graph.paths.values():
-    length = preprocess.pathseqlen(graph)[path.name]
+    length = len(preprocess.pathseq(graph)[path.name])
     for i in range(random.randint(0,5)):
       r1 = random.randint(0, length)
       r2 = random.randint(0, length)

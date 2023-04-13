@@ -25,7 +25,7 @@ def print_overlaps(graph, inputpaths):
         for path in graph.paths.keys():
             if touches(ip, path, graph):
                 print("\t".join([ip, "0", \
-                    str(preprocess.pathseqlen(graph)[ip]), path]))
+                    str(len(preprocess.pathseq(graph)[ip])), path]))
 
 
 if __name__ == "__main__":

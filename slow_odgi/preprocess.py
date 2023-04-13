@@ -21,8 +21,8 @@ def adjlist(graph):
     """Construct an adjacency list representation of the graph.
     This is via two dicts having the same type:
     key: Handle              # my details
-    value: list of Handle    # neighbor's details
-    We take each step into account, regardless of whether it is on a path.
+    value: list of Handle    # neighbors' details
+    We take each segment into account, regardless of whether it is on a path.
     We make two such dicts: one for in-edges and one for out-edges
     """
     ins = {}
@@ -39,14 +39,13 @@ def adjlist(graph):
 
     return (ins, outs)
 
-    # TODO hmm not very intern-ey...
 
-def pathseqlen(graph):
-    """Given a graph, precompute the _lengths of the sequences_ charted by
-    each of the graph's paths.
+def pathseq(graph):
+    """Given a graph, precompute the _sequence_
+    charted by each of the graph's paths.
     """
     ans = {}
     for path in graph.paths:
-        ans[path] = sum(len(graph.segments[seg.name].seq) for seg in \
+        ans[path] = ''.join(graph.segments[seg.name].seq for seg in \
                         graph.paths[path].segments)
     return ans
