@@ -19,10 +19,10 @@ def crush_n_seg(seg):
 
 def crush_n_graph(graph):
     """Apply the above, indiscriminately, to all nodes"""
-    crushed_segments = \
+    crushed_segs = \
         {name: crush_n_seg(seg)
          for name, seg in graph.segments.items()}
-    return mygfa.Graph(graph.headers, crushed_segments, graph.links, graph.paths)
+    return mygfa.Graph(graph.headers, crushed_segs, graph.links, graph.paths)
 
 
 if __name__ == "__main__":

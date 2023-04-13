@@ -43,13 +43,13 @@ def chop_graph(graph):
         new_segments = new_segments | chopped_segments
 
     for path in graph.paths.values():
-        new_path_segments = []
+        new_p_segs = []
         for seg in path.segments:
             o = seg.orientation
             r = seg_2_start_end[seg.name]
             segments = [mygfa.Handle(str(s), o) for s in range(r[0], r[1])]
-            new_path_segments += segments if o else list(reversed(segments))
-        new_paths[path.name] = mygfa.Path(path.name, new_path_segments, path.overlaps)
+            new_p_segs += segments if o else list(reversed(segments))
+        new_paths[path.name] = mygfa.Path(path.name, new_p_segs, path.overlaps)
 
     return mygfa.Graph(graph.headers, new_segments, new_links, new_paths)
 

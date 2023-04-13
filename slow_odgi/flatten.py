@@ -3,7 +3,8 @@ import mygfa
 
 def fasta(graph):
     """ The main deliverable is the FASTA:
-    Simply, for all segments, the seqs glued together. Traverse segments in order.
+    Simply, for all segments, the seqs glued together.
+    Traverse segments in order.
     However, it pays to do some bookkeeping now.
     legend[segname] stores the [start, end) of the spot in the FASTA that
     segname's seq is featured.
@@ -19,11 +20,13 @@ def fasta(graph):
     return ans, legend
 
 def print_bed(graph, legend):
-    print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
+    print("\t".join(["#name", "start", "end",
+                     "path.name", "strand", "step.rank"]))
     for path in graph.paths.values():
         for i, seg in enumerate(path.segments):
             start, end = legend[seg.name]
-            print ("\t".join([odginame, str(start), str(end), path.name, "+" if seg.orientation else "-", str(i)]))
+            print ("\t".join([odginame, str(start), str(end), path.name,
+                              "+" if seg.orientation else "-", str(i)]))
 
 def insert_newlines(string, every=80):
     return '\n'.join(string[i:i+every] for i in range(0, len(string), every))
