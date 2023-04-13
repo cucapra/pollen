@@ -34,7 +34,6 @@ def flip_graph(graph):
 
 
 if __name__ == "__main__":
-    name = sys.stdin
     graph = mygfa.Graph.parse(sys.stdin)
     flipped_graph = flip_graph(graph)
     flipped_graph.emit(sys.stdout)

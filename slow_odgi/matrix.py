@@ -19,6 +19,5 @@ def matrix(graph):
 
 
 if __name__ == "__main__":
-    name = sys.stdin
     graph = mygfa.Graph.parse(sys.stdin)
     matrix(graph)

@@ -24,6 +24,5 @@ def validate(graph):
 
 
 if __name__ == "__main__":
-    name = sys.stdin
     graph = mygfa.Graph.parse(sys.stdin)
     validate(graph)

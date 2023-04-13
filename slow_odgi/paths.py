@@ -9,7 +9,6 @@ def print_paths(graph):
 
 
 if __name__ == "__main__":
-    name = sys.stdin
     graph = mygfa.Graph.parse(sys.stdin)
     print_paths(graph)
 
