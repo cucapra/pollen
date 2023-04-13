@@ -1,20 +1,23 @@
-use std::env;
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::Path;
-
 #[macro_use]
 extern crate lazy_static;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+use std::env;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
 use pest::iterators::{ Pair, Pairs };
 use pest::pratt_parser::{Assoc::*, Op, PrattParser};
 use pest::Parser;
+use pest_consume::Error;
 
 pub mod ast;
 use crate::ast::*;
+
+type ParseResult<T> = std::result::Result<T, Error<Rule>>;
+type Node<'i> = pest_consume::Node<'i, Rule, ()>;
 
 #[derive(Parser)]
 #[grammar = "pollen.pest"]
@@ -35,18 +38,105 @@ lazy_static! {
             .op(Op::infix(Rule::mult, Left) | Op::infix(Rule::div, Left) 
                 | Op::infix(Rule::modulo, Left))
             .op(Op::prefix(Rule::not))
+            .op(Op::infix(Rule::field_access, Left))
     };
 }
 
+impl PollenParser {
+    fn parse_pol(input_str: &str) -> Result<Prog> {
+        // Parse the input into `Nodes`
+        let inputs = PollenParser::parse(Rule::file, input_str)?;
+        // There should be a single root node in the parsed tree
+        let input = inputs.single()?;
+        // Consume the `Node` recursively into the final value
+        CSVParser::file(input)
+    }
+}
+
+#[pest_consume::parser]
+impl PollenParser {
+    fn EOI(_input: Node) -> ParseResult<()> {
+        Ok(())
+    }
+
+    // Literals
+    fn integer_lit(input Node) -> ParseResult<> {
+        ast::Expr::Integer(primary.as_str().parse::<i32>().unwrap())
+    }
+    fn true_lit(input Node) -> ParseResult<> {
+        Expr::Bool(true)
+    }
+    fn false_lit(input Node) -> ParseResult<> {
+        Expr::Bool(false)
+    }
+    // Character Literals
+    fn char_lit(input Node) -> ParseResult<Expr> {
+        match character.as_rule() {
+
+        }
+        Expr::Char(parse_char(primary.into_inner().next().unwrap()))
+    }
+    fn back_backslash(input Node) -> ParseResult<Expr> { 
+        Expr::Char('\\')
+    }
+    fn back_tab(input Node) -> ParseResult<Expr> { 
+        Expr::Char('\t')
+    }
+    fn back_newline(input Node) -> ParseResult<Expr> { 
+        Expr::Char('\n')
+    }
+    fn back_single_quote(input Node) -> ParseResult<Expr> { 
+        Expr::Char('\'')
+    }
+    fn back_double_quote(input Node) -> ParseResult<Expr> { 
+        Expr::Char('\"')
+    }
+    fn normal_char(input Node) -> ParseResult<Expr> { 
+        Expr::Char(input.as_str().chars().nth(0).unwrap())
+    }
+    fn string_lit(input Node) -> ParseResult<> {
+        let mut string = String::new();
+        for character in primary.into_inner() {
+            string.push(char_lit(character));
+        }
+        Expr::StringLit(string)
+    },
+
+    fn identifier(input Node) -> ParseResult<> {
+        Id(id.as_str().to_string())
+    }
+
+    fn expr(input Node) -> ParseResult<> {
+        // If this rule has been reached then 
+        // this is a parenthesized expression
+
+        // println!("Full expr: {:?}", inner);
+        parse_expr(primary.into_inner())
+    }
+
+    fn decl(input: Node) -> ParseResult<Stmt> {
+        ...
+    }
+    fn stmt(input: Node) -> ParseResult<Stmt> {
+        ...
+    }
+    fn file(input: Node) -> ParseResult<Prog> {
+        let mut stmts = Vec::new();
+        for stmt in input.into_children() {
+
+        }
+        while let Some(stmt) = prog.next() {
+            if stmt.as_rule() != Rule::EOI {
+                // TODO: Edit for function defs
+                stmts.push(parse_stmt(stmt)) 
+            }  
+        };
+        Prog{ stmts: stmts }
+    }
+}
+
 pub fn parse_prog(mut prog: Pairs<Rule>) -> Prog {
-    let mut stmts = Vec::new();
-    while let Some(stmt) = prog.next() {
-        if stmt.as_rule() != Rule::EOI {
-            // TODO: Edit for function defs
-            stmts.push(parse_stmt(stmt)) 
-        }  
-    };
-    Prog{ stmts: stmts }
+
 }
 
 fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
@@ -137,6 +227,7 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 Rule::neq => BinOp::Neq,
                 Rule::and => BinOp::And,
                 Rule::or => BinOp::Or,
+                Rule::field_access => 
                 rule => unreachable!("Expr::parse expected infix operation, found {:?}", rule),
             };
             Expr::BinOpExpr {
@@ -156,13 +247,6 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
             }
         })
         .parse(expression)
-}
-
-fn parse_id(id: Pair<Rule>) -> Id {
-    match id.as_rule(){
-        Rule::identifier => Id(id.as_str().to_string()),
-        rule => panic!("Identifier expected, but {:?} found", rule)
-    }
 }
 
 fn parse_typ(typ: Pair<Rule>) -> Typ {
