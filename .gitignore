@@ -1,10 +1,20 @@
 __pycache__/
 *.py[cod]
+.DS_Store
 
 test/*.og
 test/*.gfa
 test/*.out
-test/*.paths
+test/*.chop
+test/*.crush
+test/*.degree
+test/*.depth
+test/*.emit
+test/*.flatten
+test/*.flip
+test/*.matrix
+test/*.overlap
+test/*.validate
 
 test/basic/*.og
 test/basic/*.out
@@ -19,3 +29,6 @@ test/depth/subset-paths/*.out
 *.json
 og_to_gfa.py
 compute_maxes.py
+
+pollen/target/*
+pollen/*.rlib
