@@ -88,7 +88,12 @@ pub enum Stmt {
     },
     While {
         guard: Expr,
-        block: Box<Stmt>
+        body: Box<Stmt>
+    },
+    For {
+        id: Id,
+        iterator: Expr,
+        body: Box<Stmt>
     }
 }
 

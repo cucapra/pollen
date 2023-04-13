@@ -180,19 +180,46 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
             let mut inner = stmt.into_inner();
             let guard = {
                 let Some(pair) = inner.next() else {
-                    unreachable!("A declaration requires an Id")
+                    unreachable!("While loop has no guard")
                 };
                 parse_expr(pair.into_inner())
             };
             let block = {
                 let Some(pair) = inner.next() else {
-                    unreachable!("A declaration requires an Id")
+                    unreachable!("While loop has no body")
                 };
                 parse_stmt(pair)
             };
             Stmt::While {
                 guard: guard,
-                block: Box::new(block)
+                body: Box::new(block)
+            }
+        },
+        Rule::for_stmt => {
+            // Contains a guard and a block
+            let mut inner = stmt.into_inner();
+            let id = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("For loop with no id")
+                };
+                parse_id(pair)
+            };
+            let iterator = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("For loop with no iterator")
+                };
+                parse_expr(pair.into_inner())
+            };
+            let body = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("For loop with no body")
+                };
+                parse_stmt(pair)
+            };
+            Stmt::For {
+                id: id,
+                iterator: iterator,
+                body: Box::new(body)
             }
         },
         Rule::stmt => {
