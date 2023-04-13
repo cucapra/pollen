@@ -9,10 +9,9 @@ def print_bed(graph, outfile):
     for i in range(random.randint(0,5)):
       r1 = random.randint(0, length)
       r2 = random.randint(0, length)
-      lo = min(r1, r2)
-      hi = max(r1, r2)
-      print ("\t".join([path.name, str(lo), str(hi), path.name+"_"+str(i)]), \
-        file=outfile)
+      lo = str(min(r1, r2))
+      hi = str(max(r1, r2))
+      print ("\t".join([path.name, lo, hi, path.name+"_"+str(i)]), file=outfile)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

@@ -27,10 +27,9 @@ def flip_path(path, graph):
 
 def flip_graph(graph):
     """Apply the above, indiscriminately, to all paths"""
-    flipped_paths = \
-        {name: flip_path(path, graph)
-         for name, path in graph.paths.items()}
-    return mygfa.Graph(graph.headers, graph.segments, graph.links, flipped_paths)
+    new_paths = \
+        {name: flip_path(path, graph) for name, path in graph.paths.items()}
+    return mygfa.Graph(graph.headers, graph.segments, graph.links, new_paths)
 
 if __name__ == "__main__":
     name = sys.stdin

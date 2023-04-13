@@ -19,10 +19,9 @@ def print_overlaps(graph, inputpaths):
     print("\t".join(["#path", "start", "end", "path.touched"]))
     for ip in inputpaths:
         assert (ip in graph.paths)
-        for pathname in graph.paths.keys():
-            if touches(ip, pathname, graph):
-                print("\t".join([ip, "0", str(pathseqlen(ip, graph)), \
-                    pathname]))
+        for path in graph.paths.keys():
+            if touches(ip, path, graph):
+                print("\t".join([ip, "0", str(pathseqlen(ip, graph)), path]))
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1][-6:] == ".paths":
