@@ -5,13 +5,12 @@ from enum import Enum
 import re
 
 
-def parse_orient(s) -> bool:
+def parse_orient(o) -> bool:
     """Parse an orientation string as a bool.
-
     In our convention, "True" is forward and "False" is reverse.
     """
-    assert s in ('+', '-')
-    return s == '+'
+    assert o in ('+', '-')
+    return o == '+'
 
 
 @dataclass
@@ -61,33 +60,52 @@ class Alignment:
         )
 
 
+@dataclass(eq=True, frozen=True, order=True)
+class Handle:
+    """A specific orientation for a segment, referenced by name."""
+    name: str
+    orientation: bool
+
+    @classmethod
+    def parse(cls, s, o) -> "Handle":
+        return Handle(s, parse_orient(o))
+
+    def rev(self) -> "Handle":
+        return Handle(self.name, not self.orientation)
+
+    # We need two str methods because Links and Paths prefer Handles to be
+    # string-ified in different formats.
+
+    # This is what a path wants
+    def __str__(self):
+        return ''.join([self.name, ("+" if self.orientation else "-")])
+
+    # While this is what a link wants
+    def linkstr(self):
+        return '\t'.join([self.name, ("+" if self.orientation else "-")])
+
+
 @dataclass(eq=True, order=True)
 class Link:
     """A GFA link is an edge connecting two sequences."""
-    from_: str  # The name of a segment.
-    from_orient: bool
-    to: str  # Also a segment name.
-    to_orient: bool
+    from_: Handle
+    to: Handle
     overlap: Alignment
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Link":
         _, from_, from_orient, to, to_orient, overlap = fields[:6]
         return Link(
-            from_,
-            parse_orient(from_orient),
-            to,
-            parse_orient(to_orient),
+            Handle.parse(from_, from_orient),
+            Handle.parse(to, to_orient),
             Alignment.parse(overlap),
         )
 
     def __str__(self):
         return '\t'.join([
             "L",
-            self.from_,
-            "+" if self.from_orient else "-",
-            self.to,
-            "+" if self.to_orient else "-",
+            self.from_.linkstr(),
+            self.to.linkstr(),
             str(self.overlap),
         ])
 
@@ -96,14 +114,13 @@ class Link:
 class Path:
     """A GFA path is an ordered series of links."""
     name: str
-    segments: List[Tuple[str, bool]]  # Segment names and orientations.
+    segments: List[Handle]  # Segment names and orientations.
     overlaps: Optional[List[Alignment]]
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         _, name, seq, overlaps = fields[:4]
-
-        seq_lst = [(s[:-1], parse_orient(s[-1])) for s in seq.split(',')]
+        seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(',')]
         overlaps_lst = None if overlaps == '*' else \
             [Alignment.parse(s) for s in overlaps.split(',')]
         if overlaps_lst:
@@ -117,17 +134,11 @@ class Path:
             overlaps_lst,
         )
 
-    def seqlen(self) -> int:
-        length = 0
-        for (seg,_) in self.segments:
-            length += len(seg)
-        return length
-
     def __str__(self):
         return '\t'.join([
             "P",
             self.name,
-            ",".join(f"{n}{'+' if o else '-'}" for (n, o) in self.segments),
+            ",".join(str(seg) for seg in self.segments),
             "*",
             # ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
         ])
