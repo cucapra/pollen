@@ -3,8 +3,8 @@ import mygfa
 import random
 
 
-def drop_some_lines(graph):
-    """Given a graph, randomly drop 90% of the Links of the graph.
+def drop_some_links(graph):
+    """Given a graph, (pseudo)randomly drop 90% of the Links of the graph.
     This serves as a starting point from which to test `validate`.
     """
     random.seed(4)
@@ -15,5 +15,5 @@ def drop_some_lines(graph):
 
 if __name__ == "__main__":
     graph = mygfa.Graph.parse(sys.stdin)
-    newgraph = drop_some_lines(graph)
+    newgraph = drop_some_links(graph)
     newgraph.emit(sys.stdout)

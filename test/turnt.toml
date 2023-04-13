@@ -109,7 +109,7 @@ output.paths = "-"
 
 [envs.validate_setup]
 binary = true
-command = "python3 ../slow_odgi/perturb.py < {filename}"
+command = "python3 ../slow_odgi/droplinks.py < {filename}"
 output.temp = "-"
 
 [envs.validate_oracle]
