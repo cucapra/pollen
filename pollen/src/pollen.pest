@@ -90,11 +90,12 @@ expr = { prefix* ~ term ~ (binop ~ prefix* ~ term )* }
 
 /* ----- Statements ---- */
 decl = { identifier ~ ":" ~ typ ~ ("=" ~ expr)? ~ ";"}
+assign = { identifier ~ "=" ~ expr ~ ";" }
 // assign = { (((identifier | array_access | record_access) ~ ("=" | "+=") ~ expr) | (identifier ~ "++")) ~ ";"}
 // Function call
 //call_stmt = { call ~ ";" }
 
-//block = { "{" stmt+ "}" }
+block = { "{" ~ stmt+ ~ "}" }
 
 // Control Flow
 //if_stmt = { "if " ~ expr ~ block ~ ("el"if_stmt)* ~ ("else" ~ block)? }
@@ -102,7 +103,7 @@ decl = { identifier ~ ":" ~ typ ~ ("=" ~ expr)? ~ ";"}
 //for_stmt = {}
 
 
-stmt = { decl /* | assign | call_stmt | if */ }
+stmt = { decl | assign | block /* | call_stmt | if */ }
 
 /* ----- Import ----- */
 //import = {"use" ~ (!";" ~ ANY)+ ~ ";"} 

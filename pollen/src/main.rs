@@ -82,6 +82,30 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
                 expr: expr_opt
             }
         },
+        Rule::assign => {
+            // Just contains an id and an expression
+            let mut inner = stmt.into_inner();
+            let id = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A declaration requires an Id")
+                };
+                parse_id(pair)
+            };
+            let expr = {
+                parse_expr(inner)
+            };
+            Stmt::Assign {
+                id: id,
+                expr: expr
+            }
+        },
+        Rule::block => {
+            let mut stmts = Vec::new();
+            for s in stmt.into_inner() {
+                stmts.push(Box::new(parse_stmt(s)));
+            }
+            Stmt::Block { stmts: stmts }
+        },
         Rule::stmt => {
             let mut inner = stmt.into_inner();
             let s = {

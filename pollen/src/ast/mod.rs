@@ -66,6 +66,13 @@ pub enum Stmt {
         typ: Typ,
         id: Id,
         expr: Option<Expr>,
+    },
+    Assign {
+        id: Id,
+        expr: Expr
+    },
+    Block {
+        stmts: Vec<Box<Stmt>>
     }
 }
 

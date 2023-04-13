@@ -76,8 +76,22 @@ SD : bool = !(true);
 int1 : int = 3 * (2 + 4);
 int1 : int = [3 * (2 + 4)];
 
+// Reassignment
+a = 3;
+
 // Records
 step : Step = node.step;
 
 // Ill-typed field accesses
 i : int = 3.true;
+
+// Block Statements
+
+{
+    n: Node = 5 % 2;
+    b: Step = 2 < 3;
+}
+
+{
+    ans = 42;
+}
