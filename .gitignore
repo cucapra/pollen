@@ -6,6 +6,16 @@ test/*.og
 test/*.gfa
 test/*.out
 test/*.paths
+test/*.chop
+test/*.crush
+test/*.degree
+test/*.depth
+test/*.emit
+test/*.flatten
+test/*.flip
+test/*.matrix
+test/*.overlap
+test/*.validate
 
 test/basic/*.og
 test/basic/*.out
