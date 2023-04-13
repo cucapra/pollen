@@ -5,7 +5,6 @@ __pycache__/
 test/*.og
 test/*.gfa
 test/*.out
-test/*.paths
 test/*.chop
 test/*.crush
 test/*.degree

@@ -59,7 +59,7 @@ test-slow-inject: og
 	# turnt --env inject_test test/*.gfa
 
 test-slow-overlap: og
-	-turnt --env overlap_setup test/*.gfa
+	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	turnt -v --diff --env overlap_test test/*.gfa
 
