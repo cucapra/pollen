@@ -98,12 +98,12 @@ assign = { identifier ~ "=" ~ expr ~ ";" }
 block = { "{" ~ stmt+ ~ "}" }
 
 // Control Flow
-//if_stmt = { "if " ~ expr ~ block ~ ("el"if_stmt)* ~ ("else" ~ block)? }
+if_stmt = { "if " ~ expr ~ block ~ ("elif" ~ expr ~ block)* ~ ("else" ~ block)? }
 //while_stmt = { "}
 //for_stmt = {}
 
 
-stmt = { decl | assign | block /* | call_stmt | if */ }
+stmt = { decl | assign | block | if_stmt }
 
 /* ----- Import ----- */
 //import = {"use" ~ (!";" ~ ANY)+ ~ ";"} 

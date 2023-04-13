@@ -95,3 +95,33 @@ i : int = 3.true;
 {
     ans = 42;
 }
+
+// Control Flow
+if b {
+    a = 1;
+}
+
+if b { a = -1; } else { a = 0; }
+
+if b2 {
+    a = 2;
+} elif b3 { c = 4; }
+
+if guard1 {
+    l = 0;
+} elif guard2 { 
+    l = 1;
+} elif guard3 {
+    l = 2;
+}
+
+if true {
+    ans = 0;
+} elif false { 
+    ans = 1;
+} elif b3 {
+    // unreachable
+    ans = 2;
+} else {
+    ans = 3;
+}

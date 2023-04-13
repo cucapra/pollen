@@ -1,4 +1,5 @@
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum BinOp {
     Add,
     Sub,
@@ -17,14 +18,17 @@ pub enum BinOp {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum UOp {
     Not 
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct Id(pub String);
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum Expr {
     Integer(i32),
     Bool(bool),
@@ -47,6 +51,7 @@ pub enum Expr {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum Typ {
     Int,
     Bool,
@@ -61,6 +66,7 @@ pub enum Typ {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum Stmt {
     Decl {
         typ: Typ,
@@ -73,6 +79,12 @@ pub enum Stmt {
     },
     Block {
         stmts: Vec<Box<Stmt>>
+    },
+    If {
+        guard: Expr,
+        if_block: Box<Stmt>, // Block stmt
+        elif_block: Option<Box<Stmt>>, // If stmt
+        else_block: Option<Box<Stmt>> // Block stmt
     }
 }
 

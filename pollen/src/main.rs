@@ -106,6 +106,75 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
             }
             Stmt::Block { stmts: stmts }
         },
+        Rule::if_stmt => {
+            let mut inner = stmt.into_inner();
+            // if guard
+            let guard = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("An if statement requires a guard")
+                };
+                parse_expr(pair.into_inner())
+            };
+            // if block
+            let if_block = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("No if block found")
+                };
+                Box::new(parse_stmt(pair))
+            };
+            let mut else_block = None;
+            struct ElifStmt{
+                guard: Expr,
+                block: Stmt
+            }
+            let mut elif_stmts = Vec::new();
+            while let Some(pair) = inner.next() {
+                match pair.as_rule() {
+                    // else block
+                    Rule::block => {
+                        else_block = {
+                            Some(Box::new(parse_stmt(pair)))
+                        };
+                    },
+                    _ => {
+                        // elifs consume the next two pairs
+                        let elif_guard = {
+                            parse_expr(pair.into_inner())
+                        };
+                        let elif_block = {
+                            let Some(pair) = inner.next() else {
+                                unreachable!("No elif block found")
+                            };
+                            parse_stmt(pair)
+                        };
+                        elif_stmts.push(
+                            ElifStmt{ guard: elif_guard, block: elif_block}
+                        );
+                    }
+                }
+            }
+            // TODO: Questionable cloning happening here
+            let elif = elif_stmts.iter().rfold(None, 
+                |next_elif, elif_stmt| {
+                    let ElifStmt { guard, block } = elif_stmt;
+                    Some(Box::new(
+                        Stmt::If {
+                            guard: guard.clone(),
+                            if_block: Box::new(block.clone()),
+                            elif_block: next_elif,
+                            else_block: None
+                        }
+                    ))
+                }
+            );
+
+            Stmt::If {
+                guard : guard,
+                if_block : if_block,
+                elif_block: elif,
+                else_block: else_block,
+            }
+        }
         Rule::stmt => {
             let mut inner = stmt.into_inner();
             let s = {
@@ -123,7 +192,6 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
 }
 
 fn parse_expr(expression: Pairs<Rule>) -> Expr {
-    println!("Expression: {:?}", expression);
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
             Rule::integer_lit => ast::Expr::Integer(primary.as_str().parse::<i32>().unwrap()),
@@ -293,10 +361,10 @@ pub fn main() {
 
     match PollenParser::parse(Rule::file, &prog) {
         Ok(mut pairs) => {
-            println!(
-                "Pre-parsed: {:#?}",
-                pairs
-            );
+            // println!(
+            //     "Pre-parsed: {:#?}",
+            //     pairs
+            // );
             println!("Lexing");
             println!(
                 "Parsed: {:#?}",
