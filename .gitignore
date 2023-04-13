@@ -31,6 +31,5 @@ test/depth/subset-paths/*.out
 og_to_gfa.py
 compute_maxes.py
 
-pollen/.DS_Store
 pollen/target/*
 pollen/*.rlib
