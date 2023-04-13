@@ -174,7 +174,27 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
                 elif_block: elif,
                 else_block: else_block,
             }
-        }
+        },
+        Rule::while_stmt => {
+            // Contains a guard and a block
+            let mut inner = stmt.into_inner();
+            let guard = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A declaration requires an Id")
+                };
+                parse_expr(pair.into_inner())
+            };
+            let block = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A declaration requires an Id")
+                };
+                parse_stmt(pair)
+            };
+            Stmt::While {
+                guard: guard,
+                block: Box::new(block)
+            }
+        },
         Rule::stmt => {
             let mut inner = stmt.into_inner();
             let s = {

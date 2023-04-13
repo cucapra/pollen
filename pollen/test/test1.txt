@@ -96,7 +96,9 @@ i : int = 3.true;
     ans = 42;
 }
 
-// Control Flow
+/* --- Control Flow --- */
+
+// If statements
 if b {
     a = 1;
 }
@@ -125,3 +127,15 @@ if true {
 } else {
     ans = 3;
 }
+
+// while loops
+while e {
+    a = a.b + 1;
+}
+
+// for loops 
+/*
+for s in node.step {
+    depth = depth + 1;
+}
+*/

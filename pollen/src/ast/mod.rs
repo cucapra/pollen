@@ -85,6 +85,10 @@ pub enum Stmt {
         if_block: Box<Stmt>, // Block stmt
         elif_block: Option<Box<Stmt>>, // If stmt
         else_block: Option<Box<Stmt>> // Block stmt
+    },
+    While {
+        guard: Expr,
+        block: Box<Stmt>
     }
 }
 

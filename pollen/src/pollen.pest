@@ -99,11 +99,11 @@ block = { "{" ~ stmt+ ~ "}" }
 
 // Control Flow
 if_stmt = { "if " ~ expr ~ block ~ ("elif" ~ expr ~ block)* ~ ("else" ~ block)? }
-//while_stmt = { "}
-//for_stmt = {}
+while_stmt = { "while" ~ expr ~ block }
+//for_stmt = { "for" ~ identifier ~ "in" ~ expr ~ block }
 
 
-stmt = { decl | assign | block | if_stmt }
+stmt = { decl | assign | block | if_stmt | while_stmt }
 
 /* ----- Import ----- */
 //import = {"use" ~ (!";" ~ ANY)+ ~ ";"} 
