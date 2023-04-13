@@ -75,3 +75,9 @@ SD : bool = !(true);
 // Parenthesis
 int1 : int = 3 * (2 + 4);
 int1 : int = [3 * (2 + 4)];
+
+// Records
+step : Step = node.step;
+
+// Ill-typed field accesses
+i : int = 3.true;

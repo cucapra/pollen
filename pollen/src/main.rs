@@ -35,6 +35,7 @@ lazy_static! {
             .op(Op::infix(Rule::mult, Left) | Op::infix(Rule::div, Left) 
                 | Op::infix(Rule::modulo, Left))
             .op(Op::prefix(Rule::not))
+            .op(Op::infix(Rule::field_access, Left))
     };
 }
 
@@ -123,26 +124,41 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
             rule => unreachable!("Expr::parse expected atom, found {:?}", rule)
         })
         .map_infix(|lhs, op, rhs| {
-            let op = match op.as_rule() {
-                Rule::add => BinOp::Add,
-                Rule::sub => BinOp::Sub,
-                Rule::mult => BinOp::Mult,
-                Rule::div => BinOp::Div,
-                Rule::modulo => BinOp::Mod,
-                Rule::lt => BinOp::Lt,
-                Rule::gt => BinOp::Gt,
-                Rule::leq => BinOp::Leq,
-                Rule::geq => BinOp::Geq,
-                Rule::eq => BinOp::Eq,
-                Rule::neq => BinOp::Neq,
-                Rule::and => BinOp::And,
-                Rule::or => BinOp::Or,
+            enum OpType{
+                Binary(BinOp),
+                FieldAccess
+            }
+            let op_typ = match op.as_rule() {
+                Rule::add => OpType::Binary(BinOp::Add),
+                Rule::sub => OpType::Binary(BinOp::Sub),
+                Rule::mult => OpType::Binary(BinOp::Mult),
+                Rule::div => OpType::Binary(BinOp::Div),
+                Rule::modulo => OpType::Binary(BinOp::Mod),
+                Rule::lt => OpType::Binary(BinOp::Lt),
+                Rule::gt => OpType::Binary(BinOp::Gt),
+                Rule::leq => OpType::Binary(BinOp::Leq),
+                Rule::geq => OpType::Binary(BinOp::Geq),
+                Rule::eq => OpType::Binary(BinOp::Eq),
+                Rule::neq => OpType::Binary(BinOp::Neq),
+                Rule::and => OpType::Binary(BinOp::And),
+                Rule::or => OpType::Binary(BinOp::Or),
+                Rule::field_access => OpType::FieldAccess,
                 rule => unreachable!("Expr::parse expected infix operation, found {:?}", rule),
             };
-            Expr::BinOpExpr {
-                lhs: Box::new(lhs),
-                op,
-                rhs: Box::new(rhs),
+            match op_typ {
+                OpType::Binary(op) => {
+                    Expr::BinOpExpr {
+                        lhs: Box::new(lhs),
+                        op,
+                        rhs: Box::new(rhs),
+                    }
+                }
+                OpType::FieldAccess => {
+                    Expr::FieldAccess {
+                        object: Box::new(lhs),
+                        field: Box::new(rhs)
+                    }
+                }
             }
         })
         .map_prefix(|op, exp| {
@@ -251,7 +267,7 @@ pub fn main() {
         }
     };
 
-    match PollenParser::parse(Rule::prog, &prog) {
+    match PollenParser::parse(Rule::file, &prog) {
         Ok(mut pairs) => {
             println!(
                 "Pre-parsed: {:#?}",

@@ -39,6 +39,10 @@ pub enum Expr {
     UOpExpr{
         op: UOp,
         expr: Box<Expr>
+    },
+    FieldAccess{
+        object: Box<Expr>,
+        field: Box<Expr>
     }
 }
 

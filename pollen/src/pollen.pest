@@ -5,7 +5,7 @@ COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | "/*" ~ (!"*/" ~ ANY)* ~ "*/"
 // keywords = _{ "if" | "elif" | "else" | "for" | "in" | "while" }
 
 /* ----- Program ----- */
-prog = { 
+file = { 
     SOI
     ~ stmt+
     ~ EOI
@@ -59,7 +59,7 @@ literal = _{ integer_lit | bool_lit | char_lit | string_lit /* | array_lit */ }
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | "-" | "'" )* }
 
 binop = _{ add | sub | mult | div | modulo | geq | leq | lt | gt | eq | neq |
-          and | or }
+          and | or | field_access}
     add = { "+" }
     sub = { "-" }
     mult = { "*" }
@@ -73,6 +73,7 @@ binop = _{ add | sub | mult | div | modulo | geq | leq | lt | gt | eq | neq |
     neq = { "!=" }
     and = { "&&" }
     or = { "||" }
+    field_access = { "." }
 
 // unary operator(s)
 prefix = _{ not }
@@ -80,7 +81,7 @@ prefix = _{ not }
 
 //call = { identifier ~ "(" ~ expr? ~ ("," ~ expr)* ")" }
 //array_access = { identifier ~ "[" ~ expr ~ "]"}
-// record_access = { identifier ~ "." ~ identifier }
+record_access = { identifier ~ "." ~ identifier }
 
 term = _{ literal | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
