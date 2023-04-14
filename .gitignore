@@ -15,11 +15,13 @@ test/temp.*
 test/*.n
 test/*.chop
 test/*.crush
+test/*/*.crush
 test/*.degree
 test/*.depth
 test/*.emit
 test/*.flatten
 test/*.flip
+test/*/*.flip
 test/*.matrix
 test/*.overlap
 test/*.validate

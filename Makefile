@@ -27,6 +27,8 @@ test-slow-chop: og
 	turnt --env chop_test test/*.gfa
 
 test-slow-crush: og
+	-turnt --save --env crush_oracle test/*.og
+	-turnt --env crush_test test/*.gfa
 	-turnt --save --env crush_oracle test/handmade/crush*.gfa
 	turnt --env crush_test test/handmade/crush*.gfa
 
@@ -43,6 +45,8 @@ test-slow-emit: og
 	turnt --env emit_test test/*.gfa
 
 test-slow-flip: og
+	-turnt -v --save --env flip_oracle test/*.gfa
+	-turnt --diff --env flip_test test/*.gfa
 	-turnt -v --save --env flip_oracle test/handmade/flip*.gfa
 	turnt --diff --env flip_test test/handmade/flip*.gfa
 
