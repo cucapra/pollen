@@ -33,8 +33,7 @@ def chop_segs(graph, n):
         seq = segment.seq
         chopped_seqs = [seq[i:i+n] for i in range(0, len(seq), n)]
         seg_count_start = seg_count
-        for cs in chopped_seqs:
-            # Going from seqs to segs.
+        for cs in chopped_seqs:     # Going from seqs to segs.
             seg_name = str(seg_count)
             chopped_segs[seg_name]=(mygfa.Segment(seg_name, cs))
             seg_count += 1

@@ -39,11 +39,10 @@ def insert_newlines(string, every=80):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].endswith(".gfa"):
-        infile = open(sys.argv[1], 'r')
-        graph = mygfa.Graph.parse(infile)
+        graph = mygfa.Graph.parse(open(sys.argv[1], 'r'))
         odginame = sys.argv[1][:-4] + ".og"
         print(f">{odginame}")
-        # TODO: this is a bit hardocded for files living in test/file.gfa
+        # TODO: this is a bit harcoded for files living in test/file.gfa
         # Would be nice to neaten this up and make it less brittle.
 
         fasta, legend = fasta(graph)

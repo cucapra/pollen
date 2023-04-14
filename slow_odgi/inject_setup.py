@@ -18,6 +18,5 @@ def print_bed(graph, outfile):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-      graph = mygfa.Graph.parse(open("../test/"+sys.argv[1],'r'))
-      outfile = open("../test/"+sys.argv[1][:-4]+".bed", 'w')
-      print_bed(graph, outfile)
+        graph = mygfa.Graph.parse(open("../test/" + sys.argv[1], 'r'))
+        print_bed(graph, open("../test/" + sys.argv[1][:-4] + ".bed", 'w'))

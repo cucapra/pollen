@@ -29,7 +29,7 @@ def print_overlaps(graph, inputpaths):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1][-6:] == ".paths":
+    if len(sys.argv) > 1 and sys.argv[1].endswith(".paths"):
         inputpaths = getpaths(open(sys.argv[1], 'r'))
         graph = mygfa.Graph.parse(sys.stdin)
         print_overlaps(graph, inputpaths)
