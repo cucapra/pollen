@@ -253,6 +253,66 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 Expr::StringLit(string)
             },
             Rule::identifier => Expr::Var(parse_id(primary)),
+            Rule::record_lit1 => {
+                // record_lit1 looks like Record { f1: e1, ..., fn:en }
+                let mut inner = primary.into_inner();
+                let typ = {
+                    let Some(pair) = inner.next() else {
+                        unreachable!("An if statement requires a guard")
+                    };
+                    parse_typ(pair)
+                };
+                let mut fields = Vec::new();
+                while let Some(pair) = inner.next() {
+                    // Consume the next two pairs
+                    let field = {
+                        parse_id(pair)
+                    };
+                    let val = {
+                        let Some(pair) = inner.next() else {
+                            unreachable!("Each field needs a value")
+                        };
+                        parse_expr(pair.into_inner())
+                    };
+                    fields.push(
+                        RecordField{ field: field, val: val}
+                    );
+                }
+                Expr::Record1 {
+                    typ: typ,
+                    fields: fields
+                }
+            },
+            Rule::record_lit2 => {
+                // record_lit2 looks like { r1 with f1: e1, ..., fn:en }
+                let mut inner = primary.into_inner();
+                let parent = {
+                    let Some(pair) = inner.next() else {
+                        unreachable!("An if statement requires a guard")
+                    };
+                    parse_id(pair)
+                };
+                let mut fields = Vec::new();
+                while let Some(pair) = inner.next() {
+                    // Consume the next two pairs
+                    let field = {
+                        parse_id(pair)
+                    };
+                    let val = {
+                        let Some(pair) = inner.next() else {
+                            unreachable!("Each field needs a value")
+                        };
+                        parse_expr(pair.into_inner())
+                    };
+                    fields.push(
+                        RecordField{ field: field, val: val}
+                    );
+                }
+                Expr::Record2 {
+                    parent: parent,
+                    fields: fields
+                }
+            },
             Rule::expr => {
                 // If this rule has been reached then 
                 // this is a parenthesized expression

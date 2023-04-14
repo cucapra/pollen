@@ -79,9 +79,6 @@ int1 : int = [3 * (2 + 4)];
 // Reassignment
 a = 3;
 
-// Records
-step : Step = node.step;
-
 // Ill-typed field accesses
 i : int = 3.true;
 
@@ -137,3 +134,8 @@ while e {
 for s in node.step {
     depth = depth + 1;
 }
+
+/* --- Records --- */
+step : Step = node.step;
+node : Node = Node { segment: segment, steps: steps' };
+record2 : int = { record1 with B: "Hard Times" };

@@ -1,5 +1,20 @@
 #[derive(Debug)]
 #[derive(Clone)]
+pub enum Typ {
+    Int,
+    Bool,
+    Char,
+    Node,
+    Step,
+    Edge,
+    Base,
+    String,
+    Strand,
+    Tuple(Box<Typ>, Box<Typ>)
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
 pub enum BinOp {
     Add,
     Sub,
@@ -29,40 +44,40 @@ pub struct Id(pub String);
 
 #[derive(Debug)]
 #[derive(Clone)]
+pub struct RecordField{
+    pub field: Id,
+    pub val: Expr
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
 pub enum Expr {
     Integer(i32),
     Bool(bool),
     Char(char),
     StringLit(String),
     Var(Id),
-    BinOpExpr{
+    BinOpExpr {
         lhs: Box<Expr>,
         op: BinOp,
         rhs: Box<Expr>
     },
-    UOpExpr{
+    UOpExpr {
         op: UOp,
         expr: Box<Expr>
     },
-    FieldAccess{
+    Record1 {
+        typ: Typ,
+        fields: Vec<RecordField>
+    },
+    Record2 {
+        parent: Id,
+        fields: Vec<RecordField>
+    },
+    FieldAccess {
         object: Box<Expr>,
         field: Box<Expr>
     }
-}
-
-#[derive(Debug)]
-#[derive(Clone)]
-pub enum Typ {
-    Int,
-    Bool,
-    Char,
-    Node,
-    Step,
-    Edge,
-    Base,
-    String,
-    Strand,
-    Tuple(Box<Typ>, Box<Typ>)
 }
 
 #[derive(Debug)]
