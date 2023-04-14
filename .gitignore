@@ -12,6 +12,7 @@ test/basic/*.out
 test/subset-paths/*.out
 
 test/temp.*
+test/*.n
 test/*.chop
 test/*.crush
 test/*.degree

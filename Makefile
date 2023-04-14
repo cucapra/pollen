@@ -27,8 +27,8 @@ test-slow-chop: og
 	turnt --env chop_test test/*.gfa
 
 test-slow-crush: og
-	-turnt --save --env crush_oracle test/*.og
-	turnt --env crush_test test/*.gfa
+	-turnt --save --env crush_oracle test/handmade/*.gfa
+	turnt --env crush_test test/handmade/*.gfa
 
 test-slow-degree: og
 	-turnt --save --env degree_oracle test/*.og
@@ -86,6 +86,8 @@ clean:
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
+
+	rm -rf test/handmade/*.crush
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
