@@ -80,7 +80,7 @@ output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "python3 ../slow_odgi/inject.py < {filename}"
+command = "python3 ../slow_odgi/inject.py < {filename} {base}.bed"
 output.inj = "-"
 
 [envs.matrix_oracle]

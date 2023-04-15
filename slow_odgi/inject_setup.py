@@ -5,6 +5,14 @@ import preprocess
 
 
 def print_bed(graph):
+  """Creates a reasonable query for `inject`.
+  Each entry of the output is of the form
+    `name lo hi new_name`
+  where
+    `name` is the name of an existing path.
+		`lo`/`hi` are the start/end points that we should walk over; lo <= hi.
+		`new_name` is the name of the path we wish to create.
+  """
   # random.seed(4)
   for path in graph.paths.values():
     length = len(preprocess.pathseq(graph)[path.name])
