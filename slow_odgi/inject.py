@@ -23,7 +23,7 @@ def inject_paths(graph, p2i):
 	"""Given a graph and the list of paths to inject, inject those paths."""
 	newpaths = {}
 	for p in p2i:
-		if p.src in graph.paths.keys(): # odgi fails silently if src was invalid
+		if p.src in graph.paths.keys(): # odgi is silent if src was invalid
 			newpaths[p.new] = mygfa.Path(p.new, [], None)
 	paths = graph.paths | newpaths
 	return mygfa.Graph(graph.headers, graph.segments, graph.links, paths)

@@ -20,7 +20,7 @@ test/*.depth
 test/*.emit
 test/*.flatten
 test/*.flip
-test/*.inject
+test/*.inj
 test/*.matrix
 test/*.overlap
 test/*.validate
