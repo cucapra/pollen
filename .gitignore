@@ -12,6 +12,7 @@ test/basic/*.out
 test/subset-paths/*.out
 
 test/temp.*
+test/*.bed
 test/*.chop
 test/*.crush
 test/*.degree
@@ -19,6 +20,7 @@ test/*.depth
 test/*.emit
 test/*.flatten
 test/*.flip
+test/*.inject
 test/*.matrix
 test/*.overlap
 test/*.validate
