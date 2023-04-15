@@ -1,0 +1,7 @@
+H	VN:Z:1.0
+S	1	AAAA
+S	2	TT
+S	3	TT
+S	4	GGGG
+P	x	1+,2+,3+,4+	*
+P	y	1+,2+	*
