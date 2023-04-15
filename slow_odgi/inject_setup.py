@@ -13,7 +13,7 @@ def print_bed(graph):
       r2 = random.randint(0, length)
       lo = str(min(r1, r2))
       hi = str(max(r1, r2))
-      print ("\t".join([path.name, lo, hi, path.name+"_"+str(i)]))
+      print ("\t".join([path.name, lo, hi, f"{path.name}_{i}"]))
 
 
 if __name__ == "__main__":

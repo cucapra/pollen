@@ -21,7 +21,7 @@ def flip_path(path, graph):
         segments = []
         for seg in reversed(path.segments):
             segments.append (mygfa.Handle(seg.name, not seg.orientation))
-        return mygfa.Path(path.name+"_inv", segments, path.overlaps)
+        return mygfa.Path(f"{path.name}_inv", segments, path.overlaps)
     else:
         return path
 
