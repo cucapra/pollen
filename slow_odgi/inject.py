@@ -10,13 +10,16 @@ def parse_bedfile(bedfile):
 
 def track_path(graph, bed):
   """Given a BED entry, make a list of the Segments traversed _completely_."""
-  lo, hi = bed.lo, bed.hi
+  walk = 0
   segs_walked : List[Handle] = []
   for handle in graph.paths[bed.name].segments:
     length = len(graph.segments[handle.name].seq)
-    if (lo + length <= hi):
+    if (walk < bed.lo):
+      walk = walk + length
+      continue
+    if (walk + length <= bed.hi):
+      walk = walk + length
       segs_walked.append(handle)
-      lo = lo + length
     else:
       return segs_walked
   # Given a legal BED request, I should never reach this point.
