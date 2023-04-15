@@ -1,6 +1,6 @@
 import sys
 import mygfa
-
+import chop
 
 def parse_bedfile(bedfile):
   """Parse entries of the form described in `inject_setup`."""
@@ -47,12 +47,31 @@ def chop_if_needed(graph, pathname, index):
     2. redoing paths
   But at least we know we'll only ever need to renumber a max of one segment.
   """
-  segpos = where_chop(graph, pathname, index)
-  if not segpos:
+  targetpos = where_chop(graph, pathname, index)
+  if not targetpos:
     return graph # We were already on a seam.
-  segname, pos = segpos
-  print(f"Not implemented: need to chop seg {segname} at position {pos}")
-  return graph
+  targetname, pos = targetpos
+
+  segments = {} # We'll accrue the new segments as we walk over the old ones.
+  legend = {} # With plans to reuse `chop`.
+
+  for seg in graph.segments.values():
+    segnumber = int(seg.name)
+    if (segnumber < int(targetname)): # Keep these verbatim.
+      segments[seg.name] = seg
+      legend[seg.name] = (segnumber, segnumber + 1)
+    elif (targetname == seg.name): # Perform one chop.
+      succname = str(segnumber + 1)
+      segments[seg.name] = mygfa.Segment(targetname, seg.seq[:pos])
+      segments[succname] = mygfa.Segment(succname, seg.seq[pos:])
+      legend[seg.name] = (int(targetname), int(succname) + 1)
+    else: # Keep the segment as it was, but increment its name.
+      succname = str(segnumber + 1)
+      segments[succname] = mygfa.Segment(succname, seg.seq)
+      legend[seg.name] = (int(succname), int(succname) + 1)
+
+  paths = chop.chop_paths(graph, legend)
+  return mygfa.Graph(graph.headers, segments, graph.links, paths)
 
 
 def inject_paths(graph, p2i):
