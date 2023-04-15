@@ -2,7 +2,7 @@ import sys
 import mygfa
 
 
-def chop_segs(graph, n):
+def chop_segs(graph):
     """Chop all the sequences of the graph into length n or lower."""
 
     legend: Dict[str, Tuple[str, str]] = {}
@@ -59,7 +59,7 @@ def chop_paths(graph, legend):
 
 
 def chop_graph(graph):
-    new_segments, legend = chop_segs(graph, n)
+    new_segments, legend = chop_segs(graph)
     new_paths = chop_paths(graph, legend)
     return mygfa.Graph(graph.headers, new_segments, [], new_paths)
     # The blank list is because we are choosing to drop links for now.
