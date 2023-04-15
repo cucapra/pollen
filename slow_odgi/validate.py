@@ -1,7 +1,6 @@
 import sys
 import mygfa
 import preprocess
-from typing import List, Tuple, Dict
 
 
 def validate(graph):
