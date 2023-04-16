@@ -75,7 +75,7 @@ output.bed = "-"
 
 [envs.inject_oracle]
 binary = true
-command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py"
+command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py --nl"
 output.inj = "-"
 
 [envs.inject_test]
