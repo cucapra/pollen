@@ -90,7 +90,7 @@ def inject_paths(graph, p2i):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].endswith(".bed"):
-        paths_to_inject = parse_bedfile(open(sys.argv[1], "r"))
+        paths_to_inject = parse_bedfile(open(f"handmade/{sys.argv[1]}", "r"))
         graph = mygfa.Graph.parse(sys.stdin)
         graph_inj = inject_paths(graph, paths_to_inject)
         graph_inj.emit(sys.stdout, False)

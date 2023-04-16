@@ -56,7 +56,7 @@ test-slow-flatten: og
 test-slow-inject:
 	# -turnt --save --env inject_setup test/*.gfa
 	# -turnt --save --env inject_oracle test/*.og
-	turnt -v --diff --env inject_test test/*.gfa
+	turnt -v --diff --env inject_test test/handmade/*.gfa
 
 test-slow-overlap: og
 	-turnt --save --env overlap_setup test/*.gfa
