@@ -26,9 +26,9 @@ def track_path(graph, bed):
 
 
 def where_chop(graph, pathname, index):
-  """Given a path and an index, find which segment should be cut.
-  It's possible we won't need to cut: the index could be at a seam b/w segments.
-  In such case, return None
+  """Given a path and an index, find which segment should be chopped.
+  We may not need to chop: the index could already be at a seam b/w segments.
+  In such case, return None.
   """
   walk = 0
   for handle in graph.paths[pathname].segments:
