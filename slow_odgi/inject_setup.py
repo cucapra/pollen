@@ -15,9 +15,8 @@ def print_bed(graph):
     for path in graph.paths.values():
         length = len(preprocess.pathseq(graph)[path.name])
         for i in range(random.randint(0, 5)):
-            r1 = random.randint(0, length)
-            r2 = random.randint(0, length)
-            lo, hi = min(r1, r2), max(r1, r2)
+            lo = random.randint(0, length - 1)
+            hi = random.randint(lo + 1, length)
             bed = mygfa.Bed(path.name, lo, hi, f"{path.name}_{i}")
             print(bed)
 

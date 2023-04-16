@@ -82,15 +82,16 @@ def inject_paths(graph, p2i):
     for p in p2i:
         if p.name in graph.paths.keys():  # odgi is silent if name was invalid
             graph = chop_if_needed(chop_if_needed(graph, p.name, p.lo), p.name, p.hi)
-            new_segs = track_path(graph, p)
-            newpaths[p.new] = mygfa.Path(p.new, new_segs, None)
-    paths = graph.paths | newpaths
-    return mygfa.Graph(graph.headers, graph.segments, graph.links, paths)
+            new_path = mygfa.Path(p.new, track_path(graph, p), None)
+            graph.paths[p.new] = new_path  # In-place update!
+    return graph
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].endswith(".bed"):
-        paths_to_inject = parse_bedfile(open(f"handmade/{sys.argv[1]}", "r"))
+        paths_to_inject = parse_bedfile(open(sys.argv[1], "r"))
+        # paths_to_inject = parse_bedfile(open(f"handmade/{sys.argv[1]}", "r"))
+        # Swap to test against the handmade versions.
         graph = mygfa.Graph.parse(sys.stdin)
         graph_inj = inject_paths(graph, paths_to_inject)
         graph_inj.emit(sys.stdout, False)
