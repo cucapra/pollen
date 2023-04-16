@@ -65,7 +65,7 @@ def chop_if_needed(graph, pathname, index):
             segments[seg.name] = seg
             legend[seg.name] = (segnumber, segnumber + 1)
         elif seg.name == target:  # Perform one chop.
-            segments[seg.name] = mygfa.Segment(targetname, seg.seq[:pos])
+            segments[seg.name] = mygfa.Segment(target, seg.seq[:pos])
             segments[succname] = mygfa.Segment(succname, seg.seq[pos:])
             legend[seg.name] = (segnumber, segnumber + 2)
         else:  # Keep the segment as it was, but increment its name.
