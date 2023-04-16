@@ -7,7 +7,7 @@ def crush_n_seg(seg):
     new_seq = ""
     in_n = False
     for char in seg.seq:
-        if char == 'N':
+        if char == "N":
             if in_n:
                 continue
             else:
@@ -20,8 +20,7 @@ def crush_n_seg(seg):
 
 def crush_n_graph(graph):
     """Apply the above to all nodes"""
-    crushed_segs = \
-        {name: crush_n_seg(seg) for name, seg in graph.segments.items()}
+    crushed_segs = {name: crush_n_seg(seg) for name, seg in graph.segments.items()}
     return mygfa.Graph(graph.headers, crushed_segs, graph.links, graph.paths)
 
 
