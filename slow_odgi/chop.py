@@ -5,7 +5,7 @@ import mygfa
 def chop_segs(graph):
     """Chop all the sequences of the graph into length n or lower."""
 
-    legend: Dict[str, Tuple[str, str]] = {}
+    legend: Dict[str, Tuple[int, int]] = {}
     """If a segment is chopped, its sequence will be spread out over
     up among a series of contiguous new segments.
 
@@ -19,7 +19,7 @@ def chop_segs(graph):
         S 8 = GG
         S 9 = CC
         S 10 = C
-    then seg_2_start_end[3] = (7,11).
+    then legend[3] = (7,11).
 
     Later, if 3+ occurs in a path, we will replace it with 7+,8+,9+,10+.
     If 3- occurs in a path, we will replace it with 10-,9-,8-,7-.
@@ -35,7 +35,7 @@ def chop_segs(graph):
         seg_count_start = seg_count
         for cs in chopped_seqs:     # Going from seqs to segs.
             seg_name = str(seg_count)
-            chopped_segs[seg_name]=(mygfa.Segment(seg_name, cs))
+            chopped_segs[seg_name] = (mygfa.Segment(seg_name, cs))
             seg_count += 1
         legend[segment.name] = (seg_count_start, seg_count)
         new_segs = new_segs | chopped_segs
@@ -50,8 +50,8 @@ def chop_paths(graph, legend):
         new_p_segs = []
         for seg in path.segments:
             o = seg.orientation
-            r = legend[seg.name]
-            segments = [mygfa.Handle(str(s), o) for s in range(r[0], r[1])]
+            a, b = legend[seg.name]
+            segments = [mygfa.Handle(str(s), o) for s in range(a, b)]
             new_p_segs += segments if o else list(reversed(segments))
         new_paths[path.name] = mygfa.Path(path.name, new_p_segs, path.overlaps)
         # For now we handle overlaps very sloppily.
