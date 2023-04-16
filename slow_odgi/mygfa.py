@@ -18,10 +18,11 @@ class Bed:
     """Used by `inject` for now.
     But could be refashioned for use in other BED-ey algorithms.
     """
+
     name: str
     lo: int
     hi: int
-    new: str # Used by `inject` to give the new path a name.
+    new: str  # Used by `inject` to give the new path a name.
     # In the future, make `new` Optional.
 
     @classmethod
@@ -30,7 +31,7 @@ class Bed:
         return Bed(name, int(lo), int(hi), new)
 
     def __str__(self):
-        return ("\t".join([self.name, self.lo, self.hi, self.new]))
+        return "\t".join([self.name, str(self.lo), str(self.hi), self.new])
 
 
 @dataclass
