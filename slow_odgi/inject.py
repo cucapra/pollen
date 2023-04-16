@@ -50,25 +50,24 @@ def chop_if_needed(graph, pathname, index):
   targetpos = where_chop(graph, pathname, index)
   if not targetpos:
     return graph # We were already on a seam.
-  targetname, pos = targetpos
+  target, pos = targetpos
 
   segments = {} # We'll accrue the new segments as we walk over the old ones.
   legend = {} # With plans to reuse `chop`.
 
   for seg in graph.segments.values():
     segnumber = int(seg.name)
-    if (segnumber < int(targetname)): # Keep these verbatim.
+    succname = str(segnumber + 1)
+    if (segnumber < int(target)): # Keep these verbatim.
       segments[seg.name] = seg
       legend[seg.name] = (segnumber, segnumber + 1)
-    elif (targetname == seg.name): # Perform one chop.
-      succname = str(segnumber + 1)
+    elif (seg.name == target): # Perform one chop.
       segments[seg.name] = mygfa.Segment(targetname, seg.seq[:pos])
       segments[succname] = mygfa.Segment(succname, seg.seq[pos:])
-      legend[seg.name] = (int(targetname), int(succname) + 1)
+      legend[seg.name] = (segnumber, segnumber + 2)
     else: # Keep the segment as it was, but increment its name.
-      succname = str(segnumber + 1)
       segments[succname] = mygfa.Segment(succname, seg.seq)
-      legend[seg.name] = (int(succname), int(succname) + 1)
+      legend[seg.name] = (segnumber + 1, segnumber + 2) 
 
   paths = chop.chop_paths(graph, legend)
   return mygfa.Graph(graph.headers, segments, graph.links, paths)
