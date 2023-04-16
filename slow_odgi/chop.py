@@ -1,5 +1,6 @@
 import sys
 import mygfa
+from typing import Dict, Tuple
 
 
 def chop_segs(graph, n):
@@ -31,11 +32,11 @@ def chop_segs(graph, n):
     for segment in graph.segments.values():
         chopped_segs = {}
         seq = segment.seq
-        chopped_seqs = [seq[i:i+n] for i in range(0, len(seq), n)]
+        chopped_seqs = [seq[i : i + n] for i in range(0, len(seq), n)]
         seg_count_start = seg_count
-        for cs in chopped_seqs:     # Going from seqs to segs.
+        for cs in chopped_seqs:  # Going from seqs to segs.
             seg_name = str(seg_count)
-            chopped_segs[seg_name] = (mygfa.Segment(seg_name, cs))
+            chopped_segs[seg_name] = mygfa.Segment(seg_name, cs)
             seg_count += 1
         legend[segment.name] = (seg_count_start, seg_count)
         new_segs = new_segs | chopped_segs
@@ -72,4 +73,4 @@ if __name__ == "__main__":
         chopped_graph = chop_graph(graph)
         chopped_graph.emit(sys.stdout, False)
     else:
-        print ("Pass the chop-size as a CLI")
+        print("Pass the chop-size as a CLI")

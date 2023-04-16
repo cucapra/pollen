@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict
 
 def node_steps(graph):
     """For each segment in the graph,
-       list the times the segment was crossed by a path"""
+    list the times the segment was crossed by a path"""
     # segment name, (path name, index on path, direction) list
     crossings: Dict[str, List[Tuple[str, int, bool]]] = {}
     for segname in graph.segments.keys():
@@ -46,6 +46,7 @@ def pathseq(graph):
     """
     ans = {}
     for path in graph.paths:
-        ans[path] = ''.join(graph.segments[seg.name].seq for seg in \
-                        graph.paths[path].segments)
+        ans[path] = "".join(
+            graph.segments[seg.name].seq for seg in graph.paths[path].segments
+        )
     return ans
