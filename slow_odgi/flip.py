@@ -7,7 +7,7 @@ def path_is_rev(path, graph):
     fwd = 0
     rev = 0
     for seg in path.segments:
-        length = len (graph.segments[seg.name].seq)
+        length = len(graph.segments[seg.name].seq)
         if seg.orientation:
             fwd += length
         else:
@@ -28,8 +28,7 @@ def flip_path(path, graph):
 
 def flip_graph(graph):
     """Apply the above to all paths."""
-    new_paths = \
-        {name: flip_path(path, graph) for name, path in graph.paths.items()}
+    new_paths = {name: flip_path(path, graph) for name, path in graph.paths.items()}
     return mygfa.Graph(graph.headers, graph.segments, graph.links, new_paths)
 
 

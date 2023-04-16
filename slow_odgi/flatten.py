@@ -23,18 +23,27 @@ def fasta(graph):
 def print_bed(graph, legend):
     """With the legend computed during FASTA-building, this is easy."""
 
-    print("\t".join(["#name", "start", "end",
-                     "path.name", "strand", "step.rank"]))
+    print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
     for path in graph.paths.values():
         for i, seg in enumerate(path.segments):
             start, end = legend[seg.name]
-            print ("\t".join([odginame, str(start), str(end), path.name,
-                              "+" if seg.orientation else "-", str(i)]))
+            print(
+                "\t".join(
+                    [
+                        odginame,
+                        str(start),
+                        str(end),
+                        path.name,
+                        "+" if seg.orientation else "-",
+                        str(i),
+                    ]
+                )
+            )
 
 
 def insert_newlines(string, every=80):
     """odgi's output does this for this algorithm, so we follow them."""
-    return '\n'.join(string[i:i+every] for i in range(0, len(string), every))
+    return "\n".join(string[i : i + every] for i in range(0, len(string), every))
 
 
 if __name__ == "__main__":

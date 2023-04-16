@@ -2,6 +2,7 @@ import sys
 import mygfa
 import preprocess
 
+
 def getpaths(infile):
     return list(mygfa.nonblanks(infile))
 
@@ -21,15 +22,16 @@ def print_overlaps(graph, inputpaths):
     """Which paths touch these input paths?"""
     print("\t".join(["#path", "start", "end", "path.touched"]))
     for ip in inputpaths:
-        assert (ip in graph.paths)
+        assert ip in graph.paths
         for path in graph.paths.keys():
             if touches(ip, path, graph):
-                print("\t".join([ip, "0", \
-                    str(len(preprocess.pathseq(graph)[ip])), path]))
+                print(
+                    "\t".join([ip, "0", str(len(preprocess.pathseq(graph)[ip])), path])
+                )
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].endswith(".paths"):
-        inputpaths = getpaths(open(sys.argv[1], 'r'))
+        inputpaths = getpaths(open(sys.argv[1], "r"))
         graph = mygfa.Graph.parse(sys.stdin)
         print_overlaps(graph, inputpaths)

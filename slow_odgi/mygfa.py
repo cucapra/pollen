@@ -9,8 +9,8 @@ def parse_orient(o) -> bool:
     """Parse an orientation string as a bool.
     In our convention, "True" is forward and "False" is reverse.
     """
-    assert o in ('+', '-')
-    return o == '+'
+    assert o in ("+", "-")
+    return o == "+"
 
 
 @dataclass
@@ -36,6 +36,7 @@ class Bed:
 @dataclass
 class Segment:
     """A GFA segment is nucleotide sequence."""
+
     name: str
     seq: str
 
@@ -45,24 +46,28 @@ class Segment:
         return Segment(name, seq)
 
     def __str__(self):
-        return '\t'.join([
-            "S",
-            self.name,
-            self.seq,
-        ])
+        return "\t".join(
+            [
+                "S",
+                self.name,
+                self.seq,
+            ]
+        )
 
 
 class AlignOp(Enum):
     """An operator in an Alignment."""
-    MATCH = 'M'
-    GAP = 'N'
-    DELETION = 'D'
-    INSERTION = 'I'
+
+    MATCH = "M"
+    GAP = "N"
+    DELETION = "D"
+    INSERTION = "I"
 
 
 @dataclass
 class Alignment:
     """CIGAR representation of a sequence alignment."""
+
     ops: List[Tuple[int, AlignOp]]
 
     @classmethod
@@ -70,19 +75,18 @@ class Alignment:
         """Parse a CIGAR string, which looks like 3M7N4M."""
         ops = [
             (int(amount_str), AlignOp(op_str))
-            for amount_str, op_str in re.findall(r'(\d+)([^\d])', s)
+            for amount_str, op_str in re.findall(r"(\d+)([^\d])", s)
         ]
         return Alignment(ops)
 
     def __str__(self):
-        return ''.join(
-            f'{amount}{op.value}' for (amount, op) in self.ops
-        )
+        return "".join(f"{amount}{op.value}" for (amount, op) in self.ops)
 
 
 @dataclass(eq=True, frozen=True, order=True)
 class Handle:
     """A specific orientation for a segment, referenced by name."""
+
     name: str
     orientation: bool
 
@@ -97,16 +101,17 @@ class Handle:
     have different preferences when converting Handles to string
     """
 
-    def __str__(self):     # This is what a path wants.
-        return ''.join([self.name, ("+" if self.orientation else "-")])
+    def __str__(self):  # This is what a path wants.
+        return "".join([self.name, ("+" if self.orientation else "-")])
 
-    def linkstr(self):    # While this is what a link wants.
-        return '\t'.join([self.name, ("+" if self.orientation else "-")])
+    def linkstr(self):  # While this is what a link wants.
+        return "\t".join([self.name, ("+" if self.orientation else "-")])
 
 
 @dataclass(eq=True, order=True)
 class Link:
     """A GFA link is an edge connecting two sequences."""
+
     from_: Handle
     to: Handle
     overlap: Alignment
@@ -121,17 +126,20 @@ class Link:
         )
 
     def __str__(self):
-        return '\t'.join([
-            "L",
-            self.from_.linkstr(),
-            self.to.linkstr(),
-            str(self.overlap),
-        ])
+        return "\t".join(
+            [
+                "L",
+                self.from_.linkstr(),
+                self.to.linkstr(),
+                str(self.overlap),
+            ]
+        )
 
 
 @dataclass
 class Path:
     """A GFA path is an ordered series of links."""
+
     name: str
     segments: List[Handle]  # Segment names and orientations.
     overlaps: Optional[List[Alignment]]
@@ -139,9 +147,12 @@ class Path:
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         _, name, seq, overlaps = fields[:4]
-        seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(',')]
-        overlaps_lst = None if overlaps == '*' else \
-            [Alignment.parse(s) for s in overlaps.split(',')]
+        seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(",")]
+        overlaps_lst = (
+            None
+            if overlaps == "*"
+            else [Alignment.parse(s) for s in overlaps.split(",")]
+        )
         if overlaps_lst:
             # I'm not sure yet why there can sometimes be one fewer
             # overlaps than sequences.
@@ -154,12 +165,9 @@ class Path:
         )
 
     def __str__(self):
-        return '\t'.join([
-            "P",
-            self.name,
-            ",".join(str(seg) for seg in self.segments),
-            "*"
-        ])
+        return "\t".join(
+            ["P", self.name, ",".join(str(seg) for seg in self.segments), "*"]
+        )
 
 
 def nonblanks(f: TextIO) -> Iterator[str]:
@@ -173,6 +181,7 @@ def nonblanks(f: TextIO) -> Iterator[str]:
 @dataclass
 class Graph:
     """An entire GFA file."""
+
     headers: List[str]
     segments: Dict[str, Segment]
     links: List[Link]
@@ -184,14 +193,14 @@ class Graph:
 
         for line in nonblanks(infile):
             fields = line.split()
-            if fields[0] == 'H':
+            if fields[0] == "H":
                 graph.headers.append(line)  # Parse headers verbatim.
-            elif fields[0] == 'S':
+            elif fields[0] == "S":
                 segment = Segment.parse(fields)
                 graph.segments[segment.name] = segment
-            elif fields[0] == 'L':
+            elif fields[0] == "L":
                 graph.links.append(Link.parse(fields))
-            elif fields[0] == 'P':
+            elif fields[0] == "P":
                 path = Path.parse(fields)
                 graph.paths[path.name] = path
             else:
@@ -199,7 +208,7 @@ class Graph:
 
         return graph
 
-    def emit(self, outfile: TextIO, showlinks = True):
+    def emit(self, outfile: TextIO, showlinks=True):
         for header in self.headers:
             print(header, file=outfile)
         for segment in self.segments.values():
