@@ -61,7 +61,7 @@ def flip_graph(graph):
     """Apply the above to all paths."""
     new_paths = {name: flip_path(p, graph) for name, p in graph.paths.items()}
     new_links = graph.links + gen_links(new_paths, lambda x: x.name.endswith("_inv"))
-    return mygfa.Graph(graph.headerss, graph.segments, dedup(new_links), new_paths)
+    return mygfa.Graph(graph.headers, graph.segments, dedup(new_links), new_paths)
 
 
 if __name__ == "__main__":
