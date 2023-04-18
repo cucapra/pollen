@@ -52,7 +52,7 @@ test-slow-flip: fetch
 
 test-slow-flip-small:
 	-turnt -v --save --env flip_oracle test/handmade/flip1.gfa
-	turnt --diff --env flip_test test/handmade/flip1.gfa
+	turnt --diff -v --env flip_test test/handmade/flip1.gfa
 
 test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
