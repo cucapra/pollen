@@ -1,5 +1,6 @@
 import sys
 import mygfa
+from typing import List
 
 
 def path_is_rev(path, graph):
@@ -26,7 +27,13 @@ def flip_path(path, graph):
         return path
 
 
-def gen_links(paths, prop):
+def dedup(list):
+    new = []
+    new = [new.append(item) for item in list if item not in new]
+    return new
+
+
+def gen_links(paths, prop) -> List[mygfa.Link]:
     """Given a list of paths and a proposition on paths,
     return a list of links that, when added to the graph,
     would make the proposition-satisfying paths valid.
@@ -47,14 +54,14 @@ def gen_links(paths, prop):
                 from_ = path.segments[i]
                 to = path.segments[i + 1]
                 links.append(mygfa.Link(from_, to, alignment))
-    return links  # TODO: I can imagine needing to deduplicate this.
+    return links
 
 
 def flip_graph(graph):
     """Apply the above to all paths."""
     new_paths = {name: flip_path(p, graph) for name, p in graph.paths.items()}
     new_links = graph.links + gen_links(new_paths, lambda x: x.name.endswith("_inv"))
-    return mygfa.Graph(graph.headers, graph.segments, new_links, new_paths)
+    return mygfa.Graph(graph.headerss, graph.segments, dedup(new_links), new_paths)
 
 
 if __name__ == "__main__":
