@@ -29,7 +29,9 @@ def flip_path(path, graph):
 
 def dedup(list):
     new = []
-    new = [new.append(item) for item in list if item not in new]
+    for item in list:
+        if item not in new:
+            new.append(item)
     return new
 
 
@@ -58,9 +60,11 @@ def gen_links(paths, prop) -> List[mygfa.Link]:
 
 
 def flip_graph(graph):
-    new_paths = {name: flip_path(p, graph) for name, p in graph.paths.items()}
-    new_links = gen_links(new_paths, lambda x: x.name.endswith("_inv"))
-    return mygfa.Graph(graph.headers, graph.segments, dedup(graph.links + new_links), new_paths)
+    paths = {name: flip_path(p, graph) for name, p in graph.paths.items()}
+    new_links = gen_links(paths, lambda x: x.name.endswith("_inv"))
+    return mygfa.Graph(
+        graph.headers, graph.segments, dedup(graph.links + new_links), paths
+    )
 
 
 if __name__ == "__main__":
