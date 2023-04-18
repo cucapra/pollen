@@ -58,10 +58,9 @@ def gen_links(paths, prop) -> List[mygfa.Link]:
 
 
 def flip_graph(graph):
-    """Apply the above to all paths."""
     new_paths = {name: flip_path(p, graph) for name, p in graph.paths.items()}
-    new_links = graph.links + gen_links(new_paths, lambda x: x.name.endswith("_inv"))
-    return mygfa.Graph(graph.headers, graph.segments, dedup(new_links), new_paths)
+    new_links = gen_links(new_paths, lambda x: x.name.endswith("_inv"))
+    return mygfa.Graph(graph.headers, graph.segments, dedup(graph.links + new_links), new_paths)
 
 
 if __name__ == "__main__":
