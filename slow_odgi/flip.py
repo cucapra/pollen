@@ -31,9 +31,10 @@ def gen_links(paths, prop):
     return a list of links that, when added to the graph,
     would make the proposition-satisfying paths valid.
 
-    Feels like the moral reverse of `validate`.
+    Feels like the sipritual reverse of `validate`.
     """
     links = []
+    alignment = mygfa.Alignment([(0, mygfa.AlignOp("M"))])  # A "no-op" alignment
     for path in paths.values():
         if not prop(path):
             continue
@@ -45,8 +46,8 @@ def gen_links(paths, prop):
             for i in range(length - 1):
                 from_ = path.segments[i]
                 to = path.segments[i + 1]
-                links.append(mygfa.Link(from_, to, mygfa.Alignment([])))
-    return links
+                links.append(mygfa.Link(from_, to, alignment))
+    return links  # TODO: I can imagine needing to deduplicate this.
 
 
 def flip_graph(graph):
