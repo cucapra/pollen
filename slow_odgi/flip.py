@@ -30,7 +30,8 @@ def flip_path(path, graph):
 def dedup(list):
     new = []
     for item in list:
-        if item not in new:
+        if item not in new and item.rev() not in new:
+            # odgi seems to consider a link's reverse its own duplicate.
             new.append(item)
     return new
 
