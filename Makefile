@@ -22,12 +22,15 @@ test-depth: og
 test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-flatten test-slow-matrix test-slow-overlap test-slow-paths test-slow-validate
 
 test-slow-chop: og
+	-turnt --save --env chop_setup test/*.gfa
 	-turnt --save --env chop_oracle test/*.og
 	turnt --env chop_test test/*.gfa
 
 test-slow-crush: og
 	-turnt --save --env crush_oracle test/*.og
-	turnt --env crush_test test/*.gfa
+	-turnt --env crush_test test/*.gfa
+	-turnt --save --env crush_oracle test/handmade/crush*.gfa
+	turnt --env crush_test test/handmade/crush*.gfa
 
 test-slow-degree: og
 	-turnt --save --env degree_oracle test/*.og
@@ -42,8 +45,10 @@ test-slow-emit: og
 	turnt --env emit_test test/*.gfa
 
 test-slow-flip: og
-	-turnt --save --env flip_oracle test/*.og
-	turnt --env flip_test test/*.gfa
+	-turnt -v --save --env flip_oracle test/*.gfa
+	-turnt --diff --env flip_test test/*.gfa
+	-turnt -v --save --env flip_oracle test/handmade/flip*.gfa
+	turnt --diff --env flip_test test/handmade/flip*.gfa
 
 test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
@@ -85,6 +90,9 @@ clean:
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
+
+	rm -rf test/handmade/*.crush
+	rm -rf test/handmade/*.flip
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)

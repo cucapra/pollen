@@ -12,14 +12,17 @@ test/basic/*.out
 test/subset-paths/*.out
 
 test/temp.*
+test/*.n
 test/*.bed
 test/*.chop
 test/*.crush
+test/*/*.crush
 test/*.degree
 test/*.depth
 test/*.emit
 test/*.flatten
 test/*.flip
+test/*/*.flip
 test/*.inject
 test/*.matrix
 test/*.overlap
