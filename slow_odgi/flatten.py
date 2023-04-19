@@ -47,7 +47,7 @@ def insert_newlines(string, every=80):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].endswith(".gfa"):
+    if len(sys.argv) > 1:
         graph = mygfa.Graph.parse(open(sys.argv[1], "r"))
         odginame = f"{sys.argv[1][:-4]}.og"
         print(f">{odginame}")
