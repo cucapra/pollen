@@ -1,4 +1,4 @@
-TEST_FILES := t k note5 overlap q.chop DRB1-3123 LPA chr6.C4
+TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -20,6 +20,8 @@ test-depth: og
 	turnt $(DEPTH_OG_FILES)
 
 test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-flatten test-slow-matrix test-slow-overlap test-slow-paths test-slow-validate
+# test-slow-flip: we disagree with odgi over note5
+# test-slow-inject: we disagree with odgi over DRB1 and chr6
 
 test-slow-chop: og
 	-turnt --save --env chop_setup test/*.gfa
@@ -50,10 +52,6 @@ test-slow-flip: fetch
 	-turnt --env flip_test test/*.gfa
 	turnt --env flip_test test/handmade/flip*.gfa
 
-test-slow-matrix: og
-	-turnt --save --env matrix_oracle test/*.og
-	turnt --diff -v --env matrix_test test/*.gfa
-
 test-slow-flatten: og
 	-turnt --save --env flatten_oracle test/*.og
 	turnt --env flatten_test test/*.gfa
@@ -62,6 +60,10 @@ test-slow-inject: og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
 	turnt --env inject_test test/*.gfa
+
+test-slow-matrix: og
+	-turnt --save --env matrix_oracle test/*.og
+	turnt --diff -v --env matrix_test test/*.gfa
 
 test-slow-overlap: og
 	-turnt --save --env overlap_setup test/*.gfa
