@@ -142,3 +142,5 @@ record2 : int = { record1 with B: "Hard Times" };
 
 /* --- Complex Types --- */
 s: Set<int>;
+tuple1: int*bool;
+tuple2: Segment*bool;

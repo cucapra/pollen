@@ -395,25 +395,25 @@ fn parse_typ(typ: Pair<Rule>) -> Typ {
             "Strand" => Typ::Strand,
             t => unreachable!("Unknown type: {}", t)
         },
-        Rule::tuple_typ => {
-            let mut inner = typ.into_inner();
-            let t1 = {
-                if let Some(pair) = inner.next() {
-                    parse_typ(pair)
-                } else {
-                    unreachable!("Expected first tuple type but found nothing")
-                }
-            };
-            let t2 = {
-                if let Some(pair) = inner.next() {
-                    parse_typ(pair)
-                } else {
-                    unreachable!("Expected second tuple type but found nothing")
-                }
-            };
-            assert!(inner.next().is_none());
-            Typ::Tuple(Box::new(t1), Box::new(t2))
-        },
+        // Rule::tuple_typ => {
+        //     let mut inner = typ.into_inner();
+        //     let t1 = {
+        //         if let Some(pair) = inner.next() {
+        //             parse_typ(pair)
+        //         } else {
+        //             unreachable!("Expected first tuple type but found nothing")
+        //         }
+        //     };
+        //     let t2 = {
+        //         if let Some(pair) = inner.next() {
+        //             parse_typ(pair)
+        //         } else {
+        //             unreachable!("Expected second tuple type but found nothing")
+        //         }
+        //     };
+        //     assert!(inner.next().is_none());
+        //     Typ::Tuple(Box::new(t1), Box::new(t2))
+        // },
         Rule::set_typ => {
             let mut inner = typ.into_inner();
             let t = {
