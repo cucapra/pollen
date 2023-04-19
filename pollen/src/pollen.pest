@@ -16,7 +16,7 @@ file = {
 
 /* ----- Types ----- */
 atomic_typ = { "int" | "bool" | "char" | "String" |
-                "Node" | "Step" | "Edge" | "Base" | "Strand" }
+                "Segment" | "Step" | "Edge" | "Base" | "Strand" }
 
 tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
 

@@ -13,7 +13,7 @@ b2: bool = false;
 i: int;
 b: bool;
 c: char;
-n: Node;
+n: Segment;
 s: Step;
 e: Edge;
 str: String;
@@ -51,7 +51,7 @@ binop : int = i + id2;
 blskdf_ : int = 3 - (-5); 
 binop2: int = i * 1;
 sdf:char = 9 / 3;
-n: Node = 5 % 2;
+n: Segment = 5 % 2;
 b: Step = 2 < 3;
 TTTT: Strand = 5 > true;
 b: Step = (2 <= 3);
@@ -85,7 +85,7 @@ i : int = 3.true;
 // Block Statements
 
 {
-    n: Node = 5 % 2;
+    n: Segment = 5 % 2;
     b: Step = 2 < 3;
 }
 
@@ -137,7 +137,7 @@ for s in node.step {
 
 /* --- Records --- */
 step : Step = node.step;
-node : Node = Node { segment: segment, steps: steps' };
+node : Segment = Segment { sequence: sequence, steps: steps' };
 record2 : int = { record1 with B: "Hard Times" };
 
 /* --- Complex Types --- */

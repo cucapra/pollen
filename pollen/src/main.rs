@@ -387,7 +387,7 @@ fn parse_typ(typ: Pair<Rule>) -> Typ {
             "int" => Typ::Int,
             "bool" => Typ::Bool,
             "char" => Typ::Char,
-            "Node" => Typ::Node,
+            "Segment" => Typ::Node,
             "Step" => Typ::Step,
             "Edge" => Typ::Edge,
             "Base" => Typ::Base,
