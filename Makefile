@@ -24,7 +24,6 @@ test-slow-odgi: og test-slow-chop test-slow-crush test-slow-degree test-slow-dep
 # test-slow-inject: we disagree with odgi over DRB1 and chr6
 
 test-slow-chop: og
-	-turnt --save --env chop_setup test/*.gfa
 	-turnt --save --env chop_oracle test/*.og
 	turnt --env chop_test test/*.gfa
 
