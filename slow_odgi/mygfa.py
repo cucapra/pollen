@@ -102,9 +102,8 @@ class Handle:
     def rev(self) -> "Handle":
         return Handle(self.name, not self.orientation)
 
-    """We need two str methods because Links and Paths
-    have different preferences when converting Handles to string
-    """
+    # We need two str methods over Handle because Links and Paths
+    # have different preferences when converting Handles to strings.
 
     def __str__(self):  # This is what a path wants.
         return "".join([self.name, ("+" if self.orientation else "-")])
