@@ -12,6 +12,7 @@
 *.inj
 *.matrix
 *.overlap
+*.overlappaths
 *.paths
 *.validate
 

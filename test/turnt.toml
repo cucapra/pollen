@@ -96,16 +96,16 @@ output.matrix = "-"
 [envs.overlap_setup]
 binary = true
 command = "python3 ../slow_odgi/paths.py < {filename}"
-output.paths = "-"
+output.overlappaths = "-"
 
 [envs.overlap_oracle]
 binary = true
-command = "odgi overlap -i {filename} -R {base}.paths"
+command = "odgi overlap -i {filename} -R {base}.overlappaths"
 output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "python3 ../slow_odgi/overlap.py {base}.paths < {filename}"
+command = "python3 ../slow_odgi/overlap.py {base}.overlappaths < {filename}"
 output.overlap = "-"
 
 [envs.paths_oracle]
