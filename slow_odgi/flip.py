@@ -27,7 +27,7 @@ def flip_path(path, graph):
         return path
 
 
-def dedup(list):
+def dedup(list: List[mygfa.Link]) -> List[mygfa.Link]:
     new = []
     for item in list:
         if item not in new and item.rev() not in new:
@@ -36,17 +36,19 @@ def dedup(list):
     return new
 
 
-def gen_links(paths, prop) -> List[mygfa.Link]:
-    """Given a list of paths and a proposition on paths,
+def gen_links(paths, pred) -> List[mygfa.Link]:
+    """Given a list of paths and a predicate on paths,
     return a list of links that, when added to the graph,
     would make the proposition-satisfying paths valid.
 
-    Feels like the sipritual reverse of `validate`.
+    The code feels like the spiritual reverse of `validate`,
+    and indeed, after this has been run, `validate` will be happy
+    with those paths that satisfy the predicate.
     """
     links = []
     alignment = mygfa.Alignment([(0, mygfa.AlignOp("M"))])  # A "no-op" alignment
     for path in paths.values():
-        if not prop(path):
+        if not pred(path):
             continue
         # Below be the paths of interest.
         length = len(path.segments)
