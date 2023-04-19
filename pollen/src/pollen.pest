@@ -53,17 +53,17 @@ string_lit = ${ double_quote ~ (!double_quote ~ char)* ~ double_quote }
 // TODO: Try to find a way to use string_lit and strand_lit via precedence?
 
 // array_lit = { "[" ~ expr? ~ ("," ~ expr)* ~ "]" }
-record_lit1 = { typ ~ "{" ~
+record_lit = { typ ~ "{" ~
                 identifier ~ ":" ~ expr  ~ 
                 ("," ~ identifier ~ ":" ~ expr)* ~ "}"
              }
-record_lit2 = { "{" ~ identifier ~ "with" ~
+record_update_lit = { "{" ~ identifier ~ "with" ~
                 identifier ~ ":" ~ expr  ~ 
                 ("," ~ identifier ~ ":" ~ expr)* ~ "}"
              }
 
 literal = _{ integer_lit | bool_lit | char_lit | string_lit 
-            | record_lit1 | record_lit2 }
+            | record_lit | record_update_lit }
 
 
 /* ----- Expressions ----- */

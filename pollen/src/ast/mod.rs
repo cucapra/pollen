@@ -66,11 +66,11 @@ pub enum Expr {
         op: UOp,
         expr: Box<Expr>
     },
-    Record1 {
+    Record {
         typ: Typ,
         fields: Vec<RecordField>
     },
-    Record2 {
+    RecordUpdate {
         parent: Id,
         fields: Vec<RecordField>
     },

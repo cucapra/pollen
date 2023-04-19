@@ -253,8 +253,8 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 Expr::StringLit(string)
             },
             Rule::identifier => Expr::Var(parse_id(primary)),
-            Rule::record_lit1 => {
-                // record_lit1 looks like Record { f1: e1, ..., fn:en }
+            Rule::record_lit => {
+                // record_lit looks like Record { f1: e1, ..., fn:en }
                 let mut inner = primary.into_inner();
                 let typ = {
                     let Some(pair) = inner.next() else {
@@ -278,13 +278,13 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                         RecordField{ field: field, val: val}
                     );
                 }
-                Expr::Record1 {
+                Expr::Record {
                     typ: typ,
                     fields: fields
                 }
             },
-            Rule::record_lit2 => {
-                // record_lit2 looks like { r1 with f1: e1, ..., fn:en }
+            Rule::record_update_lit => {
+                // record_update_lit looks like { r1 with f1: e1, ..., fn:en }
                 let mut inner = primary.into_inner();
                 let parent = {
                     let Some(pair) = inner.next() else {
@@ -308,7 +308,7 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                         RecordField{ field: field, val: val}
                     );
                 }
-                Expr::Record2 {
+                Expr::RecordUpdate {
                     parent: parent,
                     fields: fields
                 }
