@@ -1,11 +1,16 @@
+[envs.chop_setup]
+binary = true
+command = "python3 ../slow_odgi/chop_by.py < {filename}"
+output.n = "-"
+
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py --nl"
+command = "odgi chop -i {filename} -c $(cat {base}.n) -o - | odgi view -g -i - | python3 ../slow_odgi/mygfa.py --nl"
 output.chop = "-"
 
 [envs.chop_test]
 binary = true
-command = "python3 ../slow_odgi/chop.py < {filename} 3"
+command = "python3 ../slow_odgi/chop.py < {filename} $(cat {base}.n)"
 output.chop = "-"
 
 [envs.crush_oracle]

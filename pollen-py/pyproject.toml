@@ -6,7 +6,7 @@ build-backend = "flit.buildapi"
 module = "pollen"
 author = "Susan Garry"
 author-email = "shg64@cs.cornell.edu"
-home-page = "https://github.com/cucapra/calyx-pangenome"
+home-page = "https://github.com/cucapra/pollen"
 description-file = "README.md"
 requires-python = ">=3.8"
 requires = []
