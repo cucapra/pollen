@@ -1,4 +1,4 @@
-TEST_FILES := t k note5 # overlap q.chop LPA # DRB1-3123 chr6.C4
+TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
