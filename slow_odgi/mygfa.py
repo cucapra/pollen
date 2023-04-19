@@ -130,6 +130,9 @@ class Link:
             Alignment.parse(overlap),
         )
 
+    def rev(self) -> "Link":
+        return Link(self.to.rev(), self.from_.rev(), self.overlap)
+
     def __str__(self):
         return "\t".join(
             [

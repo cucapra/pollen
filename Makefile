@@ -44,11 +44,11 @@ test-slow-emit: og
 	-turnt --save --env emit_oracle test/*.og
 	turnt --env emit_test test/*.gfa
 
-test-slow-flip: og
+test-slow-flip: fetch
 	-turnt -v --save --env flip_oracle test/*.gfa
-	-turnt --diff --env flip_test test/*.gfa
 	-turnt -v --save --env flip_oracle test/handmade/flip*.gfa
-	turnt --diff --env flip_test test/handmade/flip*.gfa
+	-turnt --env flip_test test/*.gfa
+	turnt --env flip_test test/handmade/flip*.gfa
 
 test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
