@@ -1,8 +1,0 @@
-H	VN:Z:1.0
-S	1	A
-S	2	AAA
-S	3	TT
-S	4	TT
-S	5	GGGG
-P	x	1+,2+,3+,4+,5+	*
-P	y	2+,3+	*

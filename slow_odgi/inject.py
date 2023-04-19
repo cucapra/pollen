@@ -6,8 +6,7 @@ from typing import List
 
 def parse_bedfile(bedfile):
     """Parse entries of the form described in `inject_setup`."""
-    p2i = [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
-    return p2i
+    return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
 def track_path(graph, bed):
@@ -63,14 +62,14 @@ def chop_if_needed(graph, pathname, index):
         succname = str(segnumber + 1)
         if segnumber < int(target):  # Keep these verbatim.
             segments[seg.name] = seg
-            legend[seg.name] = (segnumber, segnumber + 1)
+            legend[seg.name] = segnumber, segnumber + 1
         elif seg.name == target:  # Perform one chop.
             segments[seg.name] = mygfa.Segment(target, seg.seq[:pos])
             segments[succname] = mygfa.Segment(succname, seg.seq[pos:])
-            legend[seg.name] = (segnumber, segnumber + 2)
+            legend[seg.name] = segnumber, segnumber + 2
         else:  # Keep the segment as it was, but increment its name.
             segments[succname] = mygfa.Segment(succname, seg.seq)
-            legend[seg.name] = (segnumber + 1, segnumber + 2)
+            legend[seg.name] = segnumber + 1, segnumber + 2
 
     paths = chop.chop_paths(graph, legend)
     return mygfa.Graph(graph.headers, segments, graph.links, paths)
@@ -88,10 +87,8 @@ def inject_paths(graph, p2i):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].endswith(".bed"):
+    if len(sys.argv) > 1:
         paths_to_inject = parse_bedfile(open(sys.argv[1], "r"))
-        # paths_to_inject = parse_bedfile(open(f"handmade/{sys.argv[1]}", "r"))
-        # Swap to test against the handmade versions.
         graph = mygfa.Graph.parse(sys.stdin)
         graph_inj = inject_paths(graph, paths_to_inject)
         graph_inj.emit(sys.stdout, False)

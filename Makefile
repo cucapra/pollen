@@ -57,8 +57,6 @@ test-slow-inject: og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
 	turnt --env inject_test test/*.gfa
-	# turnt --env inject_test test/handmade/*.gfa
-	# Swap to test against the handmade versions.
 
 test-slow-overlap: og
 	-turnt --save --env overlap_setup test/*.gfa

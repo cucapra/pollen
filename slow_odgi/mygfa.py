@@ -15,10 +15,14 @@ def parse_orient(o) -> bool:
 
 @dataclass
 class Bed:
-    """Used by `inject` for now.
-    But could be refashioned for use in other BED-ey algorithms.
+    """A BED (Browser Extensible Data) file describes regions of a genome.
+    lo and hi tell us when to start and stop reading, and the name is
+    the name that region should get.
     """
 
+    """Used only by `inject` for now, which adds a fourth column for the
+    new name of the injected path.
+    """
     name: str
     lo: int
     hi: int

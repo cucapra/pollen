@@ -3,7 +3,7 @@ import mygfa
 from typing import Dict, Tuple
 
 
-def chop_segs(graph):
+def chop_segs(graph, n):
     """Chop all the sequences of the graph into length n or lower."""
 
     legend: Dict[str, Tuple[int, int]] = {}
@@ -59,8 +59,8 @@ def chop_paths(graph, legend):
     return new_paths
 
 
-def chop_graph(graph):
-    new_segments, legend = chop_segs(graph)
+def chop_graph(graph, n):
+    new_segments, legend = chop_segs(graph, n)
     new_paths = chop_paths(graph, legend)
     return mygfa.Graph(graph.headers, new_segments, [], new_paths)
     # The blank list is because we are choosing to drop links for now.
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         n = int(sys.argv[1])
         graph = mygfa.Graph.parse(sys.stdin)
-        chopped_graph = chop_graph(graph)
+        chopped_graph = chop_graph(graph, n)
         chopped_graph.emit(sys.stdout, False)
     else:
         print("Pass the chop-size as a CLI")
