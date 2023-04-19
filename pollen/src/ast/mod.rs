@@ -10,7 +10,8 @@ pub enum Typ {
     Base,
     String,
     Strand,
-    Tuple(Box<Typ>, Box<Typ>)
+    Tuple(Box<Typ>, Box<Typ>),
+    Set(Box<Typ>)
 }
 
 #[derive(Debug)]

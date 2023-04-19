@@ -139,3 +139,6 @@ for s in node.step {
 step : Step = node.step;
 node : Node = Node { segment: segment, steps: steps' };
 record2 : int = { record1 with B: "Hard Times" };
+
+/* --- Complex Types --- */
+s: Set<int>;

@@ -20,8 +20,10 @@ atomic_typ = { "int" | "bool" | "char" | "String" |
 
 tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
 
+set_typ = { "Set<" ~ typ ~ ">" }
+
 // String and Strand are not atomic types because they cannot be part of tuples
-typ = _{ atomic_typ | tuple_typ  /* | typ ~ ( "[]"* ) */ }
+typ = _{ atomic_typ | tuple_typ | set_typ /* | typ ~ ( "[]"* ) */ }
 
 /* Record types are not included because the user will never 
     need to explicitly define one */

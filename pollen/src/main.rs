@@ -414,6 +414,18 @@ fn parse_typ(typ: Pair<Rule>) -> Typ {
             assert!(inner.next().is_none());
             Typ::Tuple(Box::new(t1), Box::new(t2))
         },
+        Rule::set_typ => {
+            let mut inner = typ.into_inner();
+            let t = {
+                if let Some(pair) = inner.next() {
+                    parse_typ(pair)
+                } else {
+                    unreachable!("Expected first tuple type but found nothing")
+                }
+            };
+            assert!(inner.next().is_none());
+            Typ::Set(Box::new(t))
+        }
         rule => unreachable!("Unknown type: {:?}", rule)
         // TODO - probably replace this with a Result<> return type
     }
