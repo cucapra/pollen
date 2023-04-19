@@ -1,4 +1,4 @@
-TEST_FILES := t k note5 overlap q.chop DRB1-3123 LPA
+TEST_FILES := t k note5 overlap q.chop DRB1-3123 LPA chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -59,9 +59,9 @@ test-slow-flatten: og
 	turnt --env flatten_test test/*.gfa
 
 test-slow-inject: og
-	-turnt -v --env inject_setup test/*.gfa
-	# -turnt --save --env inject_oracle test/*.og
-	# turnt --env inject_test test/*.gfa
+	-turnt --save --env inject_setup test/*.gfa
+	-turnt --save --env inject_oracle test/*.og
+	turnt --env inject_test test/*.gfa
 
 test-slow-overlap: og
 	-turnt --save --env overlap_setup test/*.gfa

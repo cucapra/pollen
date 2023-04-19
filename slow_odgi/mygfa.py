@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, Dict, TextIO, Iterator
+from typing import List, Tuple, Optional, Dict, TextIO, Iterator, NamedTuple
 from enum import Enum
 import re
 
@@ -11,6 +11,31 @@ def parse_orient(o) -> bool:
     """
     assert o in ("+", "-")
     return o == "+"
+
+
+@dataclass
+class Bed:
+    """A BED (Browser Extensible Data) file describes regions of a genome.
+    lo and hi tell us when to start and stop reading, and the name is
+    the name that region should get.
+    """
+
+    """Used only by `inject` for now, which adds a fourth column for the
+    new name of the injected path.
+    """
+    name: str
+    lo: int
+    hi: int
+    new: str  # Used by `inject` to give the new path a name.
+    # In the future, make `new` Optional.
+
+    @classmethod
+    def parse(cls, line) -> "Bed":
+        name, lo, hi, new = line.split("\t")
+        return Bed(name, int(lo), int(hi), new)
+
+    def __str__(self):
+        return "\t".join([self.name, str(self.lo), str(self.hi), self.new])
 
 
 @dataclass

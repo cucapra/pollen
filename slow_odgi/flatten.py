@@ -2,7 +2,7 @@ import sys
 import mygfa
 
 
-def fasta(graph):
+def get_fasta_legend(graph):
     """The main deliverable is the FASTA:
     Simply traverse the segments in order and glue their seqs together.
     However, it pays to do some bookkeeping now.
@@ -49,11 +49,11 @@ def insert_newlines(string, every=80):
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1].endswith(".gfa"):
         graph = mygfa.Graph.parse(open(sys.argv[1], "r"))
-        odginame = sys.argv[1][:-4] + ".og"
+        odginame = f"{sys.argv[1][:-4]}.og"
         print(f">{odginame}")
         # TODO: this is a bit harcoded for files living in test/file.gfa
         # Would be nice to neaten this up and make it less brittle.
 
-        fasta, legend = fasta(graph)
+        fasta, legend = get_fasta_legend(graph)
         print(insert_newlines(fasta))
         print_bed(graph, legend)
