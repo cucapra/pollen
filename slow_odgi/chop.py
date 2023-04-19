@@ -59,7 +59,7 @@ def chop_paths(graph, legend):
     return new_paths
 
 
-def chop_graph(graph):
+def chop_graph(graph, n):
     new_segments, legend = chop_segs(graph, n)
     new_paths = chop_paths(graph, legend)
     return mygfa.Graph(graph.headers, new_segments, [], new_paths)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         n = int(sys.argv[1])
         graph = mygfa.Graph.parse(sys.stdin)
-        chopped_graph = chop_graph(graph)
+        chopped_graph = chop_graph(graph, n)
         chopped_graph.emit(sys.stdout, False)
     else:
         print("Pass the chop-size as a CLI")
