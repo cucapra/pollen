@@ -19,33 +19,33 @@ There are a few known points of divergence versus `odgi`:
 
 ### Explanation of Commands
 
-The remainder of this document will explain the eleven commands that we have implemented in some detail. 
+The remainder of this document will explain the eleven commands that we have implemented in some detail. Below we sometimes elide graph information that is inconsequential to the explanation. Unless specified, this is meant to be read as a "don't care" and not as absence. 
 
 
 #### `chop`
 Given the graph
 ```
-S 1 AAAA
-S 2 TTT
-S 3 GGGGCCCC
-P x 1+,3+,2+
-L 1 + 3 +
-L 3 + 2 +
+S	1	AAAA
+S	2	TTT
+S	3	GGGGCCCC
+P	x	1+,3+,2+	*
+L	1	+	3	+
+L	3	+	2	+
 ```
 running `chop` with parameter `3` gives
 ```
-S 1 AAA
-S 2 A
-S 3 TTT
-S 4 GGG
-S 5 GCC
-S 6 CC
-P x 1+,2+,4+,5+,6+,3+
-L 1 + 2 +   // new, to bridge the chop of S1
-L 2 + 4 +   // renumber old link 1+3+
-L 4 + 5 +   // new, to bridge the chop of S3
-L 5 + 6 +   // new, to bridge the chop of S3
-L 6 + 3 +   // renumber old link 3+2+
+S	1	AAA
+S	2	A
+S	3	TTT
+S	4	GGG
+S	5	GCC
+S	6	CC
+P	x	1+,2+,4+,5+,6+,3+	*
+L	1	+	2	+		// new, to bridge the chop of S1
+L	2	+	4	+		// renumber old link 1+3+
+L	4	+	5	+		// new, to bridge the chop of S3
+L	5	+	6	+		// new, to bridge the chop of S3
+L	6	+	3	+		// renumber old link 3+2+
 ```
 That is,
 1. Segments that had sequences longer than `3` characters have been chopped, repeatedly if needed.
@@ -58,19 +58,15 @@ That is,
 
 Given the graph
 ```
-S 1 ANNN
-S 2 NTTN
-S 3 NGGG
-P x 1+,2+,3+
-L ...
+S	1	ANNN
+S	2	NTTN
+S	3	NGGG
 ```
 running `crush` gives
 ```
-S 1 AN
-S 2 NTTN
-S 3 NGGG
-P x 1+,2+,3+
-L ...
+S	1	AN
+S	2	NTTN
+S	3	NGGG
 ```
 That is, "runs" of `N` have been swapped out for single instances of `N`. Observe that this is entirely intra-segment; we did not treat the end of S2 and the beginning of S3 as a contiguous "run".
 
@@ -133,14 +129,13 @@ Where each row has the name of the segment, the segment's _depth_, and the segme
 
 GFAs have line-entries of four kinds: headers, segments, paths, and links. Their order does not matter, so the following is fine:
 ```
-H ...
-L ...
-P ...
-S ...
-L ...
-P ...
-S ...
-...
+H	...
+L	...
+P	...
+S	...
+L	...
+P	...
+S	...
 ```
 `emit` normalizes a GFA so that its entries appear in a stable order: headers, then segments, then paths, and then links. Order is also enforced between lines of the same kind. Doing this minimizes diffs when modifying files. 
 
@@ -149,25 +144,25 @@ S ...
 
 Given the graph
 ```
-S 1 A
-S 2 TTT
-S 3 G
-P x 1+,2-,3+ *
-P y 1+,2+ *
-L 1 + 2 + 0M
-L 2 + 3 + 0M
+S	1	A
+S	2	TTT
+S	3	G
+P	x	1+,2-,3+	*
+P	y	1+,2+	*
+L	1	+	2	+	0M
+L	2	+	3	+	0M
 ```
 running `flip` gives 
 ```
-S 1 A
-S 2 TTT
-S 3 G
-P x_inv 3-,2+,1- *
-P y 1+,2+ *
-L 1 + 2 + 0M
-L 2 + 1 - 0M    // new
-L 2 + 3 + 0M
-L 3 - 2 + 0M    // new
+S	1	A
+S	2	TTT
+S	3	G
+P	x_inv	3-,2+,1-	*
+P	y	1+,2+	*
+L	1	+	2	+	0M
+L	2	+	1	-	0M		// new
+L	2	+	3	+	0M
+L	3	-	2	+	0M		// new
 
 ```
 That is, 
@@ -180,12 +175,11 @@ That is,
 
 Given the graph
 ```
-S 1 AAAA
-S 2 TT
-S 3 GGGG
-P x 1+,2+,3+
-P y 3+,2-
-L ...
+S	1	AAAA
+S	2	TT
+S	3	GGGG
+P	x	1+,2+,3+	*
+P	y	3+,2-
 ```
 running `flatten` produces two outputs:
 ```
@@ -212,10 +206,10 @@ That is,
 
 Given the graph
 ```
-S 1 AAAA
-S 2 TTTT
-S 3 GGGG
-P x 1+,2+,3+ *
+S	1	AAAA
+S	2	TTTT
+S	3	GGGG
+P	x	1+,2+,3+	*
 ```
 and a BED file
 ```
@@ -224,12 +218,12 @@ x    0    4    z
 ```
 running `inject` gives
 ```
-S 1 AAAA
-S 2 TTTT
-S 3 GGGG
-P x 1+,2+,3+ *
-P y 1+,2+ *
-P z 1+ *
+S	1	AAAA
+S	2	TTTT
+S	3	GGGG
+P	x	1+,2+,3+	*
+P	y	1+,2+	*
+P	z	1+	*
 ```
 That is, the BED file has information about which paths to track and, for each path, over which of its run to track it and what name to give the resultant subpath. Running `inject` adds these paths.
 
@@ -239,13 +233,13 @@ x    1    6    y
 ```
 Working with the same graph as before, `inject` now needs to split segments 1  and 2 in order to add path `y`.
 ```
-S 1 A
-S 2 AAA
-S 3 TT
-S 4 TT
-S 5 GGGG
-P x 1+,2+,3+,4+,5+	*
-P y 2+,3+	*
+S	1	A
+S	2	AAA
+S	3	TT
+S	4	TT
+S	5	GGGG
+P	x	1+,2+,3+,4+,5+	*
+P	y	2+,3+	*
 ```
 Observe that this required edits to the path `x` as well.   
 
@@ -264,19 +258,19 @@ L	1	+	3	-	0M
 ```
 running `matrix` produces 
 ```
-4 4 12    // header
-1 2 1
-2 1 1
-1 3 1
-3 1 1
-1 3 1
-3 1 1
-1 2 1
-2 1 1
-2 4 1
-4 2 1
-3 4 1
-4 3 1
+4	4	12		// header
+1	2	1
+2	1	1
+1	3	1
+3	1	1
+1	3	1
+3	1	1
+1	2	1
+2	1	1
+2	4	1
+4	2	1
+3	4	1
+4	3	1
 ```
 That is, 
 1. A _header_ that twice lists the highest-numbered segments, and then lists the total number of entries in the matrix below.
@@ -290,27 +284,26 @@ That is,
 
 Given the graph
 ```
-S 1 AAAA... // a sequence of length 90
-S 2 TTTT... // a sequence of length 10
-S 3 GGGG... // a sequence of length 40
-P x 1+,2+
-P y 2+,3+
-P z 1+
-L ... 
+S	1	AAAA...	// a sequence of length 90
+S	2	TTTT...	// a sequence of length 10
+S	3	GGGG...	// a sequence of length 40
+P	x	1+,2+	*
+P	y	2+,3+	*
+P	z	1+
 ```
 and the BED file
 ```
-x    0    30
+x	0	30
 ```
 running `overlap` gives nothing: no paths in the graph overlapped with path `x` between its 0th and 30th characters.
 
 As one would expect, running the same graph with the BED file
 ```
-x    95   97       
+x	95	97       
 ```
 gives
 ```
-x    95   97   y
+x	95	97	y
 ```
 
 It is also possible to query `overlap` with a simpler file of the form
@@ -319,7 +312,7 @@ y
 ```
 and, in this case, `overlap` assumes that the querier wants to investigate the path `y` along its entire length. The answer is
 ```
-y    0   50   x
+y	0	50	x
 ```
 
 
@@ -327,12 +320,11 @@ y    0   50   x
 
 Given the graph
 ```
-S 1 AAAA
-S 2 TTTT
-S 3 GGGG
-P x 1+,2+,3+
-P y 2+,3+
-L ...
+S	1	AAAA
+S	2	TTTT
+S	3	GGGG
+P	x	1+,2+,3+	*
+P	y	2+,3+
 ```
 running `paths` gives
 ```
@@ -345,10 +337,10 @@ That is, it simply produces a list of the graph's paths by name.
 #### `validate`
 Given the graph
 ```
-S 1 AAAA
-S 2 TTTT
-S 3 GGGG
-P x 1+,2+,3+
-L 1 + 2 +
+S	1	AAAA
+S	2	TTTT
+S	3	GGGG
+P	x	1+,2+,3+	*
+L	1	+	2	+
 ```
 running `validate` complains that we are missing a link; namely the link `L 2 + 3 +`. Run against a graph where each path _is_ backed up by links, this command decrees the graph valid and succeeds quietly.
