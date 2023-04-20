@@ -4,7 +4,7 @@
 
 ### Testing
 
-	To test `slow-odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of GFA graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
+To test `slow-odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of GFA graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
 
 To run these tests, you will need 
 1. `odgi`; see [here](https://github.com/pangenome/odgi). Our tests were run against a built-from-source copy of `odgi` (commit 34f006f).
@@ -213,8 +213,8 @@ P	x	1+,2+,3+	*
 ```
 and a BED file
 ```
-x    0    8    y 
-x    0    4    z
+x	0	8	y 
+x	0	4	z
 ```
 running `inject` gives
 ```
@@ -229,7 +229,7 @@ That is, the BED file has information about which paths to track and, for each p
 
 Consider, though, a more subtle example. The following BED file describes a legal subpath, but one that does not happen to line up the current segment-boundaries.
 ```
-x    1    6    y    
+x	1	6	y    
 ```
 Working with the same graph as before, `inject` now needs to split segments 1  and 2 in order to add path `y`.
 ```
