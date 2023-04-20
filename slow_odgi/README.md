@@ -12,7 +12,7 @@ To run these tests, you will need
 
 With these in place, run `make test-slow-odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not-ok` signals there are actually of interest. 
 
-There are a few know points of divergence versus `odgi`:
+There are a few known points of divergence versus `odgi`:
 1. `flip` disgrees against graphs note5.gfa and flip4.gfa.
 2. `inject` disagrees against graphs DRB1-3123.gfa and chr6.C4.gfa.
 
@@ -24,28 +24,32 @@ The remainder of this document will explain the eleven commands that we have imp
 Given graph.gfa
 ```
 S 1 AAAA
-S 2 TTTT
-S 3 GGGG
+S 2 TTT
+S 3 GGGGCCCC
 P 1+,3+,2+
 L 1 + 3 +
 L 3 + 2 +
 ```
-running `chop` with parameter 3 gives
+running `chop` with parameter `3` gives
 ```
 S 1 AAA
 S 2 A
 S 3 TTT
-S 4 T
-S 5 GGG
-S 6 G
-P 1+,2+,5+,6+,2+,3+
-L 1 + 2 +   // new, to bridge the chop
-L 2 + 5 +   // renumber old link
-L 3 + 4 +   // new
-L 5 + 6 +   // new
-L 6 + 3 +   // renumber
+S 4 GGG
+S 5 GCC
+S 6 CC
+P 1+,2+,4+,5+,6+,3+
+L 1 + 2 +   // new, to bridge the chop of S1
+L 2 + 4 +   // renumber old link 1+3+
+L 4 + 5 +   // new, to bridge the chop of S3
+L 5 + 6 +   // new, to bridge the chop of S3
+L 6 + 3 +   // renumber old link 3+2+
 ```
-Observe that the segments have not only been chopped have also been renumbered continuously, that the paths have been adjusted, and that changes have been made to the links (as marked).
+That is,
+1. Segments that had sequences longer than `3` characters have been chopped, repeatedly if needed.
+2. All segments have been renumbered.
+3. Paths have been adjusted.
+4. Old links have been adjusted and new links added  (for reasons given in the comments).
 
 #### `crush`
 Given `graph.gfa`
@@ -64,7 +68,7 @@ S 3 NGGG
 P 1+,2+,3+
 L ...
 ```
-That is, "runs" of `N` are swapped out for single instances of `N`. Observe that this is entirely intra-segment; we did not treat the end of S2 and the beginning of S3 as a contiguous "run".
+That is, "runs" of `N` have been swapped out for single instances of `N`. Observe that this is entirely intra-segment; we did not treat the end of S2 and the beginning of S3 as a contiguous "run".
 
 #### `degree`
 
@@ -72,9 +76,18 @@ That is, "runs" of `N` are swapped out for single instances of `N`. Observe that
 
 #### `emit`
 
-GFAs have line-entries of four kinds: headers, segments, paths, and links. Their order does not matter. 
-`emit` normalizes a GFA so that its enties appear in a stable order: headers, then segments, then paths, and then links. The links are sorted, with the same goal in mind.
-Doing this minimizes diffs between files. 
+GFAs have line-entries of four kinds: headers, segments, paths, and links. Their order does not matter, so the following is fine:
+```
+H ...
+L ...
+P ...
+S ...
+L ...
+P ...
+S ...
+...
+```
+`emit` normalizes a GFA so that its entries appear in a stable order: headers, then segments, then paths, and then links. Order is also enforced between lines of the same kind. Doing this minimizes diffs when modifying files. 
 
 #### `flip`
 
@@ -91,7 +104,8 @@ P x 1+,2+,3+ *
 ```
 and `new_paths.bed`
 ```
-x    0    8    y    
+x    0    8    y 
+x    0    4    z
 ```
 running `inject` gives
 ```
@@ -100,14 +114,15 @@ S 2 TTTT
 S 3 GGGG
 P x 1+,2+,3+ *
 P y 1+,2+ *
+P z 1+ *
 ```
-That is, you provide in the .bed file information about which path to track and over which of its run to track it, along with a new path name. The result is that a new path is inserted; it is a subpath of the original.
+That is, the .bed file has information about which paths to track and, for each path, over which of its run to track it and what name to give the resultant subpath. The result is that these new subpaths are inserted.
 
-Here's the rub: what if the .bed file describes a _legal_ subpath, but one that does not happen to line up the current segment-boundaries?
+Consider, though, a more subtle example. What if the .bed file describes a _legal_ subpath, but one that does not happen to line up the current segment-boundaries?
 ```
 x    1    6    y    
 ```
-We need to split segments 1  and 2 in order to make this work.
+Working with the same graph as before, we now need to split segments 1  and 2 in order to make this work.
 ```
 S 1 A
 S 2 AAA
@@ -117,7 +132,7 @@ S 5 GGGG
 P x 1+,2+,3+,4+,5+	*
 P y 2+,3+	*
 ```
-As you can see, this required edits to the path x as well.
+As you can see, this required edits to the path `x` as well.   
 
 #### `matrix`
 
