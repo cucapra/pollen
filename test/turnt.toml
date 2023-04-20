@@ -38,16 +38,6 @@ binary = true
 command = "python3 ../slow_odgi/depth.py < {filename}"
 output.depth = "-"
 
-[envs.emit_oracle]
-binary = true
-command = "odgi view -g -i {filename} | python3 ../slow_odgi/normalize.py"
-output.emit = "-"
-
-[envs.emit_test]
-binary = true
-command = "python3 ../slow_odgi/normalize.py < {filename}"
-output.emit = "-"
-
 [envs.flatten_oracle]
 binary = true
 command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
@@ -92,6 +82,16 @@ output.matrix = "-"
 binary = true
 command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
 output.matrix = "-"
+
+[envs.normalize_oracle]
+binary = true
+command = "odgi view -g -i {filename} | python3 ../slow_odgi/normalize.py"
+output.normalize = "-"
+
+[envs.normalize_test]
+binary = true
+command = "python3 ../slow_odgi/normalize.py < {filename}"
+output.normalize = "-"
 
 [envs.overlap_setup]
 binary = true
