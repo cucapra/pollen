@@ -6,11 +6,11 @@
 *.crush
 *.degree
 *.depth
-*.emit
 *.flatten
 *.flip
 *.inj
 *.matrix
+*.normalize
 *.overlap
 *.overlappaths
 *.paths

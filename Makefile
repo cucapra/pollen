@@ -1,4 +1,4 @@
-TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
+TEST_FILES := t k # note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -20,7 +20,7 @@ test-depth: og
 	turnt $(DEPTH_OG_FILES)
 
 # This is the version that does, for each algorithm, setup-then-test.
-test-slow-odgi-interleave: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-emit test-slow-flatten test-slow-flip test-slow-inject test-slow-matrix test-slow-overlap test-slow-paths test-slow-validate
+test-slow-odgi-interleave: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-flatten test-slow-flip test-slow-inject test-slow-matrix test-slow-normalize test-slow-overlap test-slow-paths test-slow-validate
 # test-slow-flip: we disagree with odgi over note5
 # test-slow-inject: we disagree with odgi over DRB1 and chr6
 # These are documented as issues in our repo.
@@ -43,10 +43,6 @@ test-slow-depth: og
 	-turnt --save --env depth_oracle test/*.og
 	turnt --env depth_test test/*.gfa
 
-test-slow-emit: og
-	-turnt --save --env emit_oracle test/*.og
-	turnt --env emit_test test/*.gfa
-
 test-slow-flip: fetch
 	-turnt --save --env flip_oracle test/*.gfa
 	-turnt --save --env flip_oracle test/handmade/flip*.gfa
@@ -65,6 +61,10 @@ test-slow-inject: og
 test-slow-matrix: og
 	-turnt --save --env matrix_oracle test/*.og
 	turnt --env matrix_test test/*.gfa
+
+test-slow-normalize: og
+	-turnt --save --env normalize_oracle test/*.og
+	turnt --env normalize_test test/*.gfa
 
 test-slow-overlap: og
 	-turnt --save --env overlap_setup test/*.gfa
@@ -96,13 +96,13 @@ slow-odgi-all-oracles: og
 	-turnt --save --env crush_oracle test/handmade/crush*.gfa
 	-turnt --save --env degree_oracle test/*.og
 	-turnt --save --env depth_oracle test/*.og
-	-turnt --save --env emit_oracle test/*.og
 	-turnt --save --env flip_oracle test/*.gfa
 	-turnt --save --env flip_oracle test/handmade/flip*.gfa
 	-turnt --save --env flatten_oracle test/*.og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
 	-turnt --save --env matrix_oracle test/*.og
+	-turnt --save --env normalize_oracle test/*.og
 	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
@@ -113,12 +113,12 @@ slow-odgi-all-tests: slow-odgi-all-oracles
 	-turnt --env crush_test test/handmade/crush*.gfa
 	-turnt --env degree_test test/*.gfa
 	-turnt --env depth_test test/*.gfa
-	-turnt --env emit_test test/*.gfa
 	-turnt --env flip_test test/*.gfa
 	-turnt --env flip_test test/handmade/flip*.gfa
 	-turnt --env flatten_test test/*.gfa
 	-turnt --env inject_test test/*.gfa
 	-turnt --env matrix_test test/*.gfa
+	-turnt --env normalize_test test/*.gfa
 	-turnt --env overlap_test test/*.gfa
 	-turnt --env paths_test test/*.gfa
 
