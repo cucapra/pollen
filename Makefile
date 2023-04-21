@@ -1,4 +1,4 @@
-TEST_FILES := t k # note5 overlap q.chop LPA DRB1-3123 chr6.C4
+TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -10,12 +10,9 @@ fetch: $(TEST_FILES:%=test/%.gfa)
 
 og: $(OG_FILES)
 
-# slow-odgi
-#
-# Known points of divergence:
-# test-slow-flip: we disagree with odgi over note5
-# test-slow-inject: we disagree with odgi over DRB1 and chr6
-# These are documented as issues in our repo.
+#################
+#   slow-odgi   #
+#################
 
 # Sets up all the oracles and then tests them.
 test-slow-odgi: slow-odgi-all-oracles slow-odgi-all-tests
