@@ -225,8 +225,8 @@ S	2	AAA
 S	3	TT
 S	4	TT
 S	5	GGGG
-P	x	1+,2+,3+,4+,5+	*
-P	y	2+,3+	*
+P	x	1+,2+,3+,4+,5+	*	// changed in place
+P	y	2+,3+	*		// new
 ```
 Observe that this required edits to the path `x` as well.   
 
