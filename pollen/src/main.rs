@@ -222,6 +222,22 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
                 body: Box::new(body)
             }
         },
+        Rule::emit_to => {
+            // Contains an expression and a set identifier
+            let mut inner = stmt.into_inner();
+            let expr = {
+                let pair = inner.next().unwrap();
+                parse_expr(pair.into_inner())
+            };
+            let set_id = {
+                let pair = inner.next().unwrap();
+                parse_id(pair)
+            };
+            Stmt::EmitTo {
+                expr: expr,
+                set_id: set_id
+            }
+        },
         Rule::stmt => {
             let mut inner = stmt.into_inner();
             let s = {

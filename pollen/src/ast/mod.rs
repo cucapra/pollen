@@ -110,6 +110,10 @@ pub enum Stmt {
         id: Id,
         iterator: Expr,
         body: Box<Stmt>
+    },
+    EmitTo {
+        expr: Expr,
+        set_id: Id
     }
 }
 

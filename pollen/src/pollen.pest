@@ -1,5 +1,6 @@
 WHITESPACE = _{ " " | "\t" | NEWLINE }
-COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE) | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ (NEWLINE | EOI)) 
+            | "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
 // Excludes type keywords
 // keywords = _{ "if" | "elif" | "else" | "for" | "in" | "while" }
@@ -18,12 +19,12 @@ file = {
 atomic_typ = { "int" | "bool" | "char" | "String" |
                 "Segment" | "Step" | "Edge" | "Base" | "Strand" }
 
-tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
+// tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
 
 set_typ = { "Set<" ~ typ ~ ">" }
 
 // String and Strand are not atomic types because they cannot be part of tuples
-typ = _{ atomic_typ | tuple_typ | set_typ /* | typ ~ ( "[]"* ) */ }
+typ = _{ atomic_typ | set_typ /* | tuple_typ | typ ~ ( "[]"* ) */ }
 
 /* Record types are not included because the user will never 
     need to explicitly define one */
@@ -116,5 +117,7 @@ if_stmt = { "if " ~ expr ~ block ~ ("elif" ~ expr ~ block)* ~ ("else" ~ block)? 
 while_stmt = { "while" ~ expr ~ block }
 for_stmt = { "for" ~ identifier ~ "in" ~ expr ~ block }
 
+// Emit statements
+emit_to = { "emit" ~ expr ~ "to" ~ identifier ~ ";" }
 
-stmt = { decl | assign | block | if_stmt | while_stmt | for_stmt }
+stmt = { decl | assign | block | if_stmt | while_stmt | for_stmt | emit_to }
