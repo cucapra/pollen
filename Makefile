@@ -84,9 +84,9 @@ test-slow-validate: fetch
 	rm test/*_temp.gfa
 
 # This is the version that first sets up all the oracles and then tests them.
-test-slow-odgi: slow-odgi-all-oracles slow-odgi-all-tests test-slow-validate
+test-slow-odgi: test-slow-validate slow-odgi-all-oracles slow-odgi-all-tests
 # It is too annoying to "unzip" `validate` in this way,
-# so I just do it the old way, last.
+# so I just do it the old way, first.
 
 # Collecting all the setup/oracle stages of slow-odgi into once place.
 # This can be run once, noisily, and then slow-odgi-all-tests can be run
