@@ -118,15 +118,9 @@ binary = true
 command = "python3 ../slow_odgi/paths.py < {filename}"
 output.paths = "-"
 
-[envs.validate_setup]
-binary = true
-command = "python3 ../slow_odgi/validate_setup.py < {filename}"
-output.temp = "-"
-
 [envs.validate_oracle]
 binary = true
-command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
-return_code = 1
+command = "odgi validate -i {filename} 2>&1"
 output.validate = "-"
 
 [envs.validate_test]
