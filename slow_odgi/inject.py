@@ -1,7 +1,6 @@
 import sys
-import mygfa
-import chop
 from typing import List
+from . import mygfa, chop
 
 
 def parse_bedfile(bedfile):

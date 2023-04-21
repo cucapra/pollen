@@ -1,6 +1,6 @@
 import sys
-import mygfa
 from typing import Dict, Tuple
+from . import mygfa
 
 
 def chop_segs(graph, n):

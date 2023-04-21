@@ -1,5 +1,5 @@
-import mygfa
 from typing import List, Tuple, Dict
+from . import mygfa
 
 
 def node_steps(graph):

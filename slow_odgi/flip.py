@@ -1,6 +1,6 @@
 import sys
-import mygfa
 from typing import List
+from . import mygfa
 
 
 def path_is_rev(path, graph):

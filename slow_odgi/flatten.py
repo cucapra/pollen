@@ -1,5 +1,5 @@
 import sys
-import mygfa
+from . import mygfa
 
 
 def get_fasta_legend(graph):

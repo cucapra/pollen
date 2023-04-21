@@ -1,5 +1,5 @@
 import sys
-import mygfa
+from . import mygfa
 
 
 def print_paths(graph):
