@@ -28,7 +28,7 @@ slow-odgi-all-oracles: og
 	-turnt --save --env crush_oracle test/*.og
 	-turnt --save --env degree_oracle test/*.og
 	-turnt --save --env depth_oracle test/*.og
-	-turnt --save --env flip_oracle test/*.gfa
+	-turnt --save --env flip_oracle test/*.og
 	-turnt --save --env flatten_oracle test/*.og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
