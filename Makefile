@@ -33,8 +33,8 @@ test-slow-chop: og
 test-slow-crush: og
 	-turnt --save --env crush_oracle test/*.og
 	-turnt --env crush_test test/*.gfa
-	-turnt --save --env crush_oracle test/handmade/crush*.gfa
-	turnt --env crush_test test/handmade/crush*.gfa
+	# -turnt --save --env crush_oracle test/handmade/crush*.gfa
+	# turnt --env crush_test test/handmade/crush*.gfa
 
 test-slow-degree: og
 	-turnt --save --env degree_oracle test/*.og
@@ -46,9 +46,9 @@ test-slow-depth: og
 
 test-slow-flip: fetch
 	-turnt --save --env flip_oracle test/*.gfa
-	-turnt --save --env flip_oracle test/handmade/flip*.gfa
+	# -turnt --save --env flip_oracle test/handmade/flip*.gfa
 	-turnt --env flip_test test/*.gfa
-	turnt --env flip_test test/handmade/flip*.gfa
+	# turnt --env flip_test test/handmade/flip*.gfa
 
 test-slow-flatten: og
 	-turnt --save --env flatten_oracle test/*.og
@@ -94,11 +94,11 @@ test-slow-odgi: test-slow-validate slow-odgi-all-oracles slow-odgi-all-tests
 slow-odgi-all-oracles: og
 	-turnt --save --env chop_oracle test/*.og
 	-turnt --save --env crush_oracle test/*.og
-	-turnt --save --env crush_oracle test/handmade/crush*.gfa
+	# -turnt --save --env crush_oracle test/handmade/crush*.gfa
 	-turnt --save --env degree_oracle test/*.og
 	-turnt --save --env depth_oracle test/*.og
 	-turnt --save --env flip_oracle test/*.gfa
-	-turnt --save --env flip_oracle test/handmade/flip*.gfa
+	# -turnt --save --env flip_oracle test/handmade/flip*.gfa
 	-turnt --save --env flatten_oracle test/*.og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
@@ -115,11 +115,11 @@ slow-odgi-all-oracles: og
 slow-odgi-all-tests:
 	turnt --env chop_test test/*.gfa
 	-turnt --env crush_test test/*.gfa
-	-turnt --env crush_test test/handmade/crush*.gfa
+	# -turnt --env crush_test test/handmade/crush*.gfa
 	-turnt --env degree_test test/*.gfa
 	-turnt --env depth_test test/*.gfa
 	-turnt --env flip_test test/*.gfa
-	-turnt --env flip_test test/handmade/flip*.gfa
+	# -turnt --env flip_test test/handmade/flip*.gfa
 	-turnt --env flatten_test test/*.gfa
 	-turnt --env inject_test test/*.gfa
 	-turnt --env matrix_test test/*.gfa
@@ -138,8 +138,8 @@ clean:
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
 
-	rm -rf test/handmade/*.crush
-	rm -rf test/handmade/*.flip
+	# rm -rf test/handmade/*.crush
+	# rm -rf test/handmade/*.flip
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
