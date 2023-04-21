@@ -16,8 +16,10 @@ file = {
 //import = {"use" ~ (!";" ~ ANY)+ ~ ";"} 
 
 /* ----- Types ----- */
-atomic_typ = { "int" | "bool" | "char" | "String" |
-                "Segment" | "Step" | "Edge" | "Base" | "Strand" }
+// Types that do not contain fields or method calls
+
+atomic_typ = { "int" | "bool" | "char" | "Segment" | "Step" | "Edge" 
+            | "Base" | "String" | "Strand" }
 
 // tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
 
@@ -94,11 +96,17 @@ binop = _{ add | sub | mult | div | modulo | geq | leq | lt | gt | eq | neq |
 prefix = _{ not }
     not = { "!" }
 
-//call = { identifier ~ "(" ~ expr? ~ ("," ~ expr)* ")" }
-//array_access = { identifier ~ "[" ~ expr ~ "]"}
-record_access = { identifier ~ "." ~ identifier }
+// call_postfix = { "(" ~ expr? ~ ("," ~ expr)* ~ ")" }
+// TODO: Parse something like path.first().steps. The call "operator" isn't
+//      really a postfix operator because it can have expressions in the middle
+// Distinguish between object initialization { type ~ "()" } and 
+//                      method calls,        { expr ~ "." ~ identifier ~ call_postfix }
 
-term = _{ literal | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
+//array_access = { identifier ~ "[" ~ expr ~ "]"}
+
+obj_initialize = { typ ~ "()" }
+
+term = _{ literal | obj_initialize | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
 expr = { prefix* ~ term ~ (binop ~ prefix* ~ term )* }
 
@@ -108,7 +116,7 @@ decl = { identifier ~ ":" ~ typ ~ ("=" ~ expr)? ~ ";"}
 assign = { identifier ~ "=" ~ expr ~ ";" }
 // assign = { (((identifier | array_access | record_access) ~ ("=" | "+=") ~ expr) | (identifier ~ "++")) ~ ";"}
 // Function call
-//call_stmt = { call ~ ";" }
+// call_stmt = { call ~ ";" }
 
 block = { "{" ~ stmt+ ~ "}" }
 

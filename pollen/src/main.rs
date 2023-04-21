@@ -329,6 +329,10 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                     fields: fields
                 }
             },
+            Rule::obj_initialize => {
+                let typ = parse_typ(primary.into_inner().next().unwrap());
+                Expr::ObjInitialization{ typ: typ }
+            },
             Rule::expr => {
                 // If this rule has been reached then 
                 // this is a parenthesized expression
@@ -399,7 +403,7 @@ fn parse_id(id: Pair<Rule>) -> Id {
 fn parse_typ(typ: Pair<Rule>) -> Typ {
     // println!("Type Pair: {:#?}", typ);
     match typ.as_rule() {
-        Rule::atomic_typ => match typ.as_str() {
+        Rule::atomic_typ | Rule::object_typ => match typ.as_str() {
             "int" => Typ::Int,
             "bool" => Typ::Bool,
             "char" => Typ::Char,

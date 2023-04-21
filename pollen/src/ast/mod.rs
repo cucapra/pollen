@@ -78,6 +78,9 @@ pub enum Expr {
     FieldAccess {
         object: Box<Expr>,
         field: Box<Expr>
+    },
+    ObjInitialization {
+        typ: Typ
     }
 }
 

@@ -149,4 +149,10 @@ s: Set<int>;
 /* --- Emit Statements --- */
 emit 5 to s;
 emit 2 * 3 to s1;
-emit { node with seq: seq' } to s2; 
+emit { node with seq: seq' } to s2;
+
+/* --- Calls --- */
+// Object initialization
+new_strand: Strand = Strand();
+c: char = String().first;
+// new_strand.push('A');
