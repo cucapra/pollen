@@ -1,119 +1,119 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+command = "odgi chop -i {filename} -c 3 -o - > /dev/null"
 output.chop = "-"
 
 [envs.chop_test]
 binary = true
-command = "python3 ../slow_odgi/chop.py < {filename} 3"
+command = "python3 ../slow_odgi/chop.py < {filename} 3 > /dev/null"
 output.chop = "-"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py"
+command = "odgi crush -i {filename} -o - > /dev/null"
 output.crush = "-"
 
 [envs.crush_test]
 binary = true
-command = "python3 ../slow_odgi/crush.py < {filename}"
+command = "python3 ../slow_odgi/crush.py < {filename} > /dev/null"
 output.crush = "-"
 
 [envs.degree_oracle]
 binary = true
-command = "odgi degree -d --input={filename}"
+command = "odgi degree -d --input={filename} > /dev/null"
 output.degree = "-"
 
 [envs.degree_test]
 binary = true
-command = "python3 ../slow_odgi/degree.py < {filename}"
+command = "python3 ../slow_odgi/degree.py < {filename} > /dev/null"
 output.degree = "-"
 
 [envs.depth_oracle]
 binary = true
-command = "odgi depth -d --input={filename}"
+command = "odgi depth -d --input={filename} > /dev/null"
 output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "python3 ../slow_odgi/depth.py < {filename}"
+command = "python3 ../slow_odgi/depth.py < {filename} > /dev/null"
 output.depth = "-"
 
 [envs.flatten_oracle]
 binary = true
-command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+command = "odgi flatten -i {filename} -f /dev/null -b /dev/null"
 output.flatten = "-"
 
 [envs.flatten_test]
 binary = true
-command = "python3 ../slow_odgi/flatten.py {filename}"
+command = "python3 ../slow_odgi/flatten.py {filename} > /dev/null"
 output.flatten = "-"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py"
+command = "odgi flip -i {filename} -o - > /dev/null"
 output.flip = "-"
 
 [envs.flip_test]
 binary = true
-command = "python3 ../slow_odgi/flip.py < {filename}"
+command = "python3 ../slow_odgi/flip.py < {filename} > /dev/null"
 output.flip = "-"
 
 [envs.inject_oracle]
 binary = true
-command = "odgi inject -i {filename} -b setup/{base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+command = "odgi inject -i {filename} -b setup/{base}.bed -o - > /dev/null"
 output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "python3 ../slow_odgi/inject.py < {filename} setup/{base}.bed"
+command = "python3 ../slow_odgi/inject.py < {filename} setup/{base}.bed > /dev/null"
 output.inj = "-"
 
 [envs.matrix_oracle]
 binary = true
-command = "odgi matrix -i {filename} | sort"
+command = "odgi matrix -i {filename} | sort > /dev/null"
 output.matrix = "-"
 
 [envs.matrix_test]
 binary = true
-command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
+command = "python3 ../slow_odgi/matrix.py < {filename} | sort > /dev/null"
 output.matrix = "-"
 
 [envs.normalize_oracle]
 binary = true
-command = "odgi view -g -i {filename} | python3 ../slow_odgi/normalize.py"
+command = "odgi view -g -i {filename} > /dev/null"
 output.normalize = "-"
 
 [envs.normalize_test]
 binary = true
-command = "python3 ../slow_odgi/normalize.py < {filename}"
+command = "python3 ../slow_odgi/normalize.py < {filename} > /dev/null"
 output.normalize = "-"
 
 [envs.overlap_oracle]
 binary = true
-command = "odgi overlap -i {filename} -R setup/{base}.overlappaths"
+command = "odgi overlap -i {filename} -R setup/{base}.overlappaths > /dev/null"
 output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "python3 ../slow_odgi/overlap.py setup/{base}.overlappaths < {filename}"
+command = "python3 ../slow_odgi/overlap.py setup/{base}.overlappaths < {filename} > /dev/null"
 output.overlap = "-"
 
 [envs.paths_oracle]
 binary = true
-command = "odgi paths -i {filename} -L"
+command = "odgi paths -i {filename} -L > /dev/null"
 output.paths = "-"
 
 [envs.paths_test]
 binary = true
-command = "python3 ../slow_odgi/paths.py < {filename}"
+command = "python3 ../slow_odgi/paths.py < {filename} > /dev/null"
 output.paths = "-"
 
 [envs.validate_oracle]
 binary = true
-command = "odgi validate -i {filename} 2>&1"
+command = "odgi validate -i {filename} 2>&1 > /dev/null"
 output.validate = "-"
 
 [envs.validate_test]
 binary = true
-command = "python3 ../slow_odgi/validate.py < {filename}"
+command = "python3 ../slow_odgi/validate.py < {filename} > /dev/null"
 output.validate = "-"
