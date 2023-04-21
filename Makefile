@@ -21,6 +21,7 @@ test-depth: og
 
 # This is the version that does, for each algorithm, setup-then-test.
 test-slow-odgi-interleave: og test-slow-chop test-slow-crush test-slow-degree test-slow-depth test-slow-flatten test-slow-flip test-slow-inject test-slow-matrix test-slow-normalize test-slow-overlap test-slow-paths test-slow-validate
+# Known points of divergence:
 # test-slow-flip: we disagree with odgi over note5
 # test-slow-inject: we disagree with odgi over DRB1 and chr6
 # These are documented as issues in our repo.
