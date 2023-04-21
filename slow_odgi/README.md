@@ -1,6 +1,6 @@
 ### Overview
 
-`slow-odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal. Think of it as a code-ey spec for `odgi` functions.
+`slow-odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal. Think of it as a code-ey spec for `odgi` commands.
 
 ### Testing
 
@@ -19,7 +19,7 @@ There are a few known points of divergence versus `odgi`:
 
 ### Explanation of Commands
 
-The remainder of this document will explain the eleven commands that we have implemented in some detail. Below we sometimes elide graph information that is inconsequential to the explanation. Unless specified, this is meant to be read as a "don't care" and not as absence. 
+The remainder of this document will explain, in some detail, the eleven commands that we have implemented. Below we sometimes elide graph information that is inconsequential to the explanation. Unless specified, this is meant to be read as "don't care" and not as absence. 
 
 
 #### `chop`
@@ -135,6 +135,7 @@ S	3	G
 P	x	1+,2-,3+	*
 P	y	1+,2+	*
 L	1	+	2	+	0M
+L	1	+	2	-	0M
 L	2	+	3	+	0M
 ```
 running `flip` gives 
@@ -142,16 +143,17 @@ running `flip` gives
 S	1	A
 S	2	TTT
 S	3	G
-P	x_inv	3-,2+,1-	*
+P	x_inv	3-,2+,1-	*			// changed in place
 P	y	1+,2+	*
 L	1	+	2	+	0M
+L	1	+	2	-	0M
 L	2	+	1	-	0M		// new
 L	2	+	3	+	0M
 L	3	-	2	+	0M		// new
 
 ```
 That is, 
-1. Any paths that were traversing their segments _more backwards than forwards_ have been flipped. Note that this is _weighted_, which is why the single `2-` in path `x` is enough to justify flipping path `x`. The flipping involves flipping the sign of each step the path traverses and also reversing the path's list of steps.
+1. Any paths that were traversing their segments _more backwards than forwards_ have been flipped. Note that this is _weighted_ by sequence length, which is why the single `2-` in path `x` is enough to justify flipping path `x`. The flipping involves flipping the sign of each step the path traverses and also reversing the path's list of steps.
 2. Those paths that have just been fllipped have had `_inv` added to their names.
 3. Links have been added in support of the newly flipped paths.
 
@@ -168,7 +170,7 @@ P	y	3+,2-
 ```
 running `flatten` produces two outputs:
 ```
-AAAATTTTGGGG
+AAAATTGGGG
 ```
 and
 ```
@@ -207,16 +209,16 @@ S	1	AAAA
 S	2	TTTT
 S	3	GGGG
 P	x	1+,2+,3+	*
-P	y	1+,2+	*
-P	z	1+	*
+P	y	1+,2+	*		// new
+P	z	1+	*		// new
 ```
 That is, the BED file has information about which paths to track and, for each path, over which of its run to track it and what name to give the resultant subpath. Running `inject` adds these paths.
 
-Consider, though, a more subtle example. The following BED file describes a legal subpath, but one that does not happen to line up the current segment-boundaries.
+Consider, though, a more subtle example. The following BED file describes a legal subpath, but one that does not happen to line up with the current segment-boundaries.
 ```
 x	1	6	y    
 ```
-Working with the same graph as before, `inject` now needs to split segments 1  and 2 in order to add path `y`.
+Working with the original graph and this new BED file, `inject` now needs to split segments 1  and 2 in order to add path `y`.
 ```
 S	1	A
 S	2	AAA
@@ -258,7 +260,7 @@ running `matrix` produces
 4	3	1
 ```
 That is, 
-1. A _header_ that twice lists the highest-numbered segments, and then lists the total number of entries in the matrix below.
+1. A _header_ that twice lists the highest-numbered segment, and then lists the total number of entries in the matrix below.
 2. Rows that indicate adjacency. Each row ends with `1`. Observe, further:
 	- Each link triggers two adjacencies; e.g., the presence of `L 1 + 2 +` was enough to add both `1 2` and `2 1` to the matrix.
 	- The direction of link traversal did not matter; the fact that `L 1 + 3 -` pointed at the "reverse" handle of segment 3 did not have any effect in the matrix representation.
@@ -301,10 +303,11 @@ As one would expect, running the same graph with the BED file
 ```
 x	95	97       
 ```
-gives
+gives the answer
 ```
 x	95	97	y
 ```
+which says that the path `y` overlapped with path `x` at some point in the query range.
 
 It is also possible to query `overlap` with a simpler file of the form
 ```
@@ -342,5 +345,6 @@ S	2	TTTT
 S	3	GGGG
 P	x	1+,2+,3+	*
 L	1	+	2	+
+// no more links
 ```
 running `validate` complains that we are missing a link; namely the link `L 2 + 3 +`. Run against a graph where each path _is_ backed up by links, this command decrees the graph valid and succeeds quietly.
