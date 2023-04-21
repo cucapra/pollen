@@ -10,28 +10,17 @@ fetch: $(TEST_FILES:%=test/%.gfa)
 
 og: $(OG_FILES)
 
+# slow-odgi
+#
 # Known points of divergence:
 # test-slow-flip: we disagree with odgi over note5
 # test-slow-inject: we disagree with odgi over DRB1 and chr6
 # These are documented as issues in our repo.
 
-# `validate` is a little special:
-# we need to modify the input graph by dropping some of its links
-# in order to give `validate` something to work with.
-test-slow-validate: fetch
-	-turnt --save --env validate_setup test/*.gfa
-	for fn in `ls test/*.temp`; do `mv $$fn $${fn%.*}_temp.gfa`; done
-	-turnt --save --env validate_oracle test/*.og
-	turnt --env validate_test test/*.gfa
-	rm test/*_temp.gfa
-
-
 # Sets up all the oracles and then tests them.
-test-slow-odgi: test-slow-validate slow-odgi-all-oracles slow-odgi-all-tests
-# It is too annoying to "unzip" `validate` in this way,
-# so I just do it as a monolith, first.
+test-slow-odgi: slow-odgi-all-oracles slow-odgi-all-tests
 
-# Collecting all the setup/oracle stages of slow-odgi into once place.
+# Collects all the setup/oracle stages of slow-odgi into once place.
 # This can be run once, noisily, and then slow-odgi-all-tests can be run
 # quietly against the expect files created here.
 slow-odgi-all-oracles: og
@@ -48,6 +37,8 @@ slow-odgi-all-oracles: og
 	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
+	-turnt --save --env validate_oracle test/*.og
+
 
 # In reality slow-odgi-all-tests needs slow-odgi-all-oracles as a dependency.
 # Running the below by itself is faster and less noisy,
@@ -65,6 +56,8 @@ slow-odgi-all-tests:
 	-turnt --env normalize_test test/*.gfa
 	-turnt --env overlap_test test/*.gfa
 	-turnt --env paths_test test/*.gfa
+	-turnt --env validate_test test/*.gfa
+
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)
