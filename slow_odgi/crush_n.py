@@ -1,5 +1,5 @@
 import sys
-import mygfa
+from . import mygfa
 
 
 def crush_n_seg(seg):

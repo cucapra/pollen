@@ -1,6 +1,5 @@
 import sys
-import mygfa
-import preprocess
+from . import mygfa, preprocess
 
 
 def node_degree(graph):
