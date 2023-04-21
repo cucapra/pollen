@@ -109,7 +109,8 @@ slow-odgi-all-oracles: og
 	-turnt --save --env paths_oracle test/*.og
 
 # In reality slow-odgi-all-tests needs slow-odgi-all-oracles as a dependency.
-# Run the below by itself ONLY if you know that the GFAs have not changed,
+# Running the below by itself is faster and less noisy,
+# but do so ONLY if you know that the GFAs have not changed,
 # in which case slow-odgi-all-oracles would have had no effect anyway.
 slow-odgi-all-tests:
 	turnt --env chop_test test/*.gfa
