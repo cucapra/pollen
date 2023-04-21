@@ -1,4 +1,4 @@
-TEST_FILES := t k # note5 overlap q.chop LPA DRB1-3123 chr6.C4
+TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -82,9 +82,9 @@ test-slow-validate: fetch
 	turnt --env validate_test test/*_temp.gfa
 	rm test/*_temp.gfa
 
-# This is the version that sets up all the algorithms and then tests them together.
-test-slow-odgi: slow-odgi-all-tests test-slow-validate
-# It's too annoying to "unzip" validate in this way,
+# This is the version that first sets up all the oracles and then tests them.
+test-slow-odgi: slow-odgi-all-oracles slow-odgi-all-tests test-slow-validate
+# It is too annoying to "unzip" `validate` in this way,
 # so I just do it the old way, last.
 
 # Collecting all the setup/oracle stages of slow-odgi into once place.
@@ -107,7 +107,10 @@ slow-odgi-all-oracles: og
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
 
-slow-odgi-all-tests: slow-odgi-all-oracles
+# In reality slow-odgi-all-tests needs slow-odgi-all-oracles as a dependency.
+# Run the below by itself ONLY if you know that the GFAs have not changed,
+# in which case slow-odgi-all-oracles would have had no effect anyway.
+slow-odgi-all-tests:
 	turnt --env chop_test test/*.gfa
 	-turnt --env crush_test test/*.gfa
 	-turnt --env crush_test test/handmade/crush*.gfa
