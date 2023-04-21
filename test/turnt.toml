@@ -58,19 +58,14 @@ binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
 output.flip = "-"
 
-[envs.inject_setup]
-binary = true
-command = "python3 ../slow_odgi/inject_setup.py < {filename}"
-output.bed = "-"
-
 [envs.inject_oracle]
 binary = true
-command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+command = "odgi inject -i {filename} -b setup/{base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
 output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "python3 ../slow_odgi/inject.py < {filename} {base}.bed"
+command = "python3 ../slow_odgi/inject.py < {filename} setup/{base}.bed"
 output.inj = "-"
 
 [envs.matrix_oracle]
@@ -93,19 +88,14 @@ binary = true
 command = "python3 ../slow_odgi/normalize.py < {filename}"
 output.normalize = "-"
 
-[envs.overlap_setup]
-binary = true
-command = "python3 ../slow_odgi/paths.py < {filename}"
-output.overlappaths = "-"
-
 [envs.overlap_oracle]
 binary = true
-command = "odgi overlap -i {filename} -R {base}.overlappaths"
+command = "odgi overlap -i {filename} -R setup/{base}.overlappaths"
 output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "python3 ../slow_odgi/overlap.py {base}.overlappaths < {filename}"
+command = "python3 ../slow_odgi/overlap.py setup/{base}.overlappaths < {filename}"
 output.overlap = "-"
 
 [envs.paths_oracle]
