@@ -17,14 +17,16 @@ def path_is_rev(path, graph):
 
 
 def flip_path(path, graph):
-    """Flip the given path if it is more reverse- than forward-oriented."""
+    """Flip the given path if it is more reverse- than forward-oriented.
+    Return the path, whether this method flipped it or not,
+    along with a bool that says whether this method flipped the path."""
     if path_is_rev(path, graph):
         path_segs = []
         for seg in reversed(path.segments):
             path_segs.append(mygfa.Handle(seg.name, not seg.orientation))
-        return mygfa.Path(f"{path.name}_inv", path_segs, path.overlaps)
+        return mygfa.Path(f"{path.name}_inv", path_segs, path.overlaps), True
     else:
-        return path
+        return path, False
 
 
 def dedup(list: List[mygfa.Link]) -> List[mygfa.Link]:
@@ -36,10 +38,10 @@ def dedup(list: List[mygfa.Link]) -> List[mygfa.Link]:
     return new
 
 
-def gen_links(paths, pred) -> List[mygfa.Link]:
-    """Given a list of paths and a predicate on paths,
+def gen_links(paths_dec, pred) -> List[mygfa.Link]:
+    """Given a dict of decorated paths and a predicate on path-decorations,
     return a list of links that, when added to the graph,
-    would make the proposition-satisfying paths valid.
+    would make the predicate-satisfying paths valid.
 
     The code feels like the spiritual reverse of `validate`,
     and indeed, after this has been run, `validate` will be happy
@@ -47,8 +49,8 @@ def gen_links(paths, pred) -> List[mygfa.Link]:
     """
     links = []
     alignment = mygfa.Alignment([(0, mygfa.AlignOp("M"))])  # A "no-op" alignment
-    for path in paths.values():
-        if not pred(path):
+    for path, dec in paths_dec.values():
+        if not pred(dec):
             continue
         # Below be the paths of interest.
         length = len(path.segments)
@@ -63,8 +65,11 @@ def gen_links(paths, pred) -> List[mygfa.Link]:
 
 
 def flip_graph(graph):
-    paths = {name: flip_path(p, graph) for name, p in graph.paths.items()}
-    new_links = gen_links(paths, lambda x: x.name.endswith("_inv"))
+    paths_dec = {name: flip_path(p, graph) for name, p in graph.paths.items()}
+    # paths_dec is "decorated" with info re: whether a path has just been flipped.
+    new_links = gen_links(paths_dec, lambda x: x)
+    paths = {name: p for name, (p, _) in paths_dec.items()}
+    # Stripping the decoration off paths_dec gives a reasonable Dict[str, Path].
     return mygfa.Graph(
         graph.headers, graph.segments, dedup(graph.links + new_links), paths
     )
