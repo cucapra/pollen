@@ -1,3 +1,5 @@
+# `slow-odgi`
+
 ### Overview
 
 `slow-odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal. Think of it as a code-ey spec for `odgi` commands.
@@ -23,6 +25,8 @@ The remainder of this document will explain, in some detail, the eleven commands
 
 
 #### `chop`
+Shortens segments' sequences to a given maximum length, while preserving the end-to-end sequence represented by each path.
+
 Given the graph
 ```
 S	1	AAAA
@@ -51,27 +55,29 @@ That is,
 1. Segments that had sequences longer than `3` characters have been chopped, repeatedly if needed.
 2. All segments have been renumbered.
 3. Paths have been adjusted.
-4. Old links have been adjusted and new links added  (for reasons given in the comments).
+4. Old links have been adjusted and new links added (for reasons given in the comments).
 
 
 #### `crush`
+If sequences contain consecutive instances of the placeholder nucleotide `N`, replaces them with a single `N`.
 
 Given the graph
 ```
-S	1	ANNN
-S	2	NTTN
-S	3	NGGG
+S	1	ANNNN
+S	2	NNTNN
+S	3	NGGGG
 ```
 running `crush` gives
 ```
 S	1	AN
-S	2	NTTN
-S	3	NGGG
+S	2	NTN
+S	3	NGGGG
 ```
-That is, "runs" of `N` have been swapped out for single instances of `N`. Observe that this is entirely intra-segment; we did not treat the end of S2 and the beginning of S3 as a contiguous "run".
+Observe that this is entirely intra-segment; we did not treat the end of S2 and the beginning of S3 as a contiguous "run".
 
 
 #### `degree`
+Generates a table summarizing each segment's _node degree_.
 
 Given the graph
 ```
@@ -95,10 +101,11 @@ running `degree` gives
 3	4
 4	3
 ```
-Where each row has the name of the segment and the segment's _degree_. This is a count of how many times a segment appears on the graph's links; the direction of traversal is immaterial. It does not matter what the paths say.
+Where each row has the name of the segment and the segment's degree. This is just a count of how many times a segment's name appears across the graph's links; the direction of traversal is immaterial. Further, it does not matter how many times the segment appears in the paths.
 
 
 #### `depth`
+Generates a table summarizing each segment's _node depth_.
 
 Given the graph
 ```
@@ -122,10 +129,11 @@ running `depth` gives
 3	3	2
 4	1	1
 ```
-Where each row has the name of the segment, the segment's _depth_, and the segment's _unique depth_. The depth is a count of how many times a segment appears on the graph's paths; the direction of traversal is immaterial. The unique depth is similar but only counts an appearance on one path once. It does not matter what the links say.
+Where each row has the name of the segment, the segment's _depth_, and the segment's _unique depth_. The depth is a count of how many times a segment's name appears across the graph's paths; the direction of traversal is immaterial. The unique depth is similar but only counts an appearance on one path once. In both cases, it does not matter how many times the segment appears in the links.
 
 
 #### `flip`
+Flips any paths that traverse their steps more in the backward orientation than the forward. 
 
 Given the graph
 ```
@@ -153,12 +161,13 @@ L	3	-	2	+	0M		// new
 
 ```
 That is, 
-1. Any paths that were traversing their segments _more backwards than forwards_ have been flipped. Note that this is _weighted_ by sequence length, which is why the single `2-` in path `x` is enough to justify flipping path `x`. The flipping involves flipping the sign of each step the path traverses and also reversing the path's list of steps.
+1. Any paths that were stepping more backwards than forwards have been flipped. Note that this is _weighted_ by sequence length, which is why the single `2-` in path `x` is enough to justify flipping path `x`. The flipping involves flipping the sign of each step the path traverses and also reversing the path's list of steps.
 2. Those paths that have just been fllipped have had `_inv` added to their names.
 3. Links have been added in support of the newly flipped paths.
 
 
 #### `flatten`
+Converts the graph into an alternate representation, represented by a FASTA and a BED. The new representation loses link information but retains path information.
 
 Given the graph
 ```
@@ -190,6 +199,7 @@ That is,
 
 
 #### `inject`
+Adds new paths, as specified, to the graph. The paths must be subpaths of existing paths.
 
 Given the graph
 ```
@@ -232,6 +242,7 @@ Observe that this required edits to the path `x` as well.
 
 
 #### `matrix`
+Represents the graph as a matrix. While this retains link information, it loses path information.
 
 Given the graph
 ```
@@ -268,6 +279,7 @@ That is,
 
 
 #### `normalize`
+Runs a normalization pass over the graph.
 
 GFAs have line-entries of four kinds: headers, segments, paths, and links. Their order does not matter, so the following is fine:
 ```
@@ -283,6 +295,7 @@ This command normalizes a GFA so that its entries appear in a stable order: head
 
 
 #### `overlap`
+Queries the graph about which paths overlap with which other paths.
 
 Given the graph
 ```
@@ -307,7 +320,7 @@ gives the answer
 ```
 x	95	97	y
 ```
-which says that the path `y` overlapped with path `x` at some point in the query range.
+which says that the path `y` overlapped with path `x` between the 95th and 97th indices.
 
 It is also possible to query `overlap` with a simpler file of the form
 ```
@@ -320,6 +333,7 @@ y	0	50	x
 
 
 #### `paths`
+Lists the paths of the graph.
 
 Given the graph
 ```
@@ -334,10 +348,11 @@ running `paths` gives
 x
 y
 ```
-That is, it simply produces a list of the graph's paths by name.
 
 
 #### `validate`
+Checks whether the links of the graph are in agreement with the steps that the paths of the graph describe.
+
 Given the graph
 ```
 S	1	AAAA
@@ -345,6 +360,7 @@ S	2	TTTT
 S	3	GGGG
 P	x	1+,2+,3+	*
 L	1	+	2	+
+L	3	+	1	-
 // no more links
 ```
-running `validate` complains that we are missing a link; namely the link `L 2 + 3 +`. Run against a graph where each path _is_ backed up by links, this command decrees the graph valid and succeeds quietly.
+running `validate` complains that we are missing a link; namely the link `L 2 + 3 +`. It does not complain about the "extra" link `3 + 1 -`. If run against a graph where each path _is_ backed up by links, this command decrees the graph valid and succeeds quietly.
