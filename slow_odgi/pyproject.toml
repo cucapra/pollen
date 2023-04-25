@@ -10,3 +10,6 @@ dynamic = ["version", "description"]
 
 [project.urls]
 Home = "https://github.com/cucapra/pollen/tree/main/slow_odgi"
+
+[project.scripts]
+slow_odgi = "slow_odgi.__main__:main"

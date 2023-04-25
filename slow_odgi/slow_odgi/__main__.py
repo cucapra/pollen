@@ -146,7 +146,7 @@ def dispatch(args):
         ans.emit(sys.stdout)
 
 
-if __name__ == "__main__":
+def main():
     parser, args = parse_args()
     if not args.graph:
         parser.print_help()
