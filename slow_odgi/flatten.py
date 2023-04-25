@@ -46,14 +46,13 @@ def insert_newlines(string, every=80):
     return "\n".join(string[i : i + every] for i in range(0, len(string), every))
 
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        graph = mygfa.Graph.parse(open(sys.argv[1], "r"))
-        odginame = f"{sys.argv[1][:-4]}.og"
-        print(f">{odginame}")
-        # TODO: this is a bit harcoded for files living in test/file.gfa
-        # Would be nice to neaten this up and make it less brittle.
+def flatten(graph, name):
+    """Print out the FASTA and BED."""
+    print(f">{name}")
+    fasta, legend = get_fasta_legend(graph)
+    print(insert_newlines(fasta))
+    print_bed(graph, legend)
 
-        fasta, legend = get_fasta_legend(graph)
-        print(insert_newlines(fasta))
-        print_bed(graph, legend)
+    # odginame = f"{sys.argv[1][:-4]}.og"
+    # TODO: this is a bit harcoded for files living in test/file.gfa
+    # Would be nice to neaten this up and make it less brittle.

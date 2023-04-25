@@ -64,7 +64,8 @@ def gen_links(paths_dec, pred) -> List[mygfa.Link]:
     return links
 
 
-def flip_graph(graph):
+def flip(graph):
+    """Flip the paths, and generate new links that make the graph valid."""
     paths_dec = {name: flip_path(p, graph) for name, p in graph.paths.items()}
     # paths_dec is "decorated" with info re: whether a path has just been flipped.
     new_links = gen_links(paths_dec, lambda x: x)
@@ -73,9 +74,3 @@ def flip_graph(graph):
     return mygfa.Graph(
         graph.headers, graph.segments, dedup(graph.links + new_links), paths
     )
-
-
-if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    flipped_graph = flip_graph(graph)
-    flipped_graph.emit(sys.stdout)

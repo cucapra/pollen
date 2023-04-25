@@ -2,7 +2,7 @@ import sys
 from . import mygfa, preprocess
 
 
-def node_degree(graph):
+def degree(graph):
     """The degree of a node is just the cardinality of adjlist for that node."""
     print("\t".join(["#node.id", "node.degree"]))
     ins, outs = preprocess.adjlist(graph)
@@ -15,8 +15,3 @@ def node_degree(graph):
             ins[mygfa.Handle(seg, False)]
         )
         print("\t".join([seg, str(in_degree + out_degree)]))
-
-
-if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    node_degree(graph)

@@ -94,17 +94,17 @@ def parse_args():
 def dispatch(args):
     """Parse the graph from filename, then dispatch to the appropriate subcommand."""
     name_to_func = {
-        "chop": lambda x: chop.chop_graph(x, args.n),
-        "crush": crush.crush_n_graph,
-        "degree": degree.node_degree,
-        "depth": depth.node_depth,
+        "chop": lambda x: chop.chop(x, args.n),
+        "crush": crush.crush,
+        "degree": degree.degree,
+        "depth": depth.depth,
         # "flatten": flatten
-        "flip": flip.flip_graph,
+        "flip": flip.flip,
         # "inject": inject
         "matrix": matrix.matrix,
         # "normalize": normalize,
         # "overlap": overlap,
-        "paths": paths.print_paths,
+        "paths": paths.paths,
         "validate": validate.validate,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r"))

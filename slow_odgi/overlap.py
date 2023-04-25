@@ -17,7 +17,7 @@ def touches(path1, path2, graph):
     return bool(segs1 & segs2)
 
 
-def print_overlaps(graph, inputpaths):
+def overlap(graph, inputpaths):
     """Which paths touch these input paths?"""
     print("\t".join(["#path", "start", "end", "path.touched"]))
     for ip in inputpaths:
@@ -29,8 +29,4 @@ def print_overlaps(graph, inputpaths):
                 )
 
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        inputpaths = getpaths(open(sys.argv[1], "r"))
-        graph = mygfa.Graph.parse(sys.stdin)
-        print_overlaps(graph, inputpaths)
+# inputpaths = getpaths(open(sys.argv[1], "r"))
