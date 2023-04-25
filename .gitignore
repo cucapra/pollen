@@ -8,3 +8,5 @@ compute_maxes.py
 
 pollen/target/*
 pollen/*.rlib
+
+slow_odgi/dist/
