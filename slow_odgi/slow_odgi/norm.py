@@ -7,3 +7,9 @@ def norm(graph):
     headers, then segments, then paths, and then links.
     """
     return graph
+
+
+if __name__ == "__main__":
+    graph = mygfa.Graph.parse(sys.stdin)
+    newgraph = norm(graph)
+    newgraph.emit(sys.stdout, "--nl" not in sys.argv[1:])
