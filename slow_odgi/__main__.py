@@ -9,7 +9,7 @@ from . import (
     flip,
     inject,
     matrix,
-    normalize,
+    norm,
     mygfa,
     overlap,
     paths,
@@ -74,8 +74,8 @@ def parse_args():
         "matrix", help="Represents the graph as a matrix. ."
     )
 
-    normalize_parser = subparsers.add_parser(
-        "normalize", help="Runs a normalization pass over the graph."
+    norm_parser = subparsers.add_parser(
+        "norm", help="Runs a normalization pass over the graph."
     )
 
     overlap_parser = subparsers.add_parser(
@@ -134,12 +134,12 @@ def dispatch(args):
         "flip": flip.flip,
         "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
-        "normalize": normalize.normalize,
+        "norm": norm.norm,
         "overlap": lambda x: overlap.overlap(x, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
     }
-    makes_new_graph = ["chop", "crush", "flip", "inject", "normalize"]
+    makes_new_graph = ["chop", "crush", "flip", "inject", "norm"]
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     ans = name_to_func[args.command](graph)
     if args.command in makes_new_graph:
