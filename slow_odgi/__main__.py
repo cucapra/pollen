@@ -114,7 +114,7 @@ def dispatch(args):
         "flip": flip.flip,
         "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
-        # "normalize": normalize,
+        "normalize": normalize.normalize,
         # "overlap": overlap,
         "paths": paths.paths,
         "validate": validate.validate,
