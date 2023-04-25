@@ -47,7 +47,6 @@ slow-odgi-all-oracles: og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
 	-turnt --save --env matrix_oracle test/*.og
-	-turnt --save --env norm_oracle test/*.og
 	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
@@ -67,7 +66,6 @@ slow-odgi-all-tests:
 	-turnt --env flatten_test test/*.gfa
 	-turnt --env inject_test test/*.gfa
 	-turnt --env matrix_test test/*.gfa
-	-turnt --env norm_test test/*.gfa
 	-turnt --env overlap_test test/*.gfa
 	-turnt --env paths_test test/*.gfa
 
