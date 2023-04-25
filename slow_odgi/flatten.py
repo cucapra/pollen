@@ -20,7 +20,7 @@ def get_fasta_legend(graph):
     return ans, legend
 
 
-def print_bed(graph, legend):
+def print_bed(graph, legend, name):
     """With the legend computed during FASTA-building, this is easy."""
 
     print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
@@ -30,7 +30,7 @@ def print_bed(graph, legend):
             print(
                 "\t".join(
                     [
-                        odginame,
+                        name,
                         str(start),
                         str(end),
                         path.name,
@@ -51,8 +51,8 @@ def flatten(graph, name):
     print(f">{name}")
     fasta, legend = get_fasta_legend(graph)
     print(insert_newlines(fasta))
-    print_bed(graph, legend)
+    print_bed(graph, legend, name)
 
-    # odginame = f"{sys.argv[1][:-4]}.og"
+    #
     # TODO: this is a bit harcoded for files living in test/file.gfa
     # Would be nice to neaten this up and make it less brittle.
