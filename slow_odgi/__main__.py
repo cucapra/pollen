@@ -1,7 +1,23 @@
 import argparse
+import sys
+from . import (
+    chop,
+    crush,
+    degree,
+    depth,
+    flatten,
+    flip,
+    inject,
+    matrix,
+    normalize,
+    mygfa,
+    overlap,
+    paths,
+    validate,
+)
 
 
-def main():
+def parse_args():
     """Parse command line arguments and run the appropriate subcommand."""
     parser = argparse.ArgumentParser()
 
@@ -68,8 +84,30 @@ def main():
 
     args = parser.parse_args()
 
-    print(args)
+    return args
+
+
+def dispatch(args):
+    """Parse the graph from filename, then dispatch to the appropriate subcommand."""
+    name_to_func = {
+        "chop": lambda x: chop.chop_graph(x, args.n),
+        "crush": crush.crush_n_graph,
+        "degree": degree.node_degree,
+        "depth": depth.node_depth,
+        # "flatten": flatten
+        "flip": flip.flip_graph,
+        # "inject": inject
+        "matrix": matrix.matrix,
+        # "normalize": normalize,
+        # "overlap": overlap,
+        "paths": paths.print_paths,
+        "validate": validate.validate,
+    }
+    graph = mygfa.Graph.parse(open(args.graph, "r"))
+    ans = name_to_func[args.command](graph)
+    ans.emit(sys.stdout)
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    dispatch(args)

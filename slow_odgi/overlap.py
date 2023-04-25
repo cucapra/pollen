@@ -1,6 +1,5 @@
 import sys
-import mygfa
-import preprocess
+from . import mygfa, preprocess
 
 
 def getpaths(infile):
