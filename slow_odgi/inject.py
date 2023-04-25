@@ -74,22 +74,14 @@ def chop_if_needed(graph, pathname, index):
     return mygfa.Graph(graph.headers, segments, graph.links, paths)
 
 
-def inject_paths(graph, p2i):
+def inject(graph, p2i):
     """Given a graph and the list of paths to inject, inject those paths."""
-    newpaths = {}
     for p in p2i:
-        if p.name in graph.paths.keys():  # odgi is silent if name was invalid
+        if p.name in graph.paths.keys():  # odgi is silent if path was absent.
             graph = chop_if_needed(chop_if_needed(graph, p.name, p.lo), p.name, p.hi)
             new_path = mygfa.Path(p.new, track_path(graph, p), None)
             graph.paths[p.new] = new_path  # In-place update!
     return graph
 
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        paths_to_inject = parse_bedfile(open(sys.argv[1], "r"))
-        graph = mygfa.Graph.parse(sys.stdin)
-        graph_inj = inject_paths(graph, paths_to_inject)
-        graph_inj.emit(sys.stdout, False)
-    else:
-        print("Please provide a .bed file as a command line argument.")
+    # paths_to_inject = parse_bedfile(open(sys.argv[1], "r"))
+    # graph_inj = inject_paths(graph, paths_to_inject)

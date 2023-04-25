@@ -14,8 +14,3 @@ def matrix(graph):
         for neighbor in neighbors:
             print(" ".join([seg.name, neighbor.name, "1"]))
             print(" ".join([neighbor.name, seg.name, "1"]))
-
-
-if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    matrix(graph)
