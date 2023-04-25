@@ -148,7 +148,7 @@ def dispatch(args):
 
 def main():
     parser, args = parse_args()
-    if not args.graph:
+    if "graph" not in args or not args.graph:
         parser.print_help()
         exit(-1)
     dispatch(args)
