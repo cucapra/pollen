@@ -88,17 +88,17 @@ def parse_args():
 
     args = parser.parse_args()
 
-    return args
+    return parser, args
 
 
 def dispatch(args):
     """Parse the graph from filename, then dispatch to the appropriate subcommand."""
     name_to_func = {
-        "chop": lambda x: chop.chop(x, args.n),
+        "chop": lambda x: chop.chop(x, int(args.n)),
         "crush": crush.crush,
         "degree": degree.degree,
         "depth": depth.depth,
-        # "flatten": flatten
+        "flatten": lambda x: flatten.flatten(x, f"{args.graph[:-4]}.og"),
         "flip": flip.flip,
         # "inject": inject
         "matrix": matrix.matrix,
@@ -107,11 +107,17 @@ def dispatch(args):
         "paths": paths.paths,
         "validate": validate.validate,
     }
+    makes_new_graph = ["chop", "crush", "flip", "inject", "normalize"]
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     ans = name_to_func[args.command](graph)
-    ans.emit(sys.stdout)
+    if args.command in makes_new_graph:
+        ans.emit(sys.stdout)
 
 
 if __name__ == "__main__":
-    args = parse_args()
+    parser, args = parse_args()
+    if not args.graph:
+        parser.print_help()
+        exit(-1)
+
     dispatch(args)
