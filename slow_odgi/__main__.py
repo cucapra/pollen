@@ -84,6 +84,12 @@ def parse_args():
         "overlap",
         help="Queries the graph about which paths overlap with which other paths.",
     )
+    overlap_parser.add_argument(
+        "-paths",
+        nargs="?",
+        help="A BED file describing the paths you wish to query.",
+        required=True,
+    )
 
     paths_parser = subparsers.add_parser("paths", help="Lists the paths in the graph.")
 
@@ -97,14 +103,22 @@ def parse_args():
     return parser, args
 
 
-def parse_bedfile(bedfile_name):
+def parse_bedfile(filename):
     """Parse BED files that describe which paths to insert."""
-    bedfile = open(bedfile_name, "r")
+    bedfile = open(filename, "r")
     return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
+def parse_paths(filename):
+    """Parse path names from a file."""
+    return list(mygfa.nonblanks(open(filename, "r")))
+
+
 def dispatch(args):
-    """Parse the graph from filename, then dispatch to the appropriate subcommand."""
+    """Parse the graph from filename,
+    parse any additional files if needed,
+    then dispatch to the appropriate slow-odgi command.
+    If the command makes a new graph, emit it to stdout."""
     name_to_func = {
         "chop": lambda x: chop.chop(x, int(args.n)),
         "crush": crush.crush,
@@ -115,7 +129,7 @@ def dispatch(args):
         "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
         "normalize": normalize.normalize,
-        # "overlap": overlap,
+        "overlap": lambda x: overlap.overlap(x, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
     }
@@ -131,5 +145,4 @@ if __name__ == "__main__":
     if not args.graph:
         parser.print_help()
         exit(-1)
-
     dispatch(args)

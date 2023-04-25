@@ -2,10 +2,6 @@ import sys
 from . import mygfa, preprocess
 
 
-def getpaths(infile):
-    return list(mygfa.nonblanks(infile))
-
-
 def touches(path1, path2, graph):
     """Are these two paths different,
     and if so, do they have any segments in common?
@@ -27,6 +23,3 @@ def overlap(graph, inputpaths):
                 print(
                     "\t".join([ip, "0", str(len(preprocess.pathseq(graph)[ip])), path])
                 )
-
-
-# inputpaths = getpaths(open(sys.argv[1], "r"))
