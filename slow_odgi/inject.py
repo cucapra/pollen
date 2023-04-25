@@ -3,11 +3,6 @@ from typing import List
 from . import mygfa, chop
 
 
-def parse_bedfile(bedfile):
-    """Parse entries of the form described in `inject_setup`."""
-    return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
-
-
 def track_path(graph, bed):
     """Given a BED entry, make a list of the Segments traversed _in full_."""
     walk = 0
@@ -82,6 +77,3 @@ def inject(graph, p2i):
             new_path = mygfa.Path(p.new, track_path(graph, p), None)
             graph.paths[p.new] = new_path  # In-place update!
     return graph
-
-    # paths_to_inject = parse_bedfile(open(sys.argv[1], "r"))
-    # graph_inj = inject_paths(graph, paths_to_inject)

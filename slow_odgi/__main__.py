@@ -65,6 +65,12 @@ def parse_args():
     inject_parser = subparsers.add_parser(
         "inject", help="Adds new paths, as specified, to the graph."
     )
+    inject_parser.add_argument(
+        "-bed",
+        nargs="?",
+        help="A BED file describing the paths you wish to insert.",
+        required=True,
+    )
 
     matrix_parser = subparsers.add_parser(
         "matrix", help="Represents the graph as a matrix. ."
@@ -91,6 +97,12 @@ def parse_args():
     return parser, args
 
 
+def parse_bedfile(bedfile_name):
+    """Parse BED files that describe which paths to insert."""
+    bedfile = open(bedfile_name, "r")
+    return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
+
+
 def dispatch(args):
     """Parse the graph from filename, then dispatch to the appropriate subcommand."""
     name_to_func = {
@@ -100,7 +112,7 @@ def dispatch(args):
         "depth": depth.depth,
         "flatten": lambda x: flatten.flatten(x, f"{args.graph[:-4]}.og"),
         "flip": flip.flip,
-        # "inject": inject
+        "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
         # "normalize": normalize,
         # "overlap": overlap,
