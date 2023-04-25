@@ -71,7 +71,7 @@ def parse_args():
     )
 
     matrix_parser = subparsers.add_parser(
-        "matrix", help="Represents the graph as a matrix. ."
+        "matrix", help="Represents the graph as a matrix."
     )
 
     norm_parser = subparsers.add_parser(
