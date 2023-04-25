@@ -32,7 +32,11 @@ def parse_args():
         help="Shortens segments' sequences to a given maximum length.",
     )
     chop_parser.add_argument(
-        "-n", nargs="?", const="d", help="The max segment size desired after chopping."
+        "-n",
+        nargs="?",
+        const="d",
+        help="The max segment size desired after chopping.",
+        required=True,
     )
 
     crush_parser = subparsers.add_parser(
