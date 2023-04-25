@@ -1,6 +1,6 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/norm.py --nl"
 output.chop = "-"
 
 [envs.chop_test]
@@ -10,7 +10,7 @@ output.chop = "-"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py"
+command = "odgi crush -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/norm.py"
 output.crush = "-"
 
 [envs.crush_test]
@@ -50,7 +50,7 @@ output.flatten = "-"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py"
+command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/norm.py"
 output.flip = "-"
 
 [envs.flip_test]
@@ -65,7 +65,7 @@ output.bed = "-"
 
 [envs.inject_oracle]
 binary = true
-command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/norm.py --nl"
 output.inj = "-"
 
 [envs.inject_test]
@@ -83,15 +83,15 @@ binary = true
 command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
 output.matrix = "-"
 
-[envs.normalize_oracle]
+[envs.norma_oracle]
 binary = true
-command = "odgi view -g -i {filename} | python3 ../slow_odgi/normalize.py"
-output.normalize = "-"
+command = "odgi view -g -i {filename} | python3 ../slow_odgi/norm.py"
+output.norm = "-"
 
-[envs.normalize_test]
+[envs.norm_test]
 binary = true
-command = "python3 ../slow_odgi/normalize.py < {filename}"
-output.normalize = "-"
+command = "python3 ../slow_odgi/norm.py < {filename}"
+output.norm = "-"
 
 [envs.overlap_setup]
 binary = true

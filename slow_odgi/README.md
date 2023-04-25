@@ -278,7 +278,7 @@ That is,
 	- No deduplication was performed.
 
 
-#### `normalize`
+#### `norm`
 Runs a normalization pass over the graph.
 
 GFAs have line-entries of four kinds: headers, segments, paths, and links. Their order does not matter, so the following is fine:
