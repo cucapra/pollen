@@ -21,8 +21,6 @@ def parse_args():
     """Parse command line arguments and run the appropriate subcommand."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("graph", nargs="?", help="Input GFA file", metavar="GRAPH")
-
     subparsers = parser.add_subparsers(
         title="slow-odgi commands", metavar="COMMAND", dest="command"
     )
@@ -97,6 +95,14 @@ def parse_args():
         "validate",
         help="Checks whether the links of the graph support its paths.",
     )
+
+    # Add the graph argument to all subparsers.
+    # Doing it this way means that the graph argument is sought _after_ the
+    # command name.
+    for subparser in subparsers.choices.values():
+        subparser.add_argument(
+            "graph", nargs="?", help="Input GFA file", metavar="GRAPH"
+        )
 
     args = parser.parse_args()
 
