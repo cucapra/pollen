@@ -1,5 +1,5 @@
 import sys
-import mygfa
+from . import mygfa
 
 if __name__ == "__main__":
     """Accepts a GFA and emits it right out using mygfa's emit().
