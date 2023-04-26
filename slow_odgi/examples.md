@@ -44,8 +44,6 @@
 
 ## Matrix
 
-## Normalize
-
 ## Overlap
 
     for path in Paths {
