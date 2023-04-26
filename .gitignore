@@ -3,6 +3,8 @@ __pycache__/
 .DS_Store
 
 **/*.og
+**/*.gfa
+**/*.out
 *.json
 og_to_gfa.py
 compute_maxes.py
