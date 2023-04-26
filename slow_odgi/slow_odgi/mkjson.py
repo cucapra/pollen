@@ -4,10 +4,6 @@ import dataclasses
 from json import JSONEncoder
 from . import mygfa, preprocess
 
-MAX_STEPS = 15
-MAX_NODES = 16
-MAX_PATHS = 15
-
 
 def format_gen(width):
     return {"is_signed": False, "numeric_type": "bitnum", "width": width}
@@ -52,9 +48,9 @@ class NodeDepthEncoder(JSONEncoder):
 
     def __init__(self, n, e, p, **kwargs):
         super(NodeDepthEncoder, self).__init__(**kwargs)
-        self.n = n if n else MAX_NODES
-        self.e = e if e else MAX_STEPS
-        self.p = p if p else MAX_PATHS
+        self.n = n
+        self.e = e
+        self.p = p
 
     def default(self, o):
         # This prints the word "null" after everything else is done,
@@ -109,4 +105,14 @@ def simple_json(graph):
 
 def depth_json(graph, n, e, p):
     """Specific to the exine command `depth`."""
+    n_tight, e_tight, p_tight = preprocess.get_maxes(graph)
+    # These values have been calculated automatically, and are likely optimal.
+    # However, they are only to be used when the user-does not supply them via CLI.
+    if not n:
+        n = n_tight
+    if not e:
+        e = e_tight
+    if not p:
+        p = p_tight
+
     print(NodeDepthEncoder(n=int(n), e=int(e), p=int(p)).encode(graph))
