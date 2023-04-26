@@ -1,13 +1,8 @@
 import sys
 import json
+import dataclasses
 from json import JSONEncoder
 from . import mygfa, preprocess
-
-
-class SegmentEncoder(JSONEncoder):
-    def default(self, o):
-        return o.__dict__
-
 
 MAX_STEPS = 15
 MAX_NODES = 16
@@ -43,30 +38,27 @@ def paths_to_consider(o, n, p):
     output = {}
     for i in range(1, n + 1):
         # Would rather do the above for size(g). See issue 24
-        data = [0] + [1] * (
-            p
-        )  # The fact that MAX_NODES, not n, is used here, is weird behavior from exine. matching for now.
+        data = [0] + [1] * (p)
         output[f"paths_to_consider{i}"] = {"data": data, "format": format_width1}
     return output
 
 
 class NodeDepthEncoder(JSONEncoder):
+    """Encodes the entire graph as a JSON object, for the purpose of node depth.
+
+    The exine command `depth` is the oracle for this encoding.
+    """
+
     def __init__(self, n, e, p, **kwargs):
         super(NodeDepthEncoder, self).__init__(**kwargs)
-        if n:
-            self.n = n
-        else:
-            self.n = MAX_NODES
-        if e:
-            self.e = e
-        else:
-            self.e = MAX_STEPS
-        if p:
-            self.p = p
-        else:
-            self.p = MAX_PATHS
+        self.n = n if n else MAX_NODES
+        self.e = e if e else MAX_STEPS
+        self.p = p if p else MAX_PATHS
 
     def default(self, o):
+        # This prints the word "null" after everything else is done,
+        # which I think is because the graph has some field that
+        # we do not yet encode nicely.
         answer_field = {
             "depth_output": {"data": list([0] * self.n), "format": format_width4}
         }
@@ -83,18 +75,23 @@ class NodeDepthEncoder(JSONEncoder):
         )
 
 
+class SegmentEncoder(JSONEncoder):
+    def default(self, o):
+        return dataclasses.asdict(o)
+
+
 class AlignmentEncoder(JSONEncoder):
     def default(self, o):
-        return o.__dict__
+        return dataclasses.asdict(o)
 
 
 class LinkEncoder(JSONEncoder):
     def default(self, o):
         return {
-            "from": o.from_,
-            "from_orient": o.from_orient,
-            "to": o.to,
-            "to_orient": o.to_orient,
+            "from": o.from_.name,
+            "from_orient": o.from_.orientation,
+            "to": o.to.name,
+            "to_orient": o.to.orientation,
             "overlap": str(o.overlap),
         }
 
@@ -105,12 +102,14 @@ class PathEncoder(JSONEncoder):
         return {"segments": items[2], "overlaps": items[3]}
 
 
-def simple_dump(graph):
+def simple_json(graph):
+    """A wholesale dump of the graph, for completeness."""
     print(json.dumps(graph.headers, indent=4))
     print(json.dumps(graph.segments, indent=4, cls=SegmentEncoder))
     print(json.dumps(graph.links, indent=4, cls=LinkEncoder))
     print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
 
 
-def mkjson(graph, n, e, p):
+def depth_json(graph, n, e, p):
+    """Specific to the exine command `depth`."""
     print(NodeDepthEncoder(n=int(n), e=int(e), p=int(p)).encode(graph))
