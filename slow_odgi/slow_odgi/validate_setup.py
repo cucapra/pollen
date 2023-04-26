@@ -1,6 +1,6 @@
 import sys
-import mygfa
 import random
+from . import mygfa
 
 
 def drop_some_links(graph):

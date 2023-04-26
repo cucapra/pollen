@@ -1,6 +1,5 @@
 import sys
-import mygfa
-import preprocess
+from . import mygfa, preprocess
 
 
 def validate(graph):
@@ -24,8 +23,3 @@ def validate(graph):
                         "does not respect the graph topology: the link "
                         f"{seg_from},{seg_to} is missing."
                     )
-
-
-if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    validate(graph)
