@@ -8,22 +8,23 @@ MAX_STEPS = 15
 MAX_NODES = 16
 MAX_PATHS = 15
 
-format_width4 = {"is_signed": False, "numeric_type": "bitnum", "width": 4}
 
-format_width1 = {"is_signed": False, "numeric_type": "bitnum", "width": 1}
+def format_gen(width):
+    return {"is_signed": False, "numeric_type": "bitnum", "width": width}
 
 
-def paths_viewed_from_nodes(graph, n, e):
+def paths_viewed_from_nodes(graph, n, e, p):
     path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
     output = {}
+    format = format_gen(p.bit_length())
     for seg, crossings in preprocess.node_steps(graph).items():
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (e - len(data))
-        output[f"path_ids{seg}"] = {"data": data, "format": format_width4}
-    # I would rather not have the four lines below. See issue 24
+        output[f"path_ids{seg}"] = {"data": data, "format": format}
+    # I would rather not have the forloop below. See issue 24
     data = [0] * e
     for i in range(len(graph.segments) + 1, n + 1):
-        output[f"path_ids{i}"] = {"data": data, "format": format_width4}
+        output[f"path_ids{i}"] = {"data": data, "format": format}
     return output
 
 
@@ -39,7 +40,7 @@ def paths_to_consider(o, n, p):
     for i in range(1, n + 1):
         # Would rather do the above for size(g). See issue 24
         data = [0] + [1] * (p)
-        output[f"paths_to_consider{i}"] = {"data": data, "format": format_width1}
+        output[f"paths_to_consider{i}"] = {"data": data, "format": format_gen(1)}
     return output
 
 
@@ -60,12 +61,18 @@ class NodeDepthEncoder(JSONEncoder):
         # which I think is because the graph has some field that
         # we do not yet encode nicely.
         answer_field = {
-            "depth_output": {"data": list([0] * self.n), "format": format_width4}
+            "depth_output": {
+                "data": list([0] * self.n),
+                "format": format_gen(self.e.bit_length()),
+            }
         }
         answer_field_uniq = {
-            "uniq_output": {"data": list([0] * self.n), "format": format_width4}
+            "uniq_output": {
+                "data": list([0] * self.n),
+                "format": format_gen(self.p.bit_length()),
+            }
         }
-        paths = paths_viewed_from_nodes(o, self.n, self.e) | paths_to_consider(
+        paths = paths_viewed_from_nodes(o, self.n, self.e, self.p) | paths_to_consider(
             o, self.n, self.p
         )
         print(
