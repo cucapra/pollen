@@ -1,8 +1,7 @@
 import sys
 import json
 from json import JSONEncoder
-import mygfa
-import preprocess
+from . import mygfa, preprocess
 
 
 class SegmentEncoder(JSONEncoder):
@@ -13,26 +12,22 @@ class SegmentEncoder(JSONEncoder):
 MAX_STEPS = 15
 MAX_NODES = 16
 
-format_width4 = {"is_signed": False,
-                 "numeric_type": "bitnum",
-                 "width": 4}
+format_width4 = {"is_signed": False, "numeric_type": "bitnum", "width": 4}
 
-format_width1 = {"is_signed": False,
-                 "numeric_type": "bitnum",
-                 "width": 1}
+format_width1 = {"is_signed": False, "numeric_type": "bitnum", "width": 1}
 
 
 def paths_viewed_from_nodes(graph):
     path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
     output = {}
-    for (seg, crossings) in preprocess.node_steps(graph).items():
+    for seg, crossings in preprocess.node_steps(graph).items():
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (MAX_STEPS - len(data))
-        output[f'path_ids{seg}'] = {"data": data, "format": format_width4}
+        output[f"path_ids{seg}"] = {"data": data, "format": format_width4}
     # Would rather not have the four lines below. See issue 24
     data = [0] * MAX_STEPS
-    for i in range (len (graph.segments) + 1, MAX_NODES + 1):
-        output[f'path_ids{i}'] = {"data": data, "format": format_width4}
+    for i in range(len(graph.segments) + 1, MAX_NODES + 1):
+        output[f"path_ids{i}"] = {"data": data, "format": format_width4}
     return output
 
 
@@ -48,21 +43,24 @@ def paths_to_consider(o):
     for i in range(1, MAX_NODES + 1):
         # Would rather do the above for size(g). See issue 24
         data = [0] + [1] * (MAX_NODES - 1)
-        output[f'paths_to_consider{i}'] = {
-            "data": data, "format": format_width1}
+        output[f"paths_to_consider{i}"] = {"data": data, "format": format_width1}
     return output
 
 
 class NodeDepthEncoder(JSONEncoder):
-
     def default(self, o):
-        answer_field = {"depth_output": {"data": list([0]*MAX_NODES),
-                                         "format": format_width4}}
-        answer_field_uniq = {"uniq_output": {"data": list([0]*MAX_NODES),
-                                             "format": format_width4}}
+        answer_field = {
+            "depth_output": {"data": list([0] * MAX_NODES), "format": format_width4}
+        }
+        answer_field_uniq = {
+            "uniq_output": {"data": list([0] * MAX_NODES), "format": format_width4}
+        }
         paths = paths_viewed_from_nodes(o) | paths_to_consider(o)
-        print(json.dumps(answer_field | paths |
-              answer_field_uniq, indent=2, sort_keys=True))
+        print(
+            json.dumps(
+                answer_field | paths | answer_field_uniq, indent=2, sort_keys=True
+            )
+        )
 
 
 class AlignmentEncoder(JSONEncoder):
@@ -77,17 +75,14 @@ class LinkEncoder(JSONEncoder):
             "from_orient": o.from_orient,
             "to": o.to,
             "to_orient": o.to_orient,
-            "overlap": str(o.overlap)
+            "overlap": str(o.overlap),
         }
 
 
 class PathEncoder(JSONEncoder):
     def default(self, o):
         items = str(o).split("\t")
-        return {
-            "segments": items[2],
-            "overlaps": items[3]
-        }
+        return {"segments": items[2], "overlaps": items[3]}
 
 
 def simple_dump(graph):
