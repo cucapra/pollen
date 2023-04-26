@@ -96,6 +96,5 @@ def json_for_node_depth(graph):
     json.dumps(graph, indent=4, cls=NodeDepthEncoder)
 
 
-if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
+def mkjson(graph):
     json_for_node_depth(graph)

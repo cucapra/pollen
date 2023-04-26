@@ -1,1 +1,1 @@
-command = "python -m slow_odgi.to_json < {filename}"
+command = "slow_odgi mkjson {filename}"

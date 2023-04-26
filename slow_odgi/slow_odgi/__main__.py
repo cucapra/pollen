@@ -9,6 +9,7 @@ from . import (
     flip,
     inject,
     matrix,
+    mkjson,
     mygfa,
     overlap,
     paths,
@@ -73,6 +74,10 @@ def parse_args():
         "matrix", help="Represents the graph as a matrix."
     )
 
+    mkjson_parser = subparsers.add_parser(
+        "mkjson", help="Produces a JSON representation of the graph."
+    )
+
     overlap_parser = subparsers.add_parser(
         "overlap",
         help="Queries the graph about which paths overlap with which other paths.",
@@ -129,6 +134,7 @@ def dispatch(args):
         "flip": flip.flip,
         "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
+        "mkjson": mkjson.mkjson,
         "overlap": lambda x: overlap.overlap(x, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
