@@ -17,7 +17,7 @@ format_width4 = {"is_signed": False, "numeric_type": "bitnum", "width": 4}
 format_width1 = {"is_signed": False, "numeric_type": "bitnum", "width": 1}
 
 
-def paths_viewed_from_nodes(graph):
+def paths_viewed_from_nodes(graph, n):
     path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
     output = {}
     for seg, crossings in preprocess.node_steps(graph).items():
@@ -26,36 +26,45 @@ def paths_viewed_from_nodes(graph):
         output[f"path_ids{seg}"] = {"data": data, "format": format_width4}
     # Would rather not have the four lines below. See issue 24
     data = [0] * MAX_STEPS
-    for i in range(len(graph.segments) + 1, MAX_NODES + 1):
+    for i in range(len(graph.segments) + 1, n + 1):
         output[f"path_ids{i}"] = {"data": data, "format": format_width4}
     return output
 
 
-def paths_to_consider(o):
+def paths_to_consider(o, n):
     """Currently just a stub; later we will populate this with a
     bitvector of length MAX_PATHS, where the i'th index will be 1 if
-    the i'th path is to be considered during depth calculation
+    the i'th path is to be considered during depth calculation.
 
     Somewhat annoyingly, we need as many copies of this bitvector as there
     are nodes in the graph.
     """
     output = {}
-    for i in range(1, MAX_NODES + 1):
+    for i in range(1, n + 1):
         # Would rather do the above for size(g). See issue 24
-        data = [0] + [1] * (MAX_NODES - 1)
+        data = [0] + [1] * (
+            MAX_NODES - 1
+        )  # The fact that MAX_NODES, not n, is used here, is weird behavior from exine. matching for now.
         output[f"paths_to_consider{i}"] = {"data": data, "format": format_width1}
     return output
 
 
 class NodeDepthEncoder(JSONEncoder):
+    def __init__(self, n, **kwargs):
+        super(NodeDepthEncoder, self).__init__(**kwargs)
+        if n:
+            self.n = n
+        else:
+            self.n = MAX_NODES
+
     def default(self, o):
         answer_field = {
-            "depth_output": {"data": list([0] * MAX_NODES), "format": format_width4}
+            "depth_output": {"data": list([0] * self.n), "format": format_width4}
         }
         answer_field_uniq = {
-            "uniq_output": {"data": list([0] * MAX_NODES), "format": format_width4}
+            "uniq_output": {"data": list([0] * self.n), "format": format_width4}
         }
-        paths = paths_viewed_from_nodes(o) | paths_to_consider(o)
+        paths = paths_viewed_from_nodes(o, self.n) | paths_to_consider(o, self.n)
         print(
             json.dumps(
                 answer_field | paths | answer_field_uniq, indent=2, sort_keys=True
@@ -92,9 +101,5 @@ def simple_dump(graph):
     print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
 
 
-def json_for_node_depth(graph):
-    json.dumps(graph, indent=4, cls=NodeDepthEncoder)
-
-
-def mkjson(graph):
-    json_for_node_depth(graph)
+def mkjson(graph, n):
+    print(NodeDepthEncoder(n=int(n)).encode(graph))
