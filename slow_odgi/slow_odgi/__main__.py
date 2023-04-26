@@ -84,6 +84,13 @@ def parse_args():
         help="The max number of nodes.",
         required=False,
     )
+    mkjson_parser.add_argument(
+        "-e",
+        nargs="?",
+        const="d",
+        help="The max number of paths.",
+        required=False,
+    )
 
     overlap_parser = subparsers.add_parser(
         "overlap",
@@ -141,7 +148,7 @@ def dispatch(args):
         "flip": flip.flip,
         "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
-        "mkjson": lambda x: mkjson.mkjson(x, args.n),
+        "mkjson": lambda x: mkjson.mkjson(x, args.n, args.e),
         "overlap": lambda x: overlap.overlap(x, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
