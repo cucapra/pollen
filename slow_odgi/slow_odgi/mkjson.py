@@ -17,15 +17,15 @@ format_width4 = {"is_signed": False, "numeric_type": "bitnum", "width": 4}
 format_width1 = {"is_signed": False, "numeric_type": "bitnum", "width": 1}
 
 
-def paths_viewed_from_nodes(graph, n):
+def paths_viewed_from_nodes(graph, n, e):
     path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
     output = {}
     for seg, crossings in preprocess.node_steps(graph).items():
         data = list(path2id[c[0]] for c in crossings)
-        data = data + [0] * (MAX_STEPS - len(data))
+        data = data + [0] * (e - len(data))
         output[f"path_ids{seg}"] = {"data": data, "format": format_width4}
     # Would rather not have the four lines below. See issue 24
-    data = [0] * MAX_STEPS
+    data = [0] * e
     for i in range(len(graph.segments) + 1, n + 1):
         output[f"path_ids{i}"] = {"data": data, "format": format_width4}
     return output
@@ -50,12 +50,16 @@ def paths_to_consider(o, n):
 
 
 class NodeDepthEncoder(JSONEncoder):
-    def __init__(self, n, **kwargs):
+    def __init__(self, n, e, **kwargs):
         super(NodeDepthEncoder, self).__init__(**kwargs)
         if n:
             self.n = n
         else:
             self.n = MAX_NODES
+        if e:
+            self.e = e
+        else:
+            self.e = MAX_STEPS
 
     def default(self, o):
         answer_field = {
@@ -64,7 +68,9 @@ class NodeDepthEncoder(JSONEncoder):
         answer_field_uniq = {
             "uniq_output": {"data": list([0] * self.n), "format": format_width4}
         }
-        paths = paths_viewed_from_nodes(o, self.n) | paths_to_consider(o, self.n)
+        paths = paths_viewed_from_nodes(o, self.n, self.e) | paths_to_consider(
+            o, self.n
+        )
         print(
             json.dumps(
                 answer_field | paths | answer_field_uniq, indent=2, sort_keys=True
@@ -101,5 +107,5 @@ def simple_dump(graph):
     print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
 
 
-def mkjson(graph, n):
-    print(NodeDepthEncoder(n=int(n)).encode(graph))
+def mkjson(graph, n, e):
+    print(NodeDepthEncoder(n=int(n), e=int(e)).encode(graph))
