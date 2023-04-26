@@ -1,1 +1,1 @@
-command = "python3 ../../to_json.py < {filename}"
+command = "python -m slow_odgi.to_json < {filename}"
