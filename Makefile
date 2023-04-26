@@ -19,6 +19,11 @@ test-depth: og
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
 	turnt $(DEPTH_OG_FILES)
 
+
+test-mkjson: og
+	-turnt --save --env mkjson_oracle test/*.og
+	turnt --env mkjson_test test/*.gfa
+
 test-slow-validate: fetch
 	-turnt --save --env validate_setup test/*.gfa
 	for fn in `ls test/*.temp`; do `mv $$fn $${fn%.*}_temp.gfa`; done
