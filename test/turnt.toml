@@ -85,12 +85,12 @@ output.matrix = "-"
 
 [envs.mkjson_oracle]
 binary = true
-command = "exine depth -d {filename} -n 20 -e 9 -p 12; echo null"
+command = "exine depth -d {filename} -n 5000 -e 250 -p 90; echo null"
 output.json = "-"
 
 [envs.mkjson_test]
 binary = true
-command = "slow_odgi mkjson {filename} -n 20 -e 9 -p 12"
+command = "slow_odgi mkjson {filename} -n 5000 -e 250 -p 90"
 output.json = "-"
 
 [envs.norm_oracle]
