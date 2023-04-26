@@ -75,39 +75,29 @@ class NodeDepthEncoder(JSONEncoder):
         )
 
 
-class SegmentEncoder(JSONEncoder):
+class GenericSimpleEncoder(JSONEncoder):
     def default(self, o):
-        return dataclasses.asdict(o)
-
-
-class AlignmentEncoder(JSONEncoder):
-    def default(self, o):
-        return dataclasses.asdict(o)
-
-
-class LinkEncoder(JSONEncoder):
-    def default(self, o):
-        return {
-            "from": o.from_.name,
-            "from_orient": o.from_.orientation,
-            "to": o.to.name,
-            "to_orient": o.to.orientation,
-            "overlap": str(o.overlap),
-        }
-
-
-class PathEncoder(JSONEncoder):
-    def default(self, o):
-        items = str(o).split("\t")
-        return {"segments": items[2], "overlaps": items[3]}
+        if isinstance(o, mygfa.Path):
+            items = str(o).split("\t")
+            return {"segments": items[2], "overlaps": items[3]}
+        elif isinstance(o, mygfa.Link):
+            return {
+                "from": o.from_.name,
+                "from_orient": o.from_.orientation,
+                "to": o.to.name,
+                "to_orient": o.to.orientation,
+                "overlap": str(o.overlap),
+            }
+        elif isinstance(o, mygfa.Segment) or isinstance(o, mygfa.Alignment):
+            return dataclasses.asdict(o)
 
 
 def simple_json(graph):
     """A wholesale dump of the graph, for completeness."""
     print(json.dumps(graph.headers, indent=4))
-    print(json.dumps(graph.segments, indent=4, cls=SegmentEncoder))
-    print(json.dumps(graph.links, indent=4, cls=LinkEncoder))
-    print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
+    print(json.dumps(graph.segments, indent=4, cls=GenericSimpleEncoder))
+    print(json.dumps(graph.links, indent=4, cls=GenericSimpleEncoder))
+    print(json.dumps(graph.paths, indent=4, cls=GenericSimpleEncoder))
 
 
 def depth_json(graph, n, e, p):
