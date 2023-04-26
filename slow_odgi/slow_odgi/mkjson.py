@@ -11,6 +11,7 @@ class SegmentEncoder(JSONEncoder):
 
 MAX_STEPS = 15
 MAX_NODES = 16
+MAX_PATHS = 15
 
 format_width4 = {"is_signed": False, "numeric_type": "bitnum", "width": 4}
 
@@ -31,7 +32,7 @@ def paths_viewed_from_nodes(graph, n, e):
     return output
 
 
-def paths_to_consider(o, n):
+def paths_to_consider(o, n, p):
     """Currently just a stub; later we will populate this with a
     bitvector of length MAX_PATHS, where the i'th index will be 1 if
     the i'th path is to be considered during depth calculation.
@@ -43,14 +44,14 @@ def paths_to_consider(o, n):
     for i in range(1, n + 1):
         # Would rather do the above for size(g). See issue 24
         data = [0] + [1] * (
-            MAX_NODES - 1
+            p
         )  # The fact that MAX_NODES, not n, is used here, is weird behavior from exine. matching for now.
         output[f"paths_to_consider{i}"] = {"data": data, "format": format_width1}
     return output
 
 
 class NodeDepthEncoder(JSONEncoder):
-    def __init__(self, n, e, **kwargs):
+    def __init__(self, n, e, p, **kwargs):
         super(NodeDepthEncoder, self).__init__(**kwargs)
         if n:
             self.n = n
@@ -60,6 +61,10 @@ class NodeDepthEncoder(JSONEncoder):
             self.e = e
         else:
             self.e = MAX_STEPS
+        if p:
+            self.p = p
+        else:
+            self.p = MAX_PATHS
 
     def default(self, o):
         answer_field = {
@@ -69,7 +74,7 @@ class NodeDepthEncoder(JSONEncoder):
             "uniq_output": {"data": list([0] * self.n), "format": format_width4}
         }
         paths = paths_viewed_from_nodes(o, self.n, self.e) | paths_to_consider(
-            o, self.n
+            o, self.n, self.p
         )
         print(
             json.dumps(
@@ -107,5 +112,5 @@ def simple_dump(graph):
     print(json.dumps(graph.paths, indent=4, cls=PathEncoder))
 
 
-def mkjson(graph, n, e):
-    print(NodeDepthEncoder(n=int(n), e=int(e)).encode(graph))
+def mkjson(graph, n, e, p):
+    print(NodeDepthEncoder(n=int(n), e=int(e), p=int(p)).encode(graph))
