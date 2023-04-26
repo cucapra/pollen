@@ -1,61 +1,76 @@
 import sys
 import mygfa
+from typing import Dict, Tuple
 
-n = 3 # TODO: take this as a CLI input
 
-def chop_graph(graph):
-    new_segments = {}
-    new_links = []
-    new_paths = {}
+def chop_segs(graph, n):
+    """Chop all the sequences of the graph into length n or lower."""
 
-    seg_2_start_end = {}
-    """Dict[str, Tuple[str, str]]
-    Maps an old segment name to the first and last of its new avatar.
+    legend: Dict[str, Tuple[int, int]] = {}
+    """If a segment is chopped, its sequence will be spread out over
+    up among a series of contiguous new segments.
+
+    While not important for segment-chopping itself, it will serve us well to
+    maintain a dict that bookkeeps this chopping.
 
     For example, if
-    ...
-    S 3 = ATGGCCC
-    ...
-    was chopped into
-    ...
-    S 7 = AT
-    S 8 = GG
-    S 9 = CC
-    S 10 = C
-    ...
-    then seg_2_start_end[3] = (7,11).
+        S 3 = ATGGCCC
+    gets chopped into
+        S 7 = AT
+        S 8 = GG
+        S 9 = CC
+        S 10 = C
+    then legend[3] = (7,11).
+
     Later, if 3+ occurs in a path, we will replace it with 7+,8+,9+,10+.
     If 3- occurs in a path, we will replace it with 10-,9-,8-,7-.
     """
 
-    seg_count = 1  # will be used to generate names for the new segments
+    seg_count = 1  # To generate names for the new segments.
+    new_segs = {}
 
-    for (name, segment) in graph.segments.items():
+    for segment in graph.segments.values():
+        chopped_segs = {}
         seq = segment.seq
-        chopped_seqs = [seq[i:i+n] for i in range(0, len(seq), n)]
-        chopped_segments = {}
+        chopped_seqs = [seq[i : i + n] for i in range(0, len(seq), n)]
         seg_count_start = seg_count
-        for cs in chopped_seqs:
+        for cs in chopped_seqs:  # Going from seqs to segs.
             seg_name = str(seg_count)
-            chopped_segments[seg_name]=(mygfa.Segment(seg_name, cs))
+            chopped_segs[seg_name] = mygfa.Segment(seg_name, cs)
             seg_count += 1
-        seg_2_start_end[segment.name] = (seg_count_start, seg_count)
+        legend[segment.name] = (seg_count_start, seg_count)
+        new_segs = new_segs | chopped_segs
 
-        new_segments = new_segments | chopped_segments
+    return new_segs, legend
 
+
+def chop_paths(graph, legend):
+    """With the legend computed as above, this step is easy."""
+    new_paths = {}
     for path in graph.paths.values():
-        new_path_segments = []
-        for (segname, o) in path.segments:
-            r = seg_2_start_end[segname]
-            segments = [(s,o) for s in range(r[0], r[1])]
-            new_path_segments += segments if o else list(reversed(segments))
-        new_paths[path.name] = mygfa.Path(path.name, new_path_segments, path.overlaps)
+        new_p_segs = []
+        for seg in path.segments:
+            o = seg.orientation
+            a, b = legend[seg.name]
+            segments = [mygfa.Handle(str(s), o) for s in range(a, b)]
+            new_p_segs += segments if o else list(reversed(segments))
+        new_paths[path.name] = mygfa.Path(path.name, new_p_segs, path.overlaps)
+        # For now we handle overlaps very sloppily.
+    return new_paths
 
-    return mygfa.Graph(graph.headers, new_segments, new_links, new_paths)
+
+def chop_graph(graph, n):
+    new_segments, legend = chop_segs(graph, n)
+    new_paths = chop_paths(graph, legend)
+    return mygfa.Graph(graph.headers, new_segments, [], new_paths)
+    # The blank list is because we are choosing to drop links for now.
 
 
 if __name__ == "__main__":
-    name = sys.stdin
-    graph = mygfa.Graph.parse(sys.stdin)
-    chopped_graph = chop_graph(graph)
-    chopped_graph.emit(sys.stdout, False)
+    if len(sys.argv) > 1:
+        n = int(sys.argv[1])
+        graph = mygfa.Graph.parse(sys.stdin)
+        chopped_graph = chop_graph(graph, n)
+        chopped_graph.emit(sys.stdout, False)
+    else:
+        print("Pass the chop-size as a CLI")

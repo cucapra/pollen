@@ -1,47 +1,135 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py --nl"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+output.chop = "-"
 
 [envs.chop_test]
 binary = true
-command = "python3 ../slow_odgi/chop.py < {filename}"
+command = "python3 ../slow_odgi/chop.py < {filename} 3"
+output.chop = "-"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} --out=temp.og; odgi view -g -i temp.og | python3 ../slow_odgi/mygfa.py"
+command = "odgi crush -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py"
+output.crush = "-"
 
 [envs.crush_test]
 binary = true
-command = "python3 ../slow_odgi/crush_n.py < {filename}"
+command = "python3 ../slow_odgi/crush.py < {filename}"
+output.crush = "-"
 
 [envs.degree_oracle]
 binary = true
 command = "odgi degree -d --input={filename}"
+output.degree = "-"
 
 [envs.degree_test]
 binary = true
-command = "python3 ../slow_odgi/node_degree.py < {filename}"
+command = "python3 ../slow_odgi/degree.py < {filename}"
+output.degree = "-"
 
 [envs.depth_oracle]
 binary = true
 command = "odgi depth -d --input={filename}"
+output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "python3 ../slow_odgi/node_depth.py < {filename}"
+command = "python3 ../slow_odgi/depth.py < {filename}"
+output.depth = "-"
 
-[envs.emit_oracle]
+[envs.flatten_oracle]
 binary = true
-command = "odgi view -g -i {filename} | python3 ../slow_odgi/mygfa.py"
+command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+output.flatten = "-"
 
-[envs.emit_test]
+[envs.flatten_test]
 binary = true
-command = "python3 ../slow_odgi/mygfa.py < {filename}"
+command = "python3 ../slow_odgi/flatten.py {filename}"
+output.flatten = "-"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} --out=temp.og; odgi view -g -i temp.og"
+command = "odgi flip -i {filename} -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py"
+output.flip = "-"
 
 [envs.flip_test]
 binary = true
 command = "python3 ../slow_odgi/flip.py < {filename}"
+output.flip = "-"
+
+[envs.inject_setup]
+binary = true
+command = "python3 ../slow_odgi/inject_setup.py < {filename}"
+output.bed = "-"
+
+[envs.inject_oracle]
+binary = true
+command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python3 ../slow_odgi/normalize.py --nl"
+output.inj = "-"
+
+[envs.inject_test]
+binary = true
+command = "python3 ../slow_odgi/inject.py < {filename} {base}.bed"
+output.inj = "-"
+
+[envs.matrix_oracle]
+binary = true
+command = "odgi matrix -i {filename} | sort"
+output.matrix = "-"
+
+[envs.matrix_test]
+binary = true
+command = "python3 ../slow_odgi/matrix.py < {filename} | sort"
+output.matrix = "-"
+
+[envs.normalize_oracle]
+binary = true
+command = "odgi view -g -i {filename} | python3 ../slow_odgi/normalize.py"
+output.normalize = "-"
+
+[envs.normalize_test]
+binary = true
+command = "python3 ../slow_odgi/normalize.py < {filename}"
+output.normalize = "-"
+
+[envs.overlap_setup]
+binary = true
+command = "python3 ../slow_odgi/paths.py < {filename}"
+output.overlappaths = "-"
+
+[envs.overlap_oracle]
+binary = true
+command = "odgi overlap -i {filename} -R {base}.overlappaths"
+output.overlap = "-"
+
+[envs.overlap_test]
+binary = true
+command = "python3 ../slow_odgi/overlap.py {base}.overlappaths < {filename}"
+output.overlap = "-"
+
+[envs.paths_oracle]
+binary = true
+command = "odgi paths -i {filename} -L"
+output.paths = "-"
+
+[envs.paths_test]
+binary = true
+command = "python3 ../slow_odgi/paths.py < {filename}"
+output.paths = "-"
+
+[envs.validate_setup]
+binary = true
+command = "python3 ../slow_odgi/validate_setup.py < {filename}"
+output.temp = "-"
+
+[envs.validate_oracle]
+binary = true
+command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
+return_code = 1
+output.validate = "-"
+
+[envs.validate_test]
+binary = true
+command = "python3 ../slow_odgi/validate.py < {filename}"
+output.validate = "-"
