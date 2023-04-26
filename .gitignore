@@ -1,19 +1,10 @@
 __pycache__/
 *.py[cod]
-
-test/*.og
-test/*.gfa
-test/*.out
-
-test/basic/*.og
-test/basic/*.out
-
-test/subset-paths/*.out
-
-test/depth/*.out
-test/depth/basic/*.out
-test/depth/subset-paths/*.out
+.DS_Store
 
 *.json
 og_to_gfa.py
 compute_maxes.py
+
+pollen/target/*
+pollen/*.rlib
