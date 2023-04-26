@@ -20,7 +20,7 @@ def paths_viewed_from_nodes(graph, n, e):
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (e - len(data))
         output[f"path_ids{seg}"] = {"data": data, "format": format_width4}
-    # Would rather not have the four lines below. See issue 24
+    # I would rather not have the four lines below. See issue 24
     data = [0] * e
     for i in range(len(graph.segments) + 1, n + 1):
         output[f"path_ids{i}"] = {"data": data, "format": format_width4}
@@ -80,7 +80,7 @@ class GenericSimpleEncoder(JSONEncoder):
         if isinstance(o, mygfa.Path):
             items = str(o).split("\t")
             return {"segments": items[2], "overlaps": items[3]}
-        elif isinstance(o, mygfa.Link):
+        if isinstance(o, mygfa.Link):
             return {
                 "from": o.from_.name,
                 "from_orient": o.from_.orientation,
@@ -88,7 +88,7 @@ class GenericSimpleEncoder(JSONEncoder):
                 "to_orient": o.to.orientation,
                 "overlap": str(o.overlap),
             }
-        elif isinstance(o, mygfa.Segment) or isinstance(o, mygfa.Alignment):
+        if isinstance(o, mygfa.Segment) or isinstance(o, mygfa.Alignment):
             return dataclasses.asdict(o)
 
 
