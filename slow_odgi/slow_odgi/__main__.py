@@ -77,6 +77,13 @@ def parse_args():
     mkjson_parser = subparsers.add_parser(
         "mkjson", help="Produces a JSON representation of the graph."
     )
+    mkjson_parser.add_argument(
+        "-n",
+        nargs="?",
+        const="d",
+        help="The max number of nodes.",
+        required=False,
+    )
 
     overlap_parser = subparsers.add_parser(
         "overlap",
@@ -134,7 +141,7 @@ def dispatch(args):
         "flip": flip.flip,
         "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
-        "mkjson": mkjson.mkjson,
+        "mkjson": lambda x: mkjson.mkjson(x, args.n),
         "overlap": lambda x: overlap.overlap(x, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
@@ -143,6 +150,7 @@ def dispatch(args):
     no_links = ["chop", "inject"]
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     ans = name_to_func[args.command](graph)
+    # print(f"I sent you off to {args.command} with args {args}")
     if args.command in makes_new_graph:
         ans.emit(sys.stdout, args.command not in no_links)
 

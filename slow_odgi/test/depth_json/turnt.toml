@@ -1,1 +1,1 @@
-command = "slow_odgi mkjson {filename}"
+command = "slow_odgi mkjson {filename} -n 20"
