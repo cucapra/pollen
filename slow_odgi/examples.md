@@ -1,4 +1,41 @@
-# Pollen examples
+# Pollen language walkthrough
+
+## Core types in Pollen
+
+        type Graph = {
+          segments: Set(Segment);
+          paths: Set(Path);
+          links: Set(Links); 
+        }
+
+        type Segment = {
+          sequence: Strand; //ACTGAC, etc. 
+          links: Set(Link); //links encode their direction + orientation
+          steps: Set(Step); //steps that go through segment
+        }
+
+        type Handle = {
+          segment: Segment; 
+          orientation: bool;
+        }
+
+        type Path = {
+          steps: List(Step);
+        }
+
+        type Step = {
+          path: Path; 
+          idx: int; //where in the path is this sequence?
+          handle: Handle; //segment + orientation
+        }
+
+        type Base = A | C | T | G | N
+        type Strand = list Base
+
+        type Link = {
+          start: Handle; 
+          end: Handle;
+        }
 
 ## Chop
 
@@ -27,18 +64,52 @@
 ## Degree
 
     for segment in Segments {
-          emit (segment, segment.edges.size());
+      emit (segment, segment.edges.size());
     }
 
 ## Depth
 
     for segment in Segments {
-          emit (segment, segment.steps.size());
+      emit (segment, segment.steps.size());
     }
 
 ## Flatten
 
 ## Flip
+
+    local is_rev(Path path) {
+      fw = 0;
+      bw = 0;
+      for step.handle as sh in path.steps {
+        len = sh.segment.sequence.length();
+        if (sh.orientation) {
+          fw += len;
+        }
+        else {
+          bw += len;
+        }
+      }
+      return bw > fw;
+    }
+
+    local flip_path(Path path) {
+      if (is_rev(path)) {
+        path_steps = [];
+        for step in rev(path.steps) {
+          path_steps.append(Step {
+            orientation: !step.orientation
+            ..step
+          });
+        }
+      }
+      emit Path {
+        steps: path_steps
+      };
+    }
+
+    for path in Paths {
+      flip_path(path);
+    }
 
 ## Inject
 
