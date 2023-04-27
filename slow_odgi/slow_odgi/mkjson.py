@@ -115,4 +115,4 @@ def depth_json(graph, n, e, p):
     if not p:
         p = p_tight
 
-    print(NodeDepthEncoder(n=int(n), e=int(e), p=int(p)).encode(graph))
+    NodeDepthEncoder(n=int(n), e=int(e), p=int(p)).encode(graph)
