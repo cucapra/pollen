@@ -58,7 +58,7 @@ So,
 
 `t = T | T[] | String | P | List<T> | List<P> | R`
 
-But the `List` types are not exposed to the user, nor is the keyword available.
+The `Set` type is not exposed to the user, nor is the keyword available.
 
 
 3. If/else
@@ -119,14 +119,11 @@ the same functionality can be accomplished with while loops where necessary.
 
 5. Data Types
 5.1 Integers
-Represents values between −2^63 to 2^63 − 1. Operations: +, -, *, /, % 
+Represents values between −2^63 to 2^63 − 1. Operations: +, -, *, /, %, ^ 
 (where / is integer division, like in python 2), <, >, <=, =>, ==, !=
 
 In order of precedence: (*, /, %), (+, -)
                         (<, >, <=, =>), (==, !=)  // doesn't matter
-
-At some point, it would be nice to support the unary operators `-` and `++`.
-
 
 5.2 Booleans
 Since our typing system resembles Java or C++, to avoid confusion, perhaps

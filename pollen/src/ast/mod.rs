@@ -79,7 +79,16 @@ pub enum Expr {
         object: Box<Expr>,
         field: Box<Expr>
     },
-    ObjInitialization {
+    FuncCall {
+        name: Id,
+        args: Vec<Expr>
+    },
+    MethodCall {
+        object: Box<Expr>,
+        method: Id,
+        args: Vec<Expr>
+    },
+    ObjInitialization{
         typ: Typ
     }
 }

@@ -76,7 +76,7 @@ literal = _{ integer_lit | bool_lit | char_lit | string_lit
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_" | "-" | "'" )* }
 
 binop = _{ add | sub | mult | div | modulo | geq | leq | lt | gt | eq | neq |
-          and | or | field_access}
+          and | or | field_access }
     add = { "+" }
     sub = { "-" }
     mult = { "*" }
@@ -92,23 +92,32 @@ binop = _{ add | sub | mult | div | modulo | geq | leq | lt | gt | eq | neq |
     or = { "||" }
     field_access = { "." }
 
+
 // unary operator(s)
 prefix = _{ not }
     not = { "!" }
 
-// call_postfix = { "(" ~ expr? ~ ("," ~ expr)* ~ ")" }
-// TODO: Parse something like path.first().steps. The call "operator" isn't
-//      really a postfix operator because it can have expressions in the middle
-// Distinguish between object initialization { type ~ "()" } and 
+call_begin = { "(" }
+
+// postfix = { access }
+//     access = { "." ~ field_id }
+//         field_id = { identifier}
+//         call_postfix = { "(" ~ expr? ~ ("," ~ expr)* ~ ")" }
+
+// TODO: Parse something like path.first().steps. The call "operator" ("()")
+//      isn't really a postfix operator because it can have expressions in the middle
+// Distinguish between object initialization { type ~ "()" }, 
 //                      method calls,        { expr ~ "." ~ identifier ~ call_postfix }
+//                      function calls       { id ~ call_postfix}
 
 //array_access = { identifier ~ "[" ~ expr ~ "]"}
 
 obj_initialize = { typ ~ "()" }
+func_call = { identifier ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
 
-term = _{ literal | obj_initialize | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
+term = _{ literal | obj_initialize | func_call | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
-expr = { prefix* ~ term ~ (binop ~ prefix* ~ term )* }
+expr = { prefix* ~ term ~ (binop ~ prefix* ~ term ) * }
 
 
 /* ----- Statements ---- */

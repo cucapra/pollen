@@ -79,9 +79,6 @@ int1 : int = [3 * (2 + 4)];
 // Reassignment
 a = 3;
 
-// Ill-typed field accesses
-i : int = 3.true;
-
 // Block Statements
 
 {
@@ -92,6 +89,9 @@ i : int = 3.true;
 {
     ans = 42;
 }
+
+// Field Access
+i: int = 3.field;
 
 /* --- Control Flow --- */
 
@@ -155,4 +155,10 @@ emit { node with seq: seq' } to s2;
 // Object initialization
 new_strand: Strand = Strand();
 c: char = String().first;
-// new_strand.push('A');
+// Function Calls
+v1: int = funct1(arg1);
+v2: bool = func2(a1, a2);
+v3: Segment = fun3(fun'(a), b);
+
+// Method Calls
+v4: Strand = new_strand.push('A');

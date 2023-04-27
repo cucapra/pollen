@@ -333,6 +333,26 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 let typ = parse_typ(primary.into_inner().next().unwrap());
                 Expr::ObjInitialization{ typ: typ }
             },
+            Rule::func_call => {
+                // identifier ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")"
+                let mut inner = primary.into_inner();
+                let func_name = {
+                    let Some(pair) = inner.next() else {
+                        unreachable!("An if statement requires a guard")
+                    };
+                    parse_id(pair)
+                };
+                let mut args = Vec::new();
+                for arg in inner {
+                    args.push(
+                        parse_expr(arg.into_inner())
+                    );
+                }
+                Expr::FuncCall {
+                    name: func_name,
+                    args: args
+                }
+            },
             Rule::expr => {
                 // If this rule has been reached then 
                 // this is a parenthesized expression
@@ -342,8 +362,50 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
             }
             rule => unreachable!("Expr::parse expected atom, found {:?}", rule)
         })
+        .map_prefix(|op, exp| {
+            let op = match op.as_rule() {
+                Rule::not => UOp::Not,
+                rule => unreachable!("{:?} not recognized as a uop", rule),
+            };
+            Expr::UOpExpr {
+                op,
+                expr: Box::new(exp),
+            }
+        })
+        .map_postfix(|lhs, op| {
+            match op.as_rule() {
+                // Rule::access => {
+                //     // method, optional call_postfix
+                //     let object = Box::new(lhs);
+                //     let mut inner = op.into_inner();
+                //     let field_id = parse_id(inner.next().unwrap());
+                //     if let Some(call_postfix) = inner.next() { // method call
+                //         let mut args = Vec::new();
+                //         for arg in call_postfix.into_inner() {
+                //             args.push(parse_expr(arg.into_inner()));
+                //         }
+                //         Expr::Call {
+                //             object: object,
+                //             method: field_id,
+                //             args: args
+                //         }
+                //     }
+                //     else { // field access
+                //         Expr::FieldAccess {
+                //             object: object,
+                //             field: field_id
+                //         }
+                //     }
+                // },
+                // Rule::access => {
+                //     println!("Parsing postfix");
+                //     Expr::Var(Id("postfix".to_string()))
+                // }
+                rule => unreachable!("{:?} not recognized as a postfix", rule),
+            }
+        })
         .map_infix(|lhs, op, rhs| {
-            enum OpType{
+            enum OpType {
                 Binary(BinOp),
                 FieldAccess
             }
@@ -373,28 +435,29 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                     }
                 }
                 OpType::FieldAccess => {
-                    Expr::FieldAccess {
-                        object: Box::new(lhs),
-                        field: Box::new(rhs)
+                    match rhs {
+                        Expr::FuncCall { name, args } => {
+                            Expr::MethodCall {
+                                object: Box::new(lhs),
+                                method: name,
+                                args: args
+                            }
+                        },
+                        _ => {
+                            Expr::FieldAccess {
+                                object: Box::new(lhs),
+                                field: Box::new(rhs)
+                            }
+                       }
                     }
                 }
-            }
-        })
-        .map_prefix(|op, exp| {
-            let op = match op.as_rule() {
-                Rule::not => UOp::Not,
-                rule => unreachable!("{:?} not recognized as a uop", rule),
-            };
-            Expr::UOpExpr {
-                op,
-                expr: Box::new(exp),
             }
         })
         .parse(expression)
 }
 
 fn parse_id(id: Pair<Rule>) -> Id {
-    match id.as_rule(){
+    match id.as_rule() {
         Rule::identifier => Id(id.as_str().to_string()),
         rule => panic!("Identifier expected, but {:?} found", rule)
     }
@@ -403,7 +466,7 @@ fn parse_id(id: Pair<Rule>) -> Id {
 fn parse_typ(typ: Pair<Rule>) -> Typ {
     // println!("Type Pair: {:#?}", typ);
     match typ.as_rule() {
-        Rule::atomic_typ | Rule::object_typ => match typ.as_str() {
+        Rule::atomic_typ => match typ.as_str() {
             "int" => Typ::Int,
             "bool" => Typ::Bool,
             "char" => Typ::Char,
