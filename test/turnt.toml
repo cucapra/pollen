@@ -28,9 +28,14 @@ binary = true
 command = "slow_odgi degree {filename}"
 output.degree = "-"
 
+[envs.depth_setup]
+binary = true
+command = "slow_odgi paths {filename}"
+output.depthpaths = "-"
+
 [envs.depth_oracle]
 binary = true
-command = "odgi depth -d --input={filename}"
+command = "odgi depth -d -i {filename} -s {base}.depthpaths"
 output.depth = "-"
 
 [envs.depth_test]

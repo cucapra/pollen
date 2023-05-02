@@ -67,11 +67,15 @@ slow-odgi-all-tests:
 	-turnt --env paths_test test/*.gfa
 	-turnt --env validate_test test/*.gfa
 
+curr: og
+	-turnt --save --env depth_setup test/*.gfa
+	-turnt --save --env depth_oracle test/*.og
+	-turnt --save --env depth_test test/*.gfa
+
 
 # The basic test suite above, plus a few handmade tests for good measure.
 # Those are described below.
 test-slow-odgi-careful: test-slow-odgi test-slow-validate-careful test-slow-crush-careful test-slow-flip-careful
-
 
 # The fetch-ed graphs are valid, so `validate` succeeds quietly against them.
 # To actually see `validate` in action, we need to walk over the graphs and

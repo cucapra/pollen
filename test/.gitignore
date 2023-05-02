@@ -6,6 +6,7 @@
 *.crush
 *.degree
 *.depth
+*.depthpaths
 *.flatten
 *.flip
 *.inj
