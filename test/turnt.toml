@@ -40,7 +40,7 @@ output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "slow_odgi depth {filename}"
+command = "slow_odgi depth -paths {base}.depthpaths {filename}"
 output.depth = "-"
 
 [envs.flatten_oracle]
