@@ -141,12 +141,18 @@ S	3	GGGG
 S	4	CCCC
 P	x	1+,3+,4+,3+	*
 P	y	1+,3-		*
+P	z	3+,4+		*
 L	1	+	2	+	0M
 L	1	+	3	+	0M
 L	1	+	3	-	0M
 L	3	-	4	+	0M
 L	2	+	4	+	0M
 L	3	+	4	+	0M
+```
+and the file
+```
+x
+y
 ```
 running `depth` gives
 ```
@@ -155,7 +161,11 @@ running `depth` gives
 3	3	2
 4	1	1
 ```
-Where each row has the name of the segment, the segment's _depth_, and the segment's _unique depth_. The depth is a count of how many times a segment's name appears across the graph's paths; the direction of traversal is immaterial. The unique depth is similar but only counts an appearance on one path once. In both cases, it does not matter how many times the segment appears in the links.
+Where each row has the name of the segment, the segment's _depth_, and the segment's _unique depth_. 
+The depth is a count of how many times a segment's name appears across the graph's paths; the direction of traversal is immaterial. 
+Note that not every path is included in this computation; only those that are named in the separate file are. 
+Accordingly, the depth table presented above is ignoring the path `z`.
+The unique depth is similar to depth, but only counts an appearance on one path once. In both cases, it does not matter how many times the segment appears in the links.
 
 
 #### `flatten`
