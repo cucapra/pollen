@@ -6,11 +6,14 @@
 
 ### Installation
 
-You will need [flit](https://flit.pypa.io/en/latest/#install).
+It is possible to skip installation and just run `python -m slow_odgi`.
+
+To get an installed executable, you will need [flit](https://flit.pypa.io/en/latest/#install).
 Navigate to this directory, i.e, `...pollen/slow_odgi`, and then run
 ```
 flit install --user --symlink
 ```
+Thereafter, just `slow_odgi` will work.
 
 ### Testing
 
