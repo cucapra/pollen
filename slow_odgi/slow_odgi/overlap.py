@@ -15,11 +15,14 @@ def touches(path1, path2, graph):
 
 def overlap(graph, inputpaths):
     """Which paths touch these input paths?"""
-    print("\t".join(["#path", "start", "end", "path.touched"]))
+    header_printed = False
     for ip in inputpaths:
         assert ip in graph.paths
         for path in graph.paths.keys():
             if touches(ip, path, graph):
+                if not header_printed:
+                    print("\t".join(["#path", "start", "end", "path.touched"]))
+                    header_printed = True
                 print(
                     "\t".join([ip, "0", str(len(preprocess.pathseq(graph)[ip])), path])
                 )
