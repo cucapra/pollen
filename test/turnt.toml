@@ -35,7 +35,7 @@ output.depthpaths = "-"
 
 [envs.depth_oracle]
 binary = true
-command = "odgi depth -d -i {filename} -R {base}.depthpaths"
+command = "odgi depth -d -i {filename} -s {base}.depthpaths"
 output.depth = "-"
 
 [envs.depth_test]
