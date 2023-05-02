@@ -147,17 +147,19 @@ def dispatch(args):
     then dispatch to the appropriate slow-odgi command.
     If the command makes a new graph, emit it to stdout."""
     name_to_func = {
-        "chop": lambda x: chop.chop(x, int(args.n)),
+        "chop": lambda g: chop.chop(g, int(args.n)),
         "crush": crush.crush,
         "degree": degree.degree,
         "depth": depth.depth,
-        "flatten": lambda x: flatten.flatten(x, f"{args.graph[:-4]}.og"),
+        "flatten": lambda g: flatten.flatten(g, f"{args.graph[:-4]}.og"),
         "flip": flip.flip,
-        "inject": lambda x: inject.inject(x, parse_bedfile(args.bed)),
+        "inject": lambda g: inject.inject(g, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
-        "mkjson": lambda x: mkjson.depth_json(x, args.n, args.e, args.p),
+        "mkjson": lambda g: mkjson.depth_json(g, args.n, args.e, args.p),
         # "mkjson": mkjson.simple_json,
-        "overlap": lambda x: overlap.overlap(x, parse_paths(args.paths)),
+        # Toggle the two lines on/off to see mkjson emit a simple JSON
+        # versus the `node depth`-specific JSON.
+        "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
     }
@@ -176,3 +178,7 @@ def main():
         parser.print_help()
         exit(-1)
     dispatch(args)
+
+
+if __name__ == "__main__":
+    main()
