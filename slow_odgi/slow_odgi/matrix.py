@@ -1,5 +1,4 @@
-import sys
-from . import mygfa, preprocess
+from . import preprocess
 
 
 def matrix(graph):

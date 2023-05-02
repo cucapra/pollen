@@ -1,5 +1,3 @@
-import sys
-from typing import List
 from . import mygfa, chop
 
 
