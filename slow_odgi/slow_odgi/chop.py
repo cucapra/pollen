@@ -1,4 +1,3 @@
-import sys
 from typing import Dict, Tuple
 from . import mygfa
 
