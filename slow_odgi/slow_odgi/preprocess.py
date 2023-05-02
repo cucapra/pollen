@@ -1,5 +1,5 @@
-import mygfa
 from typing import List, Tuple, Dict
+from . import mygfa
 
 
 def node_steps(graph):
@@ -50,3 +50,10 @@ def pathseq(graph):
             graph.segments[seg.name].seq for seg in graph.paths[path].segments
         )
     return ans
+
+
+def get_maxes(graph):
+    max_nodes = len(graph.segments)
+    max_steps = max([len(steps) for steps in node_steps(graph).values()])
+    max_paths = len(graph.paths)
+    return max_nodes, max_steps, max_paths

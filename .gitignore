@@ -2,9 +2,14 @@ __pycache__/
 *.py[cod]
 .DS_Store
 
+**/*.og
+**/*.gfa
+**/*.out
 *.json
 og_to_gfa.py
 compute_maxes.py
 
 pollen/target/*
 pollen/*.rlib
+
+slow_odgi/dist/

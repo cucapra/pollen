@@ -225,3 +225,11 @@ class Graph:
         if showlinks:
             for link in sorted(self.links):
                 print(str(link), file=outfile)
+
+
+if __name__ == "__main__":
+    graph = Graph.parse(sys.stdin)
+    if len(sys.argv) > 1 and sys.argv[1] == "--nl":
+        graph.emit(sys.stdout, False)
+    else:
+        graph.emit(sys.stdout)
