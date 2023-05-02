@@ -83,6 +83,16 @@ binary = true
 command = "slow_odgi matrix {filename} | sort"
 output.matrix = "-"
 
+[envs.mkjson_oracle]
+binary = true
+command = "exine depth -d {filename} -a {filename}"
+output.json = "-"
+
+[envs.mkjson_test]
+binary = true
+command = "slow_odgi mkjson {filename}"
+output.json = "-"
+
 [envs.norm_oracle]
 binary = true
 command = "odgi view -g -i {filename} | python -m slow_odgi.norm"
