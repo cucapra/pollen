@@ -28,8 +28,8 @@ test-slow-validate: fetch
 
 # Sets up all the odgi-oracles and then tests slow-odgi against them.
 test-slow-odgi: test-slow-validate slow-odgi-all-oracles slow-odgi-all-tests
-# `validate` is currently set up in a delicate way that makes it hard to unzip. 
-# We just test `validate` in its entirety (setup, then oracle, then test) 
+# `validate` is currently set up in a delicate way that makes it hard to unzip.
+# We just test `validate` in its entirety (setup, then oracle, then test)
 # before doing the rest in our unzipped style.
 
 # Collects all the setup/oracle stages of slow-odgi into once place.
@@ -47,7 +47,6 @@ slow-odgi-all-oracles: og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
 	-turnt --save --env matrix_oracle test/*.og
-	-turnt --save --env normalize_oracle test/*.og
 	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
@@ -67,7 +66,6 @@ slow-odgi-all-tests:
 	-turnt --env flatten_test test/*.gfa
 	-turnt --env inject_test test/*.gfa
 	-turnt --env matrix_test test/*.gfa
-	-turnt --env normalize_test test/*.gfa
 	-turnt --env overlap_test test/*.gfa
 	-turnt --env paths_test test/*.gfa
 

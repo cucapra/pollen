@@ -1,7 +1,6 @@
 import sys
-import mygfa
 import random
-import preprocess
+from . import mygfa, preprocess
 
 
 def print_bed(graph):
