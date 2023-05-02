@@ -1,4 +1,4 @@
-TEST_FILES := t k note5 # overlap q.chop LPA DRB1-3123 chr6.C4
+TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -52,7 +52,7 @@ slow-odgi-all-oracles: og
 
 # In reality slow-odgi-all-tests needs slow-odgi-all-oracles as a dependency.
 # Running the below by itself is faster and less noisy,
-# but do so ONLY if you know that the graphs and the odgic commands have not
+# but do so ONLY if you know that the graphs and the odgi commands have not
 # changed, in which case slow-odgi-all-oracles would have had no effect anyway.
 slow-odgi-all-tests:
 	turnt --env chop_test test/*.gfa
@@ -82,13 +82,13 @@ test-slow-odgi-careful: test-slow-odgi test-slow-validate-careful test-slow-crus
 test-slow-validate-careful: fetch
 	-turnt --save --env validate_setup test/*.gfa
 	for fn in `ls test/*.temp`; do `mv $$fn $${fn%.*}_temp.gfa`; done
-	-turnt --save --env validate_oracle test/*_temp.gfa
+	-turnt --save --env validate_oracle_err test/*_temp.gfa
 	turnt --env validate_test test/*_temp.gfa
 	rm test/*_temp.gfa
 
 # Handmade files to test crush and flip more comprehensively.
 test-slow-crush-careful: fetch
-	turnt --save --env crush_oracle test/handmade/crush*.gfa
+	-turnt --save --env crush_oracle test/handmade/crush*.gfa
 	-turnt --env crush_test test/handmade/crush*.gfa
 
 test-slow-flip-careful: fetch
@@ -97,15 +97,16 @@ test-slow-flip-careful: fetch
 
 
 clean:
-	rm -rf $(TEST_FILES:%=%.*)
+	rm -rf $(TEST_FILES:%=%.*)f
 	rm -rf $(TEST_FILES:%=test/%.*)
 
 	rm -rf test/basic/*.og
-
 	rm -rf test/*temp.*
 	rm -rf test/depth/*.out
 	rm -rf test/depth/basic/*.out
 	rm -rf test/depth/subset-paths/*.out
+	rm -rf test/handmade/*.crush
+	rm -rf test/handmade/*.flip
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
