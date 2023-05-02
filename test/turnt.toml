@@ -1,119 +1,145 @@
 [envs.chop_oracle]
 binary = true
-command = "odgi chop -i {filename} -c 3 -o - > /dev/null"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | python -m slow_odgi.norm --nl"
 output.chop = "-"
 
 [envs.chop_test]
 binary = true
-command = "python3 ../slow_odgi/chop.py < {filename} 3 > /dev/null"
+command = "slow_odgi chop {filename} -n 3"
 output.chop = "-"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} -o - > /dev/null"
+command = "odgi crush -i {filename} -o - | odgi view -g -i - | python -m slow_odgi.norm"
 output.crush = "-"
 
 [envs.crush_test]
 binary = true
-command = "python3 ../slow_odgi/crush.py < {filename} > /dev/null"
+command = "slow_odgi crush {filename}"
 output.crush = "-"
 
 [envs.degree_oracle]
 binary = true
-command = "odgi degree -d --input={filename} > /dev/null"
+command = "odgi degree -d --input={filename}"
 output.degree = "-"
 
 [envs.degree_test]
 binary = true
-command = "python3 ../slow_odgi/degree.py < {filename} > /dev/null"
+command = "slow_odgi degree {filename}"
 output.degree = "-"
 
 [envs.depth_oracle]
 binary = true
-command = "odgi depth -d --input={filename} > /dev/null"
+command = "odgi depth -d --input={filename}"
 output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "python3 ../slow_odgi/depth.py < {filename} > /dev/null"
+command = "slow_odgi depth {filename}"
 output.depth = "-"
 
 [envs.flatten_oracle]
 binary = true
-command = "odgi flatten -i {filename} -f /dev/null -b /dev/null"
+command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
 output.flatten = "-"
 
 [envs.flatten_test]
 binary = true
-command = "python3 ../slow_odgi/flatten.py {filename} > /dev/null"
+command = "slow_odgi flatten {filename}"
 output.flatten = "-"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} -o - > /dev/null"
+command = "odgi flip -i {filename} -o - | odgi view -g -i - | python -m slow_odgi.norm"
 output.flip = "-"
 
 [envs.flip_test]
 binary = true
-command = "python3 ../slow_odgi/flip.py < {filename} > /dev/null"
+command = "slow_odgi flip {filename}"
 output.flip = "-"
+
+[envs.inject_setup]
+binary = true
+command = "python -m slow_odgi.inject_setup < {filename}"
+output.bed = "-"
 
 [envs.inject_oracle]
 binary = true
-command = "odgi inject -i {filename} -b setup/{base}.bed -o - > /dev/null"
+command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | python -m slow_odgi.norm --nl"
 output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "python3 ../slow_odgi/inject.py < {filename} setup/{base}.bed > /dev/null"
+command = "slow_odgi inject -bed {base}.bed {filename}"
 output.inj = "-"
 
 [envs.matrix_oracle]
 binary = true
-command = "odgi matrix -i {filename} | sort > /dev/null"
+command = "odgi matrix -i {filename} | sort"
 output.matrix = "-"
 
 [envs.matrix_test]
 binary = true
-command = "python3 ../slow_odgi/matrix.py < {filename} | sort > /dev/null"
+command = "slow_odgi matrix {filename} | sort"
 output.matrix = "-"
 
-[envs.normalize_oracle]
+[envs.mkjson_oracle]
 binary = true
-command = "odgi view -g -i {filename} > /dev/null"
-output.normalize = "-"
+command = "exine depth -d {filename} -a {filename}"
+output.json = "-"
 
-[envs.normalize_test]
+[envs.mkjson_test]
 binary = true
-command = "python3 ../slow_odgi/normalize.py < {filename} > /dev/null"
-output.normalize = "-"
+command = "slow_odgi mkjson {filename}"
+output.json = "-"
+
+[envs.norm_oracle]
+binary = true
+command = "odgi view -g -i {filename} | python -m slow_odgi.norm"
+output.norm = "-"
+
+[envs.norm_test]
+binary = true
+command = "python -m slow_odgi.norm {filename}"
+output.norm = "-"
+
+[envs.overlap_setup]
+binary = true
+command = "slow_odgi paths {filename}"
+output.overlappaths = "-"
 
 [envs.overlap_oracle]
 binary = true
-command = "odgi overlap -i {filename} -R setup/{base}.overlappaths > /dev/null"
+command = "odgi overlap -i {filename} -R {base}.overlappaths"
 output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "python3 ../slow_odgi/overlap.py setup/{base}.overlappaths < {filename} > /dev/null"
+command = "slow_odgi overlap -paths {base}.overlappaths {filename}"
 output.overlap = "-"
 
 [envs.paths_oracle]
 binary = true
-command = "odgi paths -i {filename} -L > /dev/null"
+command = "odgi paths -i {filename} -L"
 output.paths = "-"
 
 [envs.paths_test]
 binary = true
-command = "python3 ../slow_odgi/paths.py < {filename} > /dev/null"
+command = "slow_odgi paths {filename}"
 output.paths = "-"
+
+[envs.validate_setup]
+binary = true
+command = "python -m slow_odgi.validate_setup < {filename}"
+output.temp = "-"
 
 [envs.validate_oracle]
 binary = true
-command = "odgi validate -i {filename} 2>&1 > /dev/null"
+command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
+return_code = 1
 output.validate = "-"
 
 [envs.validate_test]
 binary = true
-command = "python3 ../slow_odgi/validate.py < {filename} > /dev/null"
+command = "slow_odgi validate {filename}"
 output.validate = "-"

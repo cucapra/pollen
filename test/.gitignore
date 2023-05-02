@@ -10,7 +10,7 @@
 *.flip
 *.inj
 *.matrix
-*.normalize
+*.norm
 *.overlap
 *.overlappaths
 *.paths
