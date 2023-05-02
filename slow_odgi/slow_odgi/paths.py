@@ -10,7 +10,9 @@ def paths(graph, droprate=0):
     pathnames = list(graph.paths.keys())
     if droprate > 0:
         random.seed(4)
-        pathnames[:] = random.sample(pathnames, int((100 - droprate) * len(pathnames)))
+        pathnames[:] = random.sample(
+            pathnames, int((100 - droprate) / 100 * len(pathnames))
+        )
     for name in pathnames:
         print(name)
 
