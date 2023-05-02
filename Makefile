@@ -39,6 +39,7 @@ slow-odgi-all-oracles: og
 	-turnt --save --env chop_oracle test/*.og
 	-turnt --save --env crush_oracle test/*.og
 	-turnt --save --env degree_oracle test/*.og
+	-turnt --save --env depth_setup test/*.gfa
 	-turnt --save --env depth_oracle test/*.og
 	-turnt --save --env flip_oracle test/*.og
 	-turnt --save --env flatten_oracle test/*.og
@@ -66,11 +67,6 @@ slow-odgi-all-tests:
 	-turnt --env overlap_test test/*.gfa
 	-turnt --env paths_test test/*.gfa
 	-turnt --env validate_test test/*.gfa
-
-curr: og
-	-turnt --save --env depth_setup test/*.gfa
-	-turnt --save --env depth_oracle test/*.og
-	-turnt --save --env depth_test test/*.gfa
 
 
 # The basic test suite above, plus a few handmade tests for good measure.

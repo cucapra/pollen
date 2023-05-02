@@ -49,6 +49,12 @@ def parse_args():
     depth_parser = subparsers.add_parser(
         "depth", help="Generates a table summarizing each segment's depth."
     )
+    depth_parser.add_argument(
+        "-paths",
+        nargs="?",
+        help="A file describing the paths you wish to query.",
+        required=True,
+    )
 
     flatten_parser = subparsers.add_parser(
         "flatten",
@@ -106,7 +112,7 @@ def parse_args():
     overlap_parser.add_argument(
         "-paths",
         nargs="?",
-        help="A BED file describing the paths you wish to query.",
+        help="A file describing the paths you wish to query.",
         required=True,
     )
 
@@ -150,7 +156,7 @@ def dispatch(args):
         "chop": lambda g: chop.chop(g, int(args.n)),
         "crush": crush.crush,
         "degree": degree.degree,
-        "depth": depth.depth,
+        "depth": lambda g: depth.depth(g, parse_paths(args.paths)),
         "flatten": lambda g: flatten.flatten(g, f"{args.graph[:-4]}.og"),
         "flip": flip.flip,
         "inject": lambda g: inject.inject(g, parse_bedfile(args.bed)),
