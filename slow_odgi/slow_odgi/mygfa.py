@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, Dict, TextIO, Iterator, NamedTuple
+from typing import List, Tuple, Optional, Dict, TextIO, Iterator
 from enum import Enum
 import re
 
