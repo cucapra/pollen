@@ -110,7 +110,7 @@ output.norm = "-"
 
 [envs.overlap_setup]
 binary = true
-command = "python -m slow_odgi.paths {filename} 50"
+command = "python -m slow_odgi.paths {filename} 0"
 output.overlappaths = "-"
 
 [envs.overlap_oracle]
