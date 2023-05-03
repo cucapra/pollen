@@ -1,5 +1,7 @@
 import argparse
 import sys
+from mygfa import mygfa
+
 from . import (
     chop,
     crush,
@@ -10,7 +12,6 @@ from . import (
     inject,
     matrix,
     mkjson,
-    mygfa,
     overlap,
     paths,
     validate,
