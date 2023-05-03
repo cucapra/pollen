@@ -53,8 +53,8 @@ def chop_paths(graph, legend):
             a, b = legend[seg.name]
             segments = [mygfa.Handle(str(s), o) for s in range(a, b)]
             new_p_segs += segments if o else list(reversed(segments))
-        new_paths[path.name] = mygfa.Path(path.name, new_p_segs, path.overlaps)
-        # For now we handle overlaps very sloppily.
+        new_paths[path.name] = mygfa.Path(path.name, new_p_segs, None)
+        # odgi drops overlaps, so we do too.
     return new_paths
 
 
