@@ -97,7 +97,7 @@ test-slow-flip-careful: fetch
 
 
 clean:
-	rm -rf $(TEST_FILES:%=%.*)f
+	rm -rf $(TEST_FILES:%=%.*)
 	rm -rf $(TEST_FILES:%=test/%.*)
 
 	rm -rf test/basic/*.og
