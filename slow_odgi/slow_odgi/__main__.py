@@ -50,7 +50,7 @@ def parse_args():
         "depth", help="Generates a table summarizing each segment's depth."
     )
     depth_parser.add_argument(
-        "-paths",
+        "--paths",
         nargs="?",
         help="A file describing the paths you wish to query.",
         required=True,
@@ -70,7 +70,7 @@ def parse_args():
         "inject", help="Adds new paths, as specified, to the graph."
     )
     inject_parser.add_argument(
-        "-bed",
+        "--bed",
         nargs="?",
         help="A BED file describing the paths you wish to insert.",
         required=True,
@@ -110,7 +110,7 @@ def parse_args():
         help="Queries the graph about which paths overlap with which other paths.",
     )
     overlap_parser.add_argument(
-        "-paths",
+        "--paths",
         nargs="?",
         help="A file describing the paths you wish to query.",
         required=True,
