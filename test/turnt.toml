@@ -40,7 +40,7 @@ output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "slow_odgi depth -paths {base}.depthpaths {filename}"
+command = "slow_odgi depth --paths {base}.depthpaths {filename}"
 output.depth = "-"
 
 [envs.flatten_oracle]
@@ -75,7 +75,7 @@ output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "slow_odgi inject -bed {base}.bed {filename}"
+command = "slow_odgi inject --bed {base}.bed {filename}"
 output.inj = "-"
 
 [envs.matrix_oracle]
@@ -120,7 +120,7 @@ output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "slow_odgi overlap -paths {base}.overlappaths {filename}"
+command = "slow_odgi overlap --paths {base}.overlappaths {filename}"
 output.overlap = "-"
 
 [envs.paths_oracle]
