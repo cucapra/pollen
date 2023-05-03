@@ -28,14 +28,19 @@ binary = true
 command = "slow_odgi degree {filename}"
 output.degree = "-"
 
+[envs.depth_setup]
+binary = true
+command = "python -m slow_odgi.paths {filename} 50"
+output.depthpaths = "-"
+
 [envs.depth_oracle]
 binary = true
-command = "odgi depth -d --input={filename}"
+command = "odgi depth -d -i {filename} -s {base}.depthpaths"
 output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "slow_odgi depth {filename}"
+command = "slow_odgi depth --paths {base}.depthpaths {filename}"
 output.depth = "-"
 
 [envs.flatten_oracle]
@@ -70,7 +75,7 @@ output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "slow_odgi inject -bed {base}.bed {filename}"
+command = "slow_odgi inject --bed {base}.bed {filename}"
 output.inj = "-"
 
 [envs.matrix_oracle]
@@ -105,7 +110,7 @@ output.norm = "-"
 
 [envs.overlap_setup]
 binary = true
-command = "slow_odgi paths {filename}"
+command = "python -m slow_odgi.paths {filename} 50"
 output.overlappaths = "-"
 
 [envs.overlap_oracle]
@@ -115,7 +120,7 @@ output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "slow_odgi overlap -paths {base}.overlappaths {filename}"
+command = "slow_odgi overlap --paths {base}.overlappaths {filename}"
 output.overlap = "-"
 
 [envs.paths_oracle]
@@ -135,10 +140,10 @@ output.temp = "-"
 
 [envs.validate_oracle]
 binary = true
-command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
+command = "odgi validate -i {filename} 2>&1"
 output.validate = "-"
 
-[envs.validate_oracle_err]
+[envs.validate_oracle_careful]
 binary = true
 command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
 return_code = 1
