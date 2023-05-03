@@ -21,7 +21,7 @@ test-depth: og
 
 
 test-mkjson: og
-	-turnt -v --save --env mkjson_oracle test/*.og
+	-turnt --save --env mkjson_oracle test/*.og
 	turnt --env mkjson_test test/*.gfa
 
 
