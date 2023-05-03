@@ -95,7 +95,7 @@ output.json = "-"
 
 [envs.mkjson_test]
 binary = true
-command = "slow_odgi mkjson {filename}"
+command = "data_gen mkjson {filename}"
 output.json = "-"
 
 [envs.norm_oracle]
