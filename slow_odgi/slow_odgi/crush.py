@@ -1,4 +1,4 @@
-from . import mygfa, preprocess
+from mygfa import mygfa, preprocess
 
 
 def crush_seg(seg):

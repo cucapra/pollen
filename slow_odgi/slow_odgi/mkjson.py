@@ -1,7 +1,7 @@
 import json
 import dataclasses
 from json import JSONEncoder
-from . import mygfa, preprocess
+from mygfa import mygfa, preprocess
 
 
 def format_gen(width):
