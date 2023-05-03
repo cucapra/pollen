@@ -57,3 +57,7 @@ def get_maxes(graph):
     max_steps = max([len(steps) for steps in node_steps(graph).values()])
     max_paths = len(graph.paths)
     return max_nodes, max_steps, max_paths
+
+
+def drop_all_overlaps(paths):
+    return {name: path.drop_overlaps() for name, path in paths.items()}

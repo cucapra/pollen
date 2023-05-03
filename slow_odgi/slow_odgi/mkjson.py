@@ -1,4 +1,3 @@
-import sys
 import json
 import dataclasses
 from json import JSONEncoder
