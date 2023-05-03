@@ -1,7 +1,6 @@
 import json
-import dataclasses
 from json import JSONEncoder
-from mygfa import mygfa, preprocess
+from mygfa import preprocess
 
 
 def format_gen(width):
@@ -23,7 +22,7 @@ def paths_viewed_from_nodes(graph, n, e, p):
     return output
 
 
-def paths_to_consider(o, n, p):
+def paths_to_consider(n, p):
     """Currently just a stub; later we will populate this with a
     bitvector of length MAX_PATHS, where the i'th index will be 1 if
     the i'th path is to be considered during depth calculation.
@@ -68,7 +67,7 @@ class NodeDepthEncoder(JSONEncoder):
             }
         }
         paths = paths_viewed_from_nodes(o, self.n, self.e, self.p) | paths_to_consider(
-            o, self.n, self.p
+            self.n, self.p
         )
         print(
             json.dumps(
@@ -77,33 +76,10 @@ class NodeDepthEncoder(JSONEncoder):
         )
 
 
-class GenericSimpleEncoder(JSONEncoder):
-    def default(self, o):
-        if isinstance(o, mygfa.Path):
-            items = str(o).split("\t")
-            return {"segments": items[2], "overlaps": items[3]}
-        if isinstance(o, mygfa.Link):
-            return {
-                "from": o.from_.name,
-                "from_orient": o.from_.orientation,
-                "to": o.to.name,
-                "to_orient": o.to.orientation,
-                "overlap": str(o.overlap),
-            }
-        if isinstance(o, mygfa.Segment) or isinstance(o, mygfa.Alignment):
-            return dataclasses.asdict(o)
-
-
-def simple_json(graph):
-    """A wholesale dump of the graph, for completeness."""
-    print(json.dumps(graph.headers, indent=4))
-    print(json.dumps(graph.segments, indent=4, cls=GenericSimpleEncoder))
-    print(json.dumps(graph.links, indent=4, cls=GenericSimpleEncoder))
-    print(json.dumps(graph.paths, indent=4, cls=GenericSimpleEncoder))
-
-
-def depth_json(graph, n, e, p):
-    """Specific to the exine command `depth`."""
+def depth(graph, n, e, p):
+    """Prints a JSON representation of `graph`
+    that is specific to the exine command `depth`.
+    """
     n_tight, e_tight, p_tight = preprocess.get_maxes(graph)
     # These values have been calculated automatically, and are likely optimal.
     # However, they are only to be used when the user-does not supply them via CLI.

@@ -1,7 +1,7 @@
 import argparse
 from mygfa import mygfa
 
-from . import depth
+from . import depth, simple
 
 
 def parse_args():
@@ -59,8 +59,8 @@ def dispatch(args):
     then dispatch to the appropriate data_gen command.
     """
     name_to_func = {
-        "depth": lambda g: depth.depth_json(g, args.n, args.e, args.p),
-        "simple": depth.simple_json,
+        "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
+        "simple": simple.simple,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     name_to_func[args.command](graph)
