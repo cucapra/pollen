@@ -49,7 +49,7 @@ slow-odgi-all-oracles: og
 	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
-	-turnt --save --env validate_oracle test/*.og
+	-turnt --save --env validate_oracle test/*.gfa
 
 # In reality slow-odgi-all-tests needs slow-odgi-all-oracles as a dependency.
 # Running the below by itself is faster and less noisy,
