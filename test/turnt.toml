@@ -136,6 +136,11 @@ output.temp = "-"
 [envs.validate_oracle]
 binary = true
 command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
+output.validate = "-"
+
+[envs.validate_oracle_err]
+binary = true
+command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
 return_code = 1
 output.validate = "-"
 
