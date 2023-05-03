@@ -1,8 +1,7 @@
 import argparse
-import sys
 from mygfa import mygfa
 
-from . import mkjson
+from . import depth
 
 
 def parse_args():
@@ -13,24 +12,28 @@ def parse_args():
         title="data-gen commands", metavar="COMMAND", dest="command"
     )
 
-    mkjson_parser = subparsers.add_parser(
-        "mkjson", help="Produces a JSON representation of the graph."
+    simple_parser = subparsers.add_parser(
+        "simple", help="Produces a simple JSON representation of the graph."
     )
-    mkjson_parser.add_argument(
+
+    depth_parser = subparsers.add_parser(
+        "depth", help="Produces a `depth`-specific JSON representation of the graph."
+    )
+    depth_parser.add_argument(
         "-n",
         nargs="?",
         const="d",
         help="The max number of nodes.",
         required=False,
     )
-    mkjson_parser.add_argument(
+    depth_parser.add_argument(
         "-e",
         nargs="?",
         const="d",
         help="The max number of steps per node.",
         required=False,
     )
-    mkjson_parser.add_argument(
+    depth_parser.add_argument(
         "-p",
         nargs="?",
         const="d",
@@ -53,14 +56,11 @@ def parse_args():
 
 def dispatch(args):
     """Parse the graph from filename,
-    parse any additional files if needed,
-    then dispatch to the appropriate slow-odgi command.
-    If the command makes a new graph, emit it to stdout."""
+    then dispatch to the appropriate data_gen command.
+    """
     name_to_func = {
-        "mkjson": lambda g: mkjson.depth_json(g, args.n, args.e, args.p),
-        # "mkjson": mkjson.simple_json,
-        # Toggle the two lines on/off to see mkjson emit a simple JSON
-        # versus the `node depth`-specific JSON.
+        "depth": lambda g: depth.depth_json(g, args.n, args.e, args.p),
+        "simple": depth.simple_json,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     name_to_func[args.command](graph)

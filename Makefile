@@ -21,8 +21,8 @@ test-depth: og
 
 
 test-mkjson: og
-	-turnt --save --env mkjson_oracle test/*.og
-	turnt --env mkjson_test test/*.gfa
+	-turnt --save --env data_gen_depth_oracle test/*.og
+	turnt --env data_gen_depth_test test/*.gfa
 
 
 #################
