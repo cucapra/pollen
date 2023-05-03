@@ -23,9 +23,10 @@ def flip_path(path, graph):
         path_segs = []
         for seg in reversed(path.segments):
             path_segs.append(mygfa.Handle(seg.name, not seg.orientation))
-        return mygfa.Path(f"{path.name}_inv", path_segs, path.overlaps), True
+        return mygfa.Path(f"{path.name}_inv", path_segs, None), True
     else:
-        return path, False
+        return path.drop_overlaps(), False
+        # odgi drops overlaps, so we do too.
 
 
 def dedup(list: List[mygfa.Link]) -> List[mygfa.Link]:

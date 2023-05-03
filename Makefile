@@ -30,32 +30,38 @@ test-mkjson: og
 #################
 
 # Sets up all the odgi-oracles and then tests slow-odgi against them.
-test-slow-odgi: slow-odgi-all-oracles slow-odgi-all-tests
+test-slow-odgi: slow-odgi-setup slow-odgi-oracles slow-odgi-tests
 
 # Collects all the setup/oracle stages of slow-odgi into once place.
+slow-odgi-setup: og
+	-turnt --save --env depth_setup test/*.gfa
+	-turnt --save --env inject_setup test/*.gfa
+	-turnt --save --env overlap_setup test/*.gfa
+
+# Collects all the oracle stages of slow-odgi into once place.
 # This can be run once, noisily, and then slow-odgi-all-tests can be run
 # quietly against the expect-files created here.
-slow-odgi-all-oracles: og
+# Note that, in reality, this depends on the setup stage above.
+# Run this by itself ONLY if you know that the setup stages don't need to be
+# run afresh.
+slow-odgi-oracles: og
 	-turnt --save --env chop_oracle test/*.og
 	-turnt --save --env crush_oracle test/*.og
 	-turnt --save --env degree_oracle test/*.og
-	-turnt --save --env depth_setup test/*.gfa
 	-turnt --save --env depth_oracle test/*.og
 	-turnt --save --env flip_oracle test/*.og
 	-turnt --save --env flatten_oracle test/*.og
-	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env inject_oracle test/*.og
 	-turnt --save --env matrix_oracle test/*.og
-	-turnt --save --env overlap_setup test/*.gfa
 	-turnt --save --env overlap_oracle test/*.og
 	-turnt --save --env paths_oracle test/*.og
 	-turnt --save --env validate_oracle test/*.og
 
-# In reality slow-odgi-all-tests needs slow-odgi-all-oracles as a dependency.
+# In reality slow-odgi-tests depends on slow-odgi-oracles above.
 # Running the below by itself is faster and less noisy,
 # but do so ONLY if you know that the graphs and the odgi commands have not
-# changed, in which case slow-odgi-all-oracles would have had no effect anyway.
-slow-odgi-all-tests:
+# changed, in which case slow-odgi-oracles would have had no effect anyway.
+slow-odgi-tests:
 	turnt --env chop_test test/*.gfa
 	-turnt --env crush_test test/*.gfa
 	-turnt --env degree_test test/*.gfa
@@ -71,7 +77,7 @@ slow-odgi-all-tests:
 
 # The basic test suite above, plus a few handmade tests for good measure.
 # Those are described below.
-test-slow-odgi-careful: test-slow-odgi test-slow-validate-careful test-slow-crush-careful test-slow-flip-careful
+test-slow-odgi-careful: slow-odgi-validate-careful slow-odgi-crush-careful slow-odgi-flip-careful
 
 # The fetch-ed graphs are valid, so `validate` succeeds quietly against them.
 # To actually see `validate` in action, we need to walk over the graphs and
@@ -79,22 +85,25 @@ test-slow-odgi-careful: test-slow-odgi test-slow-validate-careful test-slow-crus
 # This is what `validate_setup` does, creating graphname.temp files.
 # It is too annoying to run this every time (it pollutes the .gfa namespace
 # of the test directory), so we provide this as a separate "careful" test.
-test-slow-validate-careful: fetch
+slow-odgi-validate-careful: fetch
 	-turnt --save --env validate_setup test/*.gfa
 	for fn in `ls test/*.temp`; do `mv $$fn $${fn%.*}_temp.gfa`; done
-	-turnt --save --env validate_oracle_err test/*_temp.gfa
+	-turnt --save --env validate_oracle_careful test/*_temp.gfa
 	turnt --env validate_test test/*_temp.gfa
 	rm test/*_temp.gfa
 
 # Handmade files to test crush and flip more comprehensively.
-test-slow-crush-careful: fetch
+slow-odgi-crush-careful: fetch
 	-turnt --save --env crush_oracle test/handmade/crush*.gfa
 	-turnt --env crush_test test/handmade/crush*.gfa
 
-test-slow-flip-careful: fetch
+slow-odgi-flip-careful: fetch
 	-turnt --save --env flip_oracle test/handmade/flip*.gfa
 	-turnt --env flip_test test/handmade/flip*.gfa
 
+
+# All the slow-odgi tests, basic + careful.
+test-slow-odgi-all: test-slow-odgi test-slow-odgi-careful
 
 clean:
 	rm -rf $(TEST_FILES:%=%.*)f
