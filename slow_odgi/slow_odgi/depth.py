@@ -7,7 +7,7 @@ def depth(graph, inputpaths):
     for seg, crossings in preprocess.node_steps(graph).items():
         # Each crossing is a (path name, index on path, direction) tuple.
         # We only want to count crossings that are on input paths.
-        crossings = list(filter(lambda c: c[0] in inputpaths, crossings))
+        crossings = [c for c in crossings if c[0] in inputpaths]
         # For depth.uniq, we need to know how many unique path-names there are.
         uniq_path_names = set(c[0] for c in crossings)
         print("\t".join([seg, str(len(crossings)), str(len(uniq_path_names))]))

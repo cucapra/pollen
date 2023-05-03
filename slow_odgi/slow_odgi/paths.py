@@ -4,7 +4,7 @@ from . import mygfa
 
 
 def paths(graph, droprate=0):
-    """Just the names of the paths found in this graph.
+    """Print the names of the paths found in `graph`.
     The droprate represents the percentage of paths to drop.
     """
     pathnames = list(graph.paths.keys())
