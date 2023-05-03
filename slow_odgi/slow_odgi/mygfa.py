@@ -171,9 +171,17 @@ class Path:
             overlaps_lst,
         )
 
+    def drop_overlaps(self) -> "Path":
+        return Path(self.name, self.segments, None)
+
     def __str__(self):
         return "\t".join(
-            ["P", self.name, ",".join(str(seg) for seg in self.segments), "*"]
+            [
+                "P",
+                self.name,
+                ",".join(str(seg) for seg in self.segments),
+                ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+            ]
         )
 
 
