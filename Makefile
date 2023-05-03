@@ -20,7 +20,7 @@ test-depth: og
 	turnt $(DEPTH_OG_FILES)
 
 
-test-mkjson: og
+test-data-gen: og
 	-turnt --save --env data_gen_depth_oracle test/*.og
 	turnt --env data_gen_depth_test test/*.gfa
 
