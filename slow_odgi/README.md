@@ -298,9 +298,7 @@ S	4	A
 P	x	1+,3-,2-,4+	*	// changed in place
 P	y	3-	*		// ?!
 ```
-Segment 2 needed to be chopped, but the point at which we chopped segment 2 is perhaps surprising.
-The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 2.
-Path `y`'s lone link is perhaps surprising.
+Segment 2 needed to be chopped, but the point at which we chopped segment 2 is perhaps surprising. The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 2. The link on path `y` is perhaps surprising.
 
 The explanation is this. 
 The original path `x` was traversing segment 2 in the reverse direction, meaning that, when the BED file requested a new path `y` that tracked `x` from index 1 to index 2, the path `y` wanted the character `C` (reading segment 2 _backwards_) and not the character `T` (reading segment 2 forwards).
