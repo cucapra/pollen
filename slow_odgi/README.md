@@ -280,28 +280,26 @@ Observe that this required edits to the path `x` as well.
 A further subtlety has to do with subpaths that traverse segments in the reverse direction.
 Given the new graph
 ```
-S	1	A
-S	2	TGC
-S	3	A
-P	x	1+,2-,3+	*
+S	1	ATG
+S	2	CCCC
+P	x	1-,2+	*
 ```
 and the BED file
 ```
-x	1	2	y
+x	0	1	y
 ```
 the correct output is
 ```
-S	1	A
-S	2	TG 	// ?!
-S	3	C 	// ?!
-S	4	A
-P	x	1+,3-,2-,4+	*	// changed in place
-P	y	3-	*		// ?!
+S       1       AT 	// ?!
+S       2       G 	// ?!
+S       3       CCCC
+P       x       2-,1-,3+        *	// changed in place
+P       y       2-      *		// ?!
 ```
-Segment 2 needed to be chopped, but the point at which we chopped segment 2 is perhaps surprising. The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 2. The link on path `y` is perhaps surprising.
+Segment 1 needed to be chopped, but the point at which we chopped segment 1 is perhaps surprising. The link on path `y` is perhaps surprising. The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 1.
 
 The explanation is this. 
-The original path `x` was traversing segment 2 in the reverse direction, meaning that, when the BED file requested a new path `y` that tracked `x` from index 1 to index 2, the path `y` wanted the character `C` (reading segment 2 _backwards_) and not the character `T` (reading segment 2 forwards).
+The original path `x` was traversing segment 1 in the reverse direction, meaning that, when the BED file requested a new path `y` that tracked `x` from index 0 to index 1, the path `y` wanted the character `G` (reading segment 1 _backwards_) and not the character `A` (reading segment 1 forwards).
 
 
 #### `matrix`
