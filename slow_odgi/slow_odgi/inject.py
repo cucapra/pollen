@@ -34,7 +34,7 @@ def where_chop(graph, pathname, index):
             if handle.orientation:
                 return handle.name, index - walk
             else:
-                return handle.name, length - (index - walk)  # check
+                return handle.name, length - (index - walk)
         walk = walk + length
 
 
