@@ -290,7 +290,7 @@ L	2	+	3	+	0M
 ```
 and the BED file
 ```
-x 1 2 y
+x	1	2	y
 ```
 the correct output is
 ```
