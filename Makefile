@@ -1,5 +1,4 @@
-# TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
-TEST_FILES := t DRB1-3123 chr6.C4
+TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 OG_FILES := $(BASIC_TESTS:%=test/basic/%.og) $(TEST_FILES:%=test/%.og)
 DEPTH_OG_FILES := $(OG_FILES:test/%.og=test/depth/%.og)
@@ -75,9 +74,9 @@ slow-odgi-tests:
 	-turnt --env paths_test test/*.gfa
 	-turnt --env validate_test test/*.gfa
 
-curr: fetch
-	-turnt --save --env inject_oracle test/*.gfa
-	-turnt --env inject_test test/*.gfa
+curr:
+	-turnt --save --env inject_oracle test/min.gfa
+	-turnt --diff --env inject_test test/min.gfa
 
 # The basic test suite above, plus a few handmade tests for good measure.
 # Those are described below.
