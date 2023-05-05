@@ -1,5 +1,5 @@
 from mygfa import mygfa
-from . import chop
+from . import chop, flip
 
 
 def track_path(graph, bed):
@@ -72,6 +72,8 @@ def inject(graph, p2i):
     """Given a graph and the list of paths to inject, inject those paths."""
     for p in p2i:
         if p.name in graph.paths.keys():  # odgi is silent if path was absent.
+            # if flip.path_is_rev(graph.paths[p.name], graph):
+            # print(f"Path {p.name} is reverse-oriented.")
             graph = chop_if_needed(chop_if_needed(graph, p.name, p.lo), p.name, p.hi)
             new_path = mygfa.Path(p.new, track_path(graph, p), None)
             graph.paths[p.new] = new_path  # In-place update!
