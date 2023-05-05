@@ -74,9 +74,10 @@ slow-odgi-tests:
 	-turnt --env paths_test test/*.gfa
 	-turnt --env validate_test test/*.gfa
 
-curr:
-	-turnt --save --env inject_oracle test/min.gfa
-	-turnt --diff --env inject_test test/min.gfa
+curr: fetch
+	-turnt --save --env inject_setup test/*.gfa
+	-turnt --save --env inject_oracle test/*.gfa
+	-turnt --diff --env inject_test test/*.gfa
 
 # The basic test suite above, plus a few handmade tests for good measure.
 # Those are described below.

@@ -31,7 +31,10 @@ def where_chop(graph, pathname, index):
             return None
         length = len(graph.segments[handle.name].seq)
         if walk + length > index:
-            return handle.name, index - walk
+            if handle.orientation:
+                return handle.name, index - walk
+            else:
+                return handle.name, length - (index - walk)  # check
         walk = walk + length
 
 
