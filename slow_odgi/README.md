@@ -299,7 +299,7 @@ P	x	1+,3-,2-,4+	*	// changed in place
 P	y	3-	*		// ?!
 ```
 Segment 2 needed to be chopped, but the point at which we chopped segment 2 is perhaps surprising.
-The fixing of the path `x` is _not_ surprising if we accept the chop-point of segment 2.
+The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 2.
 Path `y`'s lone link is perhaps surprising.
 
 The explanation is this. 
