@@ -1,5 +1,5 @@
 from typing import List
-from . import mygfa
+from mygfa import mygfa
 
 
 def path_is_rev(path, graph):

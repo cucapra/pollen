@@ -1,5 +1,8 @@
 import argparse
 import sys
+from mygfa import mygfa
+
+
 from . import (
     chop,
     crush,
@@ -9,8 +12,6 @@ from . import (
     flip,
     inject,
     matrix,
-    mkjson,
-    mygfa,
     overlap,
     paths,
     validate,
@@ -80,31 +81,6 @@ def parse_args():
         "matrix", help="Represents the graph as a matrix."
     )
 
-    mkjson_parser = subparsers.add_parser(
-        "mkjson", help="Produces a JSON representation of the graph."
-    )
-    mkjson_parser.add_argument(
-        "-n",
-        nargs="?",
-        const="d",
-        help="The max number of nodes.",
-        required=False,
-    )
-    mkjson_parser.add_argument(
-        "-e",
-        nargs="?",
-        const="d",
-        help="The max number of steps per node.",
-        required=False,
-    )
-    mkjson_parser.add_argument(
-        "-p",
-        nargs="?",
-        const="d",
-        help="The max number of paths.",
-        required=False,
-    )
-
     overlap_parser = subparsers.add_parser(
         "overlap",
         help="Queries the graph about which paths overlap with which other paths.",
@@ -161,10 +137,6 @@ def dispatch(args):
         "flip": flip.flip,
         "inject": lambda g: inject.inject(g, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
-        "mkjson": lambda g: mkjson.depth_json(g, args.n, args.e, args.p),
-        # "mkjson": mkjson.simple_json,
-        # Toggle the two lines on/off to see mkjson emit a simple JSON
-        # versus the `node depth`-specific JSON.
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,

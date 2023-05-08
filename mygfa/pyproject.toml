@@ -3,14 +3,11 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "slow_odgi"
+name = "mygfa"
 authors = [{name = "Anshuman Mohan", email = "amohan@cs.cornell.edu"}]
-readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["mygfa"]
 
 [project.urls]
-Home = "https://github.com/cucapra/pollen/tree/main/slow_odgi"
-
-[project.scripts]
-slow_odgi = "slow_odgi.__main__:main"
+Home = "https://github.com/cucapra/pollen/tree/main/mygfa"

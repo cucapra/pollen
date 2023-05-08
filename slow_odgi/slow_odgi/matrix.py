@@ -1,4 +1,4 @@
-from . import preprocess
+from mygfa import preprocess
 
 
 def matrix(graph):
