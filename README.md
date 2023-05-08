@@ -20,7 +20,7 @@ Clone this repository using
 ```
 git clone https://github.com/cucapra/pollen.git
 ```
-and run `flit install -s --user` from the root directory. You may need to install [flit]. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+and run `cd pollen-py && flit install -s --user`. You may need to install [flit]. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
 
 
 #### Calyx
