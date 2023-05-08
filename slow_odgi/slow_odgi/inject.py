@@ -20,6 +20,13 @@ def track_path(graph, bed):
     return segs_walked  # Given a legal BED, I should never reach this point.
 
 
+def handle_pos(handle, length, n):
+    """Get the concrete index in the underlying segment sequence corresponding
+    to the `n`th nucleotide from the beginning (in the appropriate direction).
+    """
+    return handle.name, (n if handle.orientation else length - n)
+
+
 def where_chop(graph, pathname, index):
     """Given a path and an index, find which segment should be chopped.
     We may not need to chop: the index could already be at a seam b/w segments.
@@ -31,10 +38,7 @@ def where_chop(graph, pathname, index):
             return None
         length = len(graph.segments[handle.name].seq)
         if walk + length > index:
-            if handle.orientation:
-                return handle.name, index - walk
-            else:
-                return handle.name, length - (index - walk)
+            return handle_pos(handle, length, index - walk)
         walk = walk + length
 
 
