@@ -7,6 +7,7 @@ name = "slow_odgi"
 authors = [{name = "Anshuman Mohan", email = "amohan@cs.cornell.edu"}]
 readme = "README.md"
 dynamic = ["version", "description"]
+dependencies = ["mygfa"]
 
 [project.urls]
 Home = "https://github.com/cucapra/pollen/tree/main/slow_odgi"
