@@ -8,15 +8,15 @@
 
 It is possible to skip installation and just run `python -m slow_odgi`.
 
-To get an installed executable, you will need [flit](https://flit.pypa.io/en/latest/#install).
-Navigate to the directory `...pollen/mygfa`, and run
-```
-flit install --user --symlink
-```
-Then navigate to this directory, i.e, `...pollen/slow_odgi`, and run
-```
-flit install --user --symlink
-```
+To install `slow_odgi`:
+1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
+2. While in this directory, run `python3 -m pip install --user -e ../mygfa .`.
+
+Alternately,
+1. Ensure you have [flit](https://flit.pypa.io/en/latest/#install).
+1. Change directories to `../mygfa` and run `flit install --user --symlink`.
+2. Change directories to `slow_odgi` (this directory) and run `flit install --user --symlink`.
+
 Thereafter, just `slow_odgi` will work.
 
 ### Testing
