@@ -1,15 +1,19 @@
-# `slow-odgi`
+# `slow_odgi`
 
 ### Overview
 
-`slow-odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal. Think of it as a code-ey spec for `odgi` commands.
+`slow_odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal. Think of it as a code-ey spec for `odgi` commands.
 
 ### Installation
 
 It is possible to skip installation and just run `python -m slow_odgi`.
 
 To get an installed executable, you will need [flit](https://flit.pypa.io/en/latest/#install).
-Navigate to this directory, i.e, `...pollen/slow_odgi`, and then run
+Navigate to the directory `...pollen/mygfa`, and run
+```
+flit install --user --symlink
+```
+Then navigate to this directory, i.e, `...pollen/slow_odgi`, and run
 ```
 flit install --user --symlink
 ```
@@ -17,13 +21,13 @@ Thereafter, just `slow_odgi` will work.
 
 ### Testing
 
-To test `slow-odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of GFA graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
+To test `slow_odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of GFA graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
 
 To run these tests, you will need
 1. `odgi`; see [here](https://github.com/pangenome/odgi). Our tests were run against a built-from-source copy of `odgi` (commit 34f006f).
 2. `turnt`; see [here](https://github.com/cucapra/turnt).
 
-With these in place, run `make test-slow-odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not-ok` signals there are actually of interest.
+With these in place, run `make test-slow_odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not-ok` signals there are actually of interest.
 
 There are a two known points of divergence versus `odgi`, both having to do with the command `flip`.
 The reasons are subtly related, but are documented independently:
@@ -298,7 +302,7 @@ P       y       2-      *		// ?!
 ```
 Segment 1 needed to be chopped, but the point at which we chopped segment 1 is perhaps surprising. The link on path `y` is perhaps surprising. The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 1.
 
-The explanation is this. 
+The explanation is this.
 The original path `x` was traversing segment 1 in the reverse direction, meaning that, when the BED file requested a new path `y` that tracked `x` from index 0 to index 1, the path `y` wanted the character `G` (reading segment 1 _backwards_) and not the character `A` (reading segment 1 forwards).
 
 
