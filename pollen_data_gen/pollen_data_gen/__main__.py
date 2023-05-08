@@ -9,7 +9,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     subparsers = parser.add_subparsers(
-        title="data-gen commands", metavar="COMMAND", dest="command"
+        title="pollen-data-gen commands", metavar="COMMAND", dest="command"
     )
 
     simple_parser = subparsers.add_parser(
@@ -56,7 +56,7 @@ def parse_args():
 
 def dispatch(args):
     """Parse the graph from filename,
-    then dispatch to the appropriate data_gen command.
+    then dispatch to the appropriate pollen_data_gen command.
     """
     name_to_func = {
         "depth": lambda g: depth.depth(g, args.n, args.e, args.p),

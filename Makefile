@@ -21,8 +21,8 @@ test-depth: og
 
 
 test-data-gen: og
-	-turnt --save --env data_gen_depth_oracle test/*.og
-	turnt --env data_gen_depth_test test/*.gfa
+	-turnt --save --env pollen_data_gen_depth_oracle test/*.og
+	turnt --env pollen_data_gen_depth_test test/*.gfa
 
 
 #################
