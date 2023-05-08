@@ -1,4 +1,5 @@
-from . import mygfa, chop
+from mygfa import mygfa
+from . import chop, flip
 
 
 def track_path(graph, bed):
@@ -19,6 +20,13 @@ def track_path(graph, bed):
     return segs_walked  # Given a legal BED, I should never reach this point.
 
 
+def handle_pos(handle, length, n):
+    """Get the concrete index in the underlying segment sequence corresponding
+    to the `n`th nucleotide from the beginning (in the appropriate direction).
+    """
+    return handle.name, (n if handle.orientation else length - n)
+
+
 def where_chop(graph, pathname, index):
     """Given a path and an index, find which segment should be chopped.
     We may not need to chop: the index could already be at a seam b/w segments.
@@ -30,7 +38,7 @@ def where_chop(graph, pathname, index):
             return None
         length = len(graph.segments[handle.name].seq)
         if walk + length > index:
-            return handle.name, index - walk
+            return handle_pos(handle, length, index - walk)
         walk = walk + length
 
 
@@ -71,6 +79,8 @@ def inject(graph, p2i):
     """Given a graph and the list of paths to inject, inject those paths."""
     for p in p2i:
         if p.name in graph.paths.keys():  # odgi is silent if path was absent.
+            # if flip.path_is_rev(graph.paths[p.name], graph):
+            # print(f"Path {p.name} is reverse-oriented.")
             graph = chop_if_needed(chop_if_needed(graph, p.name, p.lo), p.name, p.hi)
             new_path = mygfa.Path(p.new, track_path(graph, p), None)
             graph.paths[p.new] = new_path  # In-place update!

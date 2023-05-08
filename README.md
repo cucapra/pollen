@@ -6,7 +6,30 @@
 Pangenome Graph Queries in Calyx
 ================================
 
-This is a nascent project to build a DSL-to-hardware compiler using [Calyx][] to implement pangenomic graph queries in the vein of [odgi][].
+Pollen is a nascent project to accelerates queries on pangenomic graphs.
+Pollen will provide a graph-manipulating DSL that exposes the functionality that pangenomicists care about.
+Our queries are in the vein of the [odgi][] project.
+Pollen will compile programs written in this DSL into the [Calyx][] IR and then leverage Calyx to generate hardware accelerators.
+
+
+Slow Odgi
+---------
+
+`slow_odgi` is a reference implementation of a subset of odgi commands.
+It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
+It has been an aid to us during the process of designing the DSL and understanding the domain.
+
+To install `slow_odgi`:
+1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
+2. Run `python3 -m pip install --user -e ./mygfa ./slow_odgi`.
+
+Alternately,
+1. Ensure you have [flit](https://flit.pypa.io/en/latest/#install).
+1. Change directories to `mygfa` and run `flit install --user --symlink`.
+2. Change directories to `slow_odgi` and run `flit install --user --symlink`.
+
+Read all about it [here](slow_odgi/README.md)!
+
 
 Getting Started
 ---------------
@@ -16,7 +39,7 @@ Getting Started
 
 #### Pollen
 
-Clone this repository using 
+Clone this repository using
 ```
 git clone https://github.com/cucapra/pollen.git
 ```
@@ -109,7 +132,7 @@ Fourth, we need to generate some input from our odgi file. This is what we will 
 2. `exine depth -d <filename.og> -a <filename2.og> -o depth.data`
 3. `exine depth -d <filename.og> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
 4. `exine depth -d <filename.og> -a -o depth.data`
-    
+
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
 Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator and outputs the node depth table:
