@@ -25,9 +25,10 @@ To run these tests, you will need
 
 With these in place, run `make test-slow-odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not-ok` signals there are actually of interest.
 
-There are a few known points of divergence versus `odgi`:
-1. `flip` disgrees against graphs note5.gfa (see https://github.com/cucapra/pollen/pull/52#issuecomment-1513958802) and flip4.gfa (see https://github.com/pangenome/odgi/issues/496).
-2. `inject` disagrees against graphs DRB1-3123.gfa and chr6.C4.gfa (documentation upcoming).
+There are a two known points of divergence versus `odgi`, both having to do with the command `flip`.
+The reasons are subtly related, but are documented independently:
+1. We disagree against graph note5.gfa; see https://github.com/cucapra/pollen/pull/52#issuecomment-1513958802
+2. We disagree against the handmade graph flip4.gfa; see https://github.com/pangenome/odgi/issues/496.
 
 
 ### Explanation of Commands
@@ -161,9 +162,9 @@ running `depth` gives
 3	3	2
 4	1	1
 ```
-Where each row has the name of the segment, the segment's _depth_, and the segment's _unique depth_. 
-The depth is a count of how many times a segment's name appears across the graph's paths; the direction of traversal is immaterial. 
-Note that not every path is included in this computation; only those that are named in the separate file are. 
+Where each row has the name of the segment, the segment's _depth_, and the segment's _unique depth_.
+The depth is a count of how many times a segment's name appears across the graph's paths; the direction of traversal is immaterial.
+Note that not every path is included in this computation; only those that are named in the separate file are.
 Accordingly, the depth table presented above is ignoring the path `z`.
 The unique depth is similar to depth, but only counts an appearance on one path once. In both cases, it does not matter how many times the segment appears in the links.
 
@@ -275,6 +276,30 @@ P	x	1+,2+,3+,4+,5+	*	// changed in place
 P	y	2+,3+	*		// new
 ```
 Observe that this required edits to the path `x` as well.
+
+A further subtlety has to do with subpaths that traverse segments in the reverse direction.
+Given the new graph
+```
+S	1	ATG
+S	2	CCCC
+P	x	1-,2+	*
+```
+and the BED file
+```
+x	0	1	y
+```
+the correct output is
+```
+S       1       AT 	// ?!
+S       2       G 	// ?!
+S       3       CCCC
+P       x       2-,1-,3+        *	// changed in place
+P       y       2-      *		// ?!
+```
+Segment 1 needed to be chopped, but the point at which we chopped segment 1 is perhaps surprising. The link on path `y` is perhaps surprising. The way that path `x` has been fixed up is _not_ surprising if we accept the chop-point of segment 1.
+
+The explanation is this. 
+The original path `x` was traversing segment 1 in the reverse direction, meaning that, when the BED file requested a new path `y` that tracked `x` from index 0 to index 1, the path `y` wanted the character `G` (reading segment 1 _backwards_) and not the character `A` (reading segment 1 forwards).
 
 
 #### `matrix`
