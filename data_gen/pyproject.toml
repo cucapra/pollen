@@ -6,6 +6,7 @@ build-backend = "flit_core.buildapi"
 name = "data_gen"
 authors = [{name = "Anshuman Mohan", email = "amohan@cs.cornell.edu"}]
 dynamic = ["version", "description"]
+dependencies = ["mygfa"]
 
 [project.urls]
 Home = "https://github.com/cucapra/pollen/tree/main/data_gen"
