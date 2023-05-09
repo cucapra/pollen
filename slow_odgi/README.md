@@ -6,22 +6,26 @@
 
 ### Installation
 
-It is possible to skip installation and just run `python -m slow_odgi`.
+If you don't care for an executable, it is possible to skip installation and just run `python -m slow_odgi`.
 
-To install `slow_odgi`:
-1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
-2. While in this directory, run `python3 -m pip install --user -e ../mygfa .`.
+To install the `slow_odgi` executable:
+1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date)
+2. While in this directory, run `python3 -m pip install --user -e ../mygfa .`
 
 Alternately,
 1. Ensure you have [`flit`](https://flit.pypa.io/en/latest/#install).
-1. Change directories to `../mygfa` and run `flit install --user --symlink`.
-2. Change directories to `slow_odgi` (this directory) and run `flit install --user --symlink`.
+1. Change directories to `../mygfa` and run `flit install --user --symlink`
+2. Change directories back to `slow_odgi` (this directory) and run `flit install --user --symlink`
 
-Thereafter, just `slow_odgi` will work.
+### Try it! 
+1. Change to the root directory `pollen/`
+2. Run `make fetch`; this downloads a set of pangenome graphs for us to play with
+3. Try `slow_odgi chop test/note5.gfa -n 3`; this runs `chop` on the graph with parameter 3
+4. Play with the other commands that we support! See below for a full listing.
 
 ### Testing
 
-To test `slow_odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of GFA graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
+To test `slow_odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of pangenome graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
 
 To run these tests, you will need
 1. `odgi`; see [here](https://github.com/pangenome/odgi). Our tests were run against a built-from-source copy of `odgi` (commit 34f006f).
