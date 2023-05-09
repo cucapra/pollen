@@ -28,7 +28,7 @@ Alternately,
 1. Change directories to `mygfa` and run `flit install --user --symlink`.
 2. Change directories to `slow_odgi` and run `flit install --user --symlink`.
 
-Read all about it [here](slow_odgi/README.md)!
+Read all about it [here](slow_odgi/)!
 
 
 Getting Started with Pollen
