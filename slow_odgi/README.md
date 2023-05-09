@@ -13,7 +13,7 @@ To install `slow_odgi`:
 2. While in this directory, run `python3 -m pip install --user -e ../mygfa .`.
 
 Alternately,
-1. Ensure you have [flit](https://flit.pypa.io/en/latest/#install).
+1. Ensure you have [`flit`](https://flit.pypa.io/en/latest/#install).
 1. Change directories to `../mygfa` and run `flit install --user --symlink`.
 2. Change directories to `slow_odgi` (this directory) and run `flit install --user --symlink`.
 
