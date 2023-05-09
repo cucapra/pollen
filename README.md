@@ -6,33 +6,33 @@
 Pangenome Graph Queries in Calyx
 ================================
 
-Pollen is a nascent project to accelerates queries on pangenomic graphs.
-Pollen will provide a graph-manipulating DSL that exposes the functionality that pangenomicists care about.
-Our queries are in the vein of the [odgi][] project.
-Pollen will compile programs written in this DSL into the [Calyx][] IR and then leverage Calyx to generate hardware accelerators.
+Pollen is a nascent project to accelerate queries on pangenomic graphs.
+We are designing a graph-manipulating DSL that exposes functionality that pangenomicists care about.
+Our DSL will support graph queries in the vein of the [odgi][] project.
+We will compile programs written in this DSL into the [Calyx][] IR and then leverage Calyx to generate hardware accelerators.
 
 
-Slow Odgi
----------
+Aside: Slow Odgi
+----------------
 
 `slow_odgi` is a reference implementation of a subset of odgi commands.
 It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
-It has been an aid to us during the process of designing the DSL and understanding the domain.
+While independent of Pollen propoer, it has been an aid to us during the process of designing the DSL and understanding the domain.
 
 To install `slow_odgi`:
 1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
 2. Run `python3 -m pip install --user -e ./mygfa ./slow_odgi`.
 
 Alternately,
-1. Ensure you have [flit](https://flit.pypa.io/en/latest/#install).
+1. Ensure you have [`flit`][flit].
 1. Change directories to `mygfa` and run `flit install --user --symlink`.
 2. Change directories to `slow_odgi` and run `flit install --user --symlink`.
 
 Read all about it [here](slow_odgi/README.md)!
 
 
-Getting Started
----------------
+Getting Started with Pollen
+---------------------------
 
 ### Installation
 
@@ -43,7 +43,7 @@ Clone this repository using
 ```
 git clone https://github.com/cucapra/pollen.git
 ```
-and run `cd pollen-py && flit install -s --user`. You may need to install [flit]. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+and run `cd pollen-py && flit install -s --user`. You will need [`flit`][flit]. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
 
 
 #### Calyx
@@ -81,7 +81,7 @@ We have encountered two gotchas when installing odgi: a version clash with pytho
 
 ### Generating an Accelerator: Quick
 
-If you want to quickly compute node depth, the following command will generate and run a node depth accelerator:
+If you want to compute the [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) of all the nodes in the graph, the following command will generate and run a node depth accelerator:
 ```
 exine depth -a -r <filename.og>
 ```
