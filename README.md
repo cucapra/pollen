@@ -17,7 +17,7 @@ Aside: Slow Odgi
 
 `slow_odgi` is a reference implementation of a subset of odgi commands.
 It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
-While independent of Pollen propoer, it has been an aid to us during the process of designing the DSL and understanding the domain.
+While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
 
 To install `slow_odgi`:
 1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
