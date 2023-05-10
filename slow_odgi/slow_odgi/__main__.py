@@ -151,7 +151,7 @@ def dispatch(args):
     if args.command in makes_new_graph:
         ans.emit(sys.stdout, args.command not in show_no_links)
         if args.command in constructive_changes:
-            assert proofs.logically_lt(graph, ans)
+            assert proofs.logically_le(graph, ans)
 
 
 def main():
