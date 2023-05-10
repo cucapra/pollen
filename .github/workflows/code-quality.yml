@@ -11,5 +11,6 @@ jobs:
       with:
         python-version: 3.x
     - run: pip install --upgrade pip
-    - run: pip install "black<23"
+    - run: pip install "black<24" mypy==v1.3
     - run: black --diff --check $(git ls-files '*.py')
+    - run: MYPYPATH=mygfa mypy --check-untyped-defs mygfa slow_odgi pollen_data_gen
