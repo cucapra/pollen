@@ -2,7 +2,7 @@ from typing import List, Tuple, Dict
 from . import mygfa
 
 
-def node_steps(graph):
+def node_steps(graph: mygfa.Graph):
     """For each segment in the graph,
     list the times the segment was crossed by a path"""
     # segment name, (path name, index on path, direction) list
@@ -17,7 +17,7 @@ def node_steps(graph):
     return crossings
 
 
-def adjlist(graph):
+def adjlist(graph: mygfa.Graph):
     """Construct an adjacency list representation of the graph.
     This is via two dicts having the same type:
     key: Handle              # my details
@@ -40,13 +40,13 @@ def adjlist(graph):
     return (ins, outs)
 
 
-def handle_seq(graph, handle):
+def handle_seq(graph: mygfa.Graph, handle: mygfa.Handle):
     """Get the sequence of a handle, reverse-complementing if necessary."""
     seg = graph.segments[handle.name]
     return seg.seq if handle.ori else seg.revcomp().seq
 
 
-def pathseq(graph):
+def pathseq(graph: mygfa.Graph):
     """Given a graph, precompute the _sequence_
     charted by each of the graph's paths.
     """
@@ -58,7 +58,7 @@ def pathseq(graph):
     return ans
 
 
-def get_maxes(graph):
+def get_maxes(graph: mygfa.Graph):
     """Return the maximum number of nodes, steps, and paths in the graph."""
     max_nodes = len(graph.segments)
     max_steps = max([len(steps) for steps in node_steps(graph).values()])
@@ -66,6 +66,6 @@ def get_maxes(graph):
     return max_nodes, max_steps, max_paths
 
 
-def drop_all_overlaps(paths):
+def drop_all_overlaps(paths: Dict[str, mygfa.Path]):
     """Drop all overlaps from the given paths."""
     return {name: path.drop_overlaps() for name, path in paths.items()}
