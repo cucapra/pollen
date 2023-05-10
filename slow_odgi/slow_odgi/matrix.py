@@ -13,3 +13,4 @@ def matrix(graph):
         for neighbor in neighbors:
             print(" ".join([seg.name, neighbor.name, "1"]))
             print(" ".join([neighbor.name, seg.name, "1"]))
+    return graph

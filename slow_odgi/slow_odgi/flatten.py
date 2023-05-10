@@ -50,3 +50,4 @@ def flatten(graph, name):
     fasta, legend = get_fasta_legend(graph)
     print(insert_newlines(fasta))
     print_bed(graph, legend, name)
+    return graph

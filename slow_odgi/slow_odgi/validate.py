@@ -21,3 +21,4 @@ def validate(graph):
                     "does not respect the graph topology: the link "
                     f"{seg_from},{seg_to} is missing."
                 )
+    return graph

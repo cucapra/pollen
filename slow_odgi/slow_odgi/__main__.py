@@ -1,7 +1,8 @@
 import argparse
 import sys
+from typing import Dict
+from collections.abc import Callable
 from mygfa import mygfa
-
 
 from . import (
     chop,
@@ -127,6 +128,7 @@ def dispatch(args):
     parse any additional files if needed,
     then dispatch to the appropriate slow-odgi command.
     If the command makes a new graph, emit it to stdout."""
+    name_to_func: Dict[str, Callable[[mygfa.Graph], mygfa.Graph]]
     name_to_func = {
         "chop": lambda g: chop.chop(g, int(args.n)),
         "crush": crush.crush,
@@ -154,6 +156,7 @@ def dispatch(args):
 
 
 def main():
+    """Parse command line arguments and run the appropriate subcommand."""
     parser, args = parse_args()
     if "graph" not in args or not args.graph:
         parser.print_help()

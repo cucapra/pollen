@@ -21,5 +21,4 @@ def print_bed(graph):
 
 
 if __name__ == "__main__":
-    mygraph = mygfa.Graph.parse(sys.stdin)
-    print_bed(mygraph)
+    print_bed(mygfa.Graph.parse(sys.stdin))

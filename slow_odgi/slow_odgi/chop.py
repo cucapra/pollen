@@ -25,7 +25,7 @@ def chop_segs(graph, n):
     # If 3- occurs in a path, we will replace it with 10-,9-,8-,7-.
 
     seg_count = 1  # To generate names for the new segments.
-    new_segs = {}
+    new_segs: Dict[str, mygfa.Segment] = {}
 
     for segment in graph.segments.values():
         chopped_segs = {}
