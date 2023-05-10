@@ -40,14 +40,20 @@ def adjlist(graph):
     return (ins, outs)
 
 
+def handle_seq(graph, handle):
+    """Get the sequence of a handle, reverse-complementing if necessary."""
+    seg = graph.segments[handle.name]
+    return seg.seq if handle.orientation else seg.revcomp().seq
+
+
 def pathseq(graph):
     """Given a graph, precompute the _sequence_
     charted by each of the graph's paths.
     """
     ans = {}
-    for path in graph.paths:
+    for path in graph.paths.keys():
         ans[path] = "".join(
-            graph.segments[seg.name].seq for seg in graph.paths[path].segments
+            handle_seq(graph, handle) for handle in graph.paths[path].segments
         )
     return ans
 

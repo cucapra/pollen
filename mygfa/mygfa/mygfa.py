@@ -50,6 +50,12 @@ class Segment:
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
+    def revcomp(self) -> "Segment":
+        """Returns the reverse complement of this segment."""
+        comp = {"A": "T", "C": "G", "G": "C", "T": "A"}
+        seq = "".join(reversed([comp[c] for c in self.seq]))
+        return Segment(self.name, seq)
+
     def __str__(self):
         return "\t".join(
             [
