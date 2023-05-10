@@ -14,6 +14,5 @@ def drop_some_links(graph):
 
 
 if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    newgraph = drop_some_links(graph)
+    newgraph = drop_some_links(mygfa.Graph.parse(sys.stdin))
     newgraph.emit(sys.stdout)

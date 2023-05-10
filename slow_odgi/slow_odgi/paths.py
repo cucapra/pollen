@@ -15,8 +15,8 @@ def paths(graph, droprate=0):
         )
     for name in pathnames:
         print(name)
+    return graph
 
 
 if __name__ == "__main__":
-    graph = mygfa.Graph.parse(open(sys.argv[1], "r"))
-    paths(graph, int(sys.argv[2]))
+    paths(mygfa.Graph.parse(open(sys.argv[1], "r", encoding="utf-8")), int(sys.argv[2]))

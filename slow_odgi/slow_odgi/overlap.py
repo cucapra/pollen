@@ -25,3 +25,4 @@ def overlap(graph, inputpaths):
                 print(
                     "\t".join([ip, "0", str(len(preprocess.pathseq(graph)[ip])), path])
                 )
+    return graph

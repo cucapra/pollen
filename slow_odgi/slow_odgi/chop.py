@@ -6,27 +6,26 @@ def chop_segs(graph, n):
     """Chop all the sequences of the graph into length n or lower."""
 
     legend: Dict[str, Tuple[int, int]] = {}
-    """If a segment is chopped, its sequence will be spread out over
-    up among a series of contiguous new segments.
+    # If a segment is chopped, its sequence will be spread out over
+    # up among a series of contiguous new segments.
 
-    While not important for segment-chopping itself, it will serve us well to
-    maintain a dict that bookkeeps this chopping.
+    # While not important for segment-chopping itself, it will serve us well to
+    # maintain a dict that bookkeeps this chopping.
 
-    For example, if
-        S 3 = ATGGCCC
-    gets chopped into
-        S 7 = AT
-        S 8 = GG
-        S 9 = CC
-        S 10 = C
-    then legend[3] = (7,11).
+    # For example, if
+    #     S 3 = ATGGCCC
+    # gets chopped into
+    #     S 7 = AT
+    #     S 8 = GG
+    #     S 9 = CC
+    #     S 10 = C
+    # then legend[3] = (7,11).
 
-    Later, if 3+ occurs in a path, we will replace it with 7+,8+,9+,10+.
-    If 3- occurs in a path, we will replace it with 10-,9-,8-,7-.
-    """
+    # Later, if 3+ occurs in a path, we will replace it with 7+,8+,9+,10+.
+    # If 3- occurs in a path, we will replace it with 10-,9-,8-,7-.
 
     seg_count = 1  # To generate names for the new segments.
-    new_segs = {}
+    new_segs: Dict[str, mygfa.Segment] = {}
 
     for segment in graph.segments.values():
         chopped_segs = {}
@@ -48,9 +47,9 @@ def chop_paths(graph, legend):
     new_paths = {}
     for path in graph.paths.values():
         new_p_segs = []
-        for seg in path.segments:
-            o = seg.orientation
-            a, b = legend[seg.name]
+        for handle in path.segments:
+            o = handle.ori
+            a, b = legend[handle.name]
             segments = [mygfa.Handle(str(s), o) for s in range(a, b)]
             new_p_segs += segments if o else list(reversed(segments))
         new_paths[path.name] = mygfa.Path(path.name, new_p_segs, None)

@@ -21,8 +21,8 @@ def print_bed(graph, legend, name):
 
     print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
     for path in graph.paths.values():
-        for i, seg in enumerate(path.segments):
-            start, end = legend[seg.name]
+        for i, handle in enumerate(path.segments):
+            start, end = legend[handle.name]
             print(
                 "\t".join(
                     [
@@ -30,7 +30,7 @@ def print_bed(graph, legend, name):
                         str(start),
                         str(end),
                         path.name,
-                        "+" if seg.orientation else "-",
+                        "+" if handle.ori else "-",
                         str(i),
                     ]
                 )
@@ -45,8 +45,9 @@ def insert_newlines(string, every=80):
 def flatten(graph, name):
     """Print out the FASTA and BED."""
     print(f">{name}")
-    # TODO: this is a bit harcoded for files living in test/file.gfa
+    # This is a bit harcoded for files living in test/file.gfa
     # Would be nice to neaten this up and make it less brittle.
     fasta, legend = get_fasta_legend(graph)
     print(insert_newlines(fasta))
     print_bed(graph, legend, name)
+    return graph
