@@ -8,7 +8,7 @@ def path_is_rev(path, graph):
     rev = 0
     for seg in path.segments:
         length = len(graph.segments[seg.name].seq)
-        if seg.orientation:
+        if seg.ori:
             fwd += length
         else:
             rev += length
@@ -22,16 +22,17 @@ def flip_path(path, graph):
     if path_is_rev(path, graph):
         path_segs = []
         for seg in reversed(path.segments):
-            path_segs.append(mygfa.Handle(seg.name, not seg.orientation))
+            path_segs.append(mygfa.Handle(seg.name, not seg.ori))
         return mygfa.Path(f"{path.name}_inv", path_segs, None), True
     else:
         return path.drop_overlaps(), False
         # odgi drops overlaps, so we do too.
 
 
-def dedup(list: List[mygfa.Link]) -> List[mygfa.Link]:
-    new = []
-    for item in list:
+def dedup(mylist: List[mygfa.Link]) -> List[mygfa.Link]:
+    """De-duplicate a list of links."""
+    new: List[mygfa.Link] = []
+    for item in mylist:
         if item not in new and item.rev() not in new:
             # odgi seems to consider a link's reverse its own duplicate.
             new.append(item)
@@ -48,7 +49,8 @@ def gen_links(paths_dec, pred) -> List[mygfa.Link]:
     with those paths that satisfy the predicate.
     """
     links = []
-    alignment = mygfa.Alignment([(0, mygfa.AlignOp("M"))])  # A "no-op" alignment
+    # A "no-op" alignment
+    alignment = mygfa.Alignment([(0, mygfa.AlignOp("M"))])
     for path, dec in paths_dec.values():
         if not pred(dec):
             continue
@@ -56,21 +58,22 @@ def gen_links(paths_dec, pred) -> List[mygfa.Link]:
         length = len(path.segments)
         if length < 2:
             continue  # Success: done with this path.
-        else:
-            for i in range(length - 1):
-                from_ = path.segments[i]
-                to = path.segments[i + 1]
-                links.append(mygfa.Link(from_, to, alignment))
+        for i in range(length - 1):
+            from_ = path.segments[i]
+            to = path.segments[i + 1]
+            links.append(mygfa.Link(from_, to, alignment))
     return links
 
 
 def flip(graph):
     """Flip the paths, and generate new links that make the graph valid."""
     paths_dec = {name: flip_path(p, graph) for name, p in graph.paths.items()}
-    # paths_dec is "decorated" with info re: whether a path has just been flipped.
+    # paths_dec is "decorated" with info re:
+    # whether a path has just been flipped.
     new_links = gen_links(paths_dec, lambda x: x)
     paths = {name: p for name, (p, _) in paths_dec.items()}
-    # Stripping the decoration off paths_dec gives a reasonable Dict[str, Path].
+    # Stripping the decoration off paths_dec gives a reasonable
+    # Dict[str, Path].
     return mygfa.Graph(
         graph.headers, graph.segments, dedup(graph.links + new_links), paths
     )

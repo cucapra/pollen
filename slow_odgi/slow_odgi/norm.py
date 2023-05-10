@@ -10,6 +10,5 @@ def norm(graph):
 
 
 if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    newgraph = norm(graph)
+    newgraph = norm(mygfa.Graph.parse(sys.stdin))
     newgraph.emit(sys.stdout, "--nl" not in sys.argv[1:])

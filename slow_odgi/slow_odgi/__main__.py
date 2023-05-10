@@ -1,7 +1,8 @@
 import argparse
 import sys
+from typing import Dict
+from collections.abc import Callable
 from mygfa import mygfa
-
 
 from . import (
     chop,
@@ -39,12 +40,12 @@ def parse_args():
         required=True,
     )
 
-    crush_parser = subparsers.add_parser(
+    _ = subparsers.add_parser(
         "crush",
         help="Replaces consecutive instances of `N` with a single `N`.",
     )
 
-    degree_parser = subparsers.add_parser(
+    _ = subparsers.add_parser(
         "degree", help="Generates a table summarizing each segment's degree."
     )
 
@@ -58,12 +59,12 @@ def parse_args():
         required=True,
     )
 
-    flatten_parser = subparsers.add_parser(
+    _ = subparsers.add_parser(
         "flatten",
         help="Converts the graph into FASTA + BED representation.",
     )
 
-    flip_parser = subparsers.add_parser(
+    _ = subparsers.add_parser(
         "flip",
         help="Flips any paths that step more backward than forward.",
     )
@@ -78,9 +79,7 @@ def parse_args():
         required=True,
     )
 
-    matrix_parser = subparsers.add_parser(
-        "matrix", help="Represents the graph as a matrix."
-    )
+    _ = subparsers.add_parser("matrix", help="Represents the graph as a matrix.")
 
     overlap_parser = subparsers.add_parser(
         "overlap",
@@ -93,9 +92,9 @@ def parse_args():
         required=True,
     )
 
-    paths_parser = subparsers.add_parser("paths", help="Lists the paths in the graph.")
+    _ = subparsers.add_parser("paths", help="Lists the paths in the graph.")
 
-    validate_parser = subparsers.add_parser(
+    _ = subparsers.add_parser(
         "validate",
         help="Checks whether the links of the graph support its paths.",
     )
@@ -115,13 +114,13 @@ def parse_args():
 
 def parse_bedfile(filename):
     """Parse BED files that describe which paths to insert."""
-    bedfile = open(filename, "r")
+    bedfile = open(filename, "r", encoding="utf-8")
     return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
 def parse_paths(filename):
     """Parse path names from a file."""
-    return list(mygfa.nonblanks(open(filename, "r")))
+    return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
 
 
 def dispatch(args):
@@ -129,6 +128,7 @@ def dispatch(args):
     parse any additional files if needed,
     then dispatch to the appropriate slow-odgi command.
     If the command makes a new graph, emit it to stdout."""
+    name_to_func: Dict[str, Callable[[mygfa.Graph], mygfa.Graph]]
     name_to_func = {
         "chop": lambda g: chop.chop(g, int(args.n)),
         "crush": crush.crush,
@@ -147,7 +147,7 @@ def dispatch(args):
     constructive_changes = ["chop", "inject"]
     # These commands only add to the graph, so we'll assert "logically_le".
 
-    graph = mygfa.Graph.parse(open(args.graph, "r"))
+    graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     ans = name_to_func[args.command](graph)
     if args.command in makes_new_graph:
         ans.emit(sys.stdout, args.command not in show_no_links)
@@ -156,6 +156,7 @@ def dispatch(args):
 
 
 def main():
+    """Parse command line arguments and run the appropriate subcommand."""
     parser, args = parse_args()
     if "graph" not in args or not args.graph:
         parser.print_help()

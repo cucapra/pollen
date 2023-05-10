@@ -10,15 +10,15 @@ def format_gen(width):
 def paths_viewed_from_nodes(graph, n, e, p):
     path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
     output = {}
-    format = format_gen(p.bit_length())
+    json_format = format_gen(p.bit_length())
     for seg, crossings in preprocess.node_steps(graph).items():
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (e - len(data))
-        output[f"path_ids{seg}"] = {"data": data, "format": format}
+        output[f"path_ids{seg}"] = {"data": data, "format": json_format}
     # I would rather not have the forloop below. See issue 24
     data = [0] * e
     for i in range(len(graph.segments) + 1, n + 1):
-        output[f"path_ids{i}"] = {"data": data, "format": format}
+        output[f"path_ids{i}"] = {"data": data, "format": json_format}
     return output
 
 

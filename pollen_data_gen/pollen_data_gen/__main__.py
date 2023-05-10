@@ -12,12 +12,10 @@ def parse_args():
         title="pollen-data-gen commands", metavar="COMMAND", dest="command"
     )
 
-    simple_parser = subparsers.add_parser(
-        "simple", help="Produces a simple JSON representation of the graph."
-    )
+    _ = subparsers.add_parser("simple", help="Produces a simple JSON of the graph.")
 
     depth_parser = subparsers.add_parser(
-        "depth", help="Produces a `depth`-specific JSON representation of the graph."
+        "depth", help="Produces a `depth`-specific JSON of the graph."
     )
     depth_parser.add_argument(
         "-n",
@@ -62,16 +60,17 @@ def dispatch(args):
         "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
         "simple": simple.simple,
     }
-    graph = mygfa.Graph.parse(open(args.graph, "r"))
+    graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     name_to_func[args.command](graph)
 
 
 def main():
-    parser, args = parse_args()
-    if "graph" not in args or not args.graph:
+    """Parse command line arguments and run the appropriate subcommand."""
+    parser, arguments = parse_args()
+    if "graph" not in arguments or not arguments.graph:
         parser.print_help()
         exit(-1)
-    dispatch(args)
+    dispatch(arguments)
 
 
 if __name__ == "__main__":

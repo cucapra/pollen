@@ -14,3 +14,4 @@ def degree(graph):
             ins[mygfa.Handle(seg, False)]
         )
         print("\t".join([seg, str(in_degree + out_degree)]))
+    return graph
