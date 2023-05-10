@@ -36,8 +36,8 @@ def adjlist(graph):
         outs[mygfa.Handle(segname, False)] = []
 
     for link in graph.links:
-        ins[link.to].append(link.from_)
-        outs[link.from_].append(link.to)
+        ins[link.to_].append(link.from_)
+        outs[link.from_].append(link.to_)
 
     return (ins, outs)
 
@@ -45,7 +45,7 @@ def adjlist(graph):
 def handle_seq(graph, handle):
     """Get the sequence of a handle, reverse-complementing if necessary."""
     seg = graph.segments[handle.name]
-    return seg.seq if handle.orientation else seg.revcomp().seq
+    return seg.seq if handle.ori else seg.revcomp().seq
 
 
 def pathseq(graph):

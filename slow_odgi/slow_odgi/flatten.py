@@ -21,8 +21,8 @@ def print_bed(graph, legend, name):
 
     print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
     for path in graph.paths.values():
-        for i, seg in enumerate(path.segments):
-            start, end = legend[seg.name]
+        for i, handle in enumerate(path.segments):
+            start, end = legend[handle.name]
             print(
                 "\t".join(
                     [
@@ -30,7 +30,7 @@ def print_bed(graph, legend, name):
                         str(start),
                         str(end),
                         path.name,
-                        "+" if seg.orientation else "-",
+                        "+" if handle.ori else "-",
                         str(i),
                     ]
                 )
