@@ -13,23 +13,23 @@ import odgi
 
 
 def get_depth_table(graph, subset_paths=None):
-    '''
+    """
     Input: an odgi.graph object
     Output: the node depth table, a dictionary that maps from a node's id to its (depth, uniq_depth),
         where depth is the total number of times each path in subset_paths crosses the node,
         and uniq_depth is the number of paths in subset_paths which cross the node
     Note: if subset_paths is empty, consider all paths when computing node depth
-    '''
+    """
 
     ndt = dict()  # node depth table map from node.id -> (node.depth, node.uniq_depth)
 
     # Compute the node depth and unique depth
     def get_node_depth(handle):
-        '''
+        """
         Input: [handle] is an odgi.handle object which represents a node
         Inserts node.depth and node.uniq into ndt for the node associated with
             [handle]
-        '''
+        """
 
         # Note: a node can have multiple handles, but only one id
         node_id = graph.get_id(handle)
@@ -56,24 +56,29 @@ def get_depth_table(graph, subset_paths=None):
 
 
 def parse_paths_file(filename):
-    ''' Parse a file which contains the name of a path on each line. '''
+    """Parse a file which contains the name of a path on each line."""
 
     if filename is None:  # Return the default value
         return None
 
-    with open(filename, 'r') as paths_file:
+    with open(filename, "r") as paths_file:
         text = paths_file.read()
         paths = text.splitlines()
     return paths
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Parse commandline arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'filename', help='A .og file representing a pangenome whose node depth we want to calculate')
-    parser.add_argument('-s', '--subset-paths',
-                        help='Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details')
+        "filename",
+        help="A .og file representing a pangenome whose node depth we want to calculate",
+    )
+    parser.add_argument(
+        "-s",
+        "--subset-paths",
+        help="Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details",
+    )
     args = parser.parse_args()
 
     graph = odgi.graph()
@@ -88,4 +93,4 @@ if __name__ == '__main__':
     # Print the ndt to the standard output
     print("#node.id\tdepth\tdepth.uniq")
     for id, (depth, uniq) in sorted(ndt.items()):
-        print(f'{id}\t{depth}\t{uniq}')
+        print(f"{id}\t{depth}\t{uniq}")
