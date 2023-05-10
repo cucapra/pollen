@@ -29,9 +29,10 @@ def flip_path(path, graph):
         # odgi drops overlaps, so we do too.
 
 
-def dedup(list: List[mygfa.Link]) -> List[mygfa.Link]:
+def dedup(mylist: List[mygfa.Link]) -> List[mygfa.Link]:
+    """De-duplicate a list of links."""
     new: List[mygfa.Link] = []
-    for item in list:
+    for item in mylist:
         if item not in new and item.rev() not in new:
             # odgi seems to consider a link's reverse its own duplicate.
             new.append(item)
@@ -57,11 +58,10 @@ def gen_links(paths_dec, pred) -> List[mygfa.Link]:
         length = len(path.segments)
         if length < 2:
             continue  # Success: done with this path.
-        else:
-            for i in range(length - 1):
-                from_ = path.segments[i]
-                to = path.segments[i + 1]
-                links.append(mygfa.Link(from_, to, alignment))
+        for i in range(length - 1):
+            from_ = path.segments[i]
+            to = path.segments[i + 1]
+            links.append(mygfa.Link(from_, to, alignment))
     return links
 
 

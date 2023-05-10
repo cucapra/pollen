@@ -1,5 +1,3 @@
-"""Preprocessing functions for mygfa."""
-
 from typing import List, Tuple, Dict
 from . import mygfa
 

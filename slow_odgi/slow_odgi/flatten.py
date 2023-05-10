@@ -45,7 +45,7 @@ def insert_newlines(string, every=80):
 def flatten(graph, name):
     """Print out the FASTA and BED."""
     print(f">{name}")
-    # TODO: this is a bit harcoded for files living in test/file.gfa
+    # This is a bit harcoded for files living in test/file.gfa
     # Would be nice to neaten this up and make it less brittle.
     fasta, legend = get_fasta_legend(graph)
     print(insert_newlines(fasta))
