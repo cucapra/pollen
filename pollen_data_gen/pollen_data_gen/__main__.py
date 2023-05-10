@@ -1,3 +1,5 @@
+"""The pollen_data_gen command line interface."""
+
 import argparse
 from mygfa import mygfa
 
@@ -12,12 +14,10 @@ def parse_args():
         title="pollen-data-gen commands", metavar="COMMAND", dest="command"
     )
 
-    simple_parser = subparsers.add_parser(
-        "simple", help="Produces a simple JSON representation of the graph."
-    )
+    _ = subparsers.add_parser("simple", help="Produces a simple JSON of the graph.")
 
     depth_parser = subparsers.add_parser(
-        "depth", help="Produces a `depth`-specific JSON representation of the graph."
+        "depth", help="Produces a `depth`-specific JSON of the graph."
     )
     depth_parser.add_argument(
         "-n",
@@ -67,6 +67,7 @@ def dispatch(args):
 
 
 def main():
+    """Parse command line arguments and run the appropriate subcommand."""
     parser, args = parse_args()
     if "graph" not in args or not args.graph:
         parser.print_help()
