@@ -15,6 +15,7 @@ def paths(graph, droprate=0):
         )
     for name in pathnames:
         print(name)
+    return graph
 
 
 if __name__ == "__main__":
