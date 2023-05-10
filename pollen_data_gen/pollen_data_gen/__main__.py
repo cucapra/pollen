@@ -62,17 +62,17 @@ def dispatch(args):
         "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
         "simple": simple.simple,
     }
-    graph = mygfa.Graph.parse(open(args.graph, "r"))
+    graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     name_to_func[args.command](graph)
 
 
 def main():
     """Parse command line arguments and run the appropriate subcommand."""
-    parser, args = parse_args()
-    if "graph" not in args or not args.graph:
+    parser, arguments = parse_args()
+    if "graph" not in arguments or not arguments.graph:
         parser.print_help()
         exit(-1)
-    dispatch(args)
+    dispatch(arguments)
 
 
 if __name__ == "__main__":
