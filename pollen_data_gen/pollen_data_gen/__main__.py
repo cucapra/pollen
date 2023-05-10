@@ -1,5 +1,3 @@
-"""The pollen_data_gen command line interface."""
-
 import argparse
 from mygfa import mygfa
 

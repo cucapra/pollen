@@ -1,5 +1,3 @@
-"""GFA parsing and pre-processing in Python."""
-
 import sys
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Dict, TextIO, Iterator
