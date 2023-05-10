@@ -2,7 +2,7 @@ from typing import Dict, Tuple
 from mygfa import mygfa
 
 
-def chop_segs(graph, n):
+def chop_segs(graph: mygfa.Graph, n: int):
     """Chop all the sequences of the graph into length n or lower."""
 
     legend: Dict[str, Tuple[int, int]] = {}

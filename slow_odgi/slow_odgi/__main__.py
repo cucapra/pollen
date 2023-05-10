@@ -112,18 +112,18 @@ def parse_args():
     return parser, args
 
 
-def parse_bedfile(filename):
+def parse_bedfile(filename: str):
     """Parse BED files that describe which paths to insert."""
     bedfile = open(filename, "r", encoding="utf-8")
     return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
-def parse_paths(filename):
+def parse_paths(filename: str):
     """Parse path names from a file."""
     return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
 
 
-def dispatch(args):
+def dispatch(args: argparse.Namespace):
     """Parse the graph from filename,
     parse any additional files if needed,
     then dispatch to the appropriate slow-odgi command.
