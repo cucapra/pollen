@@ -14,6 +14,7 @@ from . import (
     matrix,
     overlap,
     paths,
+    proofs,
     validate,
 )
 
@@ -142,12 +143,15 @@ def dispatch(args):
         "validate": validate.validate,
     }
     makes_new_graph = ["chop", "crush", "flip", "inject"]
-    no_links = ["chop", "inject"]
+    show_no_links = ["chop", "inject"]
+    constructive_changes = ["chop", "inject"]
+
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     ans = name_to_func[args.command](graph)
-    # print(f"I sent you off to {args.command} with args {args}")
     if args.command in makes_new_graph:
-        ans.emit(sys.stdout, args.command not in no_links)
+        ans.emit(sys.stdout, args.command not in show_no_links)
+        if args.command in constructive_changes:
+            assert proofs.logically_lt(graph, ans)
 
 
 def main():
