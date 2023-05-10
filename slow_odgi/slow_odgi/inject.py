@@ -8,11 +8,11 @@ def track_path(graph, bed):
     segs_walked = []
     for handle in graph.paths[bed.name].segments:
         length = len(graph.segments[handle.name].seq)
-        if walk < bed.lo:
+        if walk < bed.low:
             # Skipping over segments that are not of interest.
             walk = walk + length
             continue
-        if walk + length <= bed.hi:
+        if walk + length <= bed.high:
             walk = walk + length
             segs_walked.append(handle)
         else:
@@ -24,7 +24,7 @@ def handle_pos(handle, length, n):
     """Get the concrete index in the underlying segment sequence corresponding
     to the `n`th nucleotide from the beginning (in the appropriate direction).
     """
-    return handle.name, (n if handle.orientation else length - n)
+    return handle.name, (n if handle.ori else length - n)
 
 
 def where_chop(graph, pathname, index):
@@ -81,7 +81,7 @@ def inject(graph, p2i):
         if p.name in graph.paths.keys():  # odgi is silent if path was absent.
             # if flip.path_is_rev(graph.paths[p.name], graph):
             # print(f"Path {p.name} is reverse-oriented.")
-            graph = chop_if_needed(chop_if_needed(graph, p.name, p.lo), p.name, p.hi)
+            graph = chop_if_needed(chop_if_needed(graph, p.name, p.low), p.name, p.high)
             new_path = mygfa.Path(p.new, track_path(graph, p), None)
             graph.paths[p.new] = new_path  # In-place update!
     return graph
