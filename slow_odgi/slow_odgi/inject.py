@@ -1,5 +1,5 @@
 from mygfa import mygfa
-from . import chop, flip
+from . import chop
 
 
 def track_path(graph, bed):
