@@ -145,6 +145,7 @@ def dispatch(args):
     makes_new_graph = ["chop", "crush", "flip", "inject"]
     show_no_links = ["chop", "inject"]
     constructive_changes = ["chop", "inject"]
+    # These commands only add to the graph.
 
     graph = mygfa.Graph.parse(open(args.graph, "r"))
     ans = name_to_func[args.command](graph)
