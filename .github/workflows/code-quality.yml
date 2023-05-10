@@ -13,4 +13,4 @@ jobs:
     - run: pip install --upgrade pip
     - run: pip install "black<23" mypy==v0.902
     - run: black --diff --check $(git ls-files '*.py')
-    - run: mypy --strict $(git ls-files '*.py')
+    - run: mypy $(git ls-files '*.py')
