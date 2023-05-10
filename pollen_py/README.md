@@ -5,7 +5,7 @@ To use the Pollen odgi accelerators:
 1. Install [flit](https://flit.readthedocs.io/en/latest/#install).
 2. Install the `pollen` package:
 ```
-  $ cd pollen-py/
+  $ cd pollen_py/
   $ flit install --symlink
 ```
 
