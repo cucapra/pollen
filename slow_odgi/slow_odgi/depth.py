@@ -11,3 +11,4 @@ def depth(graph, inputpaths):
         # For depth.uniq, we need to know how many unique path-names there are.
         uniq_path_names = set(c[0] for c in crossings)
         print("\t".join([seg, str(len(crossings)), str(len(uniq_path_names))]))
+    return graph

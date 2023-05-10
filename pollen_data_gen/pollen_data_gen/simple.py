@@ -12,9 +12,9 @@ class GenericSimpleEncoder(JSONEncoder):
         if isinstance(o, mygfa.Link):
             return {
                 "from": o.from_.name,
-                "from_orient": o.from_.orientation,
-                "to": o.to.name,
-                "to_orient": o.to.orientation,
+                "from_orient": o.from_.ori,
+                "to": o.to_.name,
+                "to_orient": o.to_.ori,
                 "overlap": str(o.overlap),
             }
         if isinstance(o, mygfa.Segment) or isinstance(o, mygfa.Alignment):
