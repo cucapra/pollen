@@ -1,3 +1,5 @@
+"""GFA parsing and pre-processing in Python."""
+
 import sys
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Dict, TextIO, Iterator
@@ -5,12 +7,12 @@ from enum import Enum
 import re
 
 
-def parse_orient(o) -> bool:
+def parse_orientation(ori: str) -> bool:
     """Parse an orientation string as a bool.
     In our convention, "True" is forward and "False" is reverse.
     """
-    assert o in ("+", "-")
-    return o == "+"
+    assert ori in ("+", "-")
+    return ori == "+"
 
 
 @dataclass
@@ -18,24 +20,25 @@ class Bed:
     """A BED (Browser Extensible Data) file describes regions of a genome.
     lo and hi tell us when to start and stop reading, and the name is
     the name that region should get.
-    """
 
-    """Used only by `inject` for now, which adds a fourth column for the
+    Used only by `inject` for now, which adds a fourth column for the
     new name of the injected path.
     """
+
     name: str
-    lo: int
-    hi: int
+    low: int
+    high: int
     new: str  # Used by `inject` to give the new path a name.
     # In the future, make `new` Optional.
 
     @classmethod
     def parse(cls, line) -> "Bed":
-        name, lo, hi, new = line.split("\t")
-        return Bed(name, int(lo), int(hi), new)
+        """Parse a BED line."""
+        name, low, high, new = line.split("\t")
+        return Bed(name, int(low), int(high), new)
 
     def __str__(self):
-        return "\t".join([self.name, str(self.lo), str(self.hi), self.new])
+        return "\t".join([self.name, str(self.low), str(self.high), self.new])
 
 
 @dataclass
@@ -46,7 +49,8 @@ class Segment:
     seq: str
 
     @classmethod
-    def parse(cls, fields: List[str]) -> "Segment":
+    def parse(cls, fields) -> "Segment":
+        """Parse a GFA segment."""
         _, name, seq = fields[:3]
         return Segment(name, seq)
 
@@ -79,14 +83,14 @@ class AlignOp(Enum):
 class Alignment:
     """CIGAR representation of a sequence alignment."""
 
-    ops: List[Tuple[int, AlignOp]]
+    ops: List[Tuple[int, AlignOp]]  # noqa
 
     @classmethod
-    def parse(cls, s: str) -> "Alignment":
+    def parse(cls, cigar: str) -> "Alignment":
         """Parse a CIGAR string, which looks like 3M7N4M."""
         ops = [
             (int(amount_str), AlignOp(op_str))
-            for amount_str, op_str in re.findall(r"(\d+)([^\d])", s)
+            for amount_str, op_str in re.findall(r"(\d+)([^\d])", cigar)
         ]
         return Alignment(ops)
 
@@ -99,23 +103,24 @@ class Handle:
     """A specific orientation for a segment, referenced by name."""
 
     name: str
-    orientation: bool
+    ori: bool
 
     @classmethod
-    def parse(cls, s, o) -> "Handle":
-        return Handle(s, parse_orient(o))
+    def parse(cls, seg, ori) -> "Handle":
+        """Parse a Handle."""
+        return Handle(seg, parse_orientation(ori))
 
     def rev(self) -> "Handle":
-        return Handle(self.name, not self.orientation)
+        """Return the handle representing the complement of this handle."""
+        return Handle(self.name, not self.ori)
 
-    # We need two str methods over Handle because Links and Paths
-    # have different preferences when converting Handles to strings.
+    def __str__(self):
+        """This is how a path wants handles to be string-ified."""
+        return "".join([self.name, ("+" if self.ori else "-")])
 
-    def __str__(self):  # This is what a path wants.
-        return "".join([self.name, ("+" if self.orientation else "-")])
-
-    def linkstr(self):  # While this is what a link wants.
-        return "\t".join([self.name, ("+" if self.orientation else "-")])
+    def linkstr(self):
+        """This is how a link wants handles to be string-ified."""
+        return "\t".join([self.name, ("+" if self.ori else "-")])
 
 
 @dataclass(eq=True, order=True)
@@ -123,27 +128,31 @@ class Link:
     """A GFA link is an edge connecting two sequences."""
 
     from_: Handle
-    to: Handle
+    to_: Handle
     overlap: Alignment
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Link":
-        _, from_, from_orient, to, to_orient, overlap = fields[:6]
+        """Parse a GFA link."""
+        _, from_, from_ori, to_, to_ori, overlap = fields[:6]
         return Link(
-            Handle.parse(from_, from_orient),
-            Handle.parse(to, to_orient),
+            Handle.parse(from_, from_ori),
+            Handle.parse(to_, to_ori),
             Alignment.parse(overlap),
         )
 
     def rev(self) -> "Link":
-        return Link(self.to.rev(), self.from_.rev(), self.overlap)
+        """Return the link representing the reverse of this link.
+        i.e, `AAAA --> GGGG` becomes `TTTT <-- CCCC`
+        """
+        return Link(self.to_.rev(), self.from_.rev(), self.overlap)
 
     def __str__(self):
         return "\t".join(
             [
                 "L",
                 self.from_.linkstr(),
-                self.to.linkstr(),
+                self.to_.linkstr(),
                 str(self.overlap),
             ]
         )
@@ -155,29 +164,31 @@ class Path:
 
     name: str
     segments: List[Handle]  # Segment names and orientations.
-    overlaps: Optional[List[Alignment]]
+    olaps: Optional[List[Alignment]]
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
+        """Parse a GFA path."""
         _, name, seq, overlaps = fields[:4]
         seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(",")]
-        overlaps_lst = (
+        olaps_lst = (
             None
             if overlaps == "*"
             else [Alignment.parse(s) for s in overlaps.split(",")]
         )
-        if overlaps_lst:
+        if olaps_lst:
             # I'm not sure yet why there can sometimes be one fewer
             # overlaps than sequences.
-            assert len(overlaps_lst) in (len(seq_lst), len(seq_lst) - 1)
+            assert len(olaps_lst) in (len(seq_lst), len(seq_lst) - 1)
 
         return Path(
             name,
             seq_lst,
-            overlaps_lst,
+            olaps_lst,
         )
 
     def drop_overlaps(self) -> "Path":
+        """Return a copy of this path without overlaps."""
         return Path(self.name, self.segments, None)
 
     def __str__(self):
@@ -186,14 +197,14 @@ class Path:
                 "P",
                 self.name,
                 ",".join(str(seg) for seg in self.segments),
-                ",".join(str(a) for a in self.overlaps) if self.overlaps else "*",
+                ",".join(str(a) for a in self.olaps) if self.olaps else "*",
             ]
         )
 
 
-def nonblanks(f: TextIO) -> Iterator[str]:
+def nonblanks(file: TextIO) -> Iterator[str]:
     """Generate trimmed, nonempty lines from a text file."""
-    for line in f:
+    for line in file:
         line = line.strip()
         if line:
             yield line
@@ -210,6 +221,7 @@ class Graph:
 
     @classmethod
     def parse(cls, infile: TextIO) -> "Graph":
+        """Parse a GFA file."""
         graph = Graph([], {}, [], {})
 
         for line in nonblanks(infile):
@@ -230,6 +242,7 @@ class Graph:
         return graph
 
     def emit(self, outfile: TextIO, showlinks=True):
+        """Emit a GFA file."""
         for header in self.headers:
             print(header, file=outfile)
         for segment in self.segments.values():
@@ -242,8 +255,8 @@ class Graph:
 
 
 if __name__ == "__main__":
-    graph = Graph.parse(sys.stdin)
+    mygraph = Graph.parse(sys.stdin)
     if len(sys.argv) > 1 and sys.argv[1] == "--nl":
-        graph.emit(sys.stdout, False)
+        mygraph.emit(sys.stdout, False)
     else:
-        graph.emit(sys.stdout)
+        mygraph.emit(sys.stdout)
