@@ -14,12 +14,11 @@ def print_bed(graph):
     for path in graph.paths.values():
         length = len(preprocess.pathseq(graph)[path.name])
         for i in range(random.randint(0, 5)):
-            lo = random.randint(0, length - 1)
-            hi = random.randint(lo + 1, length)
-            bed = mygfa.Bed(path.name, lo, hi, f"{path.name}_{i}")
+            low = random.randint(0, length - 1)
+            high = random.randint(low + 1, length)
+            bed = mygfa.Bed(path.name, low, high, f"{path.name}_{i}")
             print(bed)
 
 
 if __name__ == "__main__":
-    graph = mygfa.Graph.parse(sys.stdin)
-    print_bed(graph)
+    print_bed(mygfa.Graph.parse(sys.stdin))
