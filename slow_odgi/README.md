@@ -2,25 +2,30 @@
 
 ### Overview
 
-`slow_odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal. Think of it as a code-ey spec for `odgi` commands.
+`slow_odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
+While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
+Think of it as a code-forward spec for `odgi` commands.
 
 ### Installation
 
-If you don't care for an executable, it is possible to skip installation and just run `python -m slow_odgi`.
+*These instructions assume that you are in this directory, i.e. `path/to/pollen/slow_odgi/`.*
+
+If you don't care for an executable, it is possible to skip installation and just run `PYTHONPATH=../mygfa python3 -m slow_odgi`.
+You can use this phrase (adjusting relative paths as necessary) wherever we use the `slow_odgi` executable in the sections that follow.
 
 To install the `slow_odgi` executable:
-1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date)
-2. While in this directory, run `python3 -m pip install --user -e ../mygfa .`
+1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
+2. Run `python3 -m pip install --user -e ../mygfa .`.
 
 Alternately,
 1. Ensure you have [`flit`](https://flit.pypa.io/en/latest/#install).
-1. Change directories to `../mygfa` and run `flit install --user --symlink`
-2. Change directories back to `slow_odgi` (this directory) and run `flit install --user --symlink`
+1. Change directories to `../mygfa` and run `flit install --user --symlink`.
+2. Change directories back to `slow_odgi` (this directory) and run `flit install --user --symlink`.
 
-### Try it! 
-1. Change to the root directory `pollen/`
-2. Run `make fetch`; this downloads a set of pangenome graphs for us to play with
-3. Try `slow_odgi chop test/note5.gfa -n 3`; this runs `chop` on the graph with parameter 3
+### Try it!
+1. Change to the root directory `pollen/`.
+2. Run `make fetch`; this downloads a set of pangenome graphs for us to play with.
+3. Try `slow_odgi chop test/note5.gfa -n 3`; this runs `chop` on the graph `note5.gfa` with parameter `3`.
 4. Play with the other commands that we support! See below for a full listing.
 
 ### Testing
