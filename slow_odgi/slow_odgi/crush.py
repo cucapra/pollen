@@ -1,7 +1,7 @@
 from mygfa import mygfa, preprocess
 
 
-def crush_seg(seg):
+def crush_seg(seg: mygfa.Segment) -> mygfa.Segment:
     """Compact any "runs" of N down to a single N."""
     new_seq = ""
     in_n = False
@@ -17,7 +17,7 @@ def crush_seg(seg):
     return mygfa.Segment(seg.name, new_seq)
 
 
-def crush(graph):
+def crush(graph: mygfa.Graph) -> mygfa.Graph:
     """Crush all the segments of the graph."""
     crushed_segs = {name: crush_seg(seg) for name, seg in graph.segments.items()}
     return mygfa.Graph(

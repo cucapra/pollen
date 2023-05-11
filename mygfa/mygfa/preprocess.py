@@ -2,7 +2,7 @@ from typing import List, Tuple, Dict
 from . import mygfa
 
 
-def node_steps(graph):
+def node_steps(graph: mygfa.Graph) -> Dict[str, List[Tuple[str, int, bool]]]:
     """For each segment in the graph,
     list the times the segment was crossed by a path"""
     # segment name, (path name, index on path, direction) list
@@ -17,7 +17,10 @@ def node_steps(graph):
     return crossings
 
 
-def adjlist(graph):
+HandleMap = Dict[mygfa.Handle, List[mygfa.Handle]]
+
+
+def adjlist(graph: mygfa.Graph) -> Tuple[HandleMap, HandleMap]:
     """Construct an adjacency list representation of the graph.
     This is via two dicts having the same type:
     key: Handle              # my details
@@ -25,8 +28,8 @@ def adjlist(graph):
     We take each segment into account, regardless of whether it is on a path.
     We make two such dicts: one for in-edges and one for out-edges
     """
-    ins: Dict[mygfa.Handle, List[mygfa.Handle]] = {}
-    outs: Dict[mygfa.Handle, List[mygfa.Handle]] = {}
+    ins: HandleMap = {}
+    outs: HandleMap = {}
     for segname in graph.segments.keys():
         ins[mygfa.Handle(segname, True)] = []
         ins[mygfa.Handle(segname, False)] = []
@@ -37,20 +40,20 @@ def adjlist(graph):
         ins[link.to_].append(link.from_)
         outs[link.from_].append(link.to_)
 
-    return (ins, outs)
+    return ins, outs
 
 
-def handle_seq(graph, handle):
+def handle_seq(graph: mygfa.Graph, handle: mygfa.Handle) -> str:
     """Get the sequence of a handle, reverse-complementing if necessary."""
     seg = graph.segments[handle.name]
     return seg.seq if handle.ori else seg.revcomp().seq
 
 
-def pathseq(graph):
+def pathseq(graph: mygfa.Graph) -> Dict[str, str]:
     """Given a graph, precompute the _sequence_
     charted by each of the graph's paths.
     """
-    ans = {}
+    ans: Dict[str, str] = {}
     for path in graph.paths.keys():
         ans[path] = "".join(
             handle_seq(graph, handle) for handle in graph.paths[path].segments
@@ -58,7 +61,7 @@ def pathseq(graph):
     return ans
 
 
-def get_maxes(graph):
+def get_maxes(graph: mygfa.Graph) -> Tuple[int, int, int]:
     """Return the maximum number of nodes, steps, and paths in the graph."""
     max_nodes = len(graph.segments)
     max_steps = max([len(steps) for steps in node_steps(graph).values()])
@@ -66,6 +69,6 @@ def get_maxes(graph):
     return max_nodes, max_steps, max_paths
 
 
-def drop_all_overlaps(paths):
+def drop_all_overlaps(paths: Dict[str, mygfa.Path]) -> Dict[str, mygfa.Path]:
     """Drop all overlaps from the given paths."""
     return {name: path.drop_overlaps() for name, path in paths.items()}

@@ -1,6 +1,6 @@
 import argparse
 import sys
-from typing import Dict
+from typing import Dict, Tuple, List
 from collections.abc import Callable
 from mygfa import mygfa
 
@@ -20,7 +20,7 @@ from . import (
 )
 
 
-def parse_args():
+def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     """Parse command line arguments and run the appropriate subcommand."""
     parser = argparse.ArgumentParser()
 
@@ -112,18 +112,18 @@ def parse_args():
     return parser, args
 
 
-def parse_bedfile(filename):
+def parse_bedfile(filename: str) -> List[mygfa.Bed]:
     """Parse BED files that describe which paths to insert."""
     bedfile = open(filename, "r", encoding="utf-8")
     return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
-def parse_paths(filename):
+def parse_paths(filename: str) -> List[str]:
     """Parse path names from a file."""
     return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
 
 
-def dispatch(args):
+def dispatch(args: argparse.Namespace) -> None:
     """Parse the graph from filename,
     parse any additional files if needed,
     then dispatch to the appropriate slow-odgi command.
@@ -155,7 +155,7 @@ def dispatch(args):
             assert proofs.logically_le(graph, ans)
 
 
-def main():
+def main() -> None:
     """Parse command line arguments and run the appropriate subcommand."""
     parser, args = parse_args()
     if "graph" not in args or not args.graph:
