@@ -1,14 +1,21 @@
 import json
+from typing import Dict, Union, Collection, Any
 from json import JSONEncoder
 from mygfa import mygfa, preprocess
 
 
-def format_gen(width):
+FormatType = Dict[str, Union[bool, str, int]]
+OutputType = Dict[str, Dict[str, Collection[object]]]
+
+
+def format_gen(width: int) -> FormatType:
     """Generates a format object for a bitvector of length `width`."""
     return {"is_signed": False, "numeric_type": "bitnum", "width": width}
 
 
-def paths_viewed_from_nodes(graph, max_n, max_e, max_p):
+def paths_viewed_from_nodes(
+    graph: mygfa.Graph, max_n: int, max_e: int, max_p: int
+) -> OutputType:
     """Given a graph, return a dict representing the paths
     viewed from the PoV of each node.
     """
@@ -26,7 +33,7 @@ def paths_viewed_from_nodes(graph, max_n, max_e, max_p):
     return output
 
 
-def paths_to_consider(max_n, max_p):
+def paths_to_consider(max_n: int, max_p: int) -> OutputType:
     """Currently just a stub; later we will populate this with a
     bitvector of length MAX_PATHS, where the i'th index will be 1 if
     the i'th path is to be considered during depth calculation.
@@ -48,13 +55,13 @@ class NodeDepthEncoder(JSONEncoder):
     The exine command `depth` is the oracle for this encoding.
     """
 
-    def __init__(self, max_n, max_e, max_p, **kwargs) -> None:
+    def __init__(self, max_n: int, max_e: int, max_p: int, **kwargs: Any) -> None:
         super(NodeDepthEncoder, self).__init__(**kwargs)
         self.max_n = max_n
         self.max_e = max_e
         self.max_p = max_p
 
-    def default(self, o) -> None:
+    def default(self, o: Any) -> None:
         # This prints the word "null" after everything else is done,
         # which I think is because the graph has some field that
         # we do not yet encode nicely.
@@ -80,7 +87,7 @@ class NodeDepthEncoder(JSONEncoder):
         )
 
 
-def depth(graph: mygfa.Graph, max_n, max_e, max_p) -> None:
+def depth(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> None:
     """Prints a JSON representation of `graph`
     that is specific to the exine command `depth`.
     """
