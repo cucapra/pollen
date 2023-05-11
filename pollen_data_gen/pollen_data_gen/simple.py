@@ -5,6 +5,8 @@ from mygfa import mygfa
 
 
 class GenericSimpleEncoder(JSONEncoder):
+    """A generic JSON encoder for mygfa graphs."""
+
     def default(self, o):
         if isinstance(o, mygfa.Path):
             items = str(o).split("\t")
@@ -21,7 +23,7 @@ class GenericSimpleEncoder(JSONEncoder):
             return dataclasses.asdict(o)
 
 
-def simple(graph):
+def simple(graph: mygfa.Graph) -> None:
     """Prints a "wholesale dump" JSON representation of `graph`"""
     print(json.dumps(graph.headers, indent=4))
     print(json.dumps(graph.segments, indent=4, cls=GenericSimpleEncoder))
