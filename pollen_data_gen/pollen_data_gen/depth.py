@@ -1,5 +1,5 @@
 import json
-from typing import Dict, Union, Collection, Any
+from typing import Any, Collection, Dict, Union
 from json import JSONEncoder
 from mygfa import mygfa, preprocess
 
