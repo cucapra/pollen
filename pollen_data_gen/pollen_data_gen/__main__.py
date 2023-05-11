@@ -4,7 +4,7 @@ from mygfa import mygfa
 from . import depth, simple
 
 
-def parse_args():
+def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     """Parse command line arguments and run the appropriate subcommand."""
     parser = argparse.ArgumentParser()
 
@@ -52,7 +52,7 @@ def parse_args():
     return parser, args
 
 
-def dispatch(args):
+def dispatch(args: argparse.Namespace) -> None:
     """Parse the graph from filename,
     then dispatch to the appropriate pollen_data_gen command.
     """
@@ -64,7 +64,7 @@ def dispatch(args):
     name_to_func[args.command](graph)
 
 
-def main():
+def main() -> None:
     """Parse command line arguments and run the appropriate subcommand."""
     parser, arguments = parse_args()
     if "graph" not in arguments or not arguments.graph:

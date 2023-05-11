@@ -1,7 +1,7 @@
-from mygfa import preprocess
+from mygfa import mygfa, preprocess
 
 
-def matrix(graph):
+def matrix(graph: mygfa.Graph) -> mygfa.Graph:
     """Print the graph in sparse matrix format."""
 
     # Just keeping up with the odgi header format...

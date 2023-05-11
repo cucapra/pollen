@@ -13,6 +13,10 @@ def parse_orientation(ori: str) -> bool:
     return ori == "+"
 
 
+LegendType = Dict[str, Tuple[int, int]]
+# A legend is a mapping from segment names to pairs of integers.
+
+
 @dataclass
 class Bed:
     """A BED (Browser Extensible Data) file describes regions of a genome.
@@ -30,12 +34,12 @@ class Bed:
     # In the future, make `new` Optional.
 
     @classmethod
-    def parse(cls, line) -> "Bed":
+    def parse(cls, line: str) -> "Bed":
         """Parse a BED line."""
         name, low, high, new = line.split("\t")
         return Bed(name, int(low), int(high), new)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\t".join([self.name, str(self.low), str(self.high), self.new])
 
 
@@ -47,7 +51,7 @@ class Segment:
     seq: str
 
     @classmethod
-    def parse(cls, fields) -> "Segment":
+    def parse(cls, fields: List[str]) -> "Segment":
         """Parse a GFA segment."""
         _, name, seq = fields[:3]
         return Segment(name, seq)
@@ -58,7 +62,7 @@ class Segment:
         seq = "".join(reversed([comp[c] for c in self.seq]))
         return Segment(self.name, seq)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\t".join(
             [
                 "S",
@@ -92,7 +96,7 @@ class Alignment:
         ]
         return Alignment(ops)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "".join(f"{amount}{op.value}" for (amount, op) in self.ops)
 
 
@@ -104,7 +108,7 @@ class Handle:
     ori: bool
 
     @classmethod
-    def parse(cls, seg, ori) -> "Handle":
+    def parse(cls, seg: str, ori: str) -> "Handle":
         """Parse a Handle."""
         return Handle(seg, parse_orientation(ori))
 
@@ -112,11 +116,11 @@ class Handle:
         """Return the handle representing the complement of this handle."""
         return Handle(self.name, not self.ori)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """This is how a path wants handles to be string-ified."""
         return "".join([self.name, ("+" if self.ori else "-")])
 
-    def linkstr(self):
+    def linkstr(self) -> str:
         """This is how a link wants handles to be string-ified."""
         return "\t".join([self.name, ("+" if self.ori else "-")])
 
@@ -145,7 +149,7 @@ class Link:
         """
         return Link(self.to_.rev(), self.from_.rev(), self.overlap)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\t".join(
             [
                 "L",
@@ -189,7 +193,7 @@ class Path:
         """Return a copy of this path without overlaps."""
         return Path(self.name, self.segments, None)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\t".join(
             [
                 "P",
@@ -239,7 +243,7 @@ class Graph:
 
         return graph
 
-    def emit(self, outfile: TextIO, showlinks=True):
+    def emit(self, outfile: TextIO, showlinks: bool = True) -> None:
         """Emit a GFA file."""
         for header in self.headers:
             print(header, file=outfile)

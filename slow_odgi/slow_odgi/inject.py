@@ -1,8 +1,9 @@
+from typing import List, Optional, Tuple
 from mygfa import mygfa
 from . import chop
 
 
-def track_path(graph, bed):
+def track_path(graph: mygfa.Graph, bed: mygfa.Bed) -> List[mygfa.Handle]:
     """Given a BED entry, make a list of the Segments traversed _in full_."""
     walk = 0
     segs_walked = []
@@ -20,14 +21,16 @@ def track_path(graph, bed):
     return segs_walked  # Given a legal BED, I should never reach this point.
 
 
-def handle_pos(handle, length, n):
+def handle_pos(handle: mygfa.Handle, length: int, index: int) -> Tuple[str, int]:
     """Get the concrete index in the underlying segment sequence corresponding
     to the `n`th nucleotide from the beginning (in the appropriate direction).
     """
-    return handle.name, (n if handle.ori else length - n)
+    return handle.name, (index if handle.ori else length - index)
 
 
-def where_chop(graph, pathname, index):
+def where_chop(
+    graph: mygfa.Graph, pathname: str, index: int
+) -> Optional[Tuple[str, int]]:
     """Given a path and an index, find which segment should be chopped.
     We may not need to chop: the index could already be at a seam b/w segments.
     In such case, return None.
@@ -40,9 +43,10 @@ def where_chop(graph, pathname, index):
         if walk + length > index:
             return handle_pos(handle, length, index - walk)
         walk = walk + length
+    return None  # Given a legal path, I should never reach this point.
 
 
-def chop_if_needed(graph, pathname, index):
+def chop_if_needed(graph: mygfa.Graph, pathname: str, index: int) -> mygfa.Graph:
     """Modify this graph such that the given index will fall on a segment-seam.
     This involves:
       1. renumbering segments
@@ -75,7 +79,7 @@ def chop_if_needed(graph, pathname, index):
     return mygfa.Graph(graph.headers, segments, graph.links, paths)
 
 
-def inject(graph, p2i):
+def inject(graph: mygfa.Graph, p2i: List[mygfa.Bed]) -> mygfa.Graph:
     """Given a graph and the list of paths to inject, inject those paths."""
     for p in p2i:
         if p.name in graph.paths.keys():  # odgi is silent if path was absent.

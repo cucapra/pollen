@@ -2,10 +2,12 @@ from typing import Dict, Tuple
 from mygfa import mygfa
 
 
-def chop_segs(graph, n):
+def chop_segs(
+    graph: mygfa.Graph, choplength: int
+) -> Tuple[Dict[str, mygfa.Segment], mygfa.LegendType]:
     """Chop all the sequences of the graph into length n or lower."""
 
-    legend: Dict[str, Tuple[int, int]] = {}
+    legend: mygfa.LegendType = {}
     # If a segment is chopped, its sequence will be spread out over
     # up among a series of contiguous new segments.
 
@@ -30,7 +32,7 @@ def chop_segs(graph, n):
     for segment in graph.segments.values():
         chopped_segs = {}
         seq = segment.seq
-        chopped_seqs = [seq[i : i + n] for i in range(0, len(seq), n)]
+        chopped_seqs = [seq[i : i + choplength] for i in range(0, len(seq), choplength)]
         seg_count_start = seg_count
         for cs in chopped_seqs:  # Going from seqs to segs.
             seg_name = str(seg_count)
@@ -42,24 +44,24 @@ def chop_segs(graph, n):
     return new_segs, legend
 
 
-def chop_paths(graph, legend):
+def chop_paths(graph: mygfa.Graph, legend: mygfa.LegendType) -> Dict[str, mygfa.Path]:
     """With the legend computed as above, this step is easy."""
     new_paths = {}
     for path in graph.paths.values():
         new_p_segs = []
         for handle in path.segments:
-            o = handle.ori
-            a, b = legend[handle.name]
-            segments = [mygfa.Handle(str(s), o) for s in range(a, b)]
-            new_p_segs += segments if o else list(reversed(segments))
+            ori = handle.ori
+            fst, snd = legend[handle.name]
+            segments = [mygfa.Handle(str(s), ori) for s in range(fst, snd)]
+            new_p_segs += segments if ori else list(reversed(segments))
         new_paths[path.name] = mygfa.Path(path.name, new_p_segs, None)
         # odgi drops overlaps, so we do too.
     return new_paths
 
 
-def chop(graph, n):
+def chop(graph: mygfa.Graph, choplength: int) -> mygfa.Graph:
     """Chop segments and regenerate paths."""
-    new_segments, legend = chop_segs(graph, n)
+    new_segments, legend = chop_segs(graph, choplength)
     new_paths = chop_paths(graph, legend)
     return mygfa.Graph(graph.headers, new_segments, [], new_paths)
     # The blank list is because we are choosing to drop links for now.

@@ -1,4 +1,8 @@
-def get_fasta_legend(graph):
+from typing import Tuple
+from mygfa import mygfa
+
+
+def get_fasta_legend(graph: mygfa.Graph) -> Tuple[str, mygfa.LegendType]:
     """The main deliverable is the FASTA:
     Simply traverse the segments in order and glue their seqs together.
     However, it pays to do some bookkeeping now.
@@ -16,7 +20,7 @@ def get_fasta_legend(graph):
     return ans, legend
 
 
-def print_bed(graph, legend, name):
+def print_bed(graph: mygfa.Graph, legend: mygfa.LegendType, name: str) -> None:
     """With the legend computed during FASTA-building, this is easy."""
 
     print("\t".join(["#name", "start", "end", "path.name", "strand", "step.rank"]))
@@ -37,12 +41,12 @@ def print_bed(graph, legend, name):
             )
 
 
-def insert_newlines(string, every=80):
+def insert_newlines(string: str, every: int = 80) -> str:
     """odgi's output does this for this algorithm, so we follow them."""
     return "\n".join(string[i : i + every] for i in range(0, len(string), every))
 
 
-def flatten(graph, name):
+def flatten(graph: mygfa.Graph, name: str) -> mygfa.Graph:
     """Print out the FASTA and BED."""
     print(f">{name}")
     # This is a bit harcoded for files living in test/file.gfa

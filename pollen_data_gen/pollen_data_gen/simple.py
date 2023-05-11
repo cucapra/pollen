@@ -1,11 +1,17 @@
 import json
 import dataclasses
+from typing import Dict, Union, Optional, Any
 from json import JSONEncoder
 from mygfa import mygfa
 
 
+SimpleType = Optional[Dict[str, Union[bool, str, int]]]
+
+
 class GenericSimpleEncoder(JSONEncoder):
-    def default(self, o):
+    """A generic JSON encoder for mygfa graphs."""
+
+    def default(self, o: Any) -> SimpleType:
         if isinstance(o, mygfa.Path):
             items = str(o).split("\t")
             return {"segments": items[2], "overlaps": items[3]}
@@ -17,11 +23,12 @@ class GenericSimpleEncoder(JSONEncoder):
                 "to_orient": o.to_.ori,
                 "overlap": str(o.overlap),
             }
-        if isinstance(o, mygfa.Segment) or isinstance(o, mygfa.Alignment):
+        if isinstance(o, (mygfa.Segment, mygfa.Alignment)):
             return dataclasses.asdict(o)
+        return None
 
 
-def simple(graph):
+def simple(graph: mygfa.Graph) -> None:
     """Prints a "wholesale dump" JSON representation of `graph`"""
     print(json.dumps(graph.headers, indent=4))
     print(json.dumps(graph.segments, indent=4, cls=GenericSimpleEncoder))

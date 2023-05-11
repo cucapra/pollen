@@ -1,7 +1,7 @@
-from mygfa import preprocess
+from mygfa import mygfa, preprocess
 
 
-def paths_logically_le(g1, g2):
+def paths_logically_le(g1: mygfa.Graph, g2: mygfa.Graph) -> bool:
     """Are the paths in g1 logically "less than or equal to" those in g2?
     That is, for all paths p in g1, does the sequence charted by
     p in g1 match the sequence charted by p in g2?
@@ -14,7 +14,7 @@ def paths_logically_le(g1, g2):
     return True
 
 
-def logically_le(g1, g2):
+def logically_le(g1: mygfa.Graph, g2: mygfa.Graph) -> bool:
     """Is `g1` logically "less than or equal to" `g2`?
     That is, can a user of `g1` use `g2` without a hitch?
     Note that `g2` is allowed to have more stuff than `g1`.

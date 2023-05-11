@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Tuple, Dict
+from collections.abc import Callable
 from mygfa import mygfa
 
 
-def path_is_rev(path, graph):
+def path_is_rev(path: mygfa.Path, graph: mygfa.Graph) -> bool:
     """Is this path more reverse-oriented than it is forward-oriented?"""
     fwd = 0
     rev = 0
@@ -15,7 +16,7 @@ def path_is_rev(path, graph):
     return rev > fwd
 
 
-def flip_path(path, graph):
+def flip_path(path: mygfa.Path, graph: mygfa.Graph) -> Tuple[mygfa.Path, bool]:
     """Flip the given path if it is more reverse- than forward-oriented.
     Return the path, whether this method flipped it or not,
     along with a bool that says whether this method flipped the path."""
@@ -39,7 +40,9 @@ def dedup(mylist: List[mygfa.Link]) -> List[mygfa.Link]:
     return new
 
 
-def gen_links(paths_dec, pred) -> List[mygfa.Link]:
+def gen_links(
+    paths_dec: Dict[str, Tuple[mygfa.Path, bool]], pred: Callable[[bool], bool]
+) -> List[mygfa.Link]:
     """Given a dict of decorated paths and a predicate on path-decorations,
     return a list of links that, when added to the graph,
     would make the predicate-satisfying paths valid.
@@ -65,7 +68,7 @@ def gen_links(paths_dec, pred) -> List[mygfa.Link]:
     return links
 
 
-def flip(graph):
+def flip(graph: mygfa.Graph) -> mygfa.Graph:
     """Flip the paths, and generate new links that make the graph valid."""
     paths_dec = {name: flip_path(p, graph) for name, p in graph.paths.items()}
     # paths_dec is "decorated" with info re:
