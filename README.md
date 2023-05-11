@@ -19,16 +19,7 @@ Aside: Slow Odgi
 It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
 While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
 
-To install `slow_odgi`:
-1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
-2. Run `python3 -m pip install --user -e ./mygfa ./slow_odgi`.
-
-Alternately,
-1. Ensure you have [`flit`][flit].
-1. Change directories to `mygfa` and run `flit install --user --symlink`.
-2. Change directories to `slow_odgi` and run `flit install --user --symlink`.
-
-Read all about it [here](slow_odgi/)!
+For installation instructions and a summary of implemented commands, see [here](slow_odgi/)!
 
 
 Getting Started with Pollen
