@@ -1,7 +1,7 @@
-from mygfa import preprocess
+from mygfa import mygfa, preprocess
 
 
-def validate(graph):
+def validate(graph: mygfa.Graph) -> mygfa.Graph:
     """Does the underlying set of Links support the paths that the graph has?"""
     _, outs = preprocess.adjlist(graph)
 

@@ -3,7 +3,7 @@ import random
 from mygfa import mygfa, preprocess
 
 
-def print_bed(graph):
+def print_bed(graph: mygfa.Graph) -> None:
     """Creates a reasonable query for `inject`.
     Each entry of the output is a BED where:
       `name` is the name of an existing path.
