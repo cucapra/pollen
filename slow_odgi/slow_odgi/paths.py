@@ -3,7 +3,7 @@ import random
 from mygfa import mygfa
 
 
-def paths(graph, droprate=0):
+def paths(graph: mygfa.Graph, droprate: int = 0) -> mygfa.Graph:
     """Print the names of the paths found in `graph`.
     The droprate represents the percentage of paths to drop.
     """

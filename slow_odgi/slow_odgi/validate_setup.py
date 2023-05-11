@@ -3,7 +3,7 @@ import random
 from mygfa import mygfa
 
 
-def drop_some_links(graph):
+def drop_some_links(graph: mygfa.Graph) -> mygfa.Graph:
     """Given a graph, (pseudo)randomly drop 90% of the Links of the graph.
     This serves as a starting point from which to test `validate`.
     """

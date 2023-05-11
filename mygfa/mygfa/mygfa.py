@@ -13,6 +13,10 @@ def parse_orientation(ori: str) -> bool:
     return ori == "+"
 
 
+LegendType = Dict[str, Tuple[int, int]]
+# A legend is a mapping from segment names to pairs of integers.
+
+
 @dataclass
 class Bed:
     """A BED (Browser Extensible Data) file describes regions of a genome.
