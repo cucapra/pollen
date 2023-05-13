@@ -9,3 +9,5 @@ subset of `GFA1`_ files that represent pangenomic variation graphs.
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   api.rst

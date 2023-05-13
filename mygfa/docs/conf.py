@@ -3,7 +3,7 @@ copyright = '2023, Cornell University'
 author = 'Cornell University'
 release = '0.1'
 
-extensions = []
+extensions = ['sphinx.ext.autodoc']
 
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 

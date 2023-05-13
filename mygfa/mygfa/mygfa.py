@@ -217,6 +217,8 @@ class Graph:
     """An entire GFA file."""
 
     headers: List[str]
+    """Unparsed header lines."""
+
     segments: Dict[str, Segment]
     links: List[Link]
     paths: Dict[str, Path]
