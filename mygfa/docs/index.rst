@@ -1,20 +1,11 @@
-.. mygfa documentation master file, created by
-   sphinx-quickstart on Sat May 13 15:57:22 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+mygfa: Simple GFA1 Data Model for Python
+========================================
 
-Welcome to mygfa's documentation!
-=================================
+mygfa is an extremely simple Python data model, parser, and emitter for a
+subset of `GFA1`_ files that represent pangenomic variation graphs.
+
+.. _GFA1: http://gfa-spec.github.io/GFA-spec/GFA1.html
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
