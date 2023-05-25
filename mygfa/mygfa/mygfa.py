@@ -213,10 +213,25 @@ def nonblanks(file: TextIO) -> Iterator[str]:
 
 
 @dataclass
+class Header:
+    """A GFA header."""
+
+    line: str
+
+    @classmethod
+    def parse(cls, line: str) -> "Header":
+        """Parse a GFA header."""
+        return Header(line)
+
+    def __str__(self) -> str:
+        return self.line
+
+
+@dataclass
 class Graph:
     """An entire GFA file."""
 
-    headers: List[str]
+    headers: List[Header]
     segments: Dict[str, Segment]
     links: List[Link]
     paths: Dict[str, Path]
