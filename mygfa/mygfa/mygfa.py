@@ -216,7 +216,7 @@ def nonblanks(file: TextIO) -> Iterator[str]:
 class Header:
     """A GFA header."""
 
-    line: str
+    header: str
 
     @classmethod
     def parse(cls, line: str) -> "Header":
@@ -224,7 +224,7 @@ class Header:
         return Header(line)
 
     def __str__(self) -> str:
-        return self.line
+        return self.header
 
 
 @dataclass
