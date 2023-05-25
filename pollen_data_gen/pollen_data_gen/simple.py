@@ -5,13 +5,13 @@ from json import JSONEncoder
 from mygfa import mygfa
 
 
-# SimpleType = Optional[Dict[str, Union[bool, str, int]]]
+SimpleType = Optional[Dict[str, Union[bool, str, int]]]
 
 
 class GenericSimpleEncoder(JSONEncoder):
     """A generic JSON encoder for mygfa graphs."""
 
-    def default(self, o: Any):
+    def default(self, o: Any) -> SimpleType:
         if isinstance(o, mygfa.Path):
             items = str(o).split("\t")
             return {"segments": items[2], "overlaps": items[3]}
