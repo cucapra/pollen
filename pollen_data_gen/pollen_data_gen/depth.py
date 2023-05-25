@@ -26,7 +26,6 @@ def paths_viewed_from_nodes(
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (max_e - len(data))
         output[f"path_ids{seg}"] = {"data": data, "format": json_format}
-    # I would rather not have the for-loop below. See issue 24
     data = [0] * max_e
     for i in range(len(graph.segments) + 1, max_n + 1):
         output[f"path_ids{i}"] = {"data": data, "format": json_format}
@@ -43,7 +42,6 @@ def paths_to_consider(max_n: int, max_p: int) -> OutputType:
     """
     output = {}
     for i in range(1, max_n + 1):
-        # Would rather do the above for size(g). See issue 24
         data = [0] + [1] * (max_p)
         output[f"paths_to_consider{i}"] = {"data": data, "format": format_gen(1)}
     return output
@@ -62,9 +60,6 @@ class NodeDepthEncoder(JSONEncoder):
         self.max_p = max_p
 
     def default(self, o: Any) -> None:
-        # This prints the word "null" after everything else is done,
-        # which I think is because the graph has some field that
-        # we do not yet encode nicely.
         answer_field = {
             "depth_output": {
                 "data": list([0] * self.max_n),
