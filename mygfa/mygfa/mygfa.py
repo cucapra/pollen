@@ -244,7 +244,7 @@ class Graph:
         for line in nonblanks(infile):
             fields = line.split()
             if fields[0] == "H":
-                graph.headers.append(line)  # Parse headers verbatim.
+                graph.headers.append(Header.parse(line))
             elif fields[0] == "S":
                 segment = Segment.parse(fields)
                 graph.segments[segment.name] = segment
