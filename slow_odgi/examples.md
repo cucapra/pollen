@@ -94,12 +94,14 @@
 
     local flip_path(Path path) {
       if (is_rev(path)) {
-        path_steps = [];
         for step in rev(path.steps) {
-          path_steps.append(Step {
-            orientation: !step.orientation
+          emit Step {
+            handle: {
+              orientation: !step.handle.orientation
+              ..step.handle
+            }
             ..step
-          });
+          };
         }
       }
       emit Path {
