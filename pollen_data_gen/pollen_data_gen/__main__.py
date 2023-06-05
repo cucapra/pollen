@@ -12,7 +12,15 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
         title="pollen-data-gen commands", metavar="COMMAND", dest="command"
     )
 
-    _ = subparsers.add_parser("simple", help="Produces a simple JSON of the graph.")
+    simple_parser = subparsers.add_parser(
+        "simple", help="Produces a simple JSON serialization of the graph."
+    )
+    simple_parser.add_argument(
+        "-o",
+        nargs="?",
+        help="The output JSON file.",
+        required=True,
+    )
 
     depth_parser = subparsers.add_parser(
         "depth", help="Produces a `depth`-specific JSON of the graph."
@@ -58,7 +66,7 @@ def dispatch(args: argparse.Namespace) -> None:
     """
     name_to_func = {
         "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
-        "simple": simple.dump,
+        "simple": lambda g: simple.dump(g, args.o),
     }
     graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     name_to_func[args.command](graph)

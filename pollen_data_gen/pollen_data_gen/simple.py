@@ -34,7 +34,7 @@ class GenericSimpleEncoder(JSONEncoder):
         return None
 
 
-def dump(graph: mygfa.Graph, json_file: str = "simple.json") -> None:
+def dump(graph: mygfa.Graph, json_file: str) -> None:
     """Outputs the graph as a JSON, with some redundant information removed."""
     with open(json_file, "w", encoding="utf-8") as file:
         json.dump(
