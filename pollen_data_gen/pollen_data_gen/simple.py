@@ -1,4 +1,3 @@
-import sys
 import json
 import dataclasses
 from typing import Dict, Union, Optional, Any
@@ -22,9 +21,9 @@ class GenericSimpleEncoder(JSONEncoder):
             # We perform a little flattening.
             return {
                 "from": o.from_.name,
-                "from_orient": o.from_.ori,
+                "from_orient": "+" if o.from_.ori else "-",
                 "to": o.to_.name,
-                "to_orient": o.to_.ori,
+                "to_orient": "+" if o.to_.ori else "-",
                 "overlap": str(o.overlap),
             }
         if isinstance(o, mygfa.Header):
@@ -55,14 +54,19 @@ def parse(json_file: str) -> mygfa.Graph:
         graph = json.load(file)
     return mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
-        {k: mygfa.Segment(v["name"], v["seq"]) for k, v in graph["segments"].items()},
+        {
+            k: mygfa.Segment.parse_inner(k, v["seq"])
+            for k, v in graph["segments"].items()
+        },
         [
-            mygfa.Link(
-                mygfa.Handle.parse(l["from"], "+" if l["from_orient"] else "-"),
-                mygfa.Handle.parse(l["to"], "+" if l["to_orient"] else "-"),
-                mygfa.Alignment.parse(l["overlap"]),
+            mygfa.Link.parse_inner(
+                link["from"],
+                link["from_orient"],
+                link["to"],
+                link["to_orient"],
+                link["overlap"],
             )
-            for l in graph["links"]
+            for link in graph["links"]
         ],
         {
             k: mygfa.Path.parse_inner(k, v["segments"], v["overlaps"])

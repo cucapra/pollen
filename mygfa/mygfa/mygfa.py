@@ -51,10 +51,16 @@ class Segment:
     seq: str
 
     @classmethod
+    def parse_inner(cls, name, seq) -> "Segment":
+        """Parse a GFA segment, assuming that the name and sequence
+        have already been extracted."""
+        return Segment(name, seq)
+
+    @classmethod
     def parse(cls, fields: List[str]) -> "Segment":
         """Parse a GFA segment."""
         _, name, seq = fields[:3]
-        return Segment(name, seq)
+        return cls.parse_inner(name, seq)
 
     def revcomp(self) -> "Segment":
         """Returns the reverse complement of this segment."""
@@ -134,14 +140,21 @@ class Link:
     overlap: Alignment
 
     @classmethod
-    def parse(cls, fields: List[str]) -> "Link":
-        """Parse a GFA link."""
-        _, from_, from_ori, to_, to_ori, overlap = fields[:6]
+    def parse_inner(cls, from_, from_ori, to_, to_ori, overlap) -> "Link":
+        """Parse a GFA link, assuming that the key elements have
+        already been extracted.
+        """
         return Link(
             Handle.parse(from_, from_ori),
             Handle.parse(to_, to_ori),
             Alignment.parse(overlap),
         )
+
+    @classmethod
+    def parse(cls, fields: List[str]) -> "Link":
+        """Parse a GFA link."""
+        _, from_, from_ori, to_, to_ori, overlap = fields[:6]
+        return cls.parse_inner(from_, from_ori, to_, to_ori, overlap)
 
     def rev(self) -> "Link":
         """Return the link representing the reverse of this link.
