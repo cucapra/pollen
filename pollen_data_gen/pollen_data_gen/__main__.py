@@ -58,7 +58,7 @@ def dispatch(args: argparse.Namespace) -> None:
     """
     name_to_func = {
         "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
-        "simple": simple.simple,
+        "simple": simple.output,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     name_to_func[args.command](graph)

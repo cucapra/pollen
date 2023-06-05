@@ -34,8 +34,8 @@ class GenericSimpleEncoder(JSONEncoder):
         return None
 
 
-def simple(graph: mygfa.Graph):
-    """Prints a "wholesale dump" JSON representation of `graph`"""
+def output(graph: mygfa.Graph):
+    """Outputs the graph as a JSON, with some redundant information removed."""
     print(
         json.dumps(
             {"headers": graph.headers}
