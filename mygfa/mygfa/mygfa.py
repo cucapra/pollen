@@ -169,9 +169,10 @@ class Path:
     olaps: Optional[List[Alignment]]
 
     @classmethod
-    def parse(cls, fields: List[str]) -> "Path":
-        """Parse a GFA path."""
-        _, name, seq, overlaps = fields[:4]
+    def parse_inner(cls, name, seq: str, overlaps: str) -> "Path":
+        """Parse a GFA path, assuming that
+        the name, sequence and overlaps have already been extracted."""
+
         seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(",")]
         olaps_lst = (
             None
@@ -188,6 +189,13 @@ class Path:
             seq_lst,
             olaps_lst,
         )
+
+    @classmethod
+    def parse(cls, fields: List[str]) -> "Path":
+        """Parse a GFA path.
+        Extract the name, seq, and overlaps, and dispatch to the helper above."""
+        _, name, seq, overlaps = fields[:4]
+        return cls.parse_inner(name, seq, overlaps)
 
     def drop_overlaps(self) -> "Path":
         """Return a copy of this path without overlaps."""

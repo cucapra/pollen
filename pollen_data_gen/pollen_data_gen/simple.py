@@ -1,3 +1,4 @@
+import sys
 import json
 import dataclasses
 from typing import Dict, Union, Optional, Any
@@ -46,3 +47,31 @@ def dump(graph: mygfa.Graph, json_file: str) -> None:
             indent=2,
             cls=GenericSimpleEncoder,
         )
+
+
+def parse(json_file: str) -> mygfa.Graph:
+    """Reads a JSON file and returns a mygfa.Graph object."""
+    with open(json_file, "r", encoding="utf-8") as file:
+        graph = json.load(file)
+    return mygfa.Graph(
+        [mygfa.Header.parse(h) for h in graph["headers"]],
+        {k: mygfa.Segment(v["name"], v["seq"]) for k, v in graph["segments"].items()},
+        [
+            mygfa.Link(
+                mygfa.Handle.parse(l["from"], "+" if l["from_orient"] else "-"),
+                mygfa.Handle.parse(l["to"], "+" if l["to_orient"] else "-"),
+                mygfa.Alignment.parse(l["overlap"]),
+            )
+            for l in graph["links"]
+        ],
+        {
+            k: mygfa.Path.parse_inner(k, v["segments"], v["overlaps"])
+            for k, v in graph["paths"].items()
+        },
+    )
+
+
+def roundtrip_test(graph: mygfa.Graph) -> None:
+    """Tests that the graph can be serialized and deserialized."""
+    dump(graph, "roundtrip_test.json")
+    assert parse("roundtrip_test.json") == graph

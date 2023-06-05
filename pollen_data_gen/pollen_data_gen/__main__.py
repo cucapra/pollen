@@ -22,6 +22,11 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
+    _ = subparsers.add_parser(
+        "roundtrip",
+        help="Checks that we can serialize the deserilize the graph losslessly.",
+    )
+
     depth_parser = subparsers.add_parser(
         "depth", help="Produces a `depth`-specific JSON of the graph."
     )
@@ -67,6 +72,7 @@ def dispatch(args: argparse.Namespace) -> None:
     name_to_func = {
         "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
         "simple": lambda g: simple.dump(g, args.o),
+        "roundtrip": simple.roundtrip_test,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     name_to_func[args.command](graph)
