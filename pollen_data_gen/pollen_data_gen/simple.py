@@ -29,6 +29,8 @@ class GenericSimpleEncoder(JSONEncoder):
         if isinstance(o, mygfa.Header):
             # We can flatten the header objects into a simple list of strings.
             return str(o)
+        if isinstance(o, mygfa.Segment):
+            return {"seq": o.seq}
         if isinstance(o, (mygfa.Segment, mygfa.Alignment, mygfa.Link)):
             return dataclasses.asdict(o)
         return None
