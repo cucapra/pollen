@@ -7,18 +7,18 @@ from mygfa import mygfa
 
 SimpleType = Optional[Dict[str, Union[bool, str, int]]]
 
-char_to_number = {"A": "0", "T": "1", "G": "2", "C": "3", "N": "4"}
+char_to_number = {"A": "1", "T": "2", "G": "3", "C": "4", "N": "5"}
 number_to_char = {v: k for k, v in char_to_number.items()}
 
 
 def strand_to_number(strand: str):
     """Converts a strand to a number."""
-    return "".join([char_to_number[c] for c in strand])
+    return int("".join([char_to_number[c] for c in strand]))
 
 
 def number_to_strand(number: str):
     """Converts a numbers to a strand."""
-    return "".join([number_to_char[c] for c in number])
+    return "".join([number_to_char[c] for c in str(number)])
 
 
 class GenericSimpleEncoder(JSONEncoder):
