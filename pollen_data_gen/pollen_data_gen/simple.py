@@ -7,6 +7,19 @@ from mygfa import mygfa
 
 SimpleType = Optional[Dict[str, Union[bool, str, int]]]
 
+char_to_number = {"A": "0", "T": "1", "G": "2", "C": "3", "N": "4"}
+number_to_char = {v: k for k, v in char_to_number.items()}
+
+
+def strand_to_number(strand: str):
+    """Converts a strand to a number."""
+    return "".join([char_to_number[c] for c in strand])
+
+
+def number_to_strand(number: str):
+    """Converts a numbers to a strand."""
+    return "".join([number_to_char[c] for c in number])
+
 
 class GenericSimpleEncoder(JSONEncoder):
     """A generic JSON encoder for mygfa graphs."""
@@ -30,7 +43,7 @@ class GenericSimpleEncoder(JSONEncoder):
             # We can flatten the header objects into a simple list of strings.
             return str(o)
         if isinstance(o, mygfa.Segment):
-            return {"seq": o.seq}
+            return {"seq": strand_to_number(o.seq)}
         if isinstance(o, (mygfa.Segment, mygfa.Alignment, mygfa.Link)):
             return dataclasses.asdict(o)
         return None
@@ -57,7 +70,7 @@ def parse(json_file: str) -> mygfa.Graph:
     return mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
-            k: mygfa.Segment.parse_inner(k, v["seq"])
+            k: mygfa.Segment.parse_inner(k, number_to_strand(v["seq"]))
             for k, v in graph["segments"].items()
         },
         [
