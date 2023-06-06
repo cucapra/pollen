@@ -58,8 +58,8 @@ def dump(graph: mygfa.Graph, json_file: str) -> None:
         json.dump(
             {"headers": graph.headers}
             | {"segments": graph.segments}
-            | {"links": graph.links}
-            | {"paths": graph.paths},
+            | {"paths": graph.paths}
+            | {"links": graph.links},
             file,
             indent=2,
             cls=GenericSimpleEncoder,
