@@ -1,5 +1,4 @@
 import json
-import dataclasses
 from typing import Dict, Union, Optional, Any, List
 from json import JSONEncoder
 from mygfa import mygfa
@@ -47,8 +46,6 @@ class GenericSimpleEncoder(JSONEncoder):
             return str(o)
         if isinstance(o, mygfa.Segment):
             return strand_to_number_list(o.seq)
-        if isinstance(o, (mygfa.Segment, mygfa.Alignment, mygfa.Link)):
-            return dataclasses.asdict(o)
         return None
 
 
