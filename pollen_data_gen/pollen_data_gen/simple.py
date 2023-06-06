@@ -12,12 +12,15 @@ number_to_char = {v: k for k, v in char_to_number.items()}
 
 
 def strand_to_number(strand: str):
-    """Converts a strand to a number."""
+    """Converts a strand to a number following the mapping above.
+    For instance, AGGA is converted to 1331.
+    """
     return int("".join([char_to_number[c] for c in strand]))
 
 
 def number_to_strand(number: str):
-    """Converts a numbers to a strand."""
+    """Converts a numbers to a strand following the mapping above.
+    For instance, 1331 is converted to AGGA."""
     return "".join([number_to_char[c] for c in str(number)])
 
 
@@ -43,7 +46,7 @@ class GenericSimpleEncoder(JSONEncoder):
             # We can flatten the header objects into a simple list of strings.
             return str(o)
         if isinstance(o, mygfa.Segment):
-            return {"seq": strand_to_number(o.seq)}
+            return strand_to_number(o.seq)
         if isinstance(o, (mygfa.Segment, mygfa.Alignment, mygfa.Link)):
             return dataclasses.asdict(o)
         return None
@@ -70,7 +73,7 @@ def parse(json_file: str) -> mygfa.Graph:
     return mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
-            k: mygfa.Segment.parse_inner(k, number_to_strand(v["seq"]))
+            k: mygfa.Segment.parse_inner(k, number_to_strand(v))
             for k, v in graph["segments"].items()
         },
         [
