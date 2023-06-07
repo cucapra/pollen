@@ -60,38 +60,34 @@ def number_list_to_path_seq(numbers):
     return "".join(ans)[:-1]
 
 
-def magic(cigar: str):
-    """Just a silly hack to parse the simple no-op CIGAR string."""
-    if cigar == "0M":
-        return 1
-    raise NotImplementedError
+def align_to_str(align: mygfa.Alignment):
+    """Placeholder until we have reason to do anything cleverer."""
+    return str(align)
 
 
-def unmagic(number: int) -> mygfa.Alignment:
-    """Just a silly hack to emit the simple no-op CIGAR string."""
-    if number == 1:
-        return mygfa.Alignment([(0, mygfa.AlignOp.MATCH)])
-    raise NotImplementedError
+def str_to_align(align_str: str):
+    """Placeholder until we have reason to do anything cleverer."""
+    return mygfa.Alignment.parse(align_str)
 
 
-def link_to_number_list(link: mygfa.Link) -> List[int]:
-    """Converts a Link object to a list of numbers.
+def link_to_number_list(link: mygfa.Link):
+    """Converts a Link object to a list of four numbers and a string.
     As before, every + becomes 0 and - becomes 1."""
     return [
         int(link.from_.name),
         0 if link.from_.ori else 1,
         int(link.to_.name),
         0 if link.to_.ori else 1,
-        magic(str(link.overlap)),
+        align_to_str(link.overlap),
     ]
 
 
-def number_list_to_link(numbers: List[int]) -> mygfa.Link:
+def number_list_to_link(link_json) -> mygfa.Link:
     """The inverse of the above function."""
     return mygfa.Link(
-        mygfa.Handle(str(numbers[0]), numbers[1] == 0),
-        mygfa.Handle(str(numbers[2]), numbers[3] == 0),
-        unmagic(numbers[4]),
+        mygfa.Handle(str(link_json[0]), link_json[1] == 0),
+        mygfa.Handle(str(link_json[2]), link_json[3] == 0),
+        str_to_align(link_json[4]),
     )
 
 
