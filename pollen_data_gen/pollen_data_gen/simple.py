@@ -1,5 +1,6 @@
 import sys
 import json
+import re
 from typing import Dict, Union, Optional, Any, List
 from json import JSONEncoder
 from mygfa import mygfa
@@ -24,6 +25,42 @@ def number_list_to_strand(numbers: List[str]):
     return "".join([number_to_char[number] for number in numbers])
 
 
+def path_seq_to_number_list(path: str):
+    """Converts a path's segment sequence into a list of numbers.
+    Every + becomes 0 and - becomes 1.
+    For instance, "1+,2-,14+" is converted to [1,0,2,1,14,0].
+    The 1 at the 4th cell will not be confused for a node called "1" because
+    it is at an even index.
+    It's ugly but it works for now...
+    """
+    ans = []
+    for chunk in path.split(","):
+        num, orient = chunk[:-1], chunk[-1]
+        ans.append(int(num))
+        if orient == "+":
+            ans.append(0)
+        elif orient == "-":
+            ans.append(1)
+
+    return ans
+
+
+def number_list_to_path_seq(numbers):
+    """The inverse of the above function."""
+    ans = []
+    for i, number in enumerate(numbers):
+        if i % 2:
+            if number == 0:
+                ans.append("+,")
+            elif number == 1:
+                ans.append("-,")
+        else:
+            ans.append(str(number))
+
+    # Need to drop the last comma.
+    return "".join(ans)[:-1]
+
+
 class GenericSimpleEncoder(JSONEncoder):
     """A generic JSON encoder for mygfa graphs."""
 
@@ -32,7 +69,8 @@ class GenericSimpleEncoder(JSONEncoder):
             items = str(o).split("\t")
             # We can drop the 0th cell, which will just be 'P',
             # and the 1st cell, which will just be the path's name.
-            return {"segments": items[2], "overlaps": items[3]}
+            # Not doing anything clever with the overlaps yet.
+            return {"segments": path_seq_to_number_list(items[2]), "overlaps": items[3]}
         if isinstance(o, mygfa.Link):
             # We perform a little flattening.
             return {
@@ -56,7 +94,7 @@ def dump(graph: mygfa.Graph, json_file: str) -> None:
         json.dump(
             {"headers": graph.headers}
             | {f"seg_to_seq_{k}": v for k, v in graph.segments.items()}
-            | {"paths": graph.paths}
+            | {f"path_details_{k}": v for k, v in graph.paths.items()}
             | {"links": graph.links},
             file,
             indent=2,
@@ -71,7 +109,7 @@ def parse(json_file: str) -> mygfa.Graph:
     graph_gfa = mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
-            (k.split("_")[3]): mygfa.Segment.parse_inner(
+            k.split("_")[3]: mygfa.Segment.parse_inner(
                 k.split("_")[3], number_list_to_strand(v)
             )
             for k, v in graph.items()
@@ -88,11 +126,14 @@ def parse(json_file: str) -> mygfa.Graph:
             for link in graph["links"]
         ],
         {
-            k: mygfa.Path.parse_inner(k, v["segments"], v["overlaps"])
-            for k, v in graph["paths"].items()
+            k.split("_")[2]: mygfa.Path.parse_inner(
+                k.split("_")[2], number_list_to_path_seq(v["segments"]), v["overlaps"]
+            )
+            for k, v in graph.items()
+            if k.startswith("path_details_")
         },
     )
-    # graph_gfa.emit(sys.stdout)   # Good for debugging.
+    # graph_gfa.emit(sys.stdout)  # Good for debugging.
     return graph_gfa
 
 
