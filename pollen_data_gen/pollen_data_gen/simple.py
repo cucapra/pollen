@@ -1,3 +1,4 @@
+import sys
 import json
 from typing import Dict, Union, Optional, Any, List
 from json import JSONEncoder
@@ -54,7 +55,7 @@ def dump(graph: mygfa.Graph, json_file: str) -> None:
     with open(json_file, "w", encoding="utf-8") as file:
         json.dump(
             {"headers": graph.headers}
-            | {"segments": graph.segments}
+            | {f"seg_to_seq_{k}": v for k, v in graph.segments.items()}
             | {"paths": graph.paths}
             | {"links": graph.links},
             file,
@@ -67,11 +68,14 @@ def parse(json_file: str) -> mygfa.Graph:
     """Reads a JSON file and returns a mygfa.Graph object."""
     with open(json_file, "r", encoding="utf-8") as file:
         graph = json.load(file)
-    return mygfa.Graph(
+    graph_gfa = mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
-            k: mygfa.Segment.parse_inner(k, number_list_to_strand(v))
-            for k, v in graph["segments"].items()
+            (k.split("_")[3]): mygfa.Segment.parse_inner(
+                k.split("_")[3], number_list_to_strand(v)
+            )
+            for k, v in graph.items()
+            if k.startswith("seg_to_seq_")
         },
         [
             mygfa.Link.parse_inner(
@@ -88,6 +92,8 @@ def parse(json_file: str) -> mygfa.Graph:
             for k, v in graph["paths"].items()
         },
     )
+    # graph_gfa.emit(sys.stdout)   # Good for debugging.
+    return graph_gfa
 
 
 def roundtrip_test(graph: mygfa.Graph) -> None:
