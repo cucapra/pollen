@@ -1,4 +1,4 @@
-import sys
+# import sys
 import json
 from typing import Dict, Union, Optional, Any, List
 from json import JSONEncoder
@@ -61,20 +61,20 @@ def number_list_to_path_seq(numbers):
 
 
 def magic(cigar: str):
-    """Just a silly hack to get through the simple no-op CIGAR string."""
+    """Just a silly hack to parse the simple no-op CIGAR string."""
     if cigar == "0M":
         return 1
     raise NotImplementedError
 
 
-def unmagic(number: int):
-    """Just a silly hack to get through the simple no-op CIGAR string."""
+def unmagic(number: int) -> mygfa.Alignment:
+    """Just a silly hack to emit the simple no-op CIGAR string."""
     if number == 1:
-        return "0M"
+        return mygfa.Alignment([(0, mygfa.AlignOp.MATCH)])
     raise NotImplementedError
 
 
-def link_to_number_list(link: mygfa.Link):
+def link_to_number_list(link: mygfa.Link) -> List[int]:
     """Converts a Link object to a list of numbers.
     As before, every + becomes 0 and - becomes 1."""
     return [
@@ -86,7 +86,7 @@ def link_to_number_list(link: mygfa.Link):
     ]
 
 
-def number_list_to_link(numbers):
+def number_list_to_link(numbers: List[int]) -> mygfa.Link:
     """The inverse of the above function."""
     return mygfa.Link(
         mygfa.Handle(str(numbers[0]), numbers[1] == 0),
@@ -120,8 +120,8 @@ def dump(graph: mygfa.Graph, json_file: str) -> None:
         json.dump(
             {"headers": graph.headers}
             | {f"seg_to_seq_{k}": v for k, v in graph.segments.items()}
-            | {f"path_details_{k}": v for k, v in graph.paths.items()}
-            | {"links": graph.links},
+            | {"links": graph.links}
+            | {f"path_details_{k}": v for k, v in graph.paths.items()},
             file,
             indent=2,
             cls=GenericSimpleEncoder,
@@ -150,7 +150,7 @@ def parse(json_file: str) -> mygfa.Graph:
             if k.startswith("path_details_")
         },
     )
-    graph_gfa.emit(sys.stdout)  # Good for debugging.
+    # graph_gfa.emit(sys.stdout)  # Good for debugging.
     return graph_gfa
 
 
