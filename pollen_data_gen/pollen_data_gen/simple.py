@@ -1,6 +1,5 @@
 import sys
 import json
-import re
 from typing import Dict, Union, Optional, Any, List
 from json import JSONEncoder
 from mygfa import mygfa
@@ -39,7 +38,7 @@ def path_seq_to_number_list(path: str):
         ans.append(int(num))
         if orient == "+":
             ans.append(0)
-        elif orient == "-":
+        else:
             ans.append(1)
 
     return ans
@@ -61,6 +60,41 @@ def number_list_to_path_seq(numbers):
     return "".join(ans)[:-1]
 
 
+def magic(cigar: str):
+    """Just a silly hack to get through the simple no-op CIGAR string."""
+    if cigar == "0M":
+        return 1
+    raise NotImplementedError
+
+
+def unmagic(number: int):
+    """Just a silly hack to get through the simple no-op CIGAR string."""
+    if number == 1:
+        return "0M"
+    raise NotImplementedError
+
+
+def link_to_number_list(link: mygfa.Link):
+    """Converts a Link object to a list of numbers.
+    As before, every + becomes 0 and - becomes 1."""
+    return [
+        int(link.from_.name),
+        0 if link.from_.ori else 1,
+        int(link.to_.name),
+        0 if link.to_.ori else 1,
+        magic(str(link.overlap)),
+    ]
+
+
+def number_list_to_link(numbers):
+    """The inverse of the above function."""
+    return mygfa.Link(
+        mygfa.Handle(str(numbers[0]), numbers[1] == 0),
+        mygfa.Handle(str(numbers[2]), numbers[3] == 0),
+        unmagic(numbers[4]),
+    )
+
+
 class GenericSimpleEncoder(JSONEncoder):
     """A generic JSON encoder for mygfa graphs."""
 
@@ -72,16 +106,8 @@ class GenericSimpleEncoder(JSONEncoder):
             # Not doing anything clever with the overlaps yet.
             return {"segments": path_seq_to_number_list(items[2]), "overlaps": items[3]}
         if isinstance(o, mygfa.Link):
-            # We perform a little flattening.
-            return {
-                "from": o.from_.name,
-                "from_orient": "+" if o.from_.ori else "-",
-                "to": o.to_.name,
-                "to_orient": "+" if o.to_.ori else "-",
-                "overlap": str(o.overlap),
-            }
+            return link_to_number_list(o)
         if isinstance(o, mygfa.Header):
-            # We can flatten the header objects into a simple list of strings.
             return str(o)
         if isinstance(o, mygfa.Segment):
             return strand_to_number_list(o.seq)
@@ -115,16 +141,7 @@ def parse(json_file: str) -> mygfa.Graph:
             for k, v in graph.items()
             if k.startswith("seg_to_seq_")
         },
-        [
-            mygfa.Link.parse_inner(
-                link["from"],
-                link["from_orient"],
-                link["to"],
-                link["to_orient"],
-                link["overlap"],
-            )
-            for link in graph["links"]
-        ],
+        [number_list_to_link(link) for link in graph["links"]],
         {
             k.split("_")[2]: mygfa.Path.parse_inner(
                 k.split("_")[2], number_list_to_path_seq(v["segments"]), v["overlaps"]
@@ -133,7 +150,7 @@ def parse(json_file: str) -> mygfa.Graph:
             if k.startswith("path_details_")
         },
     )
-    # graph_gfa.emit(sys.stdout)  # Good for debugging.
+    graph_gfa.emit(sys.stdout)  # Good for debugging.
     return graph_gfa
 
 
