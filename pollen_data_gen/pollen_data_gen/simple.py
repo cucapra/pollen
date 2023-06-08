@@ -1,8 +1,9 @@
 # import sys
 import json
-from typing import Dict, Union, Optional, Any, List, Sequence
+from typing import Dict, Union, Optional, Any, List, Sequence, TextIO
 from json import JSONEncoder
 from mygfa import mygfa
+from . import depth
 
 
 SimpleType = Optional[
@@ -112,18 +113,32 @@ class GenericSimpleEncoder(JSONEncoder):
         return None
 
 
-def dump(graph: mygfa.Graph, json_file: str) -> None:
-    """Outputs the graph as a JSON, with some redundant information removed."""
-    with open(json_file, "w", encoding="utf-8") as file:
-        json.dump(
-            {"headers": graph.headers}
-            | {f"seg_to_seq_{k}": v for k, v in graph.segments.items()}
-            | {"links": graph.links}
-            | {f"path_details_{k}": v for k, v in graph.paths.items()},
-            file,
-            indent=2,
-            cls=GenericSimpleEncoder,
-        )
+def dump(
+    graph: mygfa.Graph,
+    json_file: TextIO,
+    max_n: Optional[int],
+    max_e: Optional[int],
+    max_p: Optional[int],
+) -> None:
+    """Outputs the graph as a JSON, along with precomputed data for the
+    calculation of node depth.
+    """
+
+    basic_encoding = GenericSimpleEncoder().encode(
+        {"headers": graph.headers}
+        | {f"seg_to_seq_{k}": v for k, v in graph.segments.items()}
+        | {"links": graph.links}
+        | {f"path_details_{k}": v for k, v in graph.paths.items()}
+    )
+
+    depth_encoding = depth.depth_json(graph, max_n, max_e, max_p)
+
+    json.dump(
+        {"basic": json.loads(basic_encoding), "depth": json.loads(depth_encoding)},
+        json_file,
+        indent=2,
+        sort_keys=True,
+    )
 
 
 def parse(json_file: str) -> mygfa.Graph:
@@ -152,5 +167,6 @@ def parse(json_file: str) -> mygfa.Graph:
 
 def roundtrip_test(graph: mygfa.Graph) -> None:
     """Tests that the graph can be serialized and deserialized."""
-    dump(graph, "roundtrip_test.json")
-    assert parse("roundtrip_test.json") == graph
+    with open("roundtrip_test.json", "w", encoding="utf-8") as file:
+        dump(graph, file, None, None, None)
+        assert parse("roundtrip_test.json") == graph

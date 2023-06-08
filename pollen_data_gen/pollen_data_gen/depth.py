@@ -1,4 +1,6 @@
-from typing import Any, Collection, Dict, Union
+import sys
+from typing import Any, Collection, Dict, Union, Optional
+import json
 from json import JSONEncoder
 from mygfa import mygfa, preprocess
 
@@ -78,7 +80,9 @@ class NodeDepthEncoder(JSONEncoder):
         return answer_field | paths | answer_field_uniq
 
 
-def depth(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> str:
+def depth_json(
+    graph: mygfa.Graph, max_n: Optional[int], max_e: Optional[int], max_p: Optional[int]
+) -> str:
     """Returns a JSON representation of `graph`
     that is specific to the exine command `depth`.
     """
@@ -96,15 +100,14 @@ def depth(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> str:
         max_n=int(max_n), max_e=int(max_e), max_p=int(max_p)
     ).encode(graph)
 
-    # To get this method to instead _output_ the JSON directly, run:
 
-    # encoding = NodeDepthEncoder(
-    #     max_n=int(max_n), max_e=int(max_e), max_p=int(max_p)
-    # ).encode(graph)
+def depth_stdout(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> None:
+    """Prints a JSON representation of `graph` to stdout."""
+    encoding = depth_json(graph, max_n, max_e, max_p)
 
-    # json.dump(
-    #     json.loads(encoding),
-    #     sys.stdout,
-    #     indent=2,
-    #     sort_keys=True,
-    # )
+    json.dump(
+        json.loads(encoding),
+        sys.stdout,
+        indent=2,
+        sort_keys=True,
+    )
