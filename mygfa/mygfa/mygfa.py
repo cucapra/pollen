@@ -44,17 +44,51 @@ class Bed:
 
 
 @dataclass
+class Strand:
+    """A strand is a string that contains only A, T, G, C, or N."""
+
+    strand: str
+
+    def to_number_list(self) -> List[int]:
+        """Converts a strand to a list of numbers following the mapping below.
+        For instance, "AGGA" is converted to [1,3,3,1].
+        """
+        char_to_number = {"A": 1, "T": 2, "G": 3, "C": 4, "N": 5}
+        return [char_to_number[c] for c in self.strand]
+
+    @classmethod
+    def number_list_to_str(cls, numbers: List[str]) -> str:
+        """Converts a list of numbers to a string following the mapping below.
+        For instance, [1,3,3,1] is converted to "AGGA"."""
+        number_to_char = {1: "A", 2: "T", 3: "G", 4: "C", 5: "N"}
+        return "".join([number_to_char[number] for number in numbers])
+
+    def revcomp(self) -> "Strand":
+        """Returns the reverse complement of this strand."""
+        comp = {"A": "T", "C": "G", "G": "C", "T": "A"}
+        return Strand("".join(reversed([comp[c] for c in self.strand])))
+
+    @classmethod
+    def parse(cls, string: str) -> "Strand":
+        """Parse a strand."""
+        return Strand(string)
+
+    def __str__(self) -> str:
+        return str(self.strand)
+
+
+@dataclass
 class Segment:
     """A GFA segment is nucleotide sequence."""
 
     name: str
-    seq: str
+    seq: Strand
 
     @classmethod
     def parse_inner(cls, name, seq) -> "Segment":
         """Parse a GFA segment, assuming that the name and sequence
         have already been extracted."""
-        return Segment(name, seq)
+        return Segment(name, Strand(seq))
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Segment":
@@ -64,16 +98,14 @@ class Segment:
 
     def revcomp(self) -> "Segment":
         """Returns the reverse complement of this segment."""
-        comp = {"A": "T", "C": "G", "G": "C", "T": "A"}
-        seq = "".join(reversed([comp[c] for c in self.seq]))
-        return Segment(self.name, seq)
+        return Segment(self.name, self.seq.revcomp())
 
     def __str__(self) -> str:
         return "\t".join(
             [
                 "S",
                 self.name,
-                self.seq,
+                str(self.seq),
             ]
         )
 
