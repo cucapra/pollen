@@ -1,11 +1,27 @@
 # import sys
 import json
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Union, Optional, Any, List
 from json import JSONEncoder
 from mygfa import mygfa
 
 
 SimpleType = Optional[Dict[str, Union[bool, str, int]]]
+
+char_to_number = {"A": 1, "T": 2, "G": 3, "C": 4, "N": 5}
+number_to_char = {v: k for k, v in char_to_number.items()}
+
+
+def strand_to_number_list(strand: str):
+    """Converts a strand to a list of numbers following the mapping above.
+    For instance, "AGGA" is converted to [1,3,3,1].
+    """
+    return [char_to_number[c] for c in strand]
+
+
+def number_list_to_strand(numbers: List[str]):
+    """Converts a list of numbers to a strand following the mapping above.
+    For instance, [1,3,3,1] is converted to "AGGA"."""
+    return "".join([number_to_char[number] for number in numbers])
 
 
 def path_seq_to_number_list(path: str):
@@ -90,7 +106,7 @@ class GenericSimpleEncoder(JSONEncoder):
         if isinstance(o, mygfa.Header):
             return str(o)
         if isinstance(o, mygfa.Segment):
-            return o.seq.to_number_list()
+            return strand_to_number_list(o.seq)
         return None
 
 
@@ -116,7 +132,7 @@ def parse(json_file: str) -> mygfa.Graph:
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
             k.split("_")[3]: mygfa.Segment.parse_inner(
-                k.split("_")[3], mygfa.Strand.number_list_to_str(v)
+                k.split("_")[3], number_list_to_strand(v)
             )
             for k, v in graph.items()
             if k.startswith("seg_to_seq_")
