@@ -44,17 +44,50 @@ class Bed:
 
 
 @dataclass
+class Strand:
+    """A strand is a string that contains only A, T, G, C, or N."""
+
+    strand: str
+
+    def revcomp(self) -> "Strand":
+        """Returns the reverse complement of this strand."""
+        comp = {"A": "T", "C": "G", "G": "C", "T": "A"}
+        return Strand("".join(reversed([comp[c] for c in self.strand])))
+
+    def chop(self, choplen: int) -> List["Strand"]:
+        """Chop this strand into pieces of length `choplen` or less."""
+        strand_str = self.strand
+        return [
+            Strand(strand_str[i : i + choplen])
+            for i in range(0, len(strand_str), choplen)
+        ]
+
+    @classmethod
+    def parse(cls, string: str) -> "Strand":
+        """Parse a strand."""
+        for char in string:
+            assert char in "ATGCN"
+        return Strand(string)
+
+    def __str__(self) -> str:
+        return self.strand
+
+    def __len__(self) -> int:
+        return len(self.strand)
+
+
+@dataclass
 class Segment:
     """A GFA segment is nucleotide sequence."""
 
     name: str
-    seq: str
+    seq: Strand
 
     @classmethod
-    def parse_inner(cls, name, seq) -> "Segment":
+    def parse_inner(cls, name: str, seq: str) -> "Segment":
         """Parse a GFA segment, assuming that the name and sequence
         have already been extracted."""
-        return Segment(name, seq)
+        return Segment(name, Strand.parse(seq))
 
     @classmethod
     def parse(cls, fields: List[str]) -> "Segment":
@@ -64,16 +97,14 @@ class Segment:
 
     def revcomp(self) -> "Segment":
         """Returns the reverse complement of this segment."""
-        comp = {"A": "T", "C": "G", "G": "C", "T": "A"}
-        seq = "".join(reversed([comp[c] for c in self.seq]))
-        return Segment(self.name, seq)
+        return Segment(self.name, self.seq.revcomp())
 
     def __str__(self) -> str:
         return "\t".join(
             [
                 "S",
                 self.name,
-                self.seq,
+                str(self.seq),
             ]
         )
 
@@ -140,7 +171,9 @@ class Link:
     overlap: Alignment
 
     @classmethod
-    def parse_inner(cls, from_, from_ori, to_, to_ori, overlap) -> "Link":
+    def parse_inner(
+        cls, from_: str, from_ori: str, to_: str, to_ori: str, overlap: str
+    ) -> "Link":
         """Parse a GFA link, assuming that the key elements have
         already been extracted.
         """
@@ -182,7 +215,7 @@ class Path:
     olaps: Optional[List[Alignment]]
 
     @classmethod
-    def parse_inner(cls, name, seq: str, overlaps: str) -> "Path":
+    def parse_inner(cls, name: str, seq: str, overlaps: str) -> "Path":
         """Parse a GFA path, assuming that
         the name, sequence and overlaps have already been extracted."""
 

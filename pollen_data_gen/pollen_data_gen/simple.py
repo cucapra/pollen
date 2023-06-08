@@ -1,30 +1,32 @@
 # import sys
 import json
-from typing import Dict, Union, Optional, Any, List
+from typing import Dict, Union, Optional, Any, List, Sequence
 from json import JSONEncoder
 from mygfa import mygfa
 
 
-SimpleType = Optional[Dict[str, Union[bool, str, int]]]
+SimpleType = Optional[
+    Union[str, Dict[str, Sequence[object]], List[int], List[Union[int, str]]]
+]
 
 char_to_number = {"A": 1, "T": 2, "G": 3, "C": 4, "N": 5}
 number_to_char = {v: k for k, v in char_to_number.items()}
 
 
-def strand_to_number_list(strand: str):
+def strand_to_number_list(strand: mygfa.Strand) -> List[int]:
     """Converts a strand to a list of numbers following the mapping above.
     For instance, "AGGA" is converted to [1,3,3,1].
     """
-    return [char_to_number[c] for c in strand]
+    return [char_to_number[c] for c in str(strand)]
 
 
-def number_list_to_strand(numbers: List[str]):
+def number_list_to_strand(numbers: List[str]) -> mygfa.Strand:
     """Converts a list of numbers to a strand following the mapping above.
     For instance, [1,3,3,1] is converted to "AGGA"."""
-    return "".join([number_to_char[number] for number in numbers])
+    return mygfa.Strand("".join([number_to_char[int(number)] for number in numbers]))
 
 
-def path_seq_to_number_list(path: str):
+def path_seq_to_number_list(path: str) -> List[int]:
     """Converts a path's segment sequence into a list of numbers.
     Every + becomes 0 and - becomes 1.
     For instance, "1+,2-,14+" is converted to [1,0,2,1,14,0].
@@ -44,7 +46,7 @@ def path_seq_to_number_list(path: str):
     return ans
 
 
-def number_list_to_path_seq(numbers):
+def number_list_to_path_seq(numbers: List[int]) -> str:
     """The inverse of the above function."""
     ans = []
     for i, number in enumerate(numbers):
@@ -60,17 +62,17 @@ def number_list_to_path_seq(numbers):
     return "".join(ans)[:-1]
 
 
-def align_to_str(align: mygfa.Alignment):
+def align_to_str(align: mygfa.Alignment) -> str:
     """Placeholder until we have reason to do anything cleverer."""
     return str(align)
 
 
-def str_to_align(align_str: str):
+def str_to_align(align_str: str) -> mygfa.Alignment:
     """Placeholder until we have reason to do anything cleverer."""
     return mygfa.Alignment.parse(align_str)
 
 
-def link_to_number_list(link: mygfa.Link):
+def link_to_number_list(link: mygfa.Link) -> List[Union[int, str]]:
     """Converts a Link object to a list of four numbers and a string.
     As before, every + becomes 0 and - becomes 1."""
     return [
@@ -82,12 +84,12 @@ def link_to_number_list(link: mygfa.Link):
     ]
 
 
-def number_list_to_link(link_json) -> mygfa.Link:
+def number_list_to_link(link_json: List[Union[int, str]]) -> mygfa.Link:
     """The inverse of the above function."""
     return mygfa.Link(
         mygfa.Handle(str(link_json[0]), link_json[1] == 0),
         mygfa.Handle(str(link_json[2]), link_json[3] == 0),
-        str_to_align(link_json[4]),
+        str_to_align(str(link_json[4])),
     )
 
 
@@ -131,9 +133,7 @@ def parse(json_file: str) -> mygfa.Graph:
     graph_gfa = mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
-            k.split("_")[3]: mygfa.Segment.parse_inner(
-                k.split("_")[3], number_list_to_strand(v)
-            )
+            k.split("_")[3]: mygfa.Segment(k.split("_")[3], number_list_to_strand(v))
             for k, v in graph.items()
             if k.startswith("seg_to_seq_")
         },

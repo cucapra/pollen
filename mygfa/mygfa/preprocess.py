@@ -43,7 +43,7 @@ def adjlist(graph: mygfa.Graph) -> Tuple[HandleMap, HandleMap]:
     return ins, outs
 
 
-def handle_seq(graph: mygfa.Graph, handle: mygfa.Handle) -> str:
+def handle_seq(graph: mygfa.Graph, handle: mygfa.Handle) -> mygfa.Strand:
     """Get the sequence of a handle, reverse-complementing if necessary."""
     seg = graph.segments[handle.name]
     return seg.seq if handle.ori else seg.revcomp().seq
@@ -56,7 +56,7 @@ def pathseq(graph: mygfa.Graph) -> Dict[str, str]:
     ans: Dict[str, str] = {}
     for path in graph.paths.keys():
         ans[path] = "".join(
-            handle_seq(graph, handle) for handle in graph.paths[path].segments
+            str(handle_seq(graph, handle)) for handle in graph.paths[path].segments
         )
     return ans
 
