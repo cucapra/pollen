@@ -56,7 +56,7 @@ def pathseq(graph: mygfa.Graph) -> Dict[str, str]:
     ans: Dict[str, str] = {}
     for path in graph.paths.keys():
         ans[path] = "".join(
-            str(handle_seq(graph, handle)) for handle in graph.paths[path].segments
+            handle_seq(graph, handle) for handle in graph.paths[path].segments
         )
     return ans
 

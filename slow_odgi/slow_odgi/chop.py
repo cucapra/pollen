@@ -31,8 +31,7 @@ def chop_segs(
 
     for segment in graph.segments.values():
         chopped_segs = {}
-        seq = segment.seq
-        chopped_seqs = seq.chop(choplength)
+        chopped_seqs = segment.seq.chop(choplength)
         seg_count_start = seg_count
         for chopped_seg in chopped_seqs:  # Going from seqs to segs.
             seg_name = str(seg_count)

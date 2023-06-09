@@ -5,7 +5,7 @@ def crush_seg(seg: mygfa.Segment) -> mygfa.Segment:
     """Compact any "runs" of N down to a single N."""
     new_seq = ""
     in_n = False
-    for char in str(seg.seq):
+    for char in seg.seq:
         if char == "N":
             if in_n:
                 continue

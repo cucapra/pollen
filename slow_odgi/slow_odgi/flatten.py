@@ -13,7 +13,7 @@ def get_fasta_legend(graph: mygfa.Graph) -> Tuple[str, mygfa.LegendType]:
     legend = {}
     ptr = 0
     for segment in graph.segments.values():
-        ans += str(segment.seq)
+        ans += segment.seq
         length = len(segment.seq)
         legend[segment.name] = (ptr, ptr + length)
         ptr += length
