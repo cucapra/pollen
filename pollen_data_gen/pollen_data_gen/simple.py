@@ -1,6 +1,7 @@
 # import sys
 import json
 from typing import Dict, Union, Optional, Any, List, Sequence, TextIO
+from io import TextIOWrapper
 from json import JSONEncoder
 from mygfa import mygfa
 from . import depth
@@ -115,7 +116,7 @@ class GenericSimpleEncoder(JSONEncoder):
 
 def dump(
     graph: mygfa.Graph,
-    json_file: TextIO,
+    json_file: Union[TextIO, TextIOWrapper],
     max_n: Optional[int],
     max_e: Optional[int],
     max_p: Optional[int],
@@ -141,10 +142,9 @@ def dump(
     )
 
 
-def parse(json_file: str) -> mygfa.Graph:
+def parse(file: TextIO) -> mygfa.Graph:
     """Reads a JSON file and returns a mygfa.Graph object."""
-    with open(json_file, "r", encoding="utf-8") as file:
-        graph = json.load(file)
+    graph = json.load(file)["basic"]
     graph_gfa = mygfa.Graph(
         [mygfa.Header.parse(h) for h in graph["headers"]],
         {
@@ -169,4 +169,5 @@ def roundtrip_test(graph: mygfa.Graph) -> None:
     """Tests that the graph can be serialized and deserialized."""
     with open("roundtrip_test.json", "w", encoding="utf-8") as file:
         dump(graph, file, None, None, None)
-        assert parse("roundtrip_test.json") == graph
+    with open("roundtrip_test.json", "r", encoding="utf-8") as file2:
+        assert parse(file2) == graph
