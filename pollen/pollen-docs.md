@@ -48,7 +48,7 @@ like:
 
 `Segment | Step | Path | Edge | Handle | base | Strand`
 
-Where `Segment`, `Step`, `Path`, `Edge`, and `Hande` are all named record types.
+Where `Segment`, `Step`, `Path`, `Edge`, and `Handle` are all named record types.
 
 So,
 
