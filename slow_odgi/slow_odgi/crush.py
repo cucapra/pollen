@@ -9,12 +9,11 @@ def crush_seg(seg: mygfa.Segment) -> mygfa.Segment:
         if char == "N":
             if in_n:
                 continue
-            else:
-                in_n = True
+            in_n = True
         else:
             in_n = False
         new_seq += char
-    return mygfa.Segment(seg.name, new_seq)
+    return mygfa.Segment(seg.name, mygfa.Strand(new_seq))
 
 
 def crush(graph: mygfa.Graph) -> mygfa.Graph:
