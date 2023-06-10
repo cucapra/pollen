@@ -64,39 +64,6 @@ class Strand(str):
 
 
 @dataclass
-class Strand:
-    """A strand is a string that contains only A, T, G, C, or N."""
-
-    strand: str
-
-    def revcomp(self) -> "Strand":
-        """Returns the reverse complement of this strand."""
-        comp = {"A": "T", "C": "G", "G": "C", "T": "A"}
-        return Strand("".join(reversed([comp[c] for c in self.strand])))
-
-    def chop(self, choplen: int) -> List["Strand"]:
-        """Chop this strand into pieces of length `choplen` or less."""
-        strand_str = self.strand
-        return [
-            Strand(strand_str[i : i + choplen])
-            for i in range(0, len(strand_str), choplen)
-        ]
-
-    @classmethod
-    def parse(cls, string: str) -> "Strand":
-        """Parse a strand."""
-        for char in string:
-            assert char in "ATGCN"
-        return Strand(string)
-
-    def __str__(self) -> str:
-        return self.strand
-
-    def __len__(self) -> int:
-        return len(self.strand)
-
-
-@dataclass
 class Segment:
     """A GFA segment is nucleotide sequence."""
 
