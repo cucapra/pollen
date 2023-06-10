@@ -10,6 +10,8 @@ from . import depth
 SimpleType = Optional[
     Union[str, Dict[str, Sequence[object]], List[int], List[Union[int, str]]]
 ]
+# A SimpleType is a type that can be serialized by the JSON encoder below.
+# It's a bit of a hack, but it works.
 
 char_to_number = {"A": 1, "T": 2, "G": 3, "C": 4, "N": 5}
 number_to_char = {v: k for k, v in char_to_number.items()}
@@ -135,7 +137,10 @@ def dump(
     depth_encoding = depth.depth_json(graph, max_n, max_e, max_p)
 
     json.dump(
-        {"basic": json.loads(basic_encoding), "depth": json.loads(depth_encoding)},
+        {
+            "basic": json.loads(basic_encoding),
+            "depth": json.loads(depth_encoding),
+        },
         json_file,
         indent=2,
         sort_keys=True,
