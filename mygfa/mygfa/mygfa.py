@@ -253,19 +253,13 @@ def nonblanks(file: TextIO) -> Iterator[str]:
             yield line
 
 
-@dataclass
-class Header:
+class Header(str):
     """A GFA header."""
-
-    header: str
 
     @classmethod
     def parse(cls, line: str) -> "Header":
         """Parse a GFA header."""
         return Header(line)
-
-    def __str__(self) -> str:
-        return self.header
 
 
 @dataclass

@@ -108,7 +108,7 @@ class GenericSimpleEncoder(JSONEncoder):
         if isinstance(o, mygfa.Link):
             return link_to_number_list(o)
         if isinstance(o, mygfa.Header):
-            return str(o)
+            return o
         if isinstance(o, mygfa.Segment):
             return strand_to_number_list(o.seq)
         return None
