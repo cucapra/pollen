@@ -36,7 +36,13 @@ def path_seq_to_number_list(path: str) -> List[int]:
     For instance, "1+,2-,14+" is converted to [1,0,2,1,14,0].
     The 1 at the 4th cell will not be confused for a node called "1" because
     it is at an even index.
-    It's ugly but it works for now...
+
+    In the future, once we know more about our consumer, it is very likely that
+    we will want to unzip this list into two lists:
+     - one of node names
+     - one of directions of traversal.
+    This is because the direction of traversal can be stored in 1 bit each,
+    whereas the node names will take log_2{max_steps} bits each.
     """
     ans = []
     for chunk in path.split(","):
