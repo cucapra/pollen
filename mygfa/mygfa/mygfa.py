@@ -71,10 +71,16 @@ class Segment:
     seq: Strand
 
     @classmethod
+    def parse_inner(cls, name: str, seq: str) -> "Segment":
+        """Parse a GFA segment, assuming that the name and sequence
+        have already been extracted."""
+        return Segment(name, Strand.parse(seq))
+
+    @classmethod
     def parse(cls, fields: List[str]) -> "Segment":
         """Parse a GFA segment."""
         _, name, seq = fields[:3]
-        return Segment(name, Strand.parse(seq))
+        return cls.parse_inner(name, seq)
 
     def revcomp(self) -> "Segment":
         """Returns the reverse complement of this segment."""
@@ -85,7 +91,7 @@ class Segment:
             [
                 "S",
                 self.name,
-                self.seq,
+                str(self.seq),
             ]
         )
 
@@ -152,14 +158,23 @@ class Link:
     overlap: Alignment
 
     @classmethod
-    def parse(cls, fields: List[str]) -> "Link":
-        """Parse a GFA link."""
-        _, from_, from_ori, to_, to_ori, overlap = fields[:6]
+    def parse_inner(
+        cls, from_: str, from_ori: str, to_: str, to_ori: str, overlap: str
+    ) -> "Link":
+        """Parse a GFA link, assuming that the key elements have
+        already been extracted.
+        """
         return Link(
             Handle.parse(from_, from_ori),
             Handle.parse(to_, to_ori),
             Alignment.parse(overlap),
         )
+
+    @classmethod
+    def parse(cls, fields: List[str]) -> "Link":
+        """Parse a GFA link."""
+        _, from_, from_ori, to_, to_ori, overlap = fields[:6]
+        return cls.parse_inner(from_, from_ori, to_, to_ori, overlap)
 
     def rev(self) -> "Link":
         """Return the link representing the reverse of this link.
@@ -187,9 +202,10 @@ class Path:
     olaps: Optional[List[Alignment]]
 
     @classmethod
-    def parse(cls, fields: List[str]) -> "Path":
-        """Parse a GFA path."""
-        _, name, seq, overlaps = fields[:4]
+    def parse_inner(cls, name: str, seq: str, overlaps: str) -> "Path":
+        """Parse a GFA path, assuming that
+        the name, sequence and overlaps have already been extracted."""
+
         seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(",")]
         olaps_lst = (
             None
@@ -206,6 +222,13 @@ class Path:
             seq_lst,
             olaps_lst,
         )
+
+    @classmethod
+    def parse(cls, fields: List[str]) -> "Path":
+        """Parse a GFA path.
+        Extract the name, seq, and overlaps, and dispatch to the helper above."""
+        _, name, seq, overlaps = fields[:4]
+        return cls.parse_inner(name, seq, overlaps)
 
     def drop_overlaps(self) -> "Path":
         """Return a copy of this path without overlaps."""
@@ -230,11 +253,20 @@ def nonblanks(file: TextIO) -> Iterator[str]:
             yield line
 
 
+class Header(str):
+    """A GFA header."""
+
+    @classmethod
+    def parse(cls, line: str) -> "Header":
+        """Parse a GFA header."""
+        return Header(line)
+
+
 @dataclass
 class Graph:
     """An entire GFA file."""
 
-    headers: List[str]
+    headers: List[Header]
     segments: Dict[str, Segment]
     links: List[Link]
     paths: Dict[str, Path]
@@ -247,7 +279,7 @@ class Graph:
         for line in nonblanks(infile):
             fields = line.split()
             if fields[0] == "H":
-                graph.headers.append(line)  # Parse headers verbatim.
+                graph.headers.append(Header.parse(line))
             elif fields[0] == "S":
                 segment = Segment.parse(fields)
                 graph.segments[segment.name] = segment

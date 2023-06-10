@@ -151,5 +151,5 @@ output.json = "-"
 
 [envs.pollen_data_gen_depth_test]
 binary = true
-command = "pollen_data_gen depth {filename}"
+command = "pollen_data_gen simple {filename} | jq .depth"
 output.json = "-"

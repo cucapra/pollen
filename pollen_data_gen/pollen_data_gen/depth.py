@@ -1,5 +1,6 @@
+import sys
+from typing import Any, Collection, Dict, Union, Optional
 import json
-from typing import Any, Collection, Dict, Union
 from json import JSONEncoder
 from mygfa import mygfa, preprocess
 
@@ -59,7 +60,7 @@ class NodeDepthEncoder(JSONEncoder):
         self.max_e = max_e
         self.max_p = max_p
 
-    def default(self, o: Any) -> None:
+    def default(self, o: Any) -> Dict[str, Dict[str, Collection[object]]]:
         answer_field = {
             "depth_output": {
                 "data": list([0] * self.max_n),
@@ -75,15 +76,14 @@ class NodeDepthEncoder(JSONEncoder):
         paths = paths_viewed_from_nodes(
             o, self.max_n, self.max_e, self.max_p
         ) | paths_to_consider(self.max_n, self.max_p)
-        print(
-            json.dumps(
-                answer_field | paths | answer_field_uniq, indent=2, sort_keys=True
-            )
-        )
+
+        return answer_field | paths | answer_field_uniq
 
 
-def depth(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> None:
-    """Prints a JSON representation of `graph`
+def depth_json(
+    graph: mygfa.Graph, max_n: Optional[int], max_e: Optional[int], max_p: Optional[int]
+) -> str:
+    """Returns a JSON representation of `graph`
     that is specific to the exine command `depth`.
     """
     n_tight, e_tight, p_tight = preprocess.get_maxes(graph)
@@ -96,4 +96,18 @@ def depth(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> None:
     if not max_p:
         max_p = p_tight
 
-    NodeDepthEncoder(max_n=int(max_n), max_e=int(max_e), max_p=int(max_p)).encode(graph)
+    return NodeDepthEncoder(
+        max_n=int(max_n), max_e=int(max_e), max_p=int(max_p)
+    ).encode(graph)
+
+
+def depth_stdout(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int) -> None:
+    """Prints a JSON representation of `graph` to stdout."""
+    encoding = depth_json(graph, max_n, max_e, max_p)
+
+    json.dump(
+        json.loads(encoding),
+        sys.stdout,
+        indent=2,
+        sort_keys=True,
+    )

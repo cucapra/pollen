@@ -1,3 +1,4 @@
+import sys
 import argparse
 from mygfa import mygfa
 
@@ -12,7 +13,35 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
         title="pollen-data-gen commands", metavar="COMMAND", dest="command"
     )
 
-    _ = subparsers.add_parser("simple", help="Produces a simple JSON of the graph.")
+    simple_parser = subparsers.add_parser(
+        "simple", help="Produces a simple JSON serialization of the graph."
+    )
+    simple_parser.add_argument(
+        "-n",
+        nargs="?",
+        const="d",
+        help="The max number of nodes.",
+        required=False,
+    )
+    simple_parser.add_argument(
+        "-e",
+        nargs="?",
+        const="d",
+        help="The max number of steps per node.",
+        required=False,
+    )
+    simple_parser.add_argument(
+        "-p",
+        nargs="?",
+        const="d",
+        help="The max number of paths.",
+        required=False,
+    )
+
+    _ = subparsers.add_parser(
+        "roundtrip",
+        help="Checks that we can serialize the deserilize the graph losslessly.",
+    )
 
     depth_parser = subparsers.add_parser(
         "depth", help="Produces a `depth`-specific JSON of the graph."
@@ -57,8 +86,9 @@ def dispatch(args: argparse.Namespace) -> None:
     then dispatch to the appropriate pollen_data_gen command.
     """
     name_to_func = {
-        "depth": lambda g: depth.depth(g, args.n, args.e, args.p),
-        "simple": simple.simple,
+        "depth": lambda g: depth.depth_stdout(g, args.n, args.e, args.p),
+        "simple": lambda g: simple.dump(g, sys.stdout, args.n, args.e, args.p),
+        "roundtrip": simple.roundtrip_test,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
     name_to_func[args.command](graph)
