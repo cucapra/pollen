@@ -8,7 +8,7 @@ COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ (NEWLINE | EOI))
 /* ----- Program ----- */
 file = { 
     SOI
-    ~ stmt+
+    ~ func_def+
     ~ EOI
 }
 
@@ -136,10 +136,13 @@ emit_to = { "emit" ~ expr ~ "to" ~ identifier ~ ";" }
 stmt = { decl | graph_decl | parset_decl | assign | block 
         | if_stmt | while_stmt | for_stmt | emit_to | call_stmt }
 
-// func_def = { "def" ~ identifier ~ 
-//              func_def_args ~
-//              "{" ~ stmt+ ~ return? ~ "}"
-//            }
-//     func_def_args = { "(" ~ (id ~ ":" ~ typ ~ ("," ~ id ~ ":" ~ typ)*)? ~ ")" }
-//     func_body = { "{" ~ stmt+ ~ return? ~ "}" }
-//         return = { "return" ~ expr ~ ";" }
+func_def = { "def" ~ identifier ~ 
+             func_def_args ~
+             ret_typ ~
+             func_body
+           }
+    func_def_args = { "(" ~ (identifier ~ ":" ~ typ ~ ("," ~ identifier ~ ":" ~ typ)*)? ~ ")" }
+    ret_typ = { ("->" ~ typ)? }
+    // function definitions must contain at least one statement or return
+    func_body = { "{" ~ stmt* ~ ret? ~ "}" }
+        ret = { "return" ~ expr ~ ";" }

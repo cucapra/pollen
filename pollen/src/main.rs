@@ -40,14 +40,115 @@ lazy_static! {
 }
 
 pub fn parse_prog(mut prog: Pairs<Rule>) -> Prog {
-    let mut stmts = Vec::new();
-    while let Some(stmt) = prog.next() {
-        if stmt.as_rule() != Rule::EOI {
+    let mut func_defs = Vec::new();
+    while let Some(func_def) = prog.next() {
+        if func_def.as_rule() != Rule::EOI {
             // TODO: Edit for function defs
-            stmts.push(parse_stmt(stmt)) 
+            func_defs.push(parse_func_def(func_def)) 
         }  
     };
-    Prog{ stmts: stmts }
+    Prog{ func_defs: func_defs }
+}
+
+fn parse_func_def(func_def: Pair<Rule>) -> FuncDef {
+    let mut inner = {
+        match func_def.as_rule() {
+            Rule::func_def => func_def.into_inner(),
+            rule => panic!("Expected func_def, got {:?}", rule)
+        }
+    };
+
+    // Function name
+    let name = {
+        let Some(pair) = inner.next() else { unreachable!("Function definition has no name") };
+        parse_id(pair)
+    };
+
+    // Function arguments and types
+    let args = {
+        let Some(pair) = inner.next() else { unreachable!("Function definition has no name") };
+        parse_func_def_args(pair)
+    };
+
+    // Optional return type
+    let ret_typ = {
+        let Some(pair) = inner.next() else { unreachable!("Function definition has no name") };
+        match pair.into_inner().next() {
+            Some(pair) => Some(parse_typ(pair)),
+            _ => None
+        }
+    };
+
+    // Function body
+    let mut func_body = {
+        let Some(pair) = inner.next() else { unreachable!("Function definition has no body") };
+        pair.into_inner()
+    };
+
+    // Inner statements
+    let mut stmts = Vec::new();
+    loop {
+        if let Some(pair) = func_body.peek() {
+            match pair.as_rule() {
+                Rule::ret => break,
+                Rule::stmt => {
+                    let stmt = parse_stmt(pair);
+                    stmts.push(stmt);
+                    func_body.next();
+                },
+                rule => unreachable!("Function bodies cannot produce {:?}", rule),
+            }
+        } else {
+            break;
+        }
+    }
+
+    // Optional return
+    let ret_expr = {
+        if let Some(ret) = func_body.next() {
+            let Some(expr) = ret.into_inner().next() else { 
+                unreachable!("Return statements must have an expression")
+            };
+            Some(parse_expr(expr.into_inner()))
+        } else {
+            None
+        }
+    };
+
+    // If stmts is empty and ret_expr is None, the function body is empty
+    if stmts.is_empty() && ret_expr.is_none() {
+        panic!("The function body of {:?} is empty", name)
+    }
+
+    FuncDef {
+        name: name,
+        args: args,
+        ret_typ: ret_typ,
+        stmts: stmts,
+        ret: ret_expr
+    }
+}
+
+fn parse_func_def_args(arg_list: Pair<Rule>) -> Vec<(Id, Typ)> {
+    match arg_list.as_rule() {
+        Rule::func_def_args => {
+            let mut args = Vec::new();
+            let mut inner = arg_list.into_inner();
+            while let Some(pair) = inner.next() {
+                // Consume the next two pairs: the id and the type
+                let id = parse_id(pair);
+                let typ = {
+                    let Some(pair) = inner.next() else {
+                        unreachable!("Function type signature is incomplete")
+                    };
+                    parse_typ(pair)
+                };
+                args.push((id, typ));
+            }
+            args
+        },
+        rule => {panic!("{:?} is not a list of function arguments", rule)}
+    }
 }
 
 fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
@@ -312,21 +413,6 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
     }
 }
 
-fn parse_call_args(arg_list: Pair<Rule>) -> Vec<Expr> {
-    match arg_list.as_rule() {
-        Rule::call_args => {
-            let mut args = Vec::new();
-            for arg in arg_list.into_inner() {
-                args.push(
-                    parse_expr(arg.into_inner())
-                );
-            }
-        args
-        },
-        rule => {panic!("{:?} is not a list of function arguments", rule)}
-    }
-}
-
 fn parse_expr(expression: Pairs<Rule>) -> Expr {
     PRATT_PARSER
         .map_primary(|primary| match primary.as_rule() {
@@ -499,6 +585,21 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
             }
         })
         .parse(expression)
+}
+
+fn parse_call_args(arg_list: Pair<Rule>) -> Vec<Expr> {
+    match arg_list.as_rule() {
+        Rule::call_args => {
+            let mut args = Vec::new();
+            for arg in arg_list.into_inner() {
+                args.push(
+                    parse_expr(arg.into_inner())
+                );
+            }
+            args
+        },
+        rule => {panic!("{:?} is not a list of function arguments", rule)}
+    }
 }
 
 fn parse_id(id: Pair<Rule>) -> Id {

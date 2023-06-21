@@ -146,7 +146,22 @@ pub enum Stmt {
     }
 }
 
+// func_def = { "def" ~ identifier ~ 
+//              func_def_args ~
+//              ret_typ? ~
+//              func_body
+//            }
+
+#[derive(Debug)]
+pub struct FuncDef {
+    pub name: Id,
+    pub args: Vec<(Id, Typ)>,
+    pub ret_typ: Option<Typ>,
+    pub stmts: Vec<Stmt>,
+    pub ret: Option<Expr>
+}
+
 #[derive(Debug)]
 pub struct Prog {
-    pub stmts: Vec<Stmt>,
+    pub func_defs: Vec<FuncDef>,
 }
