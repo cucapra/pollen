@@ -101,6 +101,14 @@ pub enum Stmt {
         id: Id,
         expr: Option<Expr>,
     },
+    GraphDecl {
+        id: Id
+    },
+    ParsetDecl {
+        id: Id,
+        typ: Typ,
+        graph_id: Option<Id>
+    },
     Assign {
         id: Id,
         expr: Expr
@@ -122,6 +130,15 @@ pub enum Stmt {
         id: Id,
         iterator: Expr,
         body: Box<Stmt>
+    },
+    FuncCallStmt {
+        name: Id,
+        args: Vec<Expr>
+    },
+    MethodCallStmt {
+        object: Expr,
+        method: Id,
+        args: Vec<Expr>
     },
     EmitTo {
         expr: Expr,

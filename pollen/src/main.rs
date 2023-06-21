@@ -82,6 +82,45 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
                 expr: expr_opt
             }
         },
+        Rule::graph_decl => {
+            let mut inner = stmt.into_inner();
+            let id = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A graph declaration requires an Id")
+                };
+                parse_id(pair)
+            };
+            Stmt::GraphDecl {
+                id: id
+            }
+        },
+        Rule::parset_decl => {
+            let mut inner = stmt.into_inner();
+            let id = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A parset declaration requires an Id")
+                };
+                parse_id(pair)
+            };
+            let typ = {
+                let Some(pair) = inner.next() else {
+                    unreachable!("A parset declaration requires a type")
+                };
+                parse_typ(pair)
+            };
+            let graph_id = {
+                if let Some(pair) = inner.next() {
+                    Some(parse_id(pair))
+                } else {
+                    None
+                }
+            };
+            Stmt::ParsetDecl {
+                id: id,
+                typ: typ,
+                graph_id: graph_id
+            }
+        },
         Rule::assign => {
             // Just contains an id and an expression
             let mut inner = stmt.into_inner();
@@ -238,6 +277,25 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
                 set_id: set_id
             }
         },
+        Rule::call_stmt => {
+            let object = parse_expr(stmt.into_inner());
+            match object {
+                Expr::FuncCall{ name, args } => {
+                    Stmt::FuncCallStmt {
+                        name: name,
+                        args: args 
+                    }
+                },
+                Expr::MethodCall{ object, method, args } => {
+                    Stmt::MethodCallStmt {
+                        object: *object,
+                        method: method,
+                        args: args
+                    }
+                },
+                _ => { panic!("A call_stmt must either be a function call or a method call") }
+            }
+        },
         Rule::stmt => {
             let mut inner = stmt.into_inner();
             let s = {
@@ -251,6 +309,21 @@ fn parse_stmt(stmt: Pair<Rule>) -> Stmt {
             s
         }
         rule => unreachable!("{:?} Not recognized", rule)
+    }
+}
+
+fn parse_call_args(arg_list: Pair<Rule>) -> Vec<Expr> {
+    match arg_list.as_rule() {
+        Rule::call_args => {
+            let mut args = Vec::new();
+            for arg in arg_list.into_inner() {
+                args.push(
+                    parse_expr(arg.into_inner())
+                );
+            }
+        args
+        },
+        rule => {panic!("{:?} is not a list of function arguments", rule)}
     }
 }
 
@@ -334,20 +407,19 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 Expr::ObjInitialization{ typ: typ }
             },
             Rule::func_call => {
-                // identifier ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")"
                 let mut inner = primary.into_inner();
                 let func_name = {
                     let Some(pair) = inner.next() else {
-                        unreachable!("An if statement requires a guard")
+                        unreachable!("A function call requires a name")
                     };
                     parse_id(pair)
                 };
-                let mut args = Vec::new();
-                for arg in inner {
-                    args.push(
-                        parse_expr(arg.into_inner())
-                    );
-                }
+                let args = {
+                    let Some(pair) = inner.next() else {
+                        unreachable!("A function call needs 0 or more arguments")
+                    };
+                    parse_call_args(pair)
+                };
                 Expr::FuncCall {
                     name: func_name,
                     args: args
@@ -374,33 +446,6 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
         })
         .map_postfix(|lhs, op| {
             match op.as_rule() {
-                // Rule::access => {
-                //     // method, optional call_postfix
-                //     let object = Box::new(lhs);
-                //     let mut inner = op.into_inner();
-                //     let field_id = parse_id(inner.next().unwrap());
-                //     if let Some(call_postfix) = inner.next() { // method call
-                //         let mut args = Vec::new();
-                //         for arg in call_postfix.into_inner() {
-                //             args.push(parse_expr(arg.into_inner()));
-                //         }
-                //         Expr::Call {
-                //             object: object,
-                //             method: field_id,
-                //             args: args
-                //         }
-                //     }
-                //     else { // field access
-                //         Expr::FieldAccess {
-                //             object: object,
-                //             field: field_id
-                //         }
-                //     }
-                // },
-                // Rule::access => {
-                //     println!("Parsing postfix");
-                //     Expr::Var(Id("postfix".to_string()))
-                // }
                 rule => unreachable!("{:?} not recognized as a postfix", rule),
             }
         })

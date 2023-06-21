@@ -90,8 +90,10 @@ a = 3;
     ans = 42;
 }
 
-// Field Access
-i: int = 3.field;
+// Graph and Parset declarations
+graph out_g;
+parset out_segs[Segment, out_g];
+parset depth[int];
 
 /* --- Control Flow --- */
 
@@ -140,6 +142,10 @@ step : Step = node.step;
 node : Segment = Segment { sequence: sequence, steps: steps' };
 record2 : int = { record1 with B: "Hard Times" };
 
+// Field Access
+i: int = 3.field;
+f: int = (Segment { num : 4 }).num;
+
 /* --- Complex Types --- */
 s: Set<int>;
 
@@ -162,3 +168,14 @@ v3: Segment = fun3(fun'(a), b);
 
 // Method Calls
 v4: Strand = new_strand.push('A');
+v5: int = (int { record: true }).method();
+
+// Function Calls
+f1();
+f2(arg1);
+f3(5, f2(true));
+func_id(arg1, arg2);
+// Method Calls
+obj.method();
+obj.inner.method(arg1);
+4.meth();

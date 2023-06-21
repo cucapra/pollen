@@ -13,7 +13,9 @@ file = {
 }
 
 /* ----- Import ----- */
-//import = {"use" ~ (!";" ~ ANY)+ ~ ";"} 
+// import = {"import" ~ filename ~ ("as" ~ identifier)? ~ ";"}
+// import_from = {"from" ~ filename ~ "import" ~ identifier ~ ("as" ~ identifier)? ~ ";"}
+// filename = { (!";" ~ ANY)+ }
 
 /* ----- Types ----- */
 // Types that do not contain fields or method calls
@@ -99,21 +101,11 @@ prefix = _{ not }
 
 call_begin = { "(" }
 
-// postfix = { access }
-//     access = { "." ~ field_id }
-//         field_id = { identifier}
-//         call_postfix = { "(" ~ expr? ~ ("," ~ expr)* ~ ")" }
-
-// TODO: Parse something like path.first().steps. The call "operator" ("()")
-//      isn't really a postfix operator because it can have expressions in the middle
-// Distinguish between object initialization { type ~ "()" }, 
-//                      method calls,        { expr ~ "." ~ identifier ~ call_postfix }
-//                      function calls       { id ~ call_postfix}
-
 //array_access = { identifier ~ "[" ~ expr ~ "]"}
 
 obj_initialize = { typ ~ "()" }
-func_call = { identifier ~ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
+call_args = { "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
+func_call = { identifier ~ call_args }
 
 term = _{ literal | obj_initialize | func_call | identifier | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
@@ -122,19 +114,32 @@ expr = { prefix* ~ term ~ (binop ~ prefix* ~ term ) * }
 
 /* ----- Statements ---- */
 decl = { identifier ~ ":" ~ typ ~ ("=" ~ expr)? ~ ";"}
+graph_decl = { "graph" ~ identifier ~ ";" }
+parset_decl = { "parset" ~ identifier ~ "[" ~ typ ~ ("," ~ identifier)? ~ "]" ~ ";"}
+
 assign = { identifier ~ "=" ~ expr ~ ";" }
 // assign = { (((identifier | array_access | record_access) ~ ("=" | "+=") ~ expr) | (identifier ~ "++")) ~ ";"}
-// Function call
-// call_stmt = { call ~ ";" }
 
 block = { "{" ~ stmt+ ~ "}" }
 
 // Control Flow
-if_stmt = { "if " ~ expr ~ block ~ ("elif" ~ expr ~ block)* ~ ("else" ~ block)? }
+if_stmt = { "if" ~ expr ~ block ~ ("elif" ~ expr ~ block)* ~ ("else" ~ block)? }
 while_stmt = { "while" ~ expr ~ block }
 for_stmt = { "for" ~ identifier ~ "in" ~ expr ~ block }
+
+// Function call
+call_stmt = { expr ~ ";" }
 
 // Emit statements
 emit_to = { "emit" ~ expr ~ "to" ~ identifier ~ ";" }
 
-stmt = { decl | assign | block | if_stmt | while_stmt | for_stmt | emit_to }
+stmt = { decl | graph_decl | parset_decl | assign | block 
+        | if_stmt | while_stmt | for_stmt | emit_to | call_stmt }
+
+// func_def = { "def" ~ identifier ~ 
+//              func_def_args ~
+//              "{" ~ stmt+ ~ return? ~ "}"
+//            }
+//     func_def_args = { "(" ~ (id ~ ":" ~ typ ~ ("," ~ id ~ ":" ~ typ)*)? ~ ")" }
+//     func_body = { "{" ~ stmt+ ~ return? ~ "}" }
+//         return = { "return" ~ expr ~ ";" }
