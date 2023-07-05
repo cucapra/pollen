@@ -1,5 +1,16 @@
 #[derive(Debug)]
 #[derive(Clone)]
+pub struct Id(pub String);
+
+#[derive(Debug)]
+pub enum Import {
+    Import { file: String },
+    ImportAs { file: String, name: Id },
+    ImportFrom { file: String, funcs: Vec<(Id, Option<Id>)> }
+}
+
+#[derive(Debug)]
+#[derive(Clone)]
 pub enum Typ {
     Int,
     Bool,
@@ -38,10 +49,6 @@ pub enum BinOp {
 pub enum UOp {
     Not 
 }
-
-#[derive(Debug)]
-#[derive(Clone)]
-pub struct Id(pub String);
 
 #[derive(Debug)]
 #[derive(Clone)]

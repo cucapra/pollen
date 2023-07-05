@@ -40,14 +40,96 @@ lazy_static! {
 }
 
 pub fn parse_prog(mut prog: Pairs<Rule>) -> Prog {
-    let mut func_defs = Vec::new();
-    while let Some(func_def) = prog.next() {
-        if func_def.as_rule() != Rule::EOI {
-            // TODO: Edit for function defs
-            func_defs.push(parse_func_def(func_def)) 
-        }  
+    let Some(imports) = prog.next() else { unreachable!("Prog has no pairs") };
+    let Some(func_defs) = prog.next() else { unreachable!("Prog has only one pair") };
+    Prog{ func_defs: parse_func_defs(func_defs) }
+}
+
+pub fn parse_imports(imports: Pair<Rule>) -> Vec<Import> {
+    let mut import_stmts = Vec::new();
+    match imports.as_rule() {
+        Rule::imports => {
+            let mut inner = imports.into_inner();
+            for import in inner { import_stmts.push(parse_import(import)) }
+        },
+        rule => { unreachable!("Imports expected, found {:?}", rule)}
+    }
+    import_stmts
+}
+
+pub fn parse_import(import: Pair<Rule>) -> Import {
+
+    fn parse_func_as_id(func_as_id: Pair<Rule>) -> (Id, Option<Id>) {
+        match func_as_id.as_rule() {
+            Rule::func_as_id => {
+                let mut inner = func_as_id.into_inner();
+                let func_name = {
+                    let Some(pair) = inner.next() else { unreachable!("Function id expected")};
+                    parse_id(pair)
+                };
+                let import_name = {
+                    if let Some(pair) = inner.next() {
+                        Some(parse_id(pair))
+                    } else {
+                        None
+                    }
+                };
+                (func_name, import_name)
+            },
+            rule => { unreachable!("Expected func_as_id, found {:?}", rule)}
+        }
+    }
+
+    match import.as_rule() {
+        Rule::import_as => {
+            let mut inner = import.into_inner();
+            let filename = {
+                let Some(pair) = inner.next() else { unreachable!("Import statement has no filename")};
+                pair.as_str().to_string()
+            };
+            if let Some(pair) = inner.next() { 
+                // This statement specifies a new filename
+                let identifier = parse_id(pair);
+                Import::ImportAs {
+                    file: filename,
+                    name: identifier
+                }
+            }
+            else { 
+                Import::Import {
+                    file: filename
+                }
+            }
+        },
+        Rule::import_from => {
+            let mut inner = import.into_inner();
+            let filename = {
+                let Some(pair) = inner.next() else { unreachable!("Import statement has no filename")};
+                pair.as_str().to_string()
+            };
+            let mut func_as_ids = Vec::new();
+            while let Some(pair) = inner.next() {
+                let func_as_id = parse_func_as_id(pair);
+                func_as_ids.push(func_as_id);
+            }
+
+            Import::ImportFrom { 
+                file: filename,
+                funcs: func_as_ids
+            }
+        },
+        rule => { unreachable!("{:?} is not recognized as an import stmt", rule)
+        }
+    }
+}
+
+pub fn parse_func_defs(func_defs: Pair<Rule>) -> Vec<FuncDef> {
+    let mut func_defs_vec = Vec::new();
+    let mut inner = func_defs.into_inner();
+    while let Some(func_def) = inner.next() {
+        func_defs_vec.push(parse_func_def(func_def))
     };
-    Prog{ func_defs: func_defs }
+    func_defs_vec
 }
 
 fn parse_func_def(func_def: Pair<Rule>) -> FuncDef {

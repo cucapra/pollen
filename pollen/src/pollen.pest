@@ -8,14 +8,22 @@ COMMENT = _{ ("//" ~ (!NEWLINE ~ ANY)* ~ (NEWLINE | EOI))
 /* ----- Program ----- */
 file = { 
     SOI
-    ~ func_def+
+    ~ imports
+    ~ func_defs
     ~ EOI
 }
+    imports = { import* }
+    func_defs = { func_def+ }
 
 /* ----- Import ----- */
-// import = {"import" ~ filename ~ ("as" ~ identifier)? ~ ";"}
-// import_from = {"from" ~ filename ~ "import" ~ identifier ~ ("as" ~ identifier)? ~ ";"}
-// filename = { (!";" ~ ANY)+ }
+import = _{ import_as | import_from }
+
+import_as = { "import" ~ filename ~ ("as" ~ identifier)? ~ ";" }
+import_from = { "from" ~ filename ~ "import" ~ func_as_id ~ ("," ~ func_as_id)* ~ ";"}
+    func_as_id = { identifier ~ ("as" ~ identifier)? }
+
+// TODO: Probably make this less permissible
+filename = { (!";" ~ ANY)+ }
 
 /* ----- Types ----- */
 // Types that do not contain fields or method calls
