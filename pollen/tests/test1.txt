@@ -150,8 +150,8 @@ def test1() {
     /* --- Complex Types --- */
     s: Set<int>;
 
-    // tuple1: int*bool;
-    // tuple2: Segment*bool;
+    tuple1: (int*bool);
+    tuple2: (Segment*bool) = (node, true);
 
     /* --- Emit Statements --- */
     emit 5 to s;

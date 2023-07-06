@@ -1,0 +1,21 @@
+# Compute the node depth, considering a subset of paths in the graph
+
+def depth(subset_paths: Set<Path>) {
+    parset depths[(Segment, int)];
+    for segment in segments {
+        depth = 0;
+        for step in segment.steps {
+            consider_path = false;
+            // Should be more efficient to use a bitvector instead
+            for path in subset_paths {
+                if step.path == path {
+                    consider_path = true;
+                }
+            }
+            if consider_path {
+                depth += 1;
+            }
+        }
+        emit (segment, depth) to depths;
+    }
+}

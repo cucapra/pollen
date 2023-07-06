@@ -82,6 +82,10 @@ pub enum Expr {
         parent: Id,
         fields: Vec<RecordField>
     },
+    Tuple {
+        lhs : Box<Expr>,
+        rhs : Box<Expr>
+    },
     FieldAccess {
         object: Box<Expr>,
         field: Box<Expr>
@@ -153,12 +157,6 @@ pub enum Stmt {
     }
 }
 
-// func_def = { "def" ~ identifier ~ 
-//              func_def_args ~
-//              ret_typ? ~
-//              func_body
-//            }
-
 #[derive(Debug)]
 pub struct FuncDef {
     pub name: Id,
@@ -170,5 +168,6 @@ pub struct FuncDef {
 
 #[derive(Debug)]
 pub struct Prog {
+    pub imports: Vec<Import>,
     pub func_defs: Vec<FuncDef>,
 }

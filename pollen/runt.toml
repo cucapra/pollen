@@ -1,0 +1,11 @@
+ver = "0.4.1"
+
+# Check that all pollen programs parse correctly
+[[tests]]
+name = "parser tests"
+paths = [
+  "tests/*.pollen",
+]
+# gets the pass flags a comment on the first line of the test file
+cmd = "./target/debug/pollen {}"
+expect_dir = "tests/parse-out/"

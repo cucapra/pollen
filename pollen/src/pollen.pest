@@ -28,15 +28,16 @@ filename = { (!";" ~ ANY)+ }
 /* ----- Types ----- */
 // Types that do not contain fields or method calls
 
-atomic_typ = { "int" | "bool" | "char" | "Segment" | "Step" | "Edge" 
+atomic_typ = { "int" | "bool" | "char" | "Path" | "Segment" | "Step" | "Edge" 
             | "Base" | "String" | "Strand" }
 
-// tuple_typ = { atomic_typ ~ ("*" ~ atomic_typ)+ }
+// TODO: allow larger tuples
+tuple_typ = { "(" ~ atomic_typ ~ ("*" ~ atomic_typ)/*+*/ ~ ")" }
 
 set_typ = { "Set<" ~ typ ~ ">" }
 
 // String and Strand are not atomic types because they cannot be part of tuples
-typ = _{ atomic_typ | set_typ /* | tuple_typ | typ ~ ( "[]"* ) */ }
+typ = _{ atomic_typ | set_typ | tuple_typ /* | typ ~ ( "[]"* ) */ }
 
 /* Record types are not included because the user will never 
     need to explicitly define one */
@@ -76,9 +77,10 @@ record_update_lit = { "{" ~ identifier ~ "with" ~
                 identifier ~ ":" ~ expr  ~ 
                 ("," ~ identifier ~ ":" ~ expr)* ~ "}"
              }
+tuple_lit = { "(" ~ expr ~ "," ~ expr ~ ")" }
 
 literal = _{ integer_lit | bool_lit | char_lit | string_lit 
-            | record_lit | record_update_lit }
+            | record_lit | record_update_lit | tuple_lit }
 
 
 /* ----- Expressions ----- */

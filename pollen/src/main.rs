@@ -42,7 +42,10 @@ lazy_static! {
 pub fn parse_prog(mut prog: Pairs<Rule>) -> Prog {
     let Some(imports) = prog.next() else { unreachable!("Prog has no pairs") };
     let Some(func_defs) = prog.next() else { unreachable!("Prog has only one pair") };
-    Prog{ func_defs: parse_func_defs(func_defs) }
+    Prog{
+        imports: parse_imports(imports),
+        func_defs: parse_func_defs(func_defs)
+    }
 }
 
 pub fn parse_imports(imports: Pair<Rule>) -> Vec<Import> {
@@ -570,6 +573,16 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                     fields: fields
                 }
             },
+            Rule::tuple_lit => {
+                let mut inner = primary.into_inner();
+                let Some(lhs) = inner.next() else { unreachable!("tuple has no lhs") };
+                let Some(rhs) = inner.next() else { unreachable!("tuple has no rhs") };
+                assert!(inner.next().is_none());
+                Expr::Tuple {
+                    lhs: Box::new(parse_expr(lhs.into_inner())),
+                    rhs: Box::new(parse_expr(rhs.into_inner()))
+                }
+            }
             Rule::obj_initialize => {
                 let typ = parse_typ(primary.into_inner().next().unwrap());
                 Expr::ObjInitialization{ typ: typ }
@@ -706,25 +719,25 @@ fn parse_typ(typ: Pair<Rule>) -> Typ {
             "Strand" => Typ::Strand,
             t => unreachable!("Unknown type: {}", t)
         },
-        // Rule::tuple_typ => {
-        //     let mut inner = typ.into_inner();
-        //     let t1 = {
-        //         if let Some(pair) = inner.next() {
-        //             parse_typ(pair)
-        //         } else {
-        //             unreachable!("Expected first tuple type but found nothing")
-        //         }
-        //     };
-        //     let t2 = {
-        //         if let Some(pair) = inner.next() {
-        //             parse_typ(pair)
-        //         } else {
-        //             unreachable!("Expected second tuple type but found nothing")
-        //         }
-        //     };
-        //     assert!(inner.next().is_none());
-        //     Typ::Tuple(Box::new(t1), Box::new(t2))
-        // },
+        Rule::tuple_typ => {
+            let mut inner = typ.into_inner();
+            let t1 = {
+                if let Some(pair) = inner.next() {
+                    parse_typ(pair)
+                } else {
+                    unreachable!("Expected first tuple type but found nothing")
+                }
+            };
+            let t2 = {
+                if let Some(pair) = inner.next() {
+                    parse_typ(pair)
+                } else {
+                    unreachable!("Expected second tuple type but found nothing")
+                }
+            };
+            assert!(inner.next().is_none());
+            Typ::Tuple(Box::new(t1), Box::new(t2))
+        },
         Rule::set_typ => {
             let mut inner = typ.into_inner();
             let t = {
@@ -791,18 +804,13 @@ pub fn main() {
 
     match PollenParser::parse(Rule::file, &prog) {
         Ok(mut pairs) => {
-            // println!(
-            //     "Pre-parsed: {:#?}",
-            //     pairs
-            // );
-            println!("Lexing");
             println!(
-                "Parsed: {:#?}",
+                "{:#?}",
                 parse_prog(pairs.next().unwrap().into_inner())
             );
         }
         Err(e) => {
-            eprintln!("Parse failed: {:?}", e);
+            eprintln!("{:?}", e);
         }
     }
 }
