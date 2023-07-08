@@ -94,7 +94,13 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    subparsers.add_parser("paths", help="Lists the paths in the graph.")
+    paths_parser = subparsers.add_parser("paths", help="Lists the paths in the graph.")
+    paths_parser.add_argument(
+        "--drop",
+        type=int,
+        help="Randomly drop a percentage of the paths.",
+        metavar="PCT",
+    )
 
     subparsers.add_parser(
         "validate",
@@ -151,7 +157,7 @@ def dispatch(args: argparse.Namespace) -> None:
         "inject": lambda g: inject.inject(g, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
-        "paths": paths.paths,
+        "paths": lambda g: paths.paths(g, args.drop),
         "validate": validate.validate,
         "norm": norm.norm,
     }
