@@ -1,5 +1,6 @@
 import argparse
 import sys
+import io
 from typing import Dict, Tuple, List
 from collections.abc import Callable
 from mygfa import mygfa
@@ -164,9 +165,8 @@ def dispatch(args: argparse.Namespace) -> None:
     if args.graph:
         in_file = open(args.graph, "r", encoding="utf-8")
     else:
-        in_file = sys.stdin
+        in_file = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
     graph = mygfa.Graph.parse(in_file)
-
     # Run the appropriate command on the input graph.
     ans = name_to_func[args.command](graph)
     if args.command in makes_new_graph:
