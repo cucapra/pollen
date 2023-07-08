@@ -42,7 +42,7 @@ slow-odgi-setup: og
 # compare against these expected outputs.
 # In reality, this depends on the setup stage above. Run this by itself ONLY
 # if you know that the setup stages don't need to be run afresh.
-ORACLES := chop_oracle chop_oracle crush_oracle degree_oracle depth_oracle \
+ORACLES := chop_oracle crush_oracle degree_oracle depth_oracle \
 	flip_oracle flatten_oracle inject_oracle matrix_oracle overlap_oracle \
 	paths_oracle validate_oracle
 slow-odgi-oracles: og
@@ -54,7 +54,7 @@ slow-odgi-oracles: og
 TEST_ENVS := chop_test crush_test degree_test depth_test flip_test \
 	 flatten_test inject_test matrix_test overlap_test paths_test validate_test
 slow-odgi-tests:
-	turnt $(TEST_ENVS:%=--env %) test/*.gfa
+	turnt -j $(TEST_ENVS:%=--env %) test/*.gfa
 
 # The basic test suite above, plus a few handmade tests for good measure.
 # Those are described below.
