@@ -32,11 +32,10 @@ test-data-gen: og
 # Sets up all the odgi-oracles and then tests slow-odgi against them.
 test-slow-odgi: slow-odgi-setup slow-odgi-oracles slow-odgi-tests
 
-# Collects all the setup/oracle stages of slow-odgi into once place.
+# Produce some input files that are necessary for the slow_odgi tests.
 slow-odgi-setup: og
-	-turnt --save --env depth_setup test/*.gfa
-	-turnt --save --env inject_setup test/*.gfa
-	-turnt --save --env overlap_setup test/*.gfa
+	-turnt -j --save --env depth_setup --env inject_setup \
+		--env overlap_setup test/*.gfa
 
 # Produce the oracle output (from "real" odgi) for each test input. Run this
 # once, noisily, to obtain the expected outputs. Then run `slow-odgi-tests` to
