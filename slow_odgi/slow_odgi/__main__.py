@@ -31,8 +31,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
 
     chop_parser = subparsers.add_parser(
-        "chop",
-        help="Shortens segments' sequences to a given maximum length.",
+        "chop", help="Shortens segments' sequences to a given maximum length.",
     )
     chop_parser.add_argument(
         "-n",
@@ -43,8 +42,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
 
     _ = subparsers.add_parser(
-        "crush",
-        help="Replaces consecutive instances of `N` with a single `N`.",
+        "crush", help="Replaces consecutive instances of `N` with a single `N`.",
     )
 
     _ = subparsers.add_parser(
@@ -62,13 +60,11 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
 
     _ = subparsers.add_parser(
-        "flatten",
-        help="Converts the graph into FASTA + BED representation.",
+        "flatten", help="Converts the graph into FASTA + BED representation.",
     )
 
     _ = subparsers.add_parser(
-        "flip",
-        help="Flips any paths that step more backward than forward.",
+        "flip", help="Flips any paths that step more backward than forward.",
     )
 
     inject_parser = subparsers.add_parser(
@@ -97,18 +93,14 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     subparsers.add_parser("paths", help="Lists the paths in the graph.")
 
     subparsers.add_parser(
-        "validate",
-        help="Checks whether the links of the graph support its paths.",
+        "validate", help="Checks whether the links of the graph support its paths.",
     )
 
     norm_parser = subparsers.add_parser(
-        "norm",
-        help="Print a graph unmodified, normalizing its representation.",
+        "norm", help="Print a graph unmodified, normalizing its representation.",
     )
     norm_parser.add_argument(
-        "--nl",
-        action="store_true",
-        help="Don't include links.",
+        "--nl", action="store_true", help="Don't include links.",
     )
 
     # Add the graph argument to all subparsers.
@@ -171,9 +163,7 @@ def dispatch(args: argparse.Namespace) -> None:
     ans = name_to_func[args.command](graph)
     if args.command in makes_new_graph:
         ans.emit(
-            sys.stdout,
-            args.command not in show_no_links and
-            not vars(args).get('nl')
+            sys.stdout, args.command not in show_no_links and not vars(args).get("nl")
         )
         if args.command in constructive_changes:
             assert proofs.logically_le(graph, ans)
