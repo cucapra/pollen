@@ -65,7 +65,7 @@ output.flip = "-"
 
 [envs.inject_setup]
 binary = true
-command = "python -m slow_odgi.inject_setup < {filename}"
+command = "slow_odgi inject_setup < {filename}"
 output.bed = "-"
 
 [envs.inject_oracle]
@@ -125,7 +125,7 @@ output.paths = "-"
 
 [envs.validate_setup]
 binary = true
-command = "python -m slow_odgi.validate_setup < {filename}"
+command = "slow_odgi validate_setup < {filename}"
 output.temp = "-"
 
 [envs.validate_oracle]
