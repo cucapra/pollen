@@ -42,12 +42,12 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "crush",
         help="Replaces consecutive instances of `N` with a single `N`.",
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "degree", help="Generates a table summarizing each segment's degree."
     )
 
@@ -61,12 +61,12 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "flatten",
         help="Converts the graph into FASTA + BED representation.",
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "flip",
         help="Flips any paths that step more backward than forward.",
     )
@@ -81,7 +81,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser("matrix", help="Represents the graph as a matrix.")
+    subparsers.add_parser("matrix", help="Represents the graph as a matrix.")
 
     overlap_parser = subparsers.add_parser(
         "overlap",
