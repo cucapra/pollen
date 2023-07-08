@@ -47,7 +47,7 @@ ORACLES := chop_oracle chop_oracle crush_oracle degree_oracle depth_oracle \
 	flip_oracle flatten_oracle inject_oracle matrix_oracle overlap_oracle \
 	paths_oracle validate_oracle
 slow-odgi-oracles: og
-	-turnt --save $(ORACLES:%=--env %) test/*.og
+	-turnt -j --save $(ORACLES:%=--env %) test/*.og
 
 # In reality slow-odgi-tests depends on slow-odgi-oracles above.
 # Running the below by itself is faster and less noisy,
