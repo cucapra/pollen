@@ -30,7 +30,7 @@ output.degree = "-"
 
 [envs.depth_setup]
 binary = true
-command = "python -m slow_odgi.paths {filename} 50"
+command = "slow_odgi paths {filename} 50"
 output.depthpaths = "-"
 
 [envs.depth_oracle]
@@ -100,7 +100,7 @@ output.norm = "-"
 
 [envs.overlap_setup]
 binary = true
-command = "python -m slow_odgi.paths {filename} 50"
+command = "slow_odgi paths {filename} 50"
 output.overlappaths = "-"
 
 [envs.overlap_oracle]
