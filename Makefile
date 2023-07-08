@@ -38,24 +38,16 @@ slow-odgi-setup: og
 	-turnt --save --env inject_setup test/*.gfa
 	-turnt --save --env overlap_setup test/*.gfa
 
-# Collects all the oracle stages of slow-odgi into once place.
-# This can be run once, noisily, and then slow-odgi-all-tests can be run
-# quietly against the expect-files created here.
-# Note that, in reality, this depends on the setup stage above.
-# Run this by itself ONLY if you know that the setup stages don't need to be
-# run afresh.
+# Produce the oracle output (from "real" odgi) for each test input. Run this
+# once, noisily, to obtain the expected outputs. Then run `slow-odgi-tests` to
+# compare against these expected outputs.
+# In reality, this depends on the setup stage above. Run this by itself ONLY
+# if you know that the setup stages don't need to be run afresh.
+ORACLES := chop_oracle chop_oracle crush_oracle degree_oracle depth_oracle \
+	flip_oracle flatten_oracle inject_oracle matrix_oracle overlap_oracle \
+	paths_oracle validate_oracle
 slow-odgi-oracles: og
-	-turnt --save --env chop_oracle test/*.og
-	-turnt --save --env crush_oracle test/*.og
-	-turnt --save --env degree_oracle test/*.og
-	-turnt --save --env depth_oracle test/*.og
-	-turnt --save --env flip_oracle test/*.og
-	-turnt --save --env flatten_oracle test/*.og
-	-turnt --save --env inject_oracle test/*.og
-	-turnt --save --env matrix_oracle test/*.og
-	-turnt --save --env overlap_oracle test/*.og
-	-turnt --save --env paths_oracle test/*.og
-	-turnt --save --env validate_oracle test/*.og
+	-turnt --save $(ORACLES:%=--env %) test/*.og
 
 # In reality slow-odgi-tests depends on slow-odgi-oracles above.
 # Running the below by itself is faster and less noisy,
