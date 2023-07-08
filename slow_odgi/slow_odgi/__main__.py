@@ -172,7 +172,7 @@ def dispatch(args: argparse.Namespace) -> None:
     if args.command in makes_new_graph:
         ans.emit(
             sys.stdout,
-            args.command not in show_no_links or
+            args.command not in show_no_links and
             not vars(args).get('nl')
         )
         if args.command in constructive_changes:
