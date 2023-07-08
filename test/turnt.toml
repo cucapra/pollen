@@ -30,7 +30,7 @@ output.degree = "-"
 
 [envs.depth_setup]
 binary = true
-command = "slow_odgi paths {filename} 50"
+command = "slow_odgi paths --drop 50 {filename}"
 output.depthpaths = "-"
 
 [envs.depth_oracle]
@@ -65,7 +65,7 @@ output.flip = "-"
 
 [envs.inject_setup]
 binary = true
-command = "python -m slow_odgi.inject_setup < {filename}"
+command = "slow_odgi inject_setup < {filename}"
 output.bed = "-"
 
 [envs.inject_oracle]
@@ -100,7 +100,7 @@ output.norm = "-"
 
 [envs.overlap_setup]
 binary = true
-command = "slow_odgi paths {filename} 50"
+command = "slow_odgi paths --drop 50 {filename}"
 output.overlappaths = "-"
 
 [envs.overlap_oracle]
@@ -125,7 +125,7 @@ output.paths = "-"
 
 [envs.validate_setup]
 binary = true
-command = "python -m slow_odgi.validate_setup < {filename}"
+command = "slow_odgi validate_setup < {filename}"
 output.temp = "-"
 
 [envs.validate_oracle]

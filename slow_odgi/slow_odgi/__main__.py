@@ -19,6 +19,8 @@ from . import (
     proofs,
     validate,
     norm,
+    inject_setup,
+    validate_setup,
 )
 
 
@@ -42,12 +44,12 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "crush",
         help="Replaces consecutive instances of `N` with a single `N`.",
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "degree", help="Generates a table summarizing each segment's degree."
     )
 
@@ -61,12 +63,12 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "flatten",
         help="Converts the graph into FASTA + BED representation.",
     )
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "flip",
         help="Flips any paths that step more backward than forward.",
     )
@@ -81,7 +83,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser("matrix", help="Represents the graph as a matrix.")
+    subparsers.add_parser("matrix", help="Represents the graph as a matrix.")
 
     overlap_parser = subparsers.add_parser(
         "overlap",
@@ -94,7 +96,13 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    subparsers.add_parser("paths", help="Lists the paths in the graph.")
+    paths_parser = subparsers.add_parser("paths", help="Lists the paths in the graph.")
+    paths_parser.add_argument(
+        "--drop",
+        type=int,
+        help="Randomly drop a percentage of the paths.",
+        metavar="PCT",
+    )
 
     subparsers.add_parser(
         "validate",
@@ -110,6 +118,10 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         action="store_true",
         help="Don't include links.",
     )
+
+    # "Hidden" commands for testing only
+    subparsers.add_parser("inject_setup")
+    subparsers.add_parser("validate_setup")
 
     # Add the graph argument to all subparsers.
     # Doing it this way means that the graph argument is sought _after_ the
@@ -140,22 +152,29 @@ def dispatch(args: argparse.Namespace) -> None:
     parse any additional files if needed,
     then dispatch to the appropriate slow-odgi command.
     If the command makes a new graph, emit it to stdout."""
-    name_to_func: Dict[str, Callable[[mygfa.Graph], mygfa.Graph]]
-    name_to_func = {
+
+    # Functions that produce a new graph.
+    transformer_funcs: Dict[str, Callable[[mygfa.Graph], mygfa.Graph]] = {
         "chop": lambda g: chop.chop(g, int(args.n)),
         "crush": crush.crush,
+        "flip": flip.flip,
+        "inject": lambda g: inject.inject(g, parse_bedfile(args.bed)),
+        "norm": norm.norm,
+        "validate_setup": validate_setup.drop_some_links,
+    }
+
+    # Other functions, which typically print their own output.
+    other_funcs: Dict[str, Callable[[mygfa.Graph], object]] = {
         "degree": degree.degree,
         "depth": lambda g: depth.depth(g, parse_paths(args.paths)),
         "flatten": lambda g: flatten.flatten(g, f"{args.graph[:-4]}.og"),
-        "flip": flip.flip,
-        "inject": lambda g: inject.inject(g, parse_bedfile(args.bed)),
         "matrix": matrix.matrix,
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
-        "paths": paths.paths,
+        "paths": lambda g: paths.paths(g, args.drop),
         "validate": validate.validate,
-        "norm": norm.norm,
+        "inject_setup": inject_setup.print_bed,
     }
-    makes_new_graph = ["chop", "crush", "flip", "inject", "norm"]
+
     show_no_links = ["chop", "inject"]
     constructive_changes = ["chop", "inject"]
     # These commands only add to the graph, so we'll assert "logically_le".
@@ -167,14 +186,19 @@ def dispatch(args: argparse.Namespace) -> None:
     else:
         in_file = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
     graph = mygfa.Graph.parse(in_file)
+
     # Run the appropriate command on the input graph.
-    ans = name_to_func[args.command](graph)
-    if args.command in makes_new_graph:
-        ans.emit(
+    if args.command in transformer_funcs:
+        out_graph = transformer_funcs[args.command](graph)
+        out_graph.emit(
             sys.stdout, args.command not in show_no_links and not vars(args).get("nl")
         )
         if args.command in constructive_changes:
-            assert proofs.logically_le(graph, ans)
+            assert proofs.logically_le(graph, out_graph)
+    elif args.command in other_funcs:
+        other_funcs[args.command](graph)
+    else:
+        assert False
 
 
 def main() -> None:
