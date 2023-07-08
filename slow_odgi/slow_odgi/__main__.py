@@ -19,6 +19,8 @@ from . import (
     proofs,
     validate,
     norm,
+    inject_setup,
+    validate_setup,
 )
 
 
@@ -117,6 +119,10 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="Don't include links.",
     )
 
+    # "Hidden" commands for testing only
+    subparsers.add_parser("inject_setup")
+    subparsers.add_parser("validate_setup")
+
     # Add the graph argument to all subparsers.
     # Doing it this way means that the graph argument is sought _after_ the
     # command name.
@@ -160,8 +166,10 @@ def dispatch(args: argparse.Namespace) -> None:
         "paths": lambda g: paths.paths(g, args.drop),
         "validate": validate.validate,
         "norm": norm.norm,
+        "inject_setup": inject_setup.print_bed,
+        "validate_setup": validate_setup.drop_some_links,
     }
-    makes_new_graph = ["chop", "crush", "flip", "inject", "norm"]
+    makes_new_graph = ["chop", "crush", "flip", "inject", "norm", "validate_setup"]
     show_no_links = ["chop", "inject"]
     constructive_changes = ["chop", "inject"]
     # These commands only add to the graph, so we'll assert "logically_le".
