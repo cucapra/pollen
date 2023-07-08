@@ -17,6 +17,7 @@ from . import (
     paths,
     proofs,
     validate,
+    norm,
 )
 
 
@@ -92,11 +93,21 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    _ = subparsers.add_parser("paths", help="Lists the paths in the graph.")
+    subparsers.add_parser("paths", help="Lists the paths in the graph.")
 
-    _ = subparsers.add_parser(
+    subparsers.add_parser(
         "validate",
         help="Checks whether the links of the graph support its paths.",
+    )
+
+    norm_parser = subparsers.add_parser(
+        "norm",
+        help="Print a graph unmodified, normalizing its representation.",
+    )
+    norm_parser.add_argument(
+        "--nl",
+        action="store_true",
+        help="Don't include links.",
     )
 
     # Add the graph argument to all subparsers.
@@ -141,16 +152,29 @@ def dispatch(args: argparse.Namespace) -> None:
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
         "paths": paths.paths,
         "validate": validate.validate,
+        "norm": norm.norm,
     }
-    makes_new_graph = ["chop", "crush", "flip", "inject"]
+    makes_new_graph = ["chop", "crush", "flip", "inject", "norm"]
     show_no_links = ["chop", "inject"]
     constructive_changes = ["chop", "inject"]
     # These commands only add to the graph, so we'll assert "logically_le".
 
-    graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
+    # Parse the input graph, which comes from either a filename argument or
+    # stdin (if the filename is unspecified).
+    if args.graph:
+        in_file = open(args.graph, "r", encoding="utf-8")
+    else:
+        in_file = sys.stdin
+    graph = mygfa.Graph.parse(in_file)
+
+    # Run the appropriate command on the input graph.
     ans = name_to_func[args.command](graph)
     if args.command in makes_new_graph:
-        ans.emit(sys.stdout, args.command not in show_no_links)
+        ans.emit(
+            sys.stdout,
+            args.command not in show_no_links or
+            not vars(args).get('nl')
+        )
         if args.command in constructive_changes:
             assert proofs.logically_le(graph, ans)
 
@@ -158,9 +182,6 @@ def dispatch(args: argparse.Namespace) -> None:
 def main() -> None:
     """Parse command line arguments and run the appropriate subcommand."""
     parser, args = parse_args()
-    if "graph" not in args or not args.graph:
-        parser.print_help()
-        exit(-1)
     dispatch(args)
 
 
