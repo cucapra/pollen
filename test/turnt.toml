@@ -137,10 +137,23 @@ binary = true
 command = "odgi validate -i {filename} 2>&1"
 output.validate = "-"
 
+# An alternate version for graphs that are supposed to fail validation.
+[envs.validate_oracle_err]
+binary = true
+command = "odgi validate -i {filename} 2>&1"
+output.validate = "-"
+return_code = 1
+
 [envs.validate_test]
 binary = true
 command = "slow_odgi validate {filename}"
 output.validate = "-"
+
+[envs.validate_test_err]
+binary = true
+command = "slow_odgi validate {filename}"
+output.validate = "-"
+return_code = 1
 
 [envs.pollen_data_gen_depth_oracle]
 binary = true
