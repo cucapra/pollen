@@ -123,26 +123,37 @@ binary = true
 command = "slow_odgi paths {filename}"
 output.paths = "-"
 
+# Drop some links in the "real" input graphs to produce invalid graphs, in the
+# `invalid` subdirectory, that will yield interesting errors when running
+# validation.
 [envs.validate_setup]
 binary = true
 command = "slow_odgi validate_setup < {filename}"
-output.temp = "-"
+output.gfa = "-"
+out_dir = "invalid"
 
 [envs.validate_oracle]
 binary = true
 command = "odgi validate -i {filename} 2>&1"
 output.validate = "-"
 
-[envs.validate_oracle_careful]
+# An alternate version for graphs that are supposed to fail validation.
+[envs.validate_oracle_err]
 binary = true
-command = "odgi build -g {filename} -o - | odgi validate -i - 2>&1"
-return_code = 1
+command = "odgi validate -i {filename} 2>&1"
 output.validate = "-"
+return_code = 1
 
 [envs.validate_test]
 binary = true
 command = "slow_odgi validate {filename}"
 output.validate = "-"
+
+[envs.validate_test_err]
+binary = true
+command = "slow_odgi validate {filename}"
+output.validate = "-"
+return_code = 1
 
 [envs.pollen_data_gen_depth_oracle]
 binary = true
