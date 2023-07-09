@@ -45,7 +45,7 @@ output.depth = "-"
 
 [envs.flatten_oracle]
 binary = true
-command = "odgi flatten -i {filename} -f temp.fasta -b temp.bed; cat temp.fasta; cat temp.bed"
+command = "odgi flatten -i {filename} -f {base}.flatten.fasta -b {base}.flatten.bed; cat {base}.flatten.fasta; cat {base}.flatten.bed"
 output.flatten = "-"
 
 [envs.flatten_test]

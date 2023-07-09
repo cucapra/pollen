@@ -100,6 +100,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     paths_parser.add_argument(
         "--drop",
         type=int,
+        default=0,
         help="Randomly drop a percentage of the paths.",
         metavar="PCT",
     )
