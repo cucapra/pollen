@@ -1,10 +1,11 @@
 """
-This file converts an odgi graph to numerical JSON
+This file converts a given graph to numerical JSON
 data that can be used by calyx hardware simulators.
 """
 
 import argparse
 import json
+from mygfa import mygfa, preprocess
 
 # Defaults for the maximum possible number of nodes,
 # steps per node, and paths to consider
@@ -13,21 +14,25 @@ MAX_STEPS = 15
 MAX_PATHS = 15
 
 
-def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
+class GraphTooBigException(Exception):
+    """Raised when the user gives us a graph that is too big for the hardware."""
+
+
+def parse_graph(filename, subset_paths, max_nodes, max_steps, max_paths):
     """
     Create a calyx node depth input file using the graph in
     './{filename}' and the paths listed in './{subset_paths}'
     """
 
-    graph = odgi.graph()
-    graph.load(filename)
+    graph = mygfa.Graph.parse(filename)
 
     # Check that the number of paths on the graph does not exceed max_paths
-    if graph.get_path_count() > max_paths:
-        raise Exception(
+    path_count = preprocess.get_maxes(graph)[2]
+    if path_count > max_paths:
+        raise GraphTooBigException(
             "The number of paths in the graph exceeds the maximum number"
             "of paths the hardware can process."
-            f"{graph.get_path_count()} > {args.max_paths}."
+            f"{path_count} > {args.max_paths}."
             "Hint: try setting the maximum number of paths manually"
             "using the -p flag"
         )
@@ -36,8 +41,7 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     # default python bindings for odgi
 
     # Obtain a list of path names; a path's index is its id
-    paths = []
-    graph.for_each_path_handle(lambda h: paths.append(graph.get_path_name(h)))
+    paths = graph.path_names()
 
     # Path name -> path id
     path_name_to_id = {path: count for count, path in enumerate(paths, start=1)}
@@ -74,7 +78,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
 
     # Check that the number of steps on the node does not exceed max_steps
     if num_nodes > max_nodes:
-        raise Exception(
+        raise GraphTooBigException(
             "The number of nodes in the graph exceeds the maximum number"
             "of nodes the hardware can process. Hint: try setting the maximum"
             "number of nodes manually using the -n flag."
@@ -91,7 +95,7 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
 
         # Check that the number of steps on the node does not exceed max_steps
         if graph.get_step_count(node_h) > max_steps:
-            raise Exception(
+            raise GraphTooBigException(
                 "The number of paths in the graph exceeds the maximum number"
                 "of paths the hardware can process."
                 f"{graph.get_step_count(node_h)} > {max_steps}."
@@ -176,22 +180,9 @@ def parse_paths_file(filename, path_name_to_id, max_paths):
 
 
 def get_maxes(filename):
-    graph = odgi.graph()
-    graph.load(filename)
-
-    max_nodes = graph.get_node_count()
-    max_steps = 0
-    max_paths = graph.get_path_count()
-
-    def update_max_steps(node_h):
-        nonlocal max_steps
-        num_steps = graph.get_step_count(node_h)
-        if num_steps > max_steps:
-            max_steps = num_steps
-
-    graph.for_each_handle(update_max_steps)
-
-    return max_nodes, max_steps, max_paths
+    """Returns the maximum number of nodes, steps per node, and paths."""
+    graph = mygfa.Graph.parse(filename)
+    return preprocess.get_maxes(graph)
 
 
 def get_dimensions(args):
@@ -276,7 +267,8 @@ def config_parser(parser):
         "-e",
         "--max-steps",
         type=int,
-        help="Specify the maximum number of steps per node that the hardware can support.",
+        help="Specify the maximum number of steps per node that the hardware"
+        "can support.",
     )
     parser.add_argument(
         "-p",
@@ -299,7 +291,7 @@ def run(args):
     else:
         max_nodes, max_steps, max_paths = get_dimensions(args)
 
-        data = parse_odgi(
+        data = parse_graph(
             args.filename, args.subset_paths, max_nodes, max_steps, max_paths
         )
         output = json.dumps(data, indent=2, sort_keys=True)

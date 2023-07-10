@@ -62,7 +62,11 @@ def pathseq(graph: mygfa.Graph) -> Dict[str, str]:
 
 
 def get_maxes(graph: mygfa.Graph) -> Tuple[int, int, int]:
-    """Return the maximum number of nodes, steps, and paths in the graph."""
+    """Given a graph, returns:
+    - the number of nodes
+    - the maximum number of steps in a path
+    - the number of paths in the graph.
+    """
     max_nodes = len(graph.segments)
     max_steps = max([len(steps) for steps in node_steps(graph).values()])
     max_paths = len(graph.paths)
