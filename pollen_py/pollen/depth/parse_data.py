@@ -1,13 +1,13 @@
 """
-This file converts an odgi graph to numerical JSON data that can be used by calyx hardware simulators.
+This file converts an odgi graph to numerical JSON
+data that can be used by calyx hardware simulators.
 """
 
-import sys
 import argparse
 import json
-import odgi
 
-# Defaults for the maximum possible number of nodes, steps per node, and paths to consider
+# Defaults for the maximum possible number of nodes,
+# steps per node, and paths to consider
 MAX_NODES = 16
 MAX_STEPS = 15
 MAX_PATHS = 15
@@ -15,7 +15,8 @@ MAX_PATHS = 15
 
 def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     """
-    Create a calyx node depth input file using the graph in './{filename}' and the paths listed in './{subset_paths}'
+    Create a calyx node depth input file using the graph in
+    './{filename}' and the paths listed in './{subset_paths}'
     """
 
     graph = odgi.graph()
@@ -24,7 +25,11 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
     # Check that the number of paths on the graph does not exceed max_paths
     if graph.get_path_count() > max_paths:
         raise Exception(
-            f"The number of paths in the graph exceeds the maximum number of paths the hardware can process. {graph.get_path_count()} > {args.max_paths}. Hint: try setting the maximum number of paths manually using the -p flag"
+            "The number of paths in the graph exceeds the maximum number"
+            "of paths the hardware can process."
+            f"{graph.get_path_count()} > {args.max_paths}."
+            "Hint: try setting the maximum number of paths manually"
+            "using the -p flag"
         )
 
     # Assign a path_id to each path; the path_ids are not accessible using the
@@ -52,14 +57,16 @@ def parse_odgi(filename, subset_paths, max_nodes, max_steps, max_paths):
 
 def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths):
     """
-    Generate input data containing the path ids for each step on each node in the graph, e.g.
-    {path_ids1:
-        "data": [0, 1, 1, 2],
-            "format": {
-                "numeric_type": "bitnum",8kklkskl
-                "is_signed": False,
-                "width": 2
-            }
+    Generate input data containing the path ids for each
+    step on each node in the graph, e.g.
+    {
+        path_ids1:
+            "data": [0, 1, 1, 2],
+                "format": {
+                    "numeric_type": "bitnum",8kklkskl
+                    "is_signed": False,
+                    "width": 2
+                }
     }
     """
 
@@ -68,7 +75,9 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
     # Check that the number of steps on the node does not exceed max_steps
     if num_nodes > max_nodes:
         raise Exception(
-            f"The number of nodes in the graph exceeds the maximum number of nodes the hardware can process. Hint: try setting the maximum number of nodes manually using the -n flag."
+            "The number of nodes in the graph exceeds the maximum number"
+            "of nodes the hardware can process. Hint: try setting the maximum"
+            "number of nodes manually using the -n flag."
         )
 
     data = {}
@@ -83,7 +92,11 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
         # Check that the number of steps on the node does not exceed max_steps
         if graph.get_step_count(node_h) > max_steps:
             raise Exception(
-                f"The number of paths in the graph exceeds the maximum number of paths the hardware can process. {graph.get_step_count(node_h)} > {max_steps}. Hint: try setting the maximum number of steps manually using the -e flag."
+                "The number of paths in the graph exceeds the maximum number"
+                "of paths the hardware can process."
+                f"{graph.get_step_count(node_h)} > {max_steps}."
+                "Hint: try setting the maximum number of steps manually"
+                "using the -e flag."
             )
 
         path_ids = []
@@ -149,7 +162,7 @@ def parse_paths_file(filename, path_name_to_id, max_paths):
         paths_to_consider[0] = 0
         return paths_to_consider
 
-    with open(filename, "r") as paths_file:
+    with open(filename, "r", encoding="utf-8") as paths_file:
         text = paths_file.read()
         paths = text.splitlines()
 
@@ -221,31 +234,37 @@ def from_calyx(calyx_out, from_interp, max_nodes=None):
 def config_parser(parser):
     parser.add_argument(
         "filename",
-        help="The file to be parsed. If the -d and -i flags are not specified, this must be an odgi file.",
+        help="The file to be parsed. If the -d and -i flags are not specified,"
+        "this must be an odgi file.",
     )
     parser.add_argument(
         "-s",
         "--subset-paths",
-        help="Specify a file containing a subset of all paths in the graph. See the odgi documentation for more details.",
+        help="Specify a file containing a subset of all paths in the graph."
+        "See the odgi documentation for more details.",
     )
     parser.add_argument(
         "-v",
         "--from-verilog",
         action="store_true",
-        help="Specify that the given file is a calyx data file to be converted to the odgi ouput format.",
+        help="Specify that the given file is a calyx data file to be"
+        "converted to the odgi ouput format.",
     )
     parser.add_argument(
         "-i",
         "--from-interp",
         action="store_true",
-        help="Specify that the given file is a calyx interpreter output file to be converted to the odgi output format.",
+        help="Specify that the given file is a calyx interpreter output"
+        "file to be converted to the odgi output format.",
     )
     parser.add_argument(
         "-a",
         "--auto-size",
         nargs="?",
         const="d",
-        help="Provide an odgi file that will be used to calculate the hardware dimensions. If the flag is specified with no argument, use the file to be parsed. Specified hardware dimensions take precedence.",
+        help="Provide an odgi file that will be used to calculate the hardware"
+        "dimensions. If the flag is specified with no argument, use the file to"
+        "be parsed. Specified hardware dimensions take precedence.",
     )
     parser.add_argument(
         "-n",
@@ -274,9 +293,9 @@ def config_parser(parser):
 
 def run(args):
     if args.from_verilog or args.from_interp:
-        with open(filename, "r") as fp:
+        with open(filename, "r", encoding="utf-8") as fp:
             data = json.load(fp)
-        ouput = from_calyx(data, args.from_interp)
+        output = from_calyx(data, args.from_interp)
     else:
         max_nodes, max_steps, max_paths = get_dimensions(args)
 
@@ -286,7 +305,7 @@ def run(args):
         output = json.dumps(data, indent=2, sort_keys=True)
 
     if args.out:
-        with open(args.out, "w") as out_file:
+        with open(args.out, "w", encoding="utf-8") as out_file:
             out_file.write(output)
     else:
         print(output)
