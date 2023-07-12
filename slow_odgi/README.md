@@ -36,7 +36,7 @@ To run these tests, you will need
 1. `odgi`; see [here](https://github.com/pangenome/odgi). Our tests were run against a built-from-source copy of `odgi` (commit 34f006f).
 2. `turnt`; see [here](https://github.com/cucapra/turnt).
 
-With these in place, run `make test-slow_odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not-ok` signals there are actually of interest.
+With these in place, run `make test-slow-odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not-ok` signals there are actually of interest.
 
 There are a two known points of divergence versus `odgi`, both having to do with the command `flip`.
 The reasons are subtly related, but are documented independently:
