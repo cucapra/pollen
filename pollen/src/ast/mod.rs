@@ -15,6 +15,7 @@ pub enum Typ {
     Int,
     Bool,
     Char,
+    Path,
     Node,
     Step,
     Edge,

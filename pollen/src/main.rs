@@ -711,6 +711,7 @@ fn parse_typ(typ: Pair<Rule>) -> Typ {
             "int" => Typ::Int,
             "bool" => Typ::Bool,
             "char" => Typ::Char,
+            "Path" => Typ::Path,
             "Segment" => Typ::Node,
             "Step" => Typ::Step,
             "Edge" => Typ::Edge,
