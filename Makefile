@@ -73,6 +73,8 @@ clean:
 	rm -rf test/depth/subset-paths/*.out
 	rm -rf test/handmade/*.crush
 	rm -rf test/handmade/*.flip
+	rm -rf test/invalid/*.*
+
 
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
