@@ -14,7 +14,7 @@ MAX_STEPS = 15
 MAX_PATHS = 15
 
 
-class GraphTooBigException(Exception):
+class GraphTooBigError(Exception):
     """Raised when the user gives us a graph that is too big for the hardware."""
 
 
@@ -29,7 +29,7 @@ def parse_graph(filename, subset_paths, max_nodes, max_steps, max_paths):
     # Check that the number of paths on the graph does not exceed max_paths
     path_count = preprocess.get_maxes(graph)[2]
     if path_count > max_paths:
-        raise GraphTooBigException(
+        raise GraphTooBigError(
             "The number of paths in the graph exceeds the maximum number"
             "of paths the hardware can process."
             f"{path_count} > {args.max_paths}."
@@ -78,9 +78,9 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
 
     # Check that the number of steps on the node does not exceed max_steps
     if num_nodes > max_nodes:
-        raise GraphTooBigException(
-            "The number of nodes in the graph exceeds the maximum number"
-            "of nodes the hardware can process. Hint: try setting the maximum"
+        raise GraphTooBigError(
+            "The number of nodes in the graph exceeds the maximum number "
+            "of nodes the hardware can process. Hint: try setting the maximum "
             "number of nodes manually using the -n flag."
         )
 
@@ -95,11 +95,11 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
 
         # Check that the number of steps on the node does not exceed max_steps
         if graph.get_step_count(node_h) > max_steps:
-            raise GraphTooBigException(
-                "The number of paths in the graph exceeds the maximum number"
+            raise GraphTooBigError(
+                "The number of paths in the graph exceeds the maximum number "
                 "of paths the hardware can process."
                 f"{graph.get_step_count(node_h)} > {max_steps}."
-                "Hint: try setting the maximum number of steps manually"
+                "Hint: try setting the maximum number of steps manually "
                 "using the -e flag."
             )
 
