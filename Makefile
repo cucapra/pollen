@@ -75,7 +75,6 @@ clean:
 	rm -rf test/handmade/*.flip
 	rm -rf test/invalid/*.*
 
-
 test/chr8.pan.gfa:
 	curl -Lo ./test/chr8.pan.gfa.gz $(GFA_ZIP_URL)
 	gunzip ./test/chr8.pan.gfa.gz
