@@ -39,7 +39,7 @@ and run `cd pollen_py && flit install -s --user`. You will need [`flit`][flit]. 
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. Then, from the root of the calyx repository, install the calyx interpreter by running 
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, installing calyx from source, but feel free to skip the second section. Then, from the root of the calyx repository, install the calyx interpreter by running 
 ```
 cargo build -p interp
 ```
