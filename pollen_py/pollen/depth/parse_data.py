@@ -225,27 +225,27 @@ def from_calyx(calyx_out, from_interp, max_nodes=None):
 def config_parser(parser):
     parser.add_argument(
         "filename",
-        help="The file to be parsed. If the -d and -i flags are not specified,"
+        help="The file to be parsed. If the -d and -i flags are not specified, "
         "this must be an odgi file.",
     )
     parser.add_argument(
         "-s",
         "--subset-paths",
-        help="Specify a file containing a subset of all paths in the graph."
+        help="Specify a file containing a subset of all paths in the graph. "
         "See the odgi documentation for more details.",
     )
     parser.add_argument(
         "-v",
         "--from-verilog",
         action="store_true",
-        help="Specify that the given file is a calyx data file to be"
+        help="Specify that the given file is a calyx data file to be "
         "converted to the odgi ouput format.",
     )
     parser.add_argument(
         "-i",
         "--from-interp",
         action="store_true",
-        help="Specify that the given file is a calyx interpreter output"
+        help="Specify that the given file is a calyx interpreter output "
         "file to be converted to the odgi output format.",
     )
     parser.add_argument(
@@ -253,8 +253,8 @@ def config_parser(parser):
         "--auto-size",
         nargs="?",
         const="d",
-        help="Provide an odgi file that will be used to calculate the hardware"
-        "dimensions. If the flag is specified with no argument, use the file to"
+        help="Provide an odgi file that will be used to calculate the hardware "
+        "dimensions. If the flag is specified with no argument, use the file to "
         "be parsed. Specified hardware dimensions take precedence.",
     )
     parser.add_argument(
@@ -267,7 +267,7 @@ def config_parser(parser):
         "-e",
         "--max-steps",
         type=int,
-        help="Specify the maximum number of steps per node that the hardware"
+        help="Specify the maximum number of steps per node that the hardware "
         "can support.",
     )
     parser.add_argument(
