@@ -39,7 +39,12 @@ and run `cd pollen_py && flit install -s --user`. You will need [`flit`][flit]. 
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
+Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. Then, from the root of the calyx repository, install the calyx interpreter by running 
+```
+cargo build -p interp
+```
+
+The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
 
 After completing the above, run
 ```
@@ -135,7 +140,7 @@ exine depth -r depth.data -x depth.futil
 Testing
 -------
 
-To run the core tests, you will need to install [Turnt][]. We rely on version 1.9.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
+To run the core tests, you will need to install [Turnt][]. We rely on version 1.11.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
 
 Warning: the tests take approximately 2 hours to complete.
 
