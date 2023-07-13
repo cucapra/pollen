@@ -48,7 +48,7 @@ The last step should be running `fud check`, which will report that some tools a
 
 After completing the above, run
 ```
-fud config stages.futil.exec <full path to calyx repository>/target/debug/futil
+fud config stages.calyx.exec <full path to calyx repository>/target/debug/calyx
 fud config stages.interpreter.exec <full path to calyx repository>/target/debug/interp
 fud check
 ```
