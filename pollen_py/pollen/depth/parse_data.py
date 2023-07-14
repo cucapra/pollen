@@ -30,10 +30,10 @@ def parse_graph(filename, subset_paths, max_nodes, max_steps, max_paths):
     path_count = preprocess.get_maxes(graph)[2]
     if path_count > max_paths:
         raise GraphTooBigError(
-            "The number of paths in the graph exceeds the maximum number"
-            "of paths the hardware can process."
-            f"{path_count} > {args.max_paths}."
-            "Hint: try setting the maximum number of paths manually"
+            "The number of paths in the graph exceeds the maximum number "
+            "of paths the hardware can process. "
+            f"{path_count} > {args.max_paths}. "
+            "Hint: try setting the maximum number of paths manually "
             "using the -p flag"
         )
 
