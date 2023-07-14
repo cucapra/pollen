@@ -181,8 +181,9 @@ def parse_paths_file(filename, path_name_to_id, max_paths):
 
 def get_maxes(filename):
     """Returns the maximum number of nodes, steps per node, and paths."""
-    graph = mygfa.Graph.parse(filename)
-    return preprocess.get_maxes(graph)
+    with open(filename, "r", encoding="utf-8") as infile:
+        graph = mygfa.Graph.parse(infile)
+        return preprocess.get_maxes(graph)
 
 
 def get_dimensions(args):

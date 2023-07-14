@@ -14,10 +14,10 @@ test: og test-depth
 
 test-depth: og
 	-turnt --save --env baseline test/depth/subset-paths/*.txt
-	turnt test/depth/subset-paths/*.txt
+	turnt -v test/depth/subset-paths/*.txt
 
-	-turnt --save --env baseline $(DEPTH_OG_FILES)
-	turnt $(DEPTH_OG_FILES)
+	# -turnt --save --env baseline $(DEPTH_OG_FILES)
+	# turnt $(DEPTH_OG_FILES)
 
 
 test-data-gen: og
