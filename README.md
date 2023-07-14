@@ -1,6 +1,6 @@
 <h1>
 <p align="center">
-<img src="https://github.com/cucapra/pollen/blob/main/pollen_icon.png">
+<img src="https://github.com/cucapra/pollen/blob/main/pollen_icon_transparent.png">
 </h1>
 
 Pangenome Graph Queries in Calyx
@@ -39,11 +39,16 @@ and run `cd pollen_py && flit install -s --user`. You will need [`flit`][flit]. 
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
+Follow these [instructions](https://docs.calyxir.org/) to install Calyx. You must complete the [first](https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, installing Calyx from source, but feel free to skip the second section. Then, from the root of the Calyx repository, install the Calyx interpreter by running 
+```
+cargo build -p interp
+```
+
+The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
 
 After completing the above, run
 ```
-fud config stages.futil.exec <full path to calyx repository>/target/debug/futil
+fud config stages.calyx.exec <full path to calyx repository>/target/debug/calyx
 fud config stages.interpreter.exec <full path to calyx repository>/target/debug/interp
 fud check
 ```
@@ -135,7 +140,7 @@ exine depth -r depth.data -x depth.futil
 Testing
 -------
 
-To run the core tests, you will need to install [Turnt][]. We rely on version 1.9.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
+To run the core tests, you will need to install [Turnt][]. We rely on version 1.11.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
 
 Warning: the tests take approximately 2 hours to complete.
 
