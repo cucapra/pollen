@@ -39,24 +39,22 @@ and run `cd pollen_py && flit install -s --user`. You will need [`flit`][flit]. 
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install Calyx. You must complete the [first](https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, installing Calyx from source, but feel free to skip the second section. Then, from the root of the Calyx repository, install the Calyx interpreter by running 
-```
-cargo build -p interp
-```
+Below we show you how to build Calyx from source and set it up for our use.
+We suggest you make `calyx` and `pollen` sibling directories.
 
-The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
+1. `git clone https://github.com/cucapra/calyx.git`
+2. `cd calyx`
+3. `cargo build`.
+3. `flit -f fud/pyproject.toml install -s --deps production`
+4. `fud config --create global.root <full path to Calyx repository>`
+5. `cargo build -p interp`
+6. `fud config stages.calyx.exec <full path to Calyx repository>/target/debug/calyx`
+7. `fud config stages.interpreter.exec <full path to Calyx repository>/target/debug/interp`
+8. `cd calyx-py; flit install -s; cd -`
+9. `fud check`
 
-After completing the above, run
-```
-fud config stages.calyx.exec <full path to calyx repository>/target/debug/calyx
-fud config stages.interpreter.exec <full path to calyx repository>/target/debug/interp
-fud check
-```
+You will be warned that `synth-verilog` and `vivado-hls` were not installed correctly; this is fine for our purposes.
 
-Finally, install the [python interface](https://docs.calyxir.org/calyx-py.html) with
-```
-cd calyx-py && flit install -s
-```
 
 #### Odgi
 
