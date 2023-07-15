@@ -58,7 +58,7 @@ TEST_ENVS := chop_test crush_test degree_test depth_test flip_test \
 	 flatten_test inject_test matrix_test overlap_test paths_test validate_test
 slow-odgi-tests:
 	-turnt -j $(TEST_ENVS:%=--env %) test/*.gfa
-	-turnt -j --env validate_test_err test/invalid/*.gfa
+	-turnt -j --env validate_test test/invalid/*.gfa
 	-turnt -j --env crush_test test/handmade/crush*.gfa
 	-turnt -j --env flip_test test/handmade/flip*.gfa
 
