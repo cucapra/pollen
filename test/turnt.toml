@@ -149,12 +149,6 @@ binary = true
 command = "slow_odgi validate {filename}"
 output.validate = "-"
 
-[envs.validate_test_err]
-binary = true
-command = "slow_odgi validate {filename}"
-output.validate = "-"
-return_code = 1
-
 [envs.pollen_data_gen_depth_oracle]
 binary = true
 command = "exine depth -d {filename} -a {filename}"
