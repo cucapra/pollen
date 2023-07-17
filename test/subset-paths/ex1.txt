@@ -1,1 +1,1 @@
-ARGS: basic/ex1.og
+ARGS: basic/ex1
