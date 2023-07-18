@@ -23,11 +23,11 @@ def parse_graph(filename, subset_paths, max_nodes, max_steps, max_paths):
     Create a calyx node depth input file using the graph in
     './{filename}' and the paths listed in './{subset_paths}'
     """
-
-    graph = mygfa.Graph.parse(filename)
+    with open(filename, "r", encoding="utf-8") as infile:
+        graph = mygfa.Graph.parse(infile)
 
     # Check that the number of paths on the graph does not exceed max_paths
-    path_count = preprocess.get_maxes(graph)[2]
+    node_count, _, path_count = preprocess.get_maxes(graph)
     if path_count > max_paths:
         raise GraphTooBigError(
             "The number of paths in the graph exceeds the maximum number "
@@ -48,7 +48,9 @@ def parse_graph(filename, subset_paths, max_nodes, max_steps, max_paths):
 
     paths_to_consider = parse_paths_file(subset_paths, path_name_to_id, max_paths)
 
-    data = parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths)
+    data = parse_steps_on_nodes(
+        graph, path_name_to_id, node_count, max_nodes, max_steps, max_paths
+    )
 
     for i in range(1, max_nodes + 1):
         data[f"paths_to_consider{i}"] = {
@@ -59,7 +61,9 @@ def parse_graph(filename, subset_paths, max_nodes, max_steps, max_paths):
     return data
 
 
-def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths):
+def parse_steps_on_nodes(
+    graph, path_name_to_id, num_nodes, max_nodes, max_steps, max_paths
+):
     """
     Generate input data containing the path ids for each
     step on each node in the graph, e.g.
@@ -73,8 +77,6 @@ def parse_steps_on_nodes(graph, path_name_to_id, max_nodes, max_steps, max_paths
                 }
     }
     """
-
-    num_nodes = graph.get_node_count()
 
     # Check that the number of steps on the node does not exceed max_steps
     if num_nodes > max_nodes:
