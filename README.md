@@ -161,3 +161,4 @@ and run `cd pollen_py && flit install -s --user`. You will need [`flit`][flit]. 
 [turnt]: https://github.com/cucapra/turnt
 [calyx-install-src]: https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx
 [calyx-install-fud]: https://docs.calyxir.org/#installing-the-command-line-driver
+[package]: https://github.com/cucapra/pollen/pkgs/container/pollen
