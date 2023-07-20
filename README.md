@@ -35,7 +35,7 @@ Getting Started with Pollen
 
 ### Generating an Accelerator: Quick
 
-If you want to compute the [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) of all the nodes in the graph, the following command will generate and run a node depth accelerator:
+If you want to compute the [depth][] of all the nodes in the graph, the following command will generate and run a node depth accelerator:
 ```
 exine depth -a -r <filename.og>
 ```
@@ -51,7 +51,7 @@ The node depth accelerator will be saved at `<path>/<filename.futil>` and the in
 
 ### Generating an Accelerator: Full Walkthrough
 
-Take [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
+Take [depth][] as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
@@ -105,7 +105,7 @@ Installing Pollen locally
 -------------------------
 
 You will need  [Flit][] version 3.7.1 and [Turnt][] version 1.11.0.
-We will guide you through the installation of our major dependencies, [Calyx][] and [odgi][].
+We will guide you through the installation of our major dependencies, [Calyx][] and [odgi][], and then show you how to install Pollen itself.
 
 ### Calyx
 
@@ -128,20 +128,14 @@ You will be warned that `synth-verilog` and `vivado-hls` were not installed corr
 
 ### Odgi
 
-Installing odgi [via bioconda](https://odgi.readthedocs.io/en/latest/rst/installation.html#bioconda) seems to be the most straightforward option. If you instead [compile odgi from source](https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source), you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
+We recommend that you build odgi from source, as described [here][odgi-from-source].
+To check that this worked, run `odgi` from the command line.
 
-To verify that odgi is installed and the python bindings are working, open up a python shell and try `import odgi`. If this works, move on to the next section.
-
-We have encountered two gotchas when installing odgi: a version clash with python, and an issue with odgi's memory manager. Below we describe what we think is a complete installation of odgi that addresses both of these issues.
-
-1. Check your python version with `python --version`. We use python 3.9.12 for the rest of this example.
-2. Run `mkdir odgi-py; cd odgi-py`.
-3. Download the appropriate tarball (in this example, it will have `py39` in its name) from [bioconda][].
-4. Untar it, and run `ls lib/python3.9/site-packages/` to ensure that `odgi.cpython*.so` is there. If it is elsewhere, make note of the location and substitute in the next step.
-5. Add this to your `PYTHONPATH` with `export PYTHONPATH=<full path to odgi-py>/lib/python3.9/site-packages/`.
-6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
-7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
-8. Open up a python shell and try `import odgi`.
+Some parts of Pollen presently use odgi's Python bindings.
+You will need to edit your PYTHONPATH, as explained [here][odgi-pythonpath], to enable this.
+To verify that this worked, open up a Python shell and try `import odgi`.
+If it succeeds quietly, great!
+If it segfaults, try the preload step explained [here][odgi-preload].
 
 
 ### Pollen
@@ -162,3 +156,7 @@ and run `cd pollen_py && flit install -s --user`.
 [calyx-install-src]: https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx
 [calyx-install-fud]: https://docs.calyxir.org/#installing-the-command-line-driver
 [package]: https://github.com/cucapra/pollen/pkgs/container/pollen
+[odgi-from-source]: https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source
+[odgi-pythonpath]: https://odgi.readthedocs.io/en/latest/rst/binding/usage.html
+[odgi-preload]: https://odgi.readthedocs.io/en/latest/rst/binding/usage.html#optimise
+[depth]: https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html
