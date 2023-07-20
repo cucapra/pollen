@@ -207,10 +207,18 @@ def get_dimensions(args):
     """
     Compute the node depth accelerator dimensions from commandline input
     """
+
+    # If all three dimensions are specified, return them
+    if args.max_nodes and args.max_steps and args.max_paths:
+        return args.max_nodes, args.max_steps, args.max_paths
+
     if args.auto_size:
+        # We need to calculate the dimensions.
+        # This may be guided by the graph itself, or by some other reference graph.
         filename = args.filename if args.auto_size == "d" else args.auto_size
         max_nodes, max_steps, max_paths = get_maxes(filename)
     else:
+        # If no reference is given, use the defaults.
         max_nodes, max_steps, max_paths = MAX_NODES, MAX_STEPS, MAX_PATHS
 
     max_nodes = args.max_nodes if args.max_nodes else max_nodes
