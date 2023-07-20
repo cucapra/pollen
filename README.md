@@ -39,24 +39,24 @@ and run `cd pollen_py && flit install -s --user`. You will need [`flit`][flit]. 
 
 #### Calyx
 
-Follow these [instructions](https://docs.calyxir.org/) to install Calyx. You must complete the [first](https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, installing Calyx from source, but feel free to skip the second section. Then, from the root of the Calyx repository, install the Calyx interpreter by running 
-```
-cargo build -p interp
-```
+Below we show you how to build Calyx from source and set it up for our use.
+If you are curious, this tracks the "[installing from source][calyx-install-src]" and "[installing the command-line driver][calyx-install-fud]" sections of the Calyx documentation.
 
-The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
+We suggest you make `calyx` and `pollen` sibling directories.
 
-After completing the above, run
-```
-fud config stages.calyx.exec <full path to calyx repository>/target/debug/calyx
-fud config stages.interpreter.exec <full path to calyx repository>/target/debug/interp
-fud check
-```
+1. `git clone https://github.com/cucapra/calyx.git`
+2. `cd calyx`
+3. `cargo build`
+3. `flit -f fud/pyproject.toml install -s --deps production`
+4. `fud config --create global.root $(pwd)`
+5. `cargo build -p interp`
+6. `fud config stages.calyx.exec $(pwd)/target/debug/calyx`
+7. `fud config stages.interpreter.exec $(pwd)/target/debug/interp`
+8. `flit install -f calyx-py/pyproject.toml -s`
+9. `fud check`
 
-Finally, install the [python interface](https://docs.calyxir.org/calyx-py.html) with
-```
-cd calyx-py && flit install -s
-```
+You will be warned that `synth-verilog` and `vivado-hls` were not installed correctly; this is fine for our purposes.
+
 
 #### Odgi
 
@@ -109,7 +109,7 @@ First, `make fetch` downloads some [GFA][] data files into the `./test` director
 
 Second, `make test/*.og` builds the odgi graph files from those GFA files.
 
-Third, we generate the hardware accelerator and write it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+Third, we generate the hardware accelerator and write it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in Calyx include:
 
 1. `exine depth -o depth.futil`
 2. `exine depth -a <filename.og> -o depth.futil`
@@ -131,7 +131,7 @@ Fourth, we need to generate some input from our odgi file. This is what we will 
 
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
-Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator and outputs the node depth table:
+Fifth, we run our hardware accelerator. The following code simulates the Calyx code for the hardware accelerator and outputs the node depth table:
 
 ```
 exine depth -r depth.data -x depth.futil
@@ -150,3 +150,5 @@ Warning: the tests take approximately 2 hours to complete.
 [bioconda]: https://anaconda.org/bioconda/odgi/files
 [flit]: https://flit.pypa.io/en/stable/
 [turnt]: https://github.com/cucapra/turnt
+[calyx-install-src]: https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx
+[calyx-install-fud]: https://docs.calyxir.org/#installing-the-command-line-driver
