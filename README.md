@@ -11,14 +11,14 @@ We are designing a graph-manipulating DSL that exposes functionality that pangen
 Our DSL will support graph queries in the vein of the [odgi][] project.
 We will compile programs written in this DSL into the [Calyx][] IR and then leverage Calyx to generate hardware accelerators.
 
-Installation using Docker
--------------------------
-Installation is easy if you use our Docker [package][]:
+
+Running using Docker
+--------------------
+Running Pollen is easy if you use our Docker [package][]:
 ```
-docker pull ghcr.io/cucapra/pollen:latest
 docker run -it --rm ghcr.io/cucapra/pollen:latest
 ```
-If you prefer to install locally, we point you to the instructions [below](#installing-pollen-locally).
+If you prefer to install locally, we point you to the somewhat more involved instructions [below](#installing-pollen-locally).
 
 
 Aside: Slow Odgi
