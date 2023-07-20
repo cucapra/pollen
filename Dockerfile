@@ -2,23 +2,23 @@
 # With this Dockerfile in working directory,
 # docker build -t username/imagename .
 # (note the period at the end)
-# docker run -it username/imagename /bin/bash
+# docker run -it --rm username/imagename
 
 # Start with latest Calyx image
 FROM ghcr.io/cucapra/calyx:latest
 
-# return to root directory
+# Go to the root directory
 WORKDIR /root
 
 # Install ODGI
-# dependencies:
+# Dependencies:
 RUN apt install -y build-essential cmake python3-distutils python3-dev libjemalloc-dev
-# clone:
+# Clone:
 RUN git clone --recursive https://github.com/pangenome/odgi.git
-# build:
+# Build:
 WORKDIR /root/odgi
 RUN cmake -H. -Bbuild && cmake --build build -- -j7
-# return to root directory
+# Return to root directory
 WORKDIR /root
 
 # Add ODGI to paths
@@ -27,24 +27,27 @@ ENV PYTHONPATH=$PYTHONPATH:/root/odgi/lib
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 ENV FLIT_ROOT_INSTALL=1
 
-# Install Pollen
-# dependencies:
+# Install Pollen's dependencies:
 RUN git clone https://github.com/cucapra/turnt.git
 WORKDIR /root/turnt
-RUN flit install --symlink --user
+RUN flit install -s --user
 WORKDIR /root
 
-# good to have:
+# Good to have:
 RUN apt install emacs -y
 RUN apt install vim -y
 
-# clone:
+# Clone and build Pollen:
 RUN git clone https://github.com/cucapra/pollen.git
-# build:
 WORKDIR /root/pollen
 RUN make fetch
 RUN make og
+WORKDIR /root/pollen/pollen_py
+RUN flit install -s --user
+WORKDIR /root/pollen/mygfa
+RUN flit install -s --user
+WORKDIR /root/pollen/slow_odgi
+RUN flit install -s --user
 
-# return to root directory
-WORKDIR /root
-
+# return to the Pollen directory
+WORKDIR /root/pollen
