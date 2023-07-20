@@ -1,1 +1,1 @@
-ARGS: basic/ex2
+ARGS: basic/ex2.gfa

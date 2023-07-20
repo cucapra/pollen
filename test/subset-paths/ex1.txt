@@ -1,1 +1,1 @@
-ARGS: basic/ex1
+ARGS: basic/ex1.gfa
