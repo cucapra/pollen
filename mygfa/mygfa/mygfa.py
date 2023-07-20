@@ -305,10 +305,6 @@ class Graph:
             for link in sorted(self.links):
                 print(str(link), file=outfile)
 
-    def path_names(self) -> List[str]:
-        """Returns the names of the paths in this graph."""
-        return list(self.paths.keys())
-
 
 if __name__ == "__main__":
     mygraph = Graph.parse(sys.stdin)
