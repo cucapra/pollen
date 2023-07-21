@@ -1,0 +1,16 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "slow_odgi"
+authors = [{name = "Anshuman Mohan", email = "amohan@cs.cornell.edu"}]
+readme = "README.md"
+dynamic = ["version", "description"]
+dependencies = ["mygfa"]
+
+[project.urls]
+Home = "https://github.com/cucapra/pollen/tree/main/slow_odgi"
+
+[project.scripts]
+slow_odgi = "slow_odgi.__main__:main"

@@ -6,15 +6,17 @@
 *.crush
 *.degree
 *.depth
+*.depthpaths
 *.flatten
 *.flip
 *.inj
 *.matrix
-*.normalize
+*.norm
 *.overlap
 *.overlappaths
 *.paths
 *.validate
+*.flatten.fasta
 
 temp.*
 

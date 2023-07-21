@@ -1,0 +1,16 @@
+name: CodeQuality
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: CodeQuality
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+    - run: pip install --upgrade pip
+    - run: pip install "black<24" mypy==v1.3
+    - run: black --diff --check $(git ls-files '*.py')
+    - run: MYPYPATH=mygfa mypy --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
