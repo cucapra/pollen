@@ -238,7 +238,7 @@ fn extract_file(filename: String) -> String {
 pub fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let mut prog: String = match args.len() {
+    let prog: String = match args.len() {
         // one argument passed
         2 => {
             match args[1].parse() {
