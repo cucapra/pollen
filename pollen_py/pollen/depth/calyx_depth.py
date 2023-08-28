@@ -552,6 +552,7 @@ def config_parser(parser):
 
 
 def get_maxes(filename):
+    print("In `get_maxes`. Filename: ", filename)
     """Returns the maximum number of nodes, steps per node, and paths."""
     with open(filename, "r", encoding="utf-8") as infile:
         graph = mygfa.Graph.parse(infile)
