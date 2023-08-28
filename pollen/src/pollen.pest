@@ -23,7 +23,7 @@ import_from = { "from" ~ filename ~ "import" ~ func_as_id ~ ("," ~ func_as_id)* 
     func_as_id = { identifier ~ ("as" ~ identifier)? }
 
 // TODO: Probably make this less permissible
-filename = { (!";" ~ ANY)+ }
+filename = @{ (!(WHITESPACE | ";") ~ ANY)+ }
 
 /* ----- Types ----- */
 // Types that do not contain fields or method calls
