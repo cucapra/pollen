@@ -1,5 +1,10 @@
 // This is a comment. It does not get parsed
 
+import lib1;
+import lib2 as library2;
+from lib3 import f1;
+from lib4 import f1 as f1', f2 as f2';
+
 def test1() {
     // Integer literals
     i: int = 3;
