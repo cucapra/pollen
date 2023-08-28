@@ -6,6 +6,5 @@ name = "parser tests"
 paths = [
   "tests/*.pollen",
 ]
-# gets the pass flags a comment on the first line of the test file
 cmd = "./target/debug/pollen {}"
 expect_dir = "tests/parse-out/"
