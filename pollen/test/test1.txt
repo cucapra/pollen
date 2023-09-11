@@ -1,0 +1,77 @@
+// This is a comment. It does not get parsed
+
+// Integer literals
+i: int = 3;
+id': int = 4;
+i: int = -3;
+i: int = +2;
+
+// Boolean literals
+bool1: bool = true;
+b2: bool = false;
+
+i: int;
+b: bool;
+c: char;
+n: Node;
+s: Step;
+e: Edge;
+str: String;
+strand: Strand;
+b: Base;
+
+// Characters... oh boy here we go
+
+c1: char = 'a';
+c2 : char = 'b';
+c3 : char = '?';
+c_4 : char = 'n';
+c_5 : char = 't';
+
+// Backspace characters
+c8: char = '\\';
+c4: char = '\n';
+c5: char = '\t';
+c6: char = '\'';
+c7: char = '\"';
+nother_char : char = '"';
+also_a_char : char = ' ';
+
+s1: String = "'";
+s2: String = "Hello world!";
+//Backspace strings
+s2: String = "\\";
+s3: String = "\n";
+s4: String = "\t";
+s5: String = "\"";
+empty_str : String = "";
+s6: String = "Hello world!\n";
+
+binop : int = i + id2;
+blskdf_ : int = 3 - (-5); 
+binop2: int = i * 1;
+sdf:char = 9 / 3;
+n: Node = 5 % 2;
+b: Step = 2 < 3;
+TTTT: Strand = 5 > true;
+b: Step = (2 <= 3);
+TTTT: Strand = 5 >= true;
+b: Step = 2 == 3;
+TTTT: Strand = 5 != true;
+string : Strand = !true && !(!false);
+boolean : bool = false || (true && !false);
+
+// Parenthesis
+TTTT : Strand = (5 != true);
+TTTT : Strand = [5 != true];
+
+/*
+    and = { "&&" }
+    or = { "||" }
+*/
+
+SD : bool = !(true);
+
+// Parenthesis
+int1 : int = 3 * (2 + 4);
+int1 : int = [3 * (2 + 4)];

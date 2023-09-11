@@ -1,0 +1,15 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "pollen_data_gen"
+authors = [{name = "Anshuman Mohan", email = "amohan@cs.cornell.edu"}]
+dynamic = ["version", "description"]
+dependencies = ["mygfa"]
+
+[project.urls]
+Home = "https://github.com/cucapra/pollen/tree/main/pollen_data_gen"
+
+[project.scripts]
+pollen_data_gen = "pollen_data_gen.__main__:main"

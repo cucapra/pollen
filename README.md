@@ -1,64 +1,41 @@
 <h1>
 <p align="center">
-<img src="https://github.com/cucapra/pollen/blob/main/pollen_icon.png">
+<img src="https://github.com/cucapra/pollen/blob/main/pollen_icon_transparent.png">
 </h1>
 
 Pangenome Graph Queries in Calyx
 ================================
 
-This is a nascent project to build a DSL-to-hardware compiler using [Calyx][] to implement pangenomic graph queries in the vein of [odgi][].
-
-Getting Started
----------------
-
-### Installation
+Pollen is a nascent project to accelerate queries on pangenomic graphs.
+We are designing a graph-manipulating DSL that exposes functionality that pangenomicists care about.
+Our DSL will support graph queries in the vein of the [odgi][] project.
+We will compile programs written in this DSL into the [Calyx][] IR and then leverage Calyx to generate hardware accelerators.
 
 
-#### Pollen
-
-Clone this repository using 
+Running using Docker
+--------------------
+Running Pollen is easy if you use our Docker [package][]:
 ```
-git clone https://github.com/cucapra/pollen.git
+docker run -it --rm ghcr.io/cucapra/pollen:latest
 ```
-and run `flit install -s --user` from the root directory. You may need to install [flit]. Then follow the instructions below to set up our dependencies, `calyx` and `odgi`.
+If you prefer to install locally, we point you to the somewhat more involved instructions [below](#installing-pollen-locally).
 
 
-#### Calyx
+Aside: Slow Odgi
+----------------
 
-Follow these [instructions](https://docs.calyxir.org/) to install calyx. You must complete the [first](https://docs.calyxir.org/#compiler-installation) and [third](https://docs.calyxir.org/#installing-the-command-line-driver) sections, but feel free to skip the second. The last step should be running `fud check`, which will report that some tools are unavailable. This is okay for our purposes.
+`slow_odgi` is a reference implementation of a subset of odgi commands.
+It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
+While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
+See [here](slow_odgi/) for more!
 
-After completing the above, run
-```
-fud config stages.futil.exec <full path to calyx repository>/target/debug/futil
-fud config stages.interpreter.exec <full path to calyx repository>/target/debug/interp
-fud check
-```
 
-Finally, install the [python interface](https://docs.calyxir.org/calyx-py.html) with
-```
-cd calyx-py && flit install -s
-```
-
-#### Odgi
-
-Installing odgi [via bioconda](https://odgi.readthedocs.io/en/latest/rst/installation.html#bioconda) seems to be the most straightforward option. If you instead [compile odgi from source](https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source), you will need to [edit your python path](https://odgi.readthedocs.io/en/latest/rst/binding/usage.html) in order to use the python bindings.
-
-To verify that odgi is installed and the python bindings are working, open up a python shell and try `import odgi`. If this works, move on to the next section.
-
-We have encountered two gotchas when installing odgi: a version clash with python, and an issue with odgi's memory manager. Below we describe what we think is a complete installation of odgi that addresses both of these issues.
-
-1. Check your python version with `python --version`. We use python 3.9.12 for the rest of this example.
-2. Run `mkdir odgi-py; cd odgi-py`.
-3. Download the appropriate tarball (in this example, it will have `py39` in its name) from [bioconda][].
-4. Untar it, and run `ls lib/python3.9/site-packages/` to ensure that `odgi.cpython*.so` is there. If it is elsewhere, make note of the location and substitute in the next step.
-5. Add this to your `PYTHONPATH` with `export PYTHONPATH=<full path to odgi-py>/lib/python3.9/site-packages/`.
-6. Preload `jemalloc`: explore under `/usr/lib/x86_64-linux-gnu/` to ensure that `libjemalloc.so.2` is there. If it is not, search under `/lib/x86_64-linux-gnu/` and substitute in the next step.
-7. Run `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2`.
-8. Open up a python shell and try `import odgi`.
+Getting Started with Pollen
+---------------------------
 
 ### Generating an Accelerator: Quick
 
-If you want to quickly compute node depth, the following command will generate and run a node depth accelerator:
+If you want to compute the [depth][] of all the nodes in the graph, the following command will generate and run a node depth accelerator:
 ```
 exine depth -a -r <filename.og>
 ```
@@ -72,10 +49,9 @@ exine depth -a -r <filename.og> --tmpdir <path>
 The node depth accelerator will be saved at `<path>/<filename.futil>` and the input data will be saved at `<path>/<filename.data>`.
 
 
-Generating an Accelerator: Full Walkthrough
--------------------------------------------
+### Generating an Accelerator: Full Walkthrough
 
-Take [node depth](https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html) as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
+Take [depth][] as an example. To generate and run a node depth accelerator for the graph `k.og`, first navigate to the root directory of this repository. Then run
 ```
 make fetch
 make test/k.og
@@ -90,7 +66,7 @@ First, `make fetch` downloads some [GFA][] data files into the `./test` director
 
 Second, `make test/*.og` builds the odgi graph files from those GFA files.
 
-Third, we generate the hardware accelerator and write it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in calyx include:
+Third, we generate the hardware accelerator and write it to a file named `depth.futil`. The commands to generate a node depth hardware accelerator in Calyx include:
 
 1. `exine depth -o depth.futil`
 2. `exine depth -a <filename.og> -o depth.futil`
@@ -109,10 +85,10 @@ Fourth, we need to generate some input from our odgi file. This is what we will 
 2. `exine depth -d <filename.og> -a <filename2.og> -o depth.data`
 3. `exine depth -d <filename.og> -n=MAX_NODES -e=MAX_STEPS -p=MAX_PATHS -o depth.data`
 4. `exine depth -d <filename.og> -a -o depth.data`
-    
+
 The flags work as before, except that if no argument is passed to the `-a` flag, the dimensions are inferred from the input file. **The dimensions of the input must be the same as that of the hardware accelerator.**
 
-Fifth, we run our hardware accelerator. The following code simulates the calyx code for the hardware accelerator and outputs the node depth table:
+Fifth, we run our hardware accelerator. The following code simulates the Calyx code for the hardware accelerator and outputs the node depth table:
 
 ```
 exine depth -r depth.data -x depth.futil
@@ -121,9 +97,55 @@ exine depth -r depth.data -x depth.futil
 Testing
 -------
 
-To run the core tests, you will need to install [Turnt][]. We rely on version 1.9.0 or later. Then, navigative to the root directory of the pollen repository and run `make test`.
-
+Navigative to the root directory of the pollen repository and run `make test`.
 Warning: the tests take approximately 2 hours to complete.
+
+
+Installing Pollen locally
+-------------------------
+
+You will need  [Flit][] version 3.7.1 and [Turnt][] version 1.11.0.
+We will guide you through the installation of our major dependencies, [Calyx][] and [odgi][], and then show you how to install Pollen itself.
+
+### Calyx
+
+Below we show you how to build Calyx from source and set it up for our use.
+If you are curious, this tracks the "[installing from source][calyx-install-src]" and "[installing the command-line driver][calyx-install-fud]" sections of the Calyx documentation.
+
+1. `git clone https://github.com/cucapra/calyx.git`
+2. `cd calyx`
+3. `cargo build`
+3. `flit -f fud/pyproject.toml install -s --deps production`
+4. `fud config --create global.root $(pwd)`
+5. `cargo build -p interp`
+6. `fud config stages.calyx.exec $(pwd)/target/debug/calyx`
+7. `fud config stages.interpreter.exec $(pwd)/target/debug/interp`
+8. `flit -f calyx-py/pyproject.toml install -s`
+9. `fud check`
+
+You will be warned that `synth-verilog` and `vivado-hls` were not installed correctly; this is fine for our purposes.
+
+
+### Odgi
+
+We recommend that you build odgi from source, as described [here][odgi-from-source].
+To check that this worked, run `odgi` from the command line.
+
+Some parts of Pollen presently use odgi's Python bindings.
+You will need to edit your PYTHONPATH, as explained [here][odgi-pythonpath], to enable this.
+To verify that this worked, open up a Python shell and try `import odgi`.
+If it succeeds quietly, great!
+If it segfaults, try the preload step explained [here][odgi-preload].
+
+
+### Pollen
+
+Clone this repository using
+```
+git clone https://github.com/cucapra/pollen.git
+```
+and run `cd pollen_py && flit install -s --user`.
+
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
@@ -131,3 +153,10 @@ Warning: the tests take approximately 2 hours to complete.
 [bioconda]: https://anaconda.org/bioconda/odgi/files
 [flit]: https://flit.pypa.io/en/stable/
 [turnt]: https://github.com/cucapra/turnt
+[calyx-install-src]: https://docs.calyxir.org/#installing-from-source-to-use-and-extend-calyx
+[calyx-install-fud]: https://docs.calyxir.org/#installing-the-command-line-driver
+[package]: https://github.com/cucapra/pollen/pkgs/container/pollen
+[odgi-from-source]: https://odgi.readthedocs.io/en/latest/rst/installation.html#building-from-source
+[odgi-pythonpath]: https://odgi.readthedocs.io/en/latest/rst/binding/usage.html
+[odgi-preload]: https://odgi.readthedocs.io/en/latest/rst/binding/usage.html#optimise
+[depth]: https://pangenome.github.io/odgi.github.io/rst/commands/odgi_depth.html
