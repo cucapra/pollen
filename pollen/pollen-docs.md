@@ -48,7 +48,7 @@ like:
 
 `Segment | Step | Path | Edge | Handle | base | Strand`
 
-Where `Segment`, `Step`, `Path`, `Edge`, and `Hande` are all named record types.
+Where `Segment`, `Step`, `Path`, `Edge`, and `Handle` are all named record types.
 
 So,
 
@@ -57,8 +57,6 @@ So,
 `P = Segment | Step | Path | Edge | Handle | Strand`
 
 `t = T | T[] | String | P | List<T> | List<P> | R`
-
-But the `List` types are not exposed to the user, nor is the keyword available.
 
 
 3. If/else

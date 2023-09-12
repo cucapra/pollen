@@ -1,0 +1,192 @@
+// This is a comment. It does not get parsed
+
+import lib1;
+import lib2 as library2;
+from lib3 import f1;
+from lib4 import f1 as f1', f2 as f2';
+
+def test1() {
+    // Integer literals
+    i: int = 3;
+    id': int = 4;
+    i: int = -3;
+    i: int = +2;
+
+    // Boolean literals
+    bool1: bool = true;
+    b2: bool = false;
+
+    i: int;
+    b: bool;
+    c: char;
+    n: Segment;
+    s: Step;
+    e: Edge;
+    str: String;
+    strand: Strand;
+    b: Base;
+
+    // Characters... oh boy here we go
+
+    c1: char = 'a';
+    c2 : char = 'b';
+    c3 : char = '?';
+    c_4 : char = 'n';
+    c_5 : char = 't';
+
+    // Backspace characters
+    c8: char = '\\';
+    c4: char = '\n';
+    c5: char = '\t';
+    c6: char = '\'';
+    c7: char = '\"';
+    nother_char : char = '"';
+    also_a_char : char = ' ';
+
+    s1: String = "'";
+    s2: String = "Hello world!";
+    //Backspace strings
+    s2: String = "\\";
+    s3: String = "\n";
+    s4: String = "\t";
+    s5: String = "\"";
+    empty_str : String = "";
+    s6: String = "Hello world!\n";
+
+    binop : int = i + id2;
+    blskdf_ : int = 3 - (-5); 
+    binop2: int = i * 1;
+    sdf:char = 9 / 3;
+    n: Segment = 5 % 2;
+    b: Step = 2 < 3;
+    TTTT: Strand = 5 > true;
+    b: Step = (2 <= 3);
+    TTTT: Strand = 5 >= true;
+    b: Step = 2 == 3;
+    TTTT: Strand = 5 != true;
+    string : Strand = !true && !(!false);
+    boolean : bool = false || (true && !false);
+
+    // Parenthesis
+    TTTT : Strand = (5 != true);
+    TTTT : Strand = [5 != true];
+
+    /*
+        and = { "&&" }
+        or = { "||" }
+    */
+
+    SD : bool = !(true);
+
+    // Parenthesis
+    int1 : int = 3 * (2 + 4);
+    int1 : int = [3 * (2 + 4)];
+
+    // Reassignment
+    a = 3;
+
+    // Block Statements
+
+    {
+        n: Segment = 5 % 2;
+        b: Step = 2 < 3;
+    }
+
+    {
+        ans = 42;
+    }
+
+    // Graph and Parset declarations
+    graph out_g;
+    parset out_segs[Segment, out_g];
+    parset depth[int];
+
+    /* --- Control Flow --- */
+
+    // If statements
+    if b {
+        a = 1;
+    }
+
+    if b { a = -1; } else { a = 0; }
+
+    if b2 {
+        a = 2;
+    } elif b3 { c = 4; }
+
+    if guard1 {
+        l = 0;
+    } elif guard2 { 
+        l = 1;
+    } elif guard3 {
+        l = 2;
+    }
+
+    if true {
+        ans = 0;
+    } elif false { 
+        ans = 1;
+    } elif b3 {
+        // unreachable
+        ans = 2;
+    } else {
+        ans = 3;
+    }
+
+    // while loops
+    while e {
+        a = a.b + 1;
+    }
+
+    // for loops 
+    for s in node.step {
+        depth = depth + 1;
+    }
+
+    /* --- Records --- */
+    step : Step = node.step;
+    node : Segment = Segment { sequence: sequence, steps: steps' };
+    record2 : int = { record1 with B: "Hard Times" };
+
+    // Field Access
+    i: int = 3.field;
+    f: int = (Segment { num : 4 }).num;
+
+    /* --- Complex Types --- */
+    s: Set<int>;
+
+    tuple1: (int*bool);
+    tuple2: (Segment*bool) = (node, true);
+
+    /* --- Emit Statements --- */
+    emit 5 to s;
+    emit 2 * 3 to s1;
+    emit { node with seq: seq' } to s2;
+
+    /* --- Calls --- */
+    // Object initialization
+    new_strand: Strand = Strand();
+    c: char = String().first;
+    // Function Calls
+    v1: int = funct1(arg1);
+    v2: bool = func2(a1, a2);
+    v3: Segment = fun3(fun'(a), b);
+
+    // Method Calls
+    v4: Strand = new_strand.push('A');
+    v5: int = (int { record: true }).method();
+
+    // Function Calls
+    f1();
+    f2(arg1);
+    f3(5, f2(true));
+    func_id(arg1, arg2);
+    // Method Calls
+    obj.method();
+    obj.inner.method(arg1);
+    4.meth();
+}
+
+def func2(arg1: int) -> int {
+    return arg1;
+}

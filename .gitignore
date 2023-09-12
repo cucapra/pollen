@@ -1,7 +1,16 @@
 __pycache__/
 *.py[cod]
 .DS_Store
-
+**/*.chop
+**/*.crush
+**/*.degree
+**/*.depth
+**/*.emit
+**/*.flatten
+**/*.flip
+**/*.matrix
+**/*.overlap
+**/*.validate
 **/*.og
 **/*.gfa
 **/*.out
