@@ -1,5 +1,0 @@
-[envs.baseline]
-command = "odgi depth -i ../{args} -d -s {base}.paths"
-
-[envs.py-odgi]
-command = "python ../../depth.py ../{args} -s {base}.paths"

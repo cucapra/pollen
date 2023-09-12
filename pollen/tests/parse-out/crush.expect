@@ -1,0 +1,189 @@
+Prog {
+    imports: [],
+    func_defs: [
+        FuncDef {
+            name: Id(
+                "crush",
+            ),
+            args: [],
+            ret_typ: None,
+            stmts: [
+                GraphDecl {
+                    id: Id(
+                        "out_g",
+                    ),
+                },
+                ParsetDecl {
+                    id: Id(
+                        "out_segs",
+                    ),
+                    typ: Node,
+                    graph_id: Some(
+                        Id(
+                            "out_g",
+                        ),
+                    ),
+                },
+                For {
+                    id: Id(
+                        "segment",
+                    ),
+                    iterator: Var(
+                        Id(
+                            "Segments",
+                        ),
+                    ),
+                    body: Block {
+                        stmts: [
+                            Assign {
+                                id: Id(
+                                    "seq",
+                                ),
+                                expr: ObjInitialization {
+                                    typ: Strand,
+                                },
+                            },
+                            Assign {
+                                id: Id(
+                                    "in_n",
+                                ),
+                                expr: Bool(
+                                    false,
+                                ),
+                            },
+                            For {
+                                id: Id(
+                                    "c",
+                                ),
+                                iterator: FieldAccess {
+                                    object: Var(
+                                        Id(
+                                            "segment",
+                                        ),
+                                    ),
+                                    field: Var(
+                                        Id(
+                                            "sequence",
+                                        ),
+                                    ),
+                                },
+                                body: Block {
+                                    stmts: [
+                                        If {
+                                            guard: BinOpExpr {
+                                                lhs: BinOpExpr {
+                                                    lhs: Var(
+                                                        Id(
+                                                            "c",
+                                                        ),
+                                                    ),
+                                                    op: Eq,
+                                                    rhs: Char(
+                                                        'N',
+                                                    ),
+                                                },
+                                                op: And,
+                                                rhs: UOpExpr {
+                                                    op: Not,
+                                                    expr: Var(
+                                                        Id(
+                                                            "in_n",
+                                                        ),
+                                                    ),
+                                                },
+                                            },
+                                            if_block: Block {
+                                                stmts: [
+                                                    Assign {
+                                                        id: Id(
+                                                            "in_n",
+                                                        ),
+                                                        expr: Bool(
+                                                            true,
+                                                        ),
+                                                    },
+                                                    MethodCallStmt {
+                                                        object: Var(
+                                                            Id(
+                                                                "seq",
+                                                            ),
+                                                        ),
+                                                        method: Id(
+                                                            "push",
+                                                        ),
+                                                        args: [
+                                                            Var(
+                                                                Id(
+                                                                    "c",
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    },
+                                                ],
+                                            },
+                                            elif_block: None,
+                                            else_block: Some(
+                                                Block {
+                                                    stmts: [
+                                                        Assign {
+                                                            id: Id(
+                                                                "in_n",
+                                                            ),
+                                                            expr: Bool(
+                                                                false,
+                                                            ),
+                                                        },
+                                                        MethodCallStmt {
+                                                            object: Var(
+                                                                Id(
+                                                                    "seq",
+                                                                ),
+                                                            ),
+                                                            method: Id(
+                                                                "push",
+                                                            ),
+                                                            args: [
+                                                                Var(
+                                                                    Id(
+                                                                        "c",
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        },
+                                                    ],
+                                                },
+                                            ),
+                                        },
+                                    ],
+                                },
+                            },
+                            EmitTo {
+                                expr: RecordUpdate {
+                                    parent: Id(
+                                        "segment",
+                                    ),
+                                    fields: [
+                                        RecordField {
+                                            field: Id(
+                                                "sequence",
+                                            ),
+                                            val: Var(
+                                                Id(
+                                                    "seq",
+                                                ),
+                                            ),
+                                        },
+                                    ],
+                                },
+                                set_id: Id(
+                                    "out_segs",
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            ret: None,
+        },
+    ],
+}
