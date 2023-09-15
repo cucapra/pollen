@@ -159,8 +159,10 @@ Prog {
                             },
                             EmitTo {
                                 expr: RecordUpdate {
-                                    parent: Id(
-                                        "segment",
+                                    parent: Var(
+                                        Id(
+                                            "segment",
+                                        ),
                                     ),
                                     fields: [
                                         RecordField {

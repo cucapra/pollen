@@ -80,7 +80,7 @@ pub enum Expr {
         fields: Vec<RecordField>
     },
     RecordUpdate {
-        parent: Id,
+        parent: Box<Expr>,
         fields: Vec<RecordField>
     },
     Tuple {
