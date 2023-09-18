@@ -1,4 +1,4 @@
-def paths() {
+def emit_paths() {
   // Since Pollen doesn't explicitly have path identifiers, 
   // we print the start and end steps of each path 
   // (akin to `odgi paths --idx = graph.og --list-paths --list-paths-start-end`). 
@@ -9,7 +9,7 @@ def paths() {
   parset out_paths[(Step*Step)];
 
   for path in Paths {
-    emit ( path[0] /* path.steps[0], */
+    emit ( path.steps[0],
           path.steps[path.steps.size() - 1]) 
       to out_paths;
   }
