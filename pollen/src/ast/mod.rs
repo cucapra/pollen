@@ -75,10 +75,6 @@ pub enum Expr {
         op: UOp,
         expr: Box<Expr>
     },
-    ArrayAccess {
-        expr: Box<Expr>,
-        idx: Box<Expr>
-    },
     Record {
         typ: Typ,
         fields: Vec<RecordField>
