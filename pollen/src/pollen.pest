@@ -118,10 +118,7 @@ func_call = { identifier ~ call_args }
 term = _{ literal | obj_initialize | func_call | identifier 
           | "(" ~ expr ~ ")" | "[" ~ expr ~ "]" }
 
-array_access = { "[" ~ expr ~ "]" }
-postfix = _{ array_access }
-
-expr = { prefix* ~ term ~ postfix* ~ (binop ~ prefix* ~ term ~ postfix*) * }
+expr = { prefix* ~ term ~ (binop ~ prefix* ~ term ) * }
 
 
 /* ----- Statements ---- */
