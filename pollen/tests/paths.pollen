@@ -9,7 +9,7 @@ def paths() {
   parset out_paths[(Step*Step)];
 
   for path in Paths {
-    emit ( path[0] /* path.steps[0], */
+    emit ( path.steps[0],
           path.steps[path.steps.size() - 1]) 
       to out_paths;
   }
