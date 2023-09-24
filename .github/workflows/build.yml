@@ -45,11 +45,18 @@ jobs:
       - name: Fetch test data
         run: make fetch
 
+      - name: Pull odgi container
+        run: |
+          docker pull quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0
+          docker tag quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0 odgi
+
+      - name: Install odgi alias
+        run: |
+          echo '#!/bin/sh\ndocker run --rm odgi odgi $@' > /usr/bin/odgi
+          chmod a+x /usr/bin/odgi
+
       - name: Set up for slow_odgi tests
-        uses: docker://quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0
-        with:
-          entrypoint: sh
-          args: '-c "make slow-odgi-setup"'
+        run: make slow-odgi-setup
 
       - name: Test slow_odgi
         run: make test-slow-odgi
