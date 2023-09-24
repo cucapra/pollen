@@ -53,7 +53,7 @@ jobs:
       - name: Install odgi alias
         run: |
           echo '#!/bin/sh\ndocker run --rm odgi odgi $@' > /usr/bin/odgi
-          chmod a+x /usr/bin/odgi
+          chmod a+x /usr/local/bin/odgi
 
       - name: Set up for slow_odgi tests
         run: make slow-odgi-setup
