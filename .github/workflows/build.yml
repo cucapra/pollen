@@ -46,7 +46,7 @@ jobs:
         run: make fetch
 
       - name: Set up for slow_odgi tests
-        uses: docker://quay.io/biocontainers/odgi
+        uses: docker://quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0
         with:
           entrypoint: make slow-odgi-setup
 
