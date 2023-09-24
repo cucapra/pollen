@@ -42,8 +42,12 @@ jobs:
       - name: Problem matcher
         run: echo '::add-matcher::.github/tap-matcher.json'
 
-      - name: Set up slow_odgi tests
+      - name: Fetch test data
+        run: make fetch
+
+      - name: Set up for slow_odgi tests
         run: make slow-odgi-setup
+        uses: docker://quay.io/biocontainers/odgi
 
       - name: Test slow_odgi
         run: make test-slow-odgi
