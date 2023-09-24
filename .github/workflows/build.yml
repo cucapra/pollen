@@ -46,8 +46,9 @@ jobs:
         run: make fetch
 
       - name: Set up for slow_odgi tests
-        run: make slow-odgi-setup
         uses: docker://quay.io/biocontainers/odgi
+        with:
+          entrypoint: make slow-odgi-setup
 
       - name: Test slow_odgi
         run: make test-slow-odgi
