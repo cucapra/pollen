@@ -52,6 +52,7 @@ jobs:
 
       - name: Install odgi alias
         run: |
+          mkdir -p ~/.local/bin
           echo '#!/bin/sh\ndocker run --rm odgi odgi $@' > ~/.local/bin/odgi
           chmod a+x ~/.local/bin/odgi
           echo "$HOME/.local/bin" >> $GITHUB_PATH
