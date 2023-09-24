@@ -52,11 +52,8 @@ jobs:
 
       - name: Install odgi alias
         run: |
-          mkdir -p ~/.local/bin
-          echo '#!/bin/sh\ndocker run --rm odgi odgi $@' > ~/.local/bin/odgi
-          chmod a+x ~/.local/bin/odgi
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          echo $PATH
+          sudo echo '#!/bin/sh\ndocker run --rm odgi odgi $@' > /usr/bin/odgi
+          sudo chmod a+x /usr/bin/odgi
 
       - name: Set up for slow_odgi tests
         run: make slow-odgi-setup
