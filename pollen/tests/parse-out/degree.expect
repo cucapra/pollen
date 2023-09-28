@@ -1,0 +1,76 @@
+Prog {
+    imports: [],
+    func_defs: [
+        FuncDef {
+            name: Id(
+                "degree",
+            ),
+            args: [],
+            ret_typ: None,
+            stmts: [
+                ParsetDecl {
+                    id: Id(
+                        "out_degs",
+                    ),
+                    typ: Tuple(
+                        Node,
+                        Int,
+                    ),
+                    graph_id: None,
+                },
+                For {
+                    id: Id(
+                        "segment",
+                    ),
+                    iterator: FieldAccess {
+                        object: Var(
+                            Id(
+                                "in_g",
+                            ),
+                        ),
+                        field: Var(
+                            Id(
+                                "segments",
+                            ),
+                        ),
+                    },
+                    body: Block {
+                        stmts: [
+                            EmitTo {
+                                expr: Tuple {
+                                    lhs: Var(
+                                        Id(
+                                            "segment",
+                                        ),
+                                    ),
+                                    rhs: MethodCall {
+                                        object: FieldAccess {
+                                            object: Var(
+                                                Id(
+                                                    "segment",
+                                                ),
+                                            ),
+                                            field: Var(
+                                                Id(
+                                                    "edges",
+                                                ),
+                                            ),
+                                        },
+                                        method: Id(
+                                            "size",
+                                        ),
+                                        args: [],
+                                    },
+                                },
+                                set_id: Id(
+                                    "out_degs",
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            ret: None,
+        },
+    ],
+}

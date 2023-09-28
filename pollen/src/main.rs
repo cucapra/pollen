@@ -25,6 +25,7 @@ lazy_static! {
 
         // Precedence is defined lowest to highest
         PrattParser::new()
+            .op(Op::postfix(Rule::array_access))
             .op(Op::infix(Rule::or, Left))
             .op(Op::infix(Rule::and, Left))
             .op(Op::infix(Rule::eq, Left) | Op::infix(Rule::neq, Left))
@@ -544,13 +545,13 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 }
             },
             Rule::record_update_lit => {
-                // record_update_lit looks like { r1 with f1: e1, ..., fn:en }
+                // record_update_lit looks like { e1 with f1: e1, ..., fn:en }
                 let mut inner = primary.into_inner();
                 let parent = {
                     let Some(pair) = inner.next() else {
-                        unreachable!("An if statement requires a guard")
+                        unreachable!("Record update requires a record")
                     };
-                    parse_id(pair)
+                    parse_expr(pair.into_inner())
                 };
                 let mut fields = Vec::new();
                 while let Some(pair) = inner.next() {
@@ -569,7 +570,7 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                     );
                 }
                 Expr::RecordUpdate {
-                    parent: parent,
+                    parent: Box::new(parent),
                     fields: fields
                 }
             },
@@ -625,10 +626,22 @@ fn parse_expr(expression: Pairs<Rule>) -> Expr {
                 expr: Box::new(exp),
             }
         })
-        .map_postfix(|lhs, op| {
-            match op.as_rule() {
-                rule => unreachable!("{:?} not recognized as a postfix", rule),
-            }
+        .map_postfix(|exp, op| {
+            let idx_expr = match op.as_rule() {
+                Rule::array_access => {
+                    let mut inner = op.into_inner();
+                    let Some(expr) = inner.next() else {
+                        unreachable!("array access requires an expression")
+                    };
+                    parse_expr(expr.into_inner())
+                }
+                rule => unreachable!("{:?} not recognized as a postfix", rule)
+            };
+            
+                Expr::ArrayAccess {
+                    expr: Box::new(exp),
+                    idx: Box::new(idx_expr)
+                }
         })
         .map_infix(|lhs, op, rhs| {
             enum OpType {
