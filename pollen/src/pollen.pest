@@ -120,8 +120,9 @@ term = _{ literal | obj_initialize | func_call | identifier
 
 array_access = { "[" ~ expr ~ "]" }
 postfix = _{ array_access }
+term_ext = _ { prefix* ~ term ~ postfix* }
 
-expr = { prefix* ~ term ~ postfix* ~ (binop ~ prefix* ~ term ~ postfix*) * }
+expr = { term_ext ~ (binop ~ term_ext) * }
 
 
 /* ----- Statements ---- */
