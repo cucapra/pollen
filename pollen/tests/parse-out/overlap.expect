@@ -1,0 +1,147 @@
+Prog {
+    imports: [],
+    func_defs: [
+        FuncDef {
+            name: Id(
+                "overlap",
+            ),
+            args: [],
+            ret_typ: None,
+            stmts: [
+                ParsetDecl {
+                    id: Id(
+                        "out_overlaps",
+                    ),
+                    typ: Tuple(
+                        Path,
+                        Path,
+                    ),
+                    graph_id: None,
+                },
+                For {
+                    id: Id(
+                        "path",
+                    ),
+                    iterator: Var(
+                        Id(
+                            "paths",
+                        ),
+                    ),
+                    body: Block {
+                        stmts: [
+                            For {
+                                id: Id(
+                                    "step",
+                                ),
+                                iterator: FieldAccess {
+                                    object: Var(
+                                        Id(
+                                            "path",
+                                        ),
+                                    ),
+                                    field: Var(
+                                        Id(
+                                            "steps",
+                                        ),
+                                    ),
+                                },
+                                body: Block {
+                                    stmts: [
+                                        For {
+                                            id: Id(
+                                                "s",
+                                            ),
+                                            iterator: FieldAccess {
+                                                object: FieldAccess {
+                                                    object: FieldAccess {
+                                                        object: Var(
+                                                            Id(
+                                                                "step",
+                                                            ),
+                                                        ),
+                                                        field: Var(
+                                                            Id(
+                                                                "handle",
+                                                            ),
+                                                        ),
+                                                    },
+                                                    field: Var(
+                                                        Id(
+                                                            "segment",
+                                                        ),
+                                                    ),
+                                                },
+                                                field: Var(
+                                                    Id(
+                                                        "steps",
+                                                    ),
+                                                ),
+                                            },
+                                            body: Block {
+                                                stmts: [
+                                                    If {
+                                                        guard: BinOpExpr {
+                                                            lhs: FieldAccess {
+                                                                object: Var(
+                                                                    Id(
+                                                                        "s",
+                                                                    ),
+                                                                ),
+                                                                field: Var(
+                                                                    Id(
+                                                                        "path",
+                                                                    ),
+                                                                ),
+                                                            },
+                                                            op: Neq,
+                                                            rhs: Var(
+                                                                Id(
+                                                                    "path",
+                                                                ),
+                                                            ),
+                                                        },
+                                                        if_block: Block {
+                                                            stmts: [
+                                                                EmitTo {
+                                                                    expr: Tuple {
+                                                                        lhs: Var(
+                                                                            Id(
+                                                                                "path",
+                                                                            ),
+                                                                        ),
+                                                                        rhs: FieldAccess {
+                                                                            object: Var(
+                                                                                Id(
+                                                                                    "s",
+                                                                                ),
+                                                                            ),
+                                                                            field: Var(
+                                                                                Id(
+                                                                                    "path",
+                                                                                ),
+                                                                            ),
+                                                                        },
+                                                                    },
+                                                                    set_id: Id(
+                                                                        "out_overlaps",
+                                                                    ),
+                                                                },
+                                                            ],
+                                                        },
+                                                        elif_block: None,
+                                                        else_block: None,
+                                                    },
+                                                ],
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
+            ret: None,
+        },
+    ],
+}
