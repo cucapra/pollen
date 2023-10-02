@@ -18,22 +18,19 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
     simple_parser.add_argument(
         "-n",
-        nargs="?",
-        const="d",
+        default="d",
         help="The max number of nodes.",
         required=False,
     )
     simple_parser.add_argument(
         "-e",
-        nargs="?",
-        const="d",
+        default="d",
         help="The max number of steps per node.",
         required=False,
     )
     simple_parser.add_argument(
         "-p",
-        nargs="?",
-        const="d",
+        default="d",
         help="The max number of paths.",
         required=False,
     )
@@ -48,24 +45,27 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
     depth_parser.add_argument(
         "-n",
-        nargs="?",
-        const="d",
+        default="d",
         help="The max number of nodes.",
         required=False,
     )
     depth_parser.add_argument(
         "-e",
-        nargs="?",
-        const="d",
+        default="d",
         help="The max number of steps per node.",
         required=False,
     )
     depth_parser.add_argument(
         "-p",
-        nargs="?",
-        const="d",
+        default="d",
         help="The max number of paths.",
         required=False,
+    )
+    depth_parser.add_argument(
+        "-s",
+        "--subset-paths",
+        help="A file where each line is a path of the graph to consider when calculating node depth",
+        required=False
     )
 
     # Add the graph argument to all subparsers.
@@ -73,7 +73,7 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     # command name.
     for subparser in subparsers.choices.values():
         subparser.add_argument(
-            "graph", nargs="?", help="Input GFA file", metavar="GRAPH"
+            "graph", help="Input GFA file", metavar="GRAPH"
         )
 
     args = parser.parse_args()
@@ -81,12 +81,25 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     return parser, args
 
 
+def parse_subset_paths(filename):
+    """
+    Return a list of the names of paths in [filename]
+    """
+
+    if filename is None:  # Return the default value
+        return []
+
+    with open(filename, "r", encoding="utf-8") as paths_file:
+        text = paths_file.read()
+        return text.splitlines()
+
+
 def dispatch(args: argparse.Namespace) -> None:
     """Parse the graph from filename,
     then dispatch to the appropriate pollen_data_gen command.
     """
     name_to_func = {
-        "depth": lambda g: depth.depth_stdout(g, args.n, args.e, args.p),
+        "depth": lambda g: depth.depth_stdout(g, args.n, args.e, args.p, parse_subset_paths(args.subset_paths)),
         "simple": lambda g: simple.dump(g, sys.stdout, args.n, args.e, args.p),
         "roundtrip": simple.roundtrip_test,
     }

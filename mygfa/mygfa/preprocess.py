@@ -10,7 +10,7 @@ def node_steps(graph: mygfa.Graph) -> Dict[str, List[Tuple[str, int, bool]]]:
     for segname in graph.segments.keys():
         crossings[segname] = []
 
-    for path in graph.paths.values():
+    for path, _ in graph.paths.values():
         for index, handle in enumerate(path.segments):
             crossings[handle.name].append((path.name, index, handle.ori))
 
@@ -56,7 +56,7 @@ def pathseq(graph: mygfa.Graph) -> Dict[str, str]:
     ans: Dict[str, str] = {}
     for path in graph.paths.keys():
         ans[path] = "".join(
-            str(handle_seq(graph, handle)) for handle in graph.paths[path].segments
+            str(handle_seq(graph, handle)) for handle in graph.paths[path][0].segments
         )
     return ans
 

@@ -276,6 +276,7 @@ class Graph:
         """Parse a GFA file."""
         graph = Graph([], {}, [], {})
 
+        path_idx = 1
         for line in nonblanks(infile):
             fields = line.split()
             if fields[0] == "H":
@@ -287,7 +288,8 @@ class Graph:
                 graph.links.append(Link.parse(fields))
             elif fields[0] == "P":
                 path = Path.parse(fields)
-                graph.paths[path.name] = path
+                graph.paths[path.name] = (path, path_idx)
+                path_idx += 1
             else:
                 assert False, f"unknown line marker {fields[0]}"
 
@@ -299,7 +301,7 @@ class Graph:
             print(header, file=outfile)
         for segment in self.segments.values():
             print(str(segment), file=outfile)
-        for path in self.paths.values():
+        for path, _ in self.paths.values():
             print(str(path), file=outfile)
         if showlinks:
             for link in sorted(self.links):
