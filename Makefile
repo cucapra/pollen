@@ -84,4 +84,7 @@ tests/%.gfa:
 	curl -Lo ./$@ $(GFA_URL)/$*.gfa
 
 %.og: %.gfa
+	echo $$PATH
+	ls -l $$HOME/.local/bin
+	ls -l $(ODGI)
 	$(ODGI) build -g $^ -o $@
