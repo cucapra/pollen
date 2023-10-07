@@ -1,2 +1,2 @@
 #!/bin/sh
-docker run --rm odgi odgi $@
+docker run --rm -v `pwd`:/work --workdir /work odgi odgi $@
