@@ -84,4 +84,6 @@ tests/%.gfa:
 
 %.og: %.gfa
 	echo $$PATH
+	echo $$HOME/.local/bin/odgi
+	ls $$HOME/.local/bin/odgi
 	odgi build -g $^ -o $@
