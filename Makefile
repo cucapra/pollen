@@ -87,4 +87,5 @@ tests/%.gfa:
 	echo $$PATH
 	ls -l $$HOME/.local/bin
 	ls -l $(ODGI)
+	cat $(ODGI)
 	$(ODGI) build -g $^ -o $@
