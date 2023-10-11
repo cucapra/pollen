@@ -98,7 +98,13 @@ def run_accel(args, tmp_dir_name):
             warnings.warn("Cannot infer dimensions from .data file.", SyntaxWarning)
         data_file = args.filename
     else:
-        parse_data_file(args, tmp_dir_name)
+        # parse_data_file(args, tmp_dir_name)
+        data_file = f"{tmp_dir_name}/{base}.data"
+        new_args = [args.filename, "--out", data_file]
+        parser.parse_args(new_args, namespace=args)
+        # print("here1")
+        parse_data.run(args)
+        # print("here2")
 
     # Generate the accelerator if necessary
     if args.accelerator:
@@ -109,7 +115,6 @@ def run_accel(args, tmp_dir_name):
         if args.auto_size == "d":
             new_args.extend(["-a", args.filename])
         parser.parse_args(new_args, namespace=args)
-        print("here before: ", args)
         depth.run(args)
 
     # Compute the node depth
@@ -142,6 +147,7 @@ def run_accel(args, tmp_dir_name):
             out_file.write(output)
     else:
         print(output)
+
 
 def parse_data_file(args, tmp_dir_name):
 

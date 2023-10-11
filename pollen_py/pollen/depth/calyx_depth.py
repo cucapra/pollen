@@ -2,7 +2,8 @@ import argparse
 import subprocess
 
 from calyx.py_ast import *
-from mygfa import mygfa, preprocess
+from . import parse_data
+# from mygfa import mygfa, preprocess
 
 # Defaults for the maximum possible number of nodes,
 # steps per node, and paths to consider
@@ -551,33 +552,33 @@ def config_parser(parser):
     )
 
 
-def get_maxes(filename):
-    print("In `get_maxes`. Filename: ", filename)
-    """Returns the maximum number of nodes, steps per node, and paths."""
-    with open(filename, "r", encoding="utf-8") as infile:
-        graph = mygfa.Graph.parse(infile)
-        return preprocess.get_maxes(graph)
+# def get_maxes(filename):
+#     print("In `get_maxes`. Filename: ", filename)
+#     """Returns the maximum number of nodes, steps per node, and paths."""
+#     with open(filename, "r", encoding="utf-8") as infile:
+#         graph = mygfa.Graph.parse(infile)
+#         return preprocess.get_maxes(graph)
 
 
-def get_dimensions(args):
-    """
-    Compute the node depth accelerator's dimensions from commandline input.
-    """
-    if args.auto_size:
-        filename = args.filename if args.auto_size == "d" else args.auto_size
-        max_nodes, max_steps, max_paths = get_maxes(filename)
-    else:
-        max_nodes, max_steps, max_paths = MAX_NODES, MAX_STEPS, MAX_PATHS
+# def get_dimensions(args):
+#     """
+#     Compute the node depth accelerator's dimensions from commandline input.
+#     """
+#     if args.auto_size:
+#         filename = args.filename if args.auto_size == "d" else args.auto_size
+#         max_nodes, max_steps, max_paths = get_maxes(filename)
+#     else:
+#         max_nodes, max_steps, max_paths = MAX_NODES, MAX_STEPS, MAX_PATHS
 
-    max_nodes = args.max_nodes if args.max_nodes else max_nodes
-    max_steps = args.max_steps if args.max_steps else max_steps
-    max_paths = args.max_paths if args.max_paths else max_paths
+#     max_nodes = args.max_nodes if args.max_nodes else max_nodes
+#     max_steps = args.max_steps if args.max_steps else max_steps
+#     max_paths = args.max_paths if args.max_paths else max_paths
 
-    return max_nodes, max_steps, max_paths
+#     return max_nodes, max_steps, max_paths
 
 
 def run(args):
-    max_nodes, max_steps, max_paths = get_dimensions(args)
+    max_nodes, max_steps, max_paths = parse_data.get_dimensions(args)
     program = node_depth(max_nodes, max_steps, max_paths)
     output = program.doc()
 
