@@ -1,0 +1,7 @@
+[envs.baseline]
+binary = true
+command = "odgi depth -i {filename} -d"
+
+[envs.calyx]
+binary = true
+command = "exine depth -a -r {filename}"
