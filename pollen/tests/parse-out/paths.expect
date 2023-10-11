@@ -1,0 +1,101 @@
+Prog {
+    imports: [],
+    func_defs: [
+        FuncDef {
+            name: Id(
+                "emit_paths",
+            ),
+            args: [],
+            ret_typ: None,
+            stmts: [
+                ParsetDecl {
+                    id: Id(
+                        "out_paths",
+                    ),
+                    typ: Tuple(
+                        Step,
+                        Step,
+                    ),
+                    graph_id: None,
+                },
+                For {
+                    id: Id(
+                        "path",
+                    ),
+                    iterator: Var(
+                        Id(
+                            "Paths",
+                        ),
+                    ),
+                    body: Block {
+                        stmts: [
+                            EmitTo {
+                                expr: Tuple {
+                                    lhs: ArrayAccess {
+                                        expr: FieldAccess {
+                                            object: Var(
+                                                Id(
+                                                    "path",
+                                                ),
+                                            ),
+                                            field: Var(
+                                                Id(
+                                                    "steps",
+                                                ),
+                                            ),
+                                        },
+                                        idx: Integer(
+                                            0,
+                                        ),
+                                    },
+                                    rhs: ArrayAccess {
+                                        expr: FieldAccess {
+                                            object: Var(
+                                                Id(
+                                                    "path",
+                                                ),
+                                            ),
+                                            field: Var(
+                                                Id(
+                                                    "steps",
+                                                ),
+                                            ),
+                                        },
+                                        idx: BinOpExpr {
+                                            lhs: MethodCall {
+                                                object: FieldAccess {
+                                                    object: Var(
+                                                        Id(
+                                                            "path",
+                                                        ),
+                                                    ),
+                                                    field: Var(
+                                                        Id(
+                                                            "steps",
+                                                        ),
+                                                    ),
+                                                },
+                                                method: Id(
+                                                    "size",
+                                                ),
+                                                args: [],
+                                            },
+                                            op: Sub,
+                                            rhs: Integer(
+                                                1,
+                                            ),
+                                        },
+                                    },
+                                },
+                                set_id: Id(
+                                    "out_paths",
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            ret: None,
+        },
+    ],
+}

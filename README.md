@@ -120,7 +120,7 @@ If you are curious, this tracks the "[installing from source][calyx-install-src]
 5. `cargo build -p interp`
 6. `fud config stages.calyx.exec $(pwd)/target/debug/calyx`
 7. `fud config stages.interpreter.exec $(pwd)/target/debug/interp`
-8. `flit install -f calyx-py/pyproject.toml -s`
+8. `flit -f calyx-py/pyproject.toml install -s`
 9. `fud check`
 
 You will be warned that `synth-verilog` and `vivado-hls` were not installed correctly; this is fine for our purposes.

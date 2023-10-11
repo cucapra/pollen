@@ -1,0 +1,393 @@
+Prog {
+    imports: [],
+    func_defs: [
+        FuncDef {
+            name: Id(
+                "flip",
+            ),
+            args: [],
+            ret_typ: None,
+            stmts: [
+                GraphDecl {
+                    id: Id(
+                        "out_g",
+                    ),
+                },
+                For {
+                    id: Id(
+                        "path",
+                    ),
+                    iterator: Var(
+                        Id(
+                            "paths",
+                        ),
+                    ),
+                    body: Block {
+                        stmts: [
+                            FuncCallStmt {
+                                name: Id(
+                                    "flip_path",
+                                ),
+                                args: [
+                                    Var(
+                                        Id(
+                                            "path",
+                                        ),
+                                    ),
+                                ],
+                            },
+                        ],
+                    },
+                },
+            ],
+            ret: None,
+        },
+        FuncDef {
+            name: Id(
+                "flip_path",
+            ),
+            args: [
+                (
+                    Id(
+                        "path",
+                    ),
+                    Path,
+                ),
+            ],
+            ret_typ: None,
+            stmts: [
+                ParsetDecl {
+                    id: Id(
+                        "out_steps",
+                    ),
+                    typ: Step,
+                    graph_id: Some(
+                        Id(
+                            "out_g",
+                        ),
+                    ),
+                },
+                Assign {
+                    id: Id(
+                        "max_step_idx",
+                    ),
+                    expr: BinOpExpr {
+                        lhs: MethodCall {
+                            object: Var(
+                                Id(
+                                    "path",
+                                ),
+                            ),
+                            method: Id(
+                                "length",
+                            ),
+                            args: [],
+                        },
+                        op: Sub,
+                        rhs: Integer(
+                            1,
+                        ),
+                    },
+                },
+                If {
+                    guard: FuncCall {
+                        name: Id(
+                            "is_rev",
+                        ),
+                        args: [
+                            Var(
+                                Id(
+                                    "path",
+                                ),
+                            ),
+                        ],
+                    },
+                    if_block: Block {
+                        stmts: [
+                            For {
+                                id: Id(
+                                    "step",
+                                ),
+                                iterator: FieldAccess {
+                                    object: Var(
+                                        Id(
+                                            "path",
+                                        ),
+                                    ),
+                                    field: Var(
+                                        Id(
+                                            "steps",
+                                        ),
+                                    ),
+                                },
+                                body: Block {
+                                    stmts: [
+                                        EmitTo {
+                                            expr: RecordUpdate {
+                                                parent: Var(
+                                                    Id(
+                                                        "step",
+                                                    ),
+                                                ),
+                                                fields: [
+                                                    RecordField {
+                                                        field: Id(
+                                                            "handle",
+                                                        ),
+                                                        val: RecordUpdate {
+                                                            parent: FieldAccess {
+                                                                object: Var(
+                                                                    Id(
+                                                                        "step",
+                                                                    ),
+                                                                ),
+                                                                field: Var(
+                                                                    Id(
+                                                                        "handle",
+                                                                    ),
+                                                                ),
+                                                            },
+                                                            fields: [
+                                                                RecordField {
+                                                                    field: Id(
+                                                                        "orientation",
+                                                                    ),
+                                                                    val: UOpExpr {
+                                                                        op: Not,
+                                                                        expr: FieldAccess {
+                                                                            object: FieldAccess {
+                                                                                object: Var(
+                                                                                    Id(
+                                                                                        "step",
+                                                                                    ),
+                                                                                ),
+                                                                                field: Var(
+                                                                                    Id(
+                                                                                        "handle",
+                                                                                    ),
+                                                                                ),
+                                                                            },
+                                                                            field: Var(
+                                                                                Id(
+                                                                                    "orientation",
+                                                                                ),
+                                                                            ),
+                                                                        },
+                                                                    },
+                                                                },
+                                                            ],
+                                                        },
+                                                    },
+                                                    RecordField {
+                                                        field: Id(
+                                                            "idx",
+                                                        ),
+                                                        val: BinOpExpr {
+                                                            lhs: Var(
+                                                                Id(
+                                                                    "max_step_idx",
+                                                                ),
+                                                            ),
+                                                            op: Sub,
+                                                            rhs: FieldAccess {
+                                                                object: Var(
+                                                                    Id(
+                                                                        "step",
+                                                                    ),
+                                                                ),
+                                                                field: Var(
+                                                                    Id(
+                                                                        "idx",
+                                                                    ),
+                                                                ),
+                                                            },
+                                                        },
+                                                    },
+                                                ],
+                                            },
+                                            set_id: Id(
+                                                "out_steps",
+                                            ),
+                                        },
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                    elif_block: None,
+                    else_block: None,
+                },
+            ],
+            ret: None,
+        },
+        FuncDef {
+            name: Id(
+                "is_rev",
+            ),
+            args: [
+                (
+                    Id(
+                        "path",
+                    ),
+                    Path,
+                ),
+            ],
+            ret_typ: None,
+            stmts: [
+                Assign {
+                    id: Id(
+                        "fw",
+                    ),
+                    expr: Integer(
+                        0,
+                    ),
+                },
+                Assign {
+                    id: Id(
+                        "bw",
+                    ),
+                    expr: Integer(
+                        0,
+                    ),
+                },
+                For {
+                    id: Id(
+                        "step",
+                    ),
+                    iterator: FieldAccess {
+                        object: Var(
+                            Id(
+                                "path",
+                            ),
+                        ),
+                        field: Var(
+                            Id(
+                                "steps",
+                            ),
+                        ),
+                    },
+                    body: Block {
+                        stmts: [
+                            Assign {
+                                id: Id(
+                                    "sh",
+                                ),
+                                expr: FieldAccess {
+                                    object: Var(
+                                        Id(
+                                            "step",
+                                        ),
+                                    ),
+                                    field: Var(
+                                        Id(
+                                            "handle",
+                                        ),
+                                    ),
+                                },
+                            },
+                            Assign {
+                                id: Id(
+                                    "len",
+                                ),
+                                expr: MethodCall {
+                                    object: FieldAccess {
+                                        object: Var(
+                                            Id(
+                                                "sh",
+                                            ),
+                                        ),
+                                        field: Var(
+                                            Id(
+                                                "segment",
+                                            ),
+                                        ),
+                                    },
+                                    method: Id(
+                                        "length",
+                                    ),
+                                    args: [],
+                                },
+                            },
+                            If {
+                                guard: FieldAccess {
+                                    object: Var(
+                                        Id(
+                                            "sh",
+                                        ),
+                                    ),
+                                    field: Var(
+                                        Id(
+                                            "orientation",
+                                        ),
+                                    ),
+                                },
+                                if_block: Block {
+                                    stmts: [
+                                        Assign {
+                                            id: Id(
+                                                "fw",
+                                            ),
+                                            expr: BinOpExpr {
+                                                lhs: Var(
+                                                    Id(
+                                                        "fw",
+                                                    ),
+                                                ),
+                                                op: Add,
+                                                rhs: Var(
+                                                    Id(
+                                                        "len",
+                                                    ),
+                                                ),
+                                            },
+                                        },
+                                    ],
+                                },
+                                elif_block: None,
+                                else_block: Some(
+                                    Block {
+                                        stmts: [
+                                            Assign {
+                                                id: Id(
+                                                    "bw",
+                                                ),
+                                                expr: BinOpExpr {
+                                                    lhs: Var(
+                                                        Id(
+                                                            "bw",
+                                                        ),
+                                                    ),
+                                                    op: Add,
+                                                    rhs: Var(
+                                                        Id(
+                                                            "len",
+                                                        ),
+                                                    ),
+                                                },
+                                            },
+                                        ],
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                },
+            ],
+            ret: Some(
+                BinOpExpr {
+                    lhs: Var(
+                        Id(
+                            "bw",
+                        ),
+                    ),
+                    op: Gt,
+                    rhs: Var(
+                        Id(
+                            "fw",
+                        ),
+                    ),
+                },
+            ),
+        },
+    ],
+}

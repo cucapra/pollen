@@ -1,0 +1,19 @@
+graph out_g;
+parset out_segs[Segment, out_g];
+
+for segment in in_g {
+  seq = Strand();
+  in_n = false;
+  for c in segment.sequence {
+    if c == 'N' {
+      if !in_n {
+        in_n = true;
+        seq.push(c);
+      }
+    } else {
+        in_n = false;
+        seq.push(c);
+    }
+  }
+  emit { segment with sequence: seq } to out_segs;
+}

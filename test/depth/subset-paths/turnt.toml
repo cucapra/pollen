@@ -1,5 +1,0 @@
-[envs.baseline]
-command = "odgi depth -i ../{args} -d -s {base}.paths"
-
-[envs.calyx-depth]
-command = "exine depth -a -r ../{args} -s {base}.paths"
