@@ -20,11 +20,12 @@ def paths_viewed_from_nodes(
     """Given a graph, return a dict representing the paths
     viewed from the PoV of each node.
     """
+    path2id = {path: id for id, path in enumerate(graph.paths, start=1)}
     output = {}
     json_format = format_gen(max_p.bit_length())
     # segment name, (path name, index on path, direction) list
     for seg, crossings in preprocess.node_steps(graph).items():
-        data = list(graph.paths[c[0]][1] for c in crossings)
+        data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (max_e - len(data))
         output[f"path_ids{seg}"] = {"data": data, "format": json_format}
     data = [0] * max_e
@@ -69,7 +70,8 @@ class NodeDepthEncoder(JSONEncoder):
         self.subset_paths = subset_paths
 
     def paths_to_idxs(self, o):
-        return list(map(lambda p: o.paths[p][1], self.subset_paths))
+        path2id = {path: id for id, path in enumerate(o.paths, start=1)}
+        return list(map(lambda p: path2id[p], self.subset_paths))
 
     def default(self, o: Any) -> Dict[str, Dict[str, Collection[object]]]:
         answer_field = {

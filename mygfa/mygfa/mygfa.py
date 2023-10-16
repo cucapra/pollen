@@ -299,7 +299,7 @@ class Graph:
             print(header, file=outfile)
         for segment in self.segments.values():
             print(str(segment), file=outfile)
-        for path in self.paths:
+        for path in self.paths.values():
             print(str(path), file=outfile)
         if showlinks:
             for link in sorted(self.links):
