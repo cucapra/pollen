@@ -16,23 +16,23 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     simple_parser = subparsers.add_parser(
         "simple", help="Produces a simple JSON serialization of the graph."
     )
+    # Optional arguments - argparse automatically infers flags beginning with '-' as optional
     simple_parser.add_argument(
         "-n",
-        default="d",
         help="The max number of nodes.",
-        required=False,
     )
     simple_parser.add_argument(
         "-e",
-        default="d",
         help="The max number of steps per node.",
-        required=False,
     )
     simple_parser.add_argument(
         "-p",
-        default="d",
         help="The max number of paths.",
-        required=False,
+    )
+    simple_parser.add_argument(
+        "-s",
+        "--subset-paths",
+        help="A file where each line is a path of the graph to consider when calculating node depth",
     )
 
     _ = subparsers.add_parser(
@@ -45,27 +45,20 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
     depth_parser.add_argument(
         "-n",
-        default="d",
         help="The max number of nodes.",
-        required=False,
     )
     depth_parser.add_argument(
         "-e",
-        default="d",
         help="The max number of steps per node.",
-        required=False,
     )
     depth_parser.add_argument(
         "-p",
-        default="d",
         help="The max number of paths.",
-        required=False,
     )
     depth_parser.add_argument(
         "-s",
         "--subset-paths",
         help="A file where each line is a path of the graph to consider when calculating node depth",
-        required=False
     )
 
     # Add the graph argument to all subparsers.
@@ -98,9 +91,10 @@ def dispatch(args: argparse.Namespace) -> None:
     """Parse the graph from filename,
     then dispatch to the appropriate pollen_data_gen command.
     """
+    subset_paths = parse_subset_paths(args.subset_paths)
     name_to_func = {
-        "depth": lambda g: depth.depth_stdout(g, args.n, args.e, args.p, parse_subset_paths(args.subset_paths)),
-        "simple": lambda g: simple.dump(g, sys.stdout, args.n, args.e, args.p),
+        "depth": lambda g: depth.depth_stdout(g, args.n, args.e, args.p, subset_paths),
+        "simple": lambda g: simple.dump(g, sys.stdout, args.n, args.e, args.p, subset_paths),
         "roundtrip": simple.roundtrip_test,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))
