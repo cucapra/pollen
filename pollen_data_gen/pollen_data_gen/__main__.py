@@ -65,9 +65,7 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     # Doing it this way means that the graph argument is sought _after_ the
     # command name.
     for subparser in subparsers.choices.values():
-        subparser.add_argument(
-            "graph", help="Input GFA file", metavar="GRAPH"
-        )
+        subparser.add_argument("graph", help="Input GFA file", metavar="GRAPH")
 
     args = parser.parse_args()
 
@@ -94,7 +92,9 @@ def dispatch(args: argparse.Namespace) -> None:
     subset_paths = parse_subset_paths(args.subset_paths)
     name_to_func = {
         "depth": lambda g: depth.depth_stdout(g, args.n, args.e, args.p, subset_paths),
-        "simple": lambda g: simple.dump(g, sys.stdout, args.n, args.e, args.p, subset_paths),
+        "simple": lambda g: simple.dump(
+            g, sys.stdout, args.n, args.e, args.p, subset_paths
+        ),
         "roundtrip": simple.roundtrip_test,
     }
     graph = mygfa.Graph.parse(open(args.graph, "r", encoding="utf-8"))

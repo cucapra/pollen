@@ -93,7 +93,7 @@ def run_accel(args, tmp_dir_name):
     basename = os.path.basename(args.filename)
     base, ext = os.path.splitext(basename)
 
-    if ext == ".data": # Data file was provided
+    if ext == ".data":  # Data file was provided
         if args.auto_size == "d":
             warnings.warn("Cannot infer dimensions from .data file.", SyntaxWarning)
         data_file = args.filename
@@ -150,7 +150,6 @@ def run_accel(args, tmp_dir_name):
 
 
 def parse_data_file(args, tmp_dir_name):
-
     # Parser for parsing input to data file parser
     parser = argparse.ArgumentParser()
     parse_data.config_parser(parser)
@@ -159,24 +158,17 @@ def parse_data_file(args, tmp_dir_name):
     basename = os.path.basename(filename)
     base, ext = os.path.splitext(basename)
 
-    if ext == ".gfa": # Build an odgi file
+    if ext == ".gfa":  # Build an odgi file
         data_file = f"{tmp_dir_name}/{base}.data"
         og_file = f"{tmp_dir_name}/{base}.og"
-        cmd = [
-            "odgi",
-            "build",
-            "--gfa",
-            filename,
-            "--out",
-            og_file
-        ]
+        cmd = ["odgi", "build", "--gfa", filename, "--out", og_file]
         subprocess.run(cmd)
 
         new_args = [og_file, "--out", data_file]
-    elif ext == ".og": # Construct the pollen data file
+    elif ext == ".og":  # Construct the pollen data file
         data_file = f"{tmp_dir_name}/{base}.data"
         new_args = [filename, "--out", data_file]
-    else: 
+    else:
         raise Exception(f"file extension {ext} not recognized")
     parser.parse_args(new_args, namespace=args)
     parse_data.run(new_args)

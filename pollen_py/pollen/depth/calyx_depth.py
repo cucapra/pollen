@@ -3,6 +3,7 @@ import subprocess
 
 from calyx.py_ast import *
 from . import parse_data
+
 # from mygfa import mygfa, preprocess
 
 # Defaults for the maximum possible number of nodes,

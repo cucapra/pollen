@@ -128,7 +128,7 @@ def dump(
     max_n: Optional[int],
     max_e: Optional[int],
     max_p: Optional[int],
-    subset_paths: Optional[List[int]]
+    subset_paths: Optional[List[int]],
 ) -> None:
     """Outputs the graph as a JSON, along with precomputed data for the
     calculation of node depth.

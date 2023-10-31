@@ -34,7 +34,9 @@ def paths_viewed_from_nodes(
     return output
 
 
-def paths_to_consider(subset_paths_idx: List[int], max_n: int, max_p: int) -> OutputType:
+def paths_to_consider(
+    subset_paths_idx: List[int], max_n: int, max_p: int
+) -> OutputType:
     """Currently just a stub; later we will populate this with a
     bitvector of length MAX_PATHS, where the i'th index will be 1 if
     the i'th path is to be considered during depth calculation.
@@ -62,7 +64,9 @@ class NodeDepthEncoder(JSONEncoder):
     The exine command `depth` is the oracle for this encoding.
     """
 
-    def __init__(self, max_n: int, max_e: int, max_p: int, subset_paths: List[str], **kwargs: Any) -> None:
+    def __init__(
+        self, max_n: int, max_e: int, max_p: int, subset_paths: List[str], **kwargs: Any
+    ) -> None:
         super(NodeDepthEncoder, self).__init__(**kwargs)
         self.max_n = max_n
         self.max_e = max_e
@@ -95,8 +99,11 @@ class NodeDepthEncoder(JSONEncoder):
 
 
 def depth_json(
-    graph: mygfa.Graph, max_n: Optional[int], max_e: Optional[int], max_p: Optional[int],
-    subset_paths: Optional[List[str]]
+    graph: mygfa.Graph,
+    max_n: Optional[int],
+    max_e: Optional[int],
+    max_p: Optional[int],
+    subset_paths: Optional[List[str]],
 ) -> str:
     """Returns a JSON representation of `graph`
     that is specific to the exine command `depth`.
@@ -116,7 +123,9 @@ def depth_json(
     ).encode(graph)
 
 
-def depth_stdout(graph: mygfa.Graph, max_n: int, max_e: int, max_p: int, subset_paths: List[str]) -> None:
+def depth_stdout(
+    graph: mygfa.Graph, max_n: int, max_e: int, max_p: int, subset_paths: List[str]
+) -> None:
     """Prints a JSON representation of `graph` to stdout."""
     encoding = depth_json(graph, max_n, max_e, max_p, subset_paths)
 
