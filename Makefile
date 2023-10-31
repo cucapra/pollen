@@ -12,12 +12,12 @@ og: $(OG_FILES)
 
 test: fetch test-depth
 
-test-depth: fetch
+test-depth: fetch og
 	-turnt --save --env baseline tests/depth/subset-paths/*.txt
 	turnt --env calyx-depth tests/depth/subset-paths/*.txt
 
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
-	turnt --env calyx-depth $(DEPTH_OG_FILES)
+	turnt --env calyx $(DEPTH_OG_FILES)
 
 
 test-data-gen: og
