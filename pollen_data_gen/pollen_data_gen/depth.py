@@ -65,7 +65,12 @@ class NodeDepthEncoder(JSONEncoder):
     """
 
     def __init__(
-        self, max_n: int, max_e: int, max_p: int, subset_paths: List[str], **kwargs: Any
+        self,
+        max_n: int,
+        max_e: int,
+        max_p: int,
+        subset_paths: Optional[List[str]],
+        **kwargs: Any,
     ) -> None:
         super(NodeDepthEncoder, self).__init__(**kwargs)
         self.max_n = max_n
@@ -73,7 +78,9 @@ class NodeDepthEncoder(JSONEncoder):
         self.max_p = max_p
         self.subset_paths = subset_paths
 
-    def paths_to_idxs(self, o):
+    def paths_to_idxs(self, o: mygfa.Graph) -> List[int]:
+        if not self.subset_paths:
+            return []
         path2id = {path: id for id, path in enumerate(o.paths, start=1)}
         return list(map(lambda p: path2id[p], self.subset_paths))
 

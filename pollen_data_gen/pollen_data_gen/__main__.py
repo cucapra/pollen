@@ -1,6 +1,7 @@
 import sys
 import argparse
 from mygfa import mygfa
+from typing import List
 
 from . import depth, simple
 
@@ -72,7 +73,7 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     return parser, args
 
 
-def parse_subset_paths(filename):
+def parse_subset_paths(filename: str) -> List[str]:
     """
     Return a list of the names of paths in [filename]
     """
