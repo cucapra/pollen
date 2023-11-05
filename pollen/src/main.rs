@@ -53,7 +53,7 @@ pub fn parse_imports(imports: Pair<Rule>) -> Vec<Import> {
     let mut import_stmts = Vec::new();
     match imports.as_rule() {
         Rule::imports => {
-            let mut inner = imports.into_inner();
+            let inner = imports.into_inner();
             for import in inner { import_stmts.push(parse_import(import)) }
         },
         rule => { unreachable!("Imports expected, found {:?}", rule)}
@@ -803,7 +803,7 @@ fn extract_file(filename: String) -> String {
 pub fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let mut prog: String = match args.len() {
+    let prog: String = match args.len() {
         // one argument passed
         2 => {
             match args[1].parse() {
