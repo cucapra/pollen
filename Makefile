@@ -5,6 +5,11 @@ DEPTH_OG_FILES := $(OG_FILES:tests/%.og=tests/depth/%.og)
 GFA_URL := https://raw.githubusercontent.com/pangenome/odgi/ebc493f2622f49f1e67c63c1935d68967cd16d85/test
 GFA_ZIP_URL := https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/scratch/2021_05_06_pggb/gfas/chr8.pan.gfa.gz
 
+# A smaller set of test inputs for faster runs.
+ifdef SMALL
+TEST_FILES := t k note5 overlap q.chop DRB1-3123
+endif
+
 .PHONY: fetch og test clean test-all
 fetch: $(TEST_FILES:%=tests/%.gfa)
 

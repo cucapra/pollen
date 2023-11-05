@@ -44,7 +44,7 @@ jobs:
         run: echo '::add-matcher::.github/tap-matcher.json'
 
       - name: Fetch test data
-        run: make fetch
+        run: make fetch SMALL=1
 
       - name: Pull odgi container
         run: |
