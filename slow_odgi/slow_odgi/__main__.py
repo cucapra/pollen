@@ -1,7 +1,7 @@
 import argparse
 import sys
 import io
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from collections.abc import Callable
 from mygfa import mygfa
 
@@ -58,9 +58,8 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
     depth_parser.add_argument(
         "--paths",
-        nargs="?",
         help="A file describing the paths you wish to query.",
-        required=True,
+        required=False,
     )
 
     subparsers.add_parser(
@@ -143,9 +142,12 @@ def parse_bedfile(filename: str) -> List[mygfa.Bed]:
     return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
-def parse_paths(filename: str) -> List[str]:
+def parse_paths(filename: Optional[str]) -> List[str]:
     """Parse path names from a file."""
-    return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
+    if filename:
+        return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
+    else:
+        return None
 
 
 def dispatch(args: argparse.Namespace) -> None:
