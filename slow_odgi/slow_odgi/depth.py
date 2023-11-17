@@ -1,8 +1,8 @@
-from typing import List
+from typing import List, Optional
 from mygfa import mygfa, preprocess
 
 
-def depth(graph: mygfa.Graph, inputpaths: List[str]) -> mygfa.Graph:
+def depth(graph: mygfa.Graph, inputpaths: Optional[List[str]]) -> mygfa.Graph:
     """The depth of a node is the cardinality of node_step for that node."""
     print("\t".join(["#node.id", "depth", "depth.uniq"]))
     for seg, crossings in preprocess.node_steps(graph).items():

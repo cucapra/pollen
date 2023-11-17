@@ -142,12 +142,9 @@ def parse_bedfile(filename: str) -> List[mygfa.Bed]:
     return [mygfa.Bed.parse(line) for line in (mygfa.nonblanks(bedfile))]
 
 
-def parse_paths(filename: Optional[str]) -> List[str]:
+def parse_paths(filename: str) -> List[str]:
     """Parse path names from a file."""
-    if filename:
-        return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
-    else:
-        return None
+    return list(mygfa.nonblanks(open(filename, "r", encoding="utf-8")))
 
 
 def dispatch(args: argparse.Namespace) -> None:
@@ -169,7 +166,8 @@ def dispatch(args: argparse.Namespace) -> None:
     # Other functions, which typically print their own output.
     other_funcs: Dict[str, Callable[[mygfa.Graph], object]] = {
         "degree": degree.degree,
-        "depth": lambda g: depth.depth(g, parse_paths(args.paths)),
+        "depth": lambda g: depth.depth(g, parse_paths(args.paths)
+                                          if args.paths else None),
         "flatten": lambda g: flatten.flatten(g, f"{args.graph[:-4]}.og"),
         "matrix": matrix.matrix,
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
