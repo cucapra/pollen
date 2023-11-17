@@ -1,0 +1,18 @@
+.decl direction(name: symbol)
+direction("forward").
+direction("backward").
+
+.type index = number
+
+.decl segment(name: symbol)
+.decl path(name: symbol)
+.decl gfa(path: symbol, idx: index, direction: symbol, segment: symbol)
+
+.input segment(filename="segments.csv")
+.input path(filename="paths.csv")
+.input gfa(filename="gfa.csv", delimiter=",")
+
+.decl depth(seg: symbol, c: number)
+depth(s, c) :- segment(s), c = count : { gfa(_, _, _, s) }.
+
+.output depth(filename="depth.csv", delimiter=",")
