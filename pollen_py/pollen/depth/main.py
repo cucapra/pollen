@@ -93,15 +93,18 @@ def run_accel(args, tmp_dir_name):
     basename = os.path.basename(args.filename)
     base, ext = os.path.splitext(basename)
 
-    if ext == ".data":
+    if ext == ".data":  # Data file was provided
         if args.auto_size == "d":
             warnings.warn("Cannot infer dimensions from .data file.", SyntaxWarning)
         data_file = args.filename
     else:
+        # parse_data_file(args, tmp_dir_name)
         data_file = f"{tmp_dir_name}/{base}.data"
         new_args = [args.filename, "--out", data_file]
         parser.parse_args(new_args, namespace=args)
+        # print("here1")
         parse_data.run(args)
+        # print("here2")
 
     # Generate the accelerator if necessary
     if args.accelerator:
@@ -146,6 +149,31 @@ def run_accel(args, tmp_dir_name):
         print(output)
 
 
+def parse_data_file(args, tmp_dir_name):
+    # Parser for parsing input to data file parser
+    parser = argparse.ArgumentParser()
+    parse_data.config_parser(parser)
+
+    filename = args.filename
+    basename = os.path.basename(filename)
+    base, ext = os.path.splitext(basename)
+
+    if ext == ".gfa":  # Build an odgi file
+        data_file = f"{tmp_dir_name}/{base}.data"
+        og_file = f"{tmp_dir_name}/{base}.og"
+        cmd = ["odgi", "build", "--gfa", filename, "--out", og_file]
+        subprocess.run(cmd)
+
+        new_args = [og_file, "--out", data_file]
+    elif ext == ".og":  # Construct the pollen data file
+        data_file = f"{tmp_dir_name}/{base}.data"
+        new_args = [filename, "--out", data_file]
+    else:
+        raise Exception(f"file extension {ext} not recognized")
+    parser.parse_args(new_args, namespace=args)
+    parse_data.run(new_args)
+
+
 def run(args):
     if args.action == "gen":  # Generate an accelerator
         if args.subset_paths or args.accelerator or args.pr:
@@ -153,14 +181,12 @@ def run(args):
                 "--subset-paths, --accelerator, and --pr will be ignored if action is gen.",
                 SyntaxWarning,
             )
-        if args.auto_size == "d":
-            raise Exception("When action is gen, -a <file> must be specified.")
         depth.run(args)
 
     elif args.action == "parse":  # Generate a data file
         if args.accelerator or args.pr:
             warnings.warn(
-                "--accelerator and --pr will be ignored if action is not run.",
+                "--accelerator and --pr will be ignored if action is not 'run'.",
                 SyntaxWarning,
             )
 
@@ -168,7 +194,7 @@ def run(args):
         parse_data.config_parser(parser)
         parser.parse_args(
             [args.filename], namespace=args
-        )  # Set defaults for all arguments
+        )  # Set defaults for all arguments; does not change existing arguments
         parse_data.run(args)
 
     elif args.action == "run":  # Run the accelerator

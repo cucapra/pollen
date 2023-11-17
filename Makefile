@@ -16,14 +16,14 @@ fetch: $(TEST_FILES:%=tests/%.gfa)
 
 og: $(OG_FILES)
 
-test: og test-depth
+test: fetch test-depth
 
-test-depth: og
+test-depth: fetch og
 	-turnt --save --env baseline tests/depth/subset-paths/*.txt
-	turnt tests/depth/subset-paths/*.txt
+	turnt --env calyx-depth tests/depth/subset-paths/*.txt
 
 	-turnt --save --env baseline $(DEPTH_OG_FILES)
-	turnt $(DEPTH_OG_FILES)
+	turnt --env calyx $(DEPTH_OG_FILES)
 
 
 test-data-gen: og
