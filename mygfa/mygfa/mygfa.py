@@ -1,8 +1,10 @@
-import sys
-from dataclasses import dataclass
-from typing import List, Tuple, Optional, Dict, TextIO, Iterator
-from enum import Enum
 import re
+import sys
+
+from collections import OrderedDict
+from dataclasses import dataclass
+from enum import Enum
+from typing import List, Tuple, Optional, Dict, TextIO, Iterator
 
 
 def parse_orientation(ori: str) -> bool:
@@ -274,7 +276,7 @@ class Graph:
     @classmethod
     def parse(cls, infile: TextIO) -> "Graph":
         """Parse a GFA file."""
-        graph = Graph([], {}, [], {})
+        graph = Graph([], {}, [], OrderedDict())
 
         for line in nonblanks(infile):
             fields = line.split()

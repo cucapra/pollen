@@ -128,6 +128,7 @@ def dump(
     max_n: Optional[int],
     max_e: Optional[int],
     max_p: Optional[int],
+    subset_paths: Optional[List[str]] = None,
 ) -> None:
     """Outputs the graph as a JSON, along with precomputed data for the
     calculation of node depth.
@@ -140,7 +141,7 @@ def dump(
         | {f"path_details_{k}": v for k, v in graph.paths.items()}
     )
 
-    depth_encoding = depth.depth_json(graph, max_n, max_e, max_p)
+    depth_encoding = depth.depth_json(graph, max_n, max_e, max_p, subset_paths)
 
     json.dump(
         {
