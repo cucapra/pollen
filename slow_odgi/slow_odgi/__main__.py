@@ -1,7 +1,7 @@
 import argparse
 import sys
 import io
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from collections.abc import Callable
 from mygfa import mygfa
 
@@ -58,9 +58,8 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     )
     depth_parser.add_argument(
         "--paths",
-        nargs="?",
         help="A file describing the paths you wish to query.",
-        required=True,
+        required=False,
     )
 
     subparsers.add_parser(
@@ -167,7 +166,9 @@ def dispatch(args: argparse.Namespace) -> None:
     # Other functions, which typically print their own output.
     other_funcs: Dict[str, Callable[[mygfa.Graph], object]] = {
         "degree": degree.degree,
-        "depth": lambda g: depth.depth(g, parse_paths(args.paths)),
+        "depth": lambda g: depth.depth(
+            g, parse_paths(args.paths) if args.paths else None
+        ),
         "flatten": lambda g: flatten.flatten(g, f"{args.graph[:-4]}.og"),
         "matrix": matrix.matrix,
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
