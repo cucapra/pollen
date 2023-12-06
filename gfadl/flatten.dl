@@ -1,0 +1,18 @@
+#include "gfa.dl"
+
+.decl bed(path: symbol, seq: symbol)
+bed(p, s) :- bed_idx_upto(p, 0, s).
+
+.decl bed_idx(path: symbol, idx: number, seq: symbol)
+bed_idx(p, i, s) :- gfa(p, i, dir, seg),
+    seq(seg, s).
+
+.decl bed_idx_upto(path: symbol, idx: number, seq: symbol)
+bed_idx_upto(p, i, cat(s1, s2)) :- bed_idx(p, i, s1),
+    bed_idx_upto(p, i+1, s2).
+bed_idx_upto(p, n, "") :- path(p), step_count(p, n).
+
+.decl step_count(path: symbol, n: number)
+step_count(p, n) :- n = max i : { gfa(p, i, _, _) }.
+
+.output bed

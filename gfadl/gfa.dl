@@ -6,8 +6,10 @@ direction("backward").
 
 .decl segment(name: symbol)
 .decl path(name: symbol)
+.decl seq(path: symbol, data: symbol)
 .decl gfa(path: symbol, idx: index, direction: symbol, segment: symbol)
 
 .input segment(filename="segments.csv")
 .input path(filename="paths.csv")
+.input seq(filename="seq.csv", delimiter=",")
 .input gfa(filename="gfa.csv", delimiter=",")
