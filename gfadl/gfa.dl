@@ -11,8 +11,3 @@ direction("backward").
 .input segment(filename="segments.csv")
 .input path(filename="paths.csv")
 .input gfa(filename="gfa.csv", delimiter=",")
-
-.decl depth(seg: symbol, c: number)
-depth(s, c) :- segment(s), c = count : { gfa(_, _, _, s) }.
-
-.output depth(filename="depth.csv", delimiter=",")
