@@ -14,6 +14,15 @@ def gfadl(outdir):
         for seg_name in graph.segments:
             print(seg_name, file=f)
 
+    # Output the segment contents (sequences).
+    with open(os.path.join(outdir, 'seq.csv'), 'w') as f:
+        writer = csv.writer(f)
+        for seg in graph.segments.values():
+            writer.writerow([
+                seg.name,
+                seg.seq,
+            ])
+
     # Output path names.
     with open(os.path.join(outdir, 'paths.csv'), 'w') as f:
         for path_name in graph.paths:
