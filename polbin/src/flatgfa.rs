@@ -32,6 +32,10 @@ impl FlatGFA {
         self.seqdata[seg.seq.clone()].as_ref()
     }
 
+    pub fn get_steps(&self, path: &PathInfo) -> &[Handle] {
+        &self.steps[path.steps.clone()]
+    }
+
     pub fn add_seg(&mut self, name: usize, seq: Vec<u8>) {
         self.segs.push(SegInfo {
             name,
