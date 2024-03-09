@@ -17,7 +17,7 @@ struct PathInfo {
     step_len: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Handle {
     segment: usize,
     forward: bool,
@@ -110,4 +110,26 @@ fn main() {
     dbg!(segs);
     dbg!(paths);
     dbg!(steps);
+}
+
+#[test]
+fn test_parse_path() {
+    let path = parse_path_segs(b"1+,23-,4+".to_vec());
+    assert_eq!(
+        path,
+        vec![
+            Handle {
+                segment: 1,
+                forward: true
+            },
+            Handle {
+                segment: 23,
+                forward: false
+            },
+            Handle {
+                segment: 4,
+                forward: true
+            }
+        ]
+    );
 }
