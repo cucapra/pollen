@@ -2,6 +2,7 @@ use crate::flatgfa::{FlatGFA, Handle, PathInfo, SegInfo};
 use bstr::BString;
 use gfa::gfa::Line;
 use gfa::parser::GFAParserBuilder;
+use std::ops::Range;
 
 /// Parse a GFA text file.
 pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFA {
@@ -24,8 +25,10 @@ fn parse_line(flat: &mut FlatGFA, line: Line<usize, ()>) {
         Line::Segment(mut s) => {
             flat.segs.push(SegInfo {
                 name: s.name,
-                seq_offset: flat.seqdata.len(),
-                seq_len: s.sequence.len(),
+                seq: Range {
+                    start: flat.seqdata.len(),
+                    end: flat.seqdata.len() + s.sequence.len(),
+                },
             });
             flat.seqdata.append(&mut s.sequence);
         }
@@ -38,8 +41,10 @@ fn parse_line(flat: &mut FlatGFA, line: Line<usize, ()>) {
 
             flat.paths.push(PathInfo {
                 name: BString::new(p.path_name),
-                step_offset: flat.steps.len(),
-                step_len: segs.len(),
+                steps: Range {
+                    start: flat.steps.len(),
+                    end: flat.steps.len() + segs.len(),
+                },
             });
             flat.steps.append(&mut segs);
 
