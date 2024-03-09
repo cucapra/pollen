@@ -67,7 +67,7 @@ fn parse_path_segs(data: Vec<u8>) -> Vec<Handle> {
                         forward: byte == b'+',
                     });
                     state = PathParseState::Comma;
-                } else if byte >= b'0' && byte <= b'9' {
+                } else if (b'0'..=b'9').contains(&byte) {
                     seg *= 10;
                     seg += (byte - b'0') as usize;
                 } else {
