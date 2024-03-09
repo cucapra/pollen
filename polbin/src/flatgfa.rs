@@ -1,17 +1,16 @@
-use bstr::BString;
+use bstr::{BStr, BString};
+use std::ops::Range;
 
 #[derive(Debug)]
 pub struct SegInfo {
     pub name: usize,
-    pub seq_offset: usize,
-    pub seq_len: usize,
+    pub seq: Range<usize>,
 }
 
 #[derive(Debug)]
 pub struct PathInfo {
     pub name: BString,
-    pub step_offset: usize,
-    pub step_len: usize,
+    pub steps: Range<usize>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,4 +25,10 @@ pub struct FlatGFA {
     pub segs: Vec<SegInfo>,
     pub paths: Vec<PathInfo>,
     pub steps: Vec<Handle>,
+}
+
+impl FlatGFA {
+    pub fn get_seq(&self, seg: &SegInfo) -> &BStr {
+        self.seqdata[seg.seq.clone()].as_ref()
+    }
 }
