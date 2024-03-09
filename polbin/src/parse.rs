@@ -1,8 +1,6 @@
-use crate::flatgfa::{FlatGFA, Handle, PathInfo, SegInfo};
-use bstr::BString;
+use crate::flatgfa::{FlatGFA, Handle};
 use gfa::gfa::Line;
 use gfa::parser::GFAParserBuilder;
-use std::ops::Range;
 
 /// Parse a GFA text file.
 pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFA {
@@ -22,39 +20,23 @@ pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFA {
 fn parse_line(flat: &mut FlatGFA, line: Line<usize, ()>) {
     match line {
         Line::Header(_) => {}
-        Line::Segment(mut s) => {
-            flat.segs.push(SegInfo {
-                name: s.name,
-                seq: Range {
-                    start: flat.seqdata.len(),
-                    end: flat.seqdata.len() + s.sequence.len(),
-                },
-            });
-            flat.seqdata.append(&mut s.sequence);
+        Line::Segment(s) => {
+            flat.add_seg(s.name, s.sequence);
         }
         Line::Link(_) => {}
         Line::Path(p) => {
-            // The underlying gfa-rs library does not yet parse the actual segments
-            // involved in the path. So we do it ourselves: splitting on commas and
-            // matching the direction.
-            let mut segs = parse_path_steps(p.segment_names);
-
-            flat.paths.push(PathInfo {
-                name: BString::new(p.path_name),
-                steps: Range {
-                    start: flat.steps.len(),
-                    end: flat.steps.len() + segs.len(),
-                },
-            });
-            flat.steps.append(&mut segs);
-
-            // TODO Handle the overlaps.
+            let steps = parse_path_steps(p.segment_names);
+            flat.add_path(p.path_name, steps);
         }
         Line::Containment(_) => {}
     }
 }
 
 /// Parse GFA paths' segment lists. These look like `1+,2-,3+`.
+///
+/// The underlying gfa-rs library does not yet parse the actual segments
+/// involved in the path. So we do it ourselves: splitting on commas and
+/// matching the direction.
 fn parse_path_steps(data: Vec<u8>) -> Vec<Handle> {
     // The parser state: we're either looking for a segment name (or a +/- terminator),
     // or we're expecting a comma (or end of string).
