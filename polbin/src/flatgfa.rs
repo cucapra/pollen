@@ -47,6 +47,12 @@ pub struct AlignOp {
     pub len: u32,
 }
 
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct Alignment<'a> {
+    pub ops: &'a [AlignOp],
+}
+
 #[derive(Debug, Default)]
 pub struct FlatGFA {
     pub header: Option<BString>,
@@ -73,8 +79,10 @@ impl FlatGFA {
         &self.overlaps[path.overlaps.clone()]
     }
 
-    pub fn get_alignment(&self, overlap: &Range<usize>) -> &[AlignOp] {
-        &self.alignment[overlap.clone()]
+    pub fn get_alignment(&self, overlap: &Range<usize>) -> Alignment {
+        Alignment {
+            ops: &self.alignment[overlap.clone()],
+        }
     }
 
     pub fn add_header(&mut self, version: Vec<u8>) {

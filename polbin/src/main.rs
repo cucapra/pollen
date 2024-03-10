@@ -23,15 +23,18 @@ impl fmt::Display for flatgfa::AlignOpcode {
     }
 }
 
+impl<'a> fmt::Display for flatgfa::Alignment<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for op in self.ops {
+            write!(f, "{}{}", op.len, op.op)?;
+        }
+        Ok(())
+    }
+}
+
 fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
     let seg = &gfa.segs[handle.segment];
     print!("{}{}", seg.name, handle.orient);
-}
-
-fn print_cigar(ops: &[flatgfa::AlignOp]) {
-    for op in ops {
-        print!("{}{}", op.len, op.op);
-    }
 }
 
 fn main() {
@@ -58,23 +61,21 @@ fn main() {
         if overlaps.is_empty() {
             print!("*");
         } else {
-            print_cigar(gfa.get_alignment(&overlaps[0]));
+            print!("{}", gfa.get_alignment(&overlaps[0]));
             for overlap in overlaps[1..].iter() {
-                print!(",");
-                print_cigar(gfa.get_alignment(overlap));
+                print!(",{}", gfa.get_alignment(overlap));
             }
         }
         println!();
     }
     for link in &gfa.links {
-        print!(
-            "L\t{}\t{}\t{}\t{}\t",
+        println!(
+            "L\t{}\t{}\t{}\t{}\t{}",
             gfa.segs[link.from.segment].name,
             link.from.orient,
             gfa.segs[link.to.segment].name,
-            link.to.orient
+            link.to.orient,
+            gfa.get_alignment(&link.overlap)
         );
-        print_cigar(gfa.get_alignment(&link.overlap));
-        println!();
     }
 }
