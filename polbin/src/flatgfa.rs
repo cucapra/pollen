@@ -91,15 +91,13 @@ impl FlatGFA {
     }
 
     pub fn add_seg(&mut self, name: usize, seq: Vec<u8>) -> usize {
-        self.segs.push(SegInfo {
-            name,
-            seq: Range {
-                start: self.seqdata.len(),
-                end: self.seqdata.len() + seq.len(),
+        pool_push(
+            &mut self.segs,
+            SegInfo {
+                name,
+                seq: pool_append(&mut self.seqdata, seq),
             },
-        });
-        self.seqdata.extend(seq);
-        self.segs.len() - 1
+        )
     }
 
     pub fn add_path(
@@ -108,40 +106,48 @@ impl FlatGFA {
         steps: Vec<Handle>,
         overlaps: Vec<Vec<AlignOp>>,
     ) -> usize {
-        self.paths.push(PathInfo {
-            name: BString::new(name),
-            steps: Range {
-                start: self.steps.len(),
-                end: self.steps.len() + steps.len(),
+        let path_id = pool_push(
+            &mut self.paths,
+            PathInfo {
+                name: BString::new(name),
+                steps: pool_append(&mut self.steps, steps),
+                overlaps: Range {
+                    start: self.overlaps.len(),
+                    end: self.overlaps.len() + overlaps.len(),
+                },
             },
-            overlaps: Range {
-                start: self.overlaps.len(),
-                end: self.overlaps.len() + overlaps.len(),
-            },
-        });
-        self.steps.extend(steps);
+        );
 
         for align in overlaps {
-            self.overlaps.push(Range {
-                start: self.alignment.len(),
-                end: self.alignment.len() + align.len(),
-            });
-            self.alignment.extend(align);
+            self.overlaps.push(pool_append(&mut self.alignment, align));
         }
 
-        self.paths.len() - 1
+        path_id
     }
 
     pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> usize {
-        self.links.push(LinkInfo {
-            from,
-            to,
-            overlap: Range {
-                start: self.alignment.len(),
-                end: self.alignment.len() + overlap.len(),
+        pool_push(
+            &mut self.links,
+            LinkInfo {
+                from,
+                to,
+                overlap: pool_append(&mut self.alignment, overlap),
             },
-        });
-        self.alignment.extend(overlap);
-        self.links.len() - 1
+        )
     }
+}
+
+/// Add an item to a "pool" vector and get the new index (ID).
+fn pool_push<T>(vec: &mut Vec<T>, item: T) -> usize {
+    let len = vec.len();
+    vec.push(item);
+    len
+}
+
+/// Add an entire collection of items to a "pool" vector and return the
+/// range of new indices (IDs).
+fn pool_append<T>(vec: &mut Vec<T>, items: Vec<T>) -> Range<usize> {
+    let range = vec.len()..(vec.len() + items.len());
+    vec.extend(items);
+    range
 }
