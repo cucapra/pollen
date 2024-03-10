@@ -2,6 +2,41 @@ use crate::flatgfa::{AlignOp, FlatGFA, Handle, LineKind, Orientation};
 use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
+/// A newtype to preserve optional fields without parsing them.
+///
+/// The underlying gfa-rs library lets you specify a type to hold optional
+/// fields. We just store a plain (byte) string.
+#[derive(Clone, Default, Debug)]
+struct OptFields(Vec<u8>);
+
+impl gfa::optfields::OptFields for OptFields {
+    fn get_field(&self, _: &[u8]) -> Option<&gfa::optfields::OptField> {
+        None
+    }
+
+    fn fields(&self) -> &[gfa::optfields::OptField] {
+        &[]
+    }
+
+    fn parse<T>(input: T) -> Self
+    where
+        T: IntoIterator,
+        T::Item: AsRef<[u8]>,
+    {
+        let mut out: Vec<u8> = vec![];
+        let mut first = true;
+        for i in input {
+            if first {
+                first = false;
+            } else {
+                out.push(b'\t');
+            }
+            out.extend(i.as_ref());
+        }
+        Self(out)
+    }
+}
+
 #[derive(Default)]
 pub struct Parser {
     // The flat representation we're building.
@@ -10,8 +45,8 @@ pub struct Parser {
     // Track the segment IDs by their name, which we need to refer to segments in paths.
     segs_by_name: HashMap<usize, usize>,
 
-    links: Vec<gfa::gfa::Link<usize, ()>>,
-    paths: Vec<gfa::gfa::Path<usize, ()>>,
+    links: Vec<gfa::gfa::Link<usize, OptFields>>,
+    paths: Vec<gfa::gfa::Path<usize, OptFields>>,
 }
 
 impl Parser {
@@ -20,7 +55,7 @@ impl Parser {
         let gfa_parser = GFAParserBuilder::none()
             .segments(true)
             .paths(true)
-            .build_usize_id::<()>();
+            .build_usize_id::<OptFields>();
         let mut parser = Self::default();
         for line in stream.lines() {
             let gfa_line = gfa_parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
@@ -34,7 +69,7 @@ impl Parser {
     /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
-    fn parse_line(&mut self, line: Line<usize, ()>) {
+    fn parse_line(&mut self, line: Line<usize, OptFields>) {
         match line {
             Line::Header(h) => {
                 self.flat.line_order.push(LineKind::Header);
@@ -42,7 +77,7 @@ impl Parser {
             }
             Line::Segment(s) => {
                 self.flat.line_order.push(LineKind::Segment);
-                let seg_id = self.flat.add_seg(s.name, s.sequence);
+                let seg_id = self.flat.add_seg(s.name, s.sequence, s.optional.0);
                 self.segs_by_name.insert(s.name, seg_id);
             }
             Line::Link(l) => {

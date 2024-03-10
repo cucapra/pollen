@@ -68,7 +68,11 @@ fn print_link(gfa: &flatgfa::FlatGFA, link: &flatgfa::LinkInfo) {
 }
 
 fn print_seg(gfa: &flatgfa::FlatGFA, seg: &flatgfa::SegInfo) {
-    println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
+    print!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
+    if !seg.optional.is_empty() {
+        print!("\t{}", gfa.get_optional_data(seg));
+    }
+    println!();
 }
 
 /// Print our flat representation as a GFA text file to stdout.
