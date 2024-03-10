@@ -63,6 +63,8 @@ fn main() {
         print_orient(&link.from.orient);
         print!("\t{}\t", gfa.segs[link.to.segment].name);
         print_orient(&link.to.orient);
+        print!("\t");
+        print_cigar(gfa.get_alignment(&link.overlap));
         println!();
     }
 }

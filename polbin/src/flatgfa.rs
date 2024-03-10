@@ -18,6 +18,7 @@ pub struct PathInfo {
 pub struct LinkInfo {
     pub from: Handle,
     pub to: Handle,
+    pub overlap: Range<usize>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -123,8 +124,16 @@ impl FlatGFA {
         self.paths.len() - 1
     }
 
-    pub fn add_link(&mut self, from: Handle, to: Handle) -> usize {
-        self.links.push(LinkInfo { from, to });
+    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> usize {
+        self.links.push(LinkInfo {
+            from,
+            to,
+            overlap: Range {
+                start: self.alignment.len(),
+                end: self.alignment.len() + overlap.len(),
+            },
+        });
+        self.alignment.extend(overlap);
         self.links.len() - 1
     }
 }
