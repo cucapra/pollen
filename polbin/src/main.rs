@@ -32,4 +32,13 @@ fn main() {
         }
         println!();
     }
+    for link in &gfa.links {
+        println!(
+            "L\t{}\t{}\t{}\t{}",
+            gfa.segs[link.from.segment].name,
+            if link.from.forward { '+' } else { '-' },
+            gfa.segs[link.to.segment].name,
+            if link.to.forward { '+' } else { '-' },
+        );
+    }
 }

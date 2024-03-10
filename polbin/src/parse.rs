@@ -1,5 +1,5 @@
 use crate::flatgfa::{FlatGFA, Handle};
-use gfa::gfa::Line;
+use gfa::gfa::{Line, Orientation};
 use gfa::parser::GFAParserBuilder;
 use std::collections::HashMap;
 
@@ -37,7 +37,17 @@ impl Parser {
                 let seg_id = self.flat.add_seg(s.name, s.sequence);
                 self.segs_by_name.insert(s.name, seg_id);
             }
-            Line::Link(_) => {}
+            Line::Link(l) => {
+                let from = Handle {
+                    segment: self.segs_by_name[&l.from_segment],
+                    forward: l.from_orient == Orientation::Forward,
+                };
+                let to = Handle {
+                    segment: self.segs_by_name[&l.to_segment],
+                    forward: l.to_orient == Orientation::Backward,
+                };
+                self.flat.add_link(from, to);
+            }
             Line::Path(p) => {
                 let steps = parse_path_steps(p.segment_names);
                 self.flat.add_path(

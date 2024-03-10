@@ -13,6 +13,12 @@ pub struct PathInfo {
     pub steps: Range<usize>,
 }
 
+#[derive(Debug)]
+pub struct LinkInfo {
+    pub from: Handle,
+    pub to: Handle,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Handle {
     pub segment: usize,
@@ -21,11 +27,12 @@ pub struct Handle {
 
 #[derive(Debug, Default)]
 pub struct FlatGFA {
+    pub header: Option<BString>,
     pub seqdata: Vec<u8>,
     pub segs: Vec<SegInfo>,
     pub paths: Vec<PathInfo>,
     pub steps: Vec<Handle>,
-    pub header: Option<BString>,
+    pub links: Vec<LinkInfo>,
 }
 
 impl FlatGFA {
@@ -35,6 +42,11 @@ impl FlatGFA {
 
     pub fn get_steps(&self, path: &PathInfo) -> &[Handle] {
         &self.steps[path.steps.clone()]
+    }
+
+    pub fn add_header(&mut self, version: Vec<u8>) {
+        assert!(self.header.is_none());
+        self.header = Some(version.into());
     }
 
     pub fn add_seg(&mut self, name: usize, seq: Vec<u8>) -> usize {
@@ -62,8 +74,8 @@ impl FlatGFA {
         self.paths.len() - 1
     }
 
-    pub fn add_header(&mut self, version: Vec<u8>) {
-        assert!(self.header.is_none());
-        self.header = Some(version.into());
+    pub fn add_link(&mut self, from: Handle, to: Handle) -> usize {
+        self.links.push(LinkInfo { from, to });
+        self.links.len() - 1
     }
 }
