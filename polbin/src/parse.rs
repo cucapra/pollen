@@ -72,20 +72,20 @@ impl Parser {
     fn parse_line(&mut self, line: Line<usize, OptFields>) {
         match line {
             Line::Header(h) => {
-                self.flat.line_order.push(LineKind::Header);
+                self.flat.record_line(LineKind::Header);
                 self.flat.add_header(h.version.unwrap());
             }
             Line::Segment(s) => {
-                self.flat.line_order.push(LineKind::Segment);
+                self.flat.record_line(LineKind::Segment);
                 let seg_id = self.flat.add_seg(s.name, s.sequence, s.optional.0);
                 self.segs_by_name.insert(s.name, seg_id);
             }
             Line::Link(l) => {
-                self.flat.line_order.push(LineKind::Link);
+                self.flat.record_line(LineKind::Link);
                 self.links.push(l);
             }
             Line::Path(p) => {
-                self.flat.line_order.push(LineKind::Path);
+                self.flat.record_line(LineKind::Path);
                 self.paths.push(p);
             }
             Line::Containment(_) => unimplemented!(),
