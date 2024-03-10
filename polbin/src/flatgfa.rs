@@ -53,6 +53,14 @@ pub struct Alignment<'a> {
     pub ops: &'a [AlignOp],
 }
 
+#[derive(Debug)]
+pub enum LineKind {
+    Header,
+    Segment,
+    Path,
+    Link,
+}
+
 #[derive(Debug, Default)]
 pub struct FlatGFA {
     pub header: Option<BString>,
@@ -65,6 +73,8 @@ pub struct FlatGFA {
     pub overlaps: Vec<Range<usize>>,
     pub alignment: Vec<AlignOp>,
     pub namedata: BString,
+
+    pub line_order: Vec<LineKind>,
 }
 
 impl FlatGFA {
