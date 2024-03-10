@@ -45,7 +45,7 @@ pub fn print(gfa: &flatgfa::FlatGFA) {
         println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
     }
     for path in &gfa.paths {
-        print!("P\t{}\t", path.name);
+        print!("P\t{}\t", gfa.get_path_name(path));
         let steps = gfa.get_steps(path);
         print_step(&gfa, &steps[0]);
         for step in steps[1..].iter() {
