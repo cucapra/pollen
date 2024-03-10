@@ -2,21 +2,21 @@ use bstr::{BStr, BString};
 use std::ops::Range;
 
 #[derive(Debug)]
-pub struct SegInfo {
+pub struct Segment {
     pub name: usize,
     pub seq: Range<usize>,
     pub optional: Range<usize>,
 }
 
 #[derive(Debug)]
-pub struct PathInfo {
+pub struct Path {
     pub name: Range<usize>,
     pub steps: Range<usize>,
     pub overlaps: Range<usize>,
 }
 
 #[derive(Debug)]
-pub struct LinkInfo {
+pub struct Link {
     pub from: Handle,
     pub to: Handle,
     pub overlap: Range<usize>,
@@ -65,9 +65,9 @@ pub enum LineKind {
 #[derive(Debug, Default)]
 pub struct FlatGFA {
     pub header: Option<BString>,
-    pub segs: Vec<SegInfo>,
-    pub paths: Vec<PathInfo>,
-    pub links: Vec<LinkInfo>,
+    pub segs: Vec<Segment>,
+    pub paths: Vec<Path>,
+    pub links: Vec<Link>,
 
     pub steps: Vec<Handle>,
     pub seqdata: Vec<u8>,
@@ -80,23 +80,23 @@ pub struct FlatGFA {
 }
 
 impl FlatGFA {
-    pub fn get_seq(&self, seg: &SegInfo) -> &BStr {
+    pub fn get_seq(&self, seg: &Segment) -> &BStr {
         self.seqdata[seg.seq.clone()].as_ref()
     }
 
-    pub fn get_steps(&self, path: &PathInfo) -> &[Handle] {
+    pub fn get_steps(&self, path: &Path) -> &[Handle] {
         &self.steps[path.steps.clone()]
     }
 
-    pub fn get_overlaps(&self, path: &PathInfo) -> &[Range<usize>] {
+    pub fn get_overlaps(&self, path: &Path) -> &[Range<usize>] {
         &self.overlaps[path.overlaps.clone()]
     }
 
-    pub fn get_path_name(&self, path: &PathInfo) -> &BStr {
+    pub fn get_path_name(&self, path: &Path) -> &BStr {
         self.namedata[path.name.clone()].as_ref()
     }
 
-    pub fn get_optional_data(&self, seg: &SegInfo) -> &BStr {
+    pub fn get_optional_data(&self, seg: &Segment) -> &BStr {
         self.optional_data[seg.optional.clone()].as_ref()
     }
 
@@ -114,7 +114,7 @@ impl FlatGFA {
     pub fn add_seg(&mut self, name: usize, seq: Vec<u8>, optional: Vec<u8>) -> usize {
         pool_push(
             &mut self.segs,
-            SegInfo {
+            Segment {
                 name,
                 seq: pool_append(&mut self.seqdata, seq),
                 optional: pool_append(&mut self.optional_data, optional),
@@ -139,7 +139,7 @@ impl FlatGFA {
 
         pool_push(
             &mut self.paths,
-            PathInfo {
+            Path {
                 name: pool_append(&mut self.namedata, name),
                 steps: pool_append(&mut self.steps, steps),
                 overlaps,
@@ -150,7 +150,7 @@ impl FlatGFA {
     pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> usize {
         pool_push(
             &mut self.links,
-            LinkInfo {
+            Link {
                 from,
                 to,
                 overlap: pool_append(&mut self.alignment, overlap),
