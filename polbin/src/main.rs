@@ -4,6 +4,7 @@ mod print;
 
 fn main() {
     let stdin = std::io::stdin();
-    let gfa = parse::Parser::parse(stdin.lock());
+    let store = parse::Parser::parse(stdin.lock());
+    let gfa = store.view();
     print::print(&gfa);
 }

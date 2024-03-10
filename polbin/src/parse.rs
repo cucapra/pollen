@@ -1,4 +1,4 @@
-use crate::flatgfa::{AlignOp, FlatGFA, Handle, LineKind, Orientation};
+use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
 use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
@@ -40,7 +40,7 @@ impl gfa::optfields::OptFields for OptFields {
 #[derive(Default)]
 pub struct Parser {
     // The flat representation we're building.
-    flat: FlatGFA,
+    flat: FlatGFAStore,
 
     // Track the segment IDs by their name, which we need to refer to segments in paths.
     segs_by_name: HashMap<usize, usize>,
@@ -51,7 +51,7 @@ pub struct Parser {
 
 impl Parser {
     /// Parse a GFA text file.
-    pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFA {
+    pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFAStore {
         let gfa_parser = GFAParserBuilder::none()
             .segments(true)
             .paths(true)
@@ -96,7 +96,7 @@ impl Parser {
     ///
     /// We "unwind" the buffers of links and paths, now that we have all
     /// the segments.
-    fn finish(mut self) -> FlatGFA {
+    fn finish(mut self) -> FlatGFAStore {
         // Add all the bufferred links.
         for link in self.links {
             let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
