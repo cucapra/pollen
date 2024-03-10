@@ -1,5 +1,5 @@
-use crate::flatgfa::{FlatGFA, Handle, Orientation};
-use gfa::{self, gfa::Line, parser::GFAParserBuilder};
+use crate::flatgfa::{AlignOp, FlatGFA, Handle, Orientation};
+use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -48,23 +48,30 @@ impl Parser {
                 self.flat.add_link(from, to);
             }
             Line::Path(p) => {
-                let steps = parse_path_steps(p.segment_names);
-                self.flat.add_path(
-                    p.path_name,
-                    steps
-                        .into_iter()
-                        .map(|(name, dir)| Handle {
-                            segment: self.segs_by_name[&name],
-                            orient: if dir {
-                                Orientation::Forward
-                            } else {
-                                Orientation::Backward
-                            },
-                        })
-                        .collect(),
-                );
+                let steps = parse_path_steps(p.segment_names)
+                    .into_iter()
+                    .map(|(name, dir)| Handle {
+                        segment: self.segs_by_name[&name],
+                        orient: if dir {
+                            Orientation::Forward
+                        } else {
+                            Orientation::Backward
+                        },
+                    })
+                    .collect();
+                let overlaps: Vec<Vec<_>> = p
+                    .overlaps
+                    .iter()
+                    .map(|o| match o {
+                        Some(gfa::cigar::CIGAR(pairs)) => {
+                            pairs.iter().map(convert_align_op).collect()
+                        }
+                        None => unimplemented!(),
+                    })
+                    .collect();
+                self.flat.add_path(p.path_name, steps, overlaps);
             }
-            Line::Containment(_) => {}
+            Line::Containment(_) => unimplemented!(),
         }
     }
 }
@@ -73,6 +80,19 @@ fn convert_orient(o: gfa::gfa::Orientation) -> Orientation {
     match o {
         gfa::gfa::Orientation::Forward => Orientation::Forward,
         gfa::gfa::Orientation::Backward => Orientation::Backward,
+    }
+}
+
+fn convert_align_op(c: &cigar::CIGARPair) -> AlignOp {
+    AlignOp {
+        op: match c.op() {
+            cigar::CIGAROp::M => crate::flatgfa::AlignOpcode::Match,
+            cigar::CIGAROp::N => crate::flatgfa::AlignOpcode::Gap,
+            cigar::CIGAROp::D => crate::flatgfa::AlignOpcode::Deletion,
+            cigar::CIGAROp::I => crate::flatgfa::AlignOpcode::Insertion,
+            _ => unimplemented!(),
+        },
+        len: c.len(),
     }
 }
 
