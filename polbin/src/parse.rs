@@ -37,6 +37,7 @@ impl Parser {
                 self.segs_by_name.insert(s.name, seg_id);
             }
             Line::Link(l) => {
+                let cigar = cigar::CIGAR::from_bytestring(&l.overlap).unwrap();
                 let from = Handle {
                     segment: self.segs_by_name[&l.from_segment],
                     orient: convert_orient(l.from_orient),
@@ -45,7 +46,7 @@ impl Parser {
                     segment: self.segs_by_name[&l.to_segment],
                     orient: convert_orient(l.to_orient),
                 };
-                self.flat.add_link(from, to);
+                self.flat.add_link(from, to, convert_cigar(&cigar));
             }
             Line::Path(p) => {
                 let steps = parse_path_steps(p.segment_names)
@@ -63,9 +64,7 @@ impl Parser {
                     .overlaps
                     .iter()
                     .map(|o| match o {
-                        Some(gfa::cigar::CIGAR(pairs)) => {
-                            pairs.iter().map(convert_align_op).collect()
-                        }
+                        Some(c) => convert_cigar(c),
                         None => unimplemented!(),
                     })
                     .collect();
@@ -94,6 +93,10 @@ fn convert_align_op(c: &cigar::CIGARPair) -> AlignOp {
         },
         len: c.len(),
     }
+}
+
+fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
+    c.0.iter().map(convert_align_op).collect()
 }
 
 /// Parse GFA paths' segment lists. These look like `1+,2-,3+`.
