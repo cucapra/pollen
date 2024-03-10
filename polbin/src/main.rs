@@ -15,6 +15,10 @@ fn main() {
     let stdin = std::io::stdin();
     let gfa = parse::Parser::parse(stdin.lock());
 
+    match &gfa.header {
+        Some(version) => println!("H\tVN:Z:{}", version),
+        None => {}
+    }
     for seg in &gfa.segs {
         println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
     }

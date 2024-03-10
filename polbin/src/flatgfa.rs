@@ -25,6 +25,7 @@ pub struct FlatGFA {
     pub segs: Vec<SegInfo>,
     pub paths: Vec<PathInfo>,
     pub steps: Vec<Handle>,
+    pub header: Option<BString>,
 }
 
 impl FlatGFA {
@@ -59,5 +60,10 @@ impl FlatGFA {
         self.steps.extend(steps);
         // TODO Include the overlaps.
         self.paths.len() - 1
+    }
+
+    pub fn add_header(&mut self, version: Vec<u8>) {
+        assert!(self.header.is_none());
+        self.header = Some(version.into());
     }
 }
