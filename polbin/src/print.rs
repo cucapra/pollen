@@ -67,19 +67,30 @@ fn print_link(gfa: &flatgfa::FlatGFA, link: &flatgfa::LinkInfo) {
     );
 }
 
+fn print_seg(gfa: &flatgfa::FlatGFA, seg: &flatgfa::SegInfo) {
+    println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
+}
+
 /// Print our flat representation as a GFA text file to stdout.
 pub fn print(gfa: &flatgfa::FlatGFA) {
-    match &gfa.header {
-        Some(version) => println!("H\tVN:Z:{}", version),
-        None => {}
-    }
-    for seg in &gfa.segs {
-        println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
-    }
-    for path in &gfa.paths {
-        print_path(gfa, path);
-    }
-    for link in &gfa.links {
-        print_link(gfa, link);
+    let mut seg_iter = gfa.segs.iter();
+    let mut path_iter = gfa.paths.iter();
+    let mut link_iter = gfa.links.iter();
+    for kind in &gfa.line_order {
+        match kind {
+            flatgfa::LineKind::Header => {
+                let version = gfa.header.as_ref().expect("header line without version");
+                println!("H\tVN:Z:{}", version);
+            }
+            flatgfa::LineKind::Segment => {
+                print_seg(gfa, seg_iter.next().expect("too few segments"));
+            }
+            flatgfa::LineKind::Path => {
+                print_path(gfa, path_iter.next().expect("too few paths"));
+            }
+            flatgfa::LineKind::Link => {
+                print_link(gfa, link_iter.next().expect("too few links"));
+            }
+        }
     }
 }
