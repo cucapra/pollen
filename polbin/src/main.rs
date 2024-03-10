@@ -1,28 +1,36 @@
+use std::fmt;
+
 mod flatgfa;
 mod parse;
 
-fn print_orient(orient: &flatgfa::Orientation) {
-    match orient {
-        flatgfa::Orientation::Forward => print!("+"),
-        flatgfa::Orientation::Backward => print!("-"),
+impl fmt::Display for flatgfa::Orientation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            flatgfa::Orientation::Forward => write!(f, "+"),
+            flatgfa::Orientation::Backward => write!(f, "-"),
+        }
+    }
+}
+
+impl fmt::Display for flatgfa::AlignOpcode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            flatgfa::AlignOpcode::Match => write!(f, "M"),
+            flatgfa::AlignOpcode::Gap => write!(f, "N"),
+            flatgfa::AlignOpcode::Insertion => write!(f, "D"),
+            flatgfa::AlignOpcode::Deletion => write!(f, "I"),
+        }
     }
 }
 
 fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
     let seg = &gfa.segs[handle.segment];
-    print!("{}", seg.name);
-    print_orient(&handle.orient);
+    print!("{}{}", seg.name, handle.orient);
 }
 
 fn print_cigar(ops: &[flatgfa::AlignOp]) {
     for op in ops {
-        print!("{}", op.len);
-        match op.op {
-            flatgfa::AlignOpcode::Match => print!("M"),
-            flatgfa::AlignOpcode::Gap => print!("N"),
-            flatgfa::AlignOpcode::Insertion => print!("D"),
-            flatgfa::AlignOpcode::Deletion => print!("I"),
-        }
+        print!("{}{}", op.len, op.op);
     }
 }
 
@@ -59,11 +67,13 @@ fn main() {
         println!();
     }
     for link in &gfa.links {
-        print!("L\t{}\t", gfa.segs[link.from.segment].name);
-        print_orient(&link.from.orient);
-        print!("\t{}\t", gfa.segs[link.to.segment].name);
-        print_orient(&link.to.orient);
-        print!("\t");
+        print!(
+            "L\t{}\t{}\t{}\t{}\t",
+            gfa.segs[link.from.segment].name,
+            link.from.orient,
+            gfa.segs[link.to.segment].name,
+            link.to.orient
+        );
         print_cigar(gfa.get_alignment(&link.overlap));
         println!();
     }
