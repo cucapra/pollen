@@ -9,7 +9,7 @@ pub struct SegInfo {
 
 #[derive(Debug)]
 pub struct PathInfo {
-    pub name: BString,
+    pub name: Range<usize>,
     pub steps: Range<usize>,
     pub overlaps: Range<usize>,
 }
@@ -64,6 +64,7 @@ pub struct FlatGFA {
     pub seqdata: Vec<u8>,
     pub overlaps: Vec<Range<usize>>,
     pub alignment: Vec<AlignOp>,
+    pub namedata: BString,
 }
 
 impl FlatGFA {
@@ -77,6 +78,10 @@ impl FlatGFA {
 
     pub fn get_overlaps(&self, path: &PathInfo) -> &[Range<usize>] {
         &self.overlaps[path.overlaps.clone()]
+    }
+
+    pub fn get_path_name(&self, path: &PathInfo) -> &BStr {
+        self.namedata[path.name.clone()].as_ref()
     }
 
     pub fn get_alignment(&self, overlap: &Range<usize>) -> Alignment {
@@ -107,18 +112,20 @@ impl FlatGFA {
         overlaps: Vec<Vec<AlignOp>>,
     ) -> usize {
         let overlap_count = overlaps.len();
+        let overlaps = pool_extend(
+            &mut self.overlaps,
+            overlaps
+                .into_iter()
+                .map(|align| pool_append(&mut self.alignment, align)),
+            overlap_count,
+        );
+
         pool_push(
             &mut self.paths,
             PathInfo {
-                name: BString::new(name),
+                name: pool_append(&mut self.namedata, name),
                 steps: pool_append(&mut self.steps, steps),
-                overlaps: pool_extend(
-                    &mut self.overlaps,
-                    overlaps
-                        .into_iter()
-                        .map(|align| pool_append(&mut self.alignment, align)),
-                    overlap_count,
-                ),
+                overlaps,
             },
         )
     }
