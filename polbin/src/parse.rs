@@ -1,6 +1,5 @@
-use crate::flatgfa::{FlatGFA, Handle};
-use gfa::gfa::{Line, Orientation};
-use gfa::parser::GFAParserBuilder;
+use crate::flatgfa::{FlatGFA, Handle, Orientation};
+use gfa::{self, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -40,11 +39,11 @@ impl Parser {
             Line::Link(l) => {
                 let from = Handle {
                     segment: self.segs_by_name[&l.from_segment],
-                    forward: l.from_orient == Orientation::Forward,
+                    orient: convert_orient(l.from_orient),
                 };
                 let to = Handle {
                     segment: self.segs_by_name[&l.to_segment],
-                    forward: l.to_orient == Orientation::Backward,
+                    orient: convert_orient(l.to_orient),
                 };
                 self.flat.add_link(from, to);
             }
@@ -56,13 +55,24 @@ impl Parser {
                         .into_iter()
                         .map(|(name, dir)| Handle {
                             segment: self.segs_by_name[&name],
-                            forward: dir,
+                            orient: if dir {
+                                Orientation::Forward
+                            } else {
+                                Orientation::Backward
+                            },
                         })
                         .collect(),
                 );
             }
             Line::Containment(_) => {}
         }
+    }
+}
+
+fn convert_orient(o: gfa::gfa::Orientation) -> Orientation {
+    match o {
+        gfa::gfa::Orientation::Forward => Orientation::Forward,
+        gfa::gfa::Orientation::Backward => Orientation::Backward,
     }
 }
 

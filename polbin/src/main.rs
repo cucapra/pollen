@@ -1,14 +1,17 @@
 mod flatgfa;
 mod parse;
 
+fn print_orient(orient: &flatgfa::Orientation) {
+    match orient {
+        flatgfa::Orientation::Forward => print!("+"),
+        flatgfa::Orientation::Backward => print!("-"),
+    }
+}
+
 fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
     let seg = &gfa.segs[handle.segment];
     print!("{}", seg.name);
-    if handle.forward {
-        print!("+");
-    } else {
-        print!("-");
-    }
+    print_orient(&handle.orient);
 }
 
 fn main() {
@@ -33,12 +36,10 @@ fn main() {
         println!();
     }
     for link in &gfa.links {
-        println!(
-            "L\t{}\t{}\t{}\t{}",
-            gfa.segs[link.from.segment].name,
-            if link.from.forward { '+' } else { '-' },
-            gfa.segs[link.to.segment].name,
-            if link.to.forward { '+' } else { '-' },
-        );
+        print!("L\t{}\t", gfa.segs[link.from.segment].name);
+        print_orient(&link.from.orient);
+        print!("\t{}\t", gfa.segs[link.to.segment].name);
+        print_orient(&link.to.orient);
+        println!();
     }
 }
