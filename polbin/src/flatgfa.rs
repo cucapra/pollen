@@ -1,6 +1,56 @@
 use bstr::{BStr, BString};
 use std::ops::Range;
 
+/// An efficient flattened representation of a GFA file.
+#[derive(Debug, Default)]
+pub struct FlatGFA {
+    /// A GFA may optionally have a single header line, with a version number.
+    pub header: Option<BString>,
+
+    /// The segment (S) lines in the GFA file.
+    pub segs: Vec<Segment>,
+
+    /// The path (P) lines.
+    pub paths: Vec<Path>,
+
+    /// The link (L) lines.
+    pub links: Vec<Link>,
+
+    /// Paths consist of steps. This is a flat pool of steps, chunks of which are
+    /// associated with each path.
+    steps: Vec<Handle>,
+
+    /// The actual base-pair sequences for the segments. This is a pool of
+    /// base-pair symbols, chunks of which are associated with each segment.
+    ///
+    /// TODO: This could certainly use a smaller representation than `u8`
+    /// (since we care only about 4 base pairs). If we want to pay the cost
+    /// of bit-packing.
+    seq_data: Vec<u8>,
+
+    /// Both paths and links can have overlaps, which are CIGAR sequences. They
+    /// are all stored together here in a flat pool, elements of which point
+    /// to chunks of `alignment`.
+    overlaps: Vec<Range<usize>>,
+
+    /// The CIGAR aligment operations that make up the overlaps. `overlaps`
+    /// contains range of indices in this pool.
+    alignment: Vec<AlignOp>,
+
+    /// The string names: currenly, just of paths. (We assume segments have integer
+    /// names, so they don't need to be stored separately.)
+    name_data: BString,
+
+    /// Segments can come with optional extra fields, which we store in a flat pool
+    /// as raw characters because we don't currently care about them.
+    optional_data: BString,
+
+    /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
+    /// fidelity: we record the order of lines as we saw them when parsing a GFA file
+    /// so we can emit them again in that order.
+    pub(crate) line_order: Vec<LineKind>,
+}
+
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
 /// that can be strung together into paths.
 #[derive(Debug)]
@@ -98,56 +148,6 @@ pub enum LineKind {
     Segment,
     Path,
     Link,
-}
-
-/// An efficient flattened representation of a GFA file.
-#[derive(Debug, Default)]
-pub struct FlatGFA {
-    /// A GFA may optionally have a single header line, with a version number.
-    pub header: Option<BString>,
-
-    /// The segment (S) lines in the GFA file.
-    pub segs: Vec<Segment>,
-
-    /// The path (P) lines.
-    pub paths: Vec<Path>,
-
-    /// The link (L) lines.
-    pub links: Vec<Link>,
-
-    /// Paths consist of steps. This is a flat pool of steps, chunks of which are
-    /// associated with each path.
-    steps: Vec<Handle>,
-
-    /// The actual base-pair sequences for the segments. This is a pool of
-    /// base-pair symbols, chunks of which are associated with each segment.
-    ///
-    /// TODO: This could certainly use a smaller representation than `u8`
-    /// (since we care only about 4 base pairs). If we want to pay the cost
-    /// of bit-packing.
-    seq_data: Vec<u8>,
-
-    /// Both paths and links can have overlaps, which are CIGAR sequences. They
-    /// are all stored together here in a flat pool, elements of which point
-    /// to chunks of `alignment`.
-    overlaps: Vec<Range<usize>>,
-
-    /// The CIGAR aligment operations that make up the overlaps. `overlaps`
-    /// contains range of indices in this pool.
-    alignment: Vec<AlignOp>,
-
-    /// The string names: currenly, just of paths. (We assume segments have integer
-    /// names, so they don't need to be stored separately.)
-    name_data: BString,
-
-    /// Segments can come with optional extra fields, which we store in a flat pool
-    /// as raw characters because we don't currently care about them.
-    optional_data: BString,
-
-    /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
-    /// fidelity: we record the order of lines as we saw them when parsing a GFA file
-    /// so we can emit them again in that order.
-    pub(crate) line_order: Vec<LineKind>,
 }
 
 impl FlatGFA {
