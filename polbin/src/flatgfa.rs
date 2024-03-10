@@ -11,7 +11,7 @@ pub struct SegInfo {
 pub struct PathInfo {
     pub name: BString,
     pub steps: Range<usize>,
-    pub alignment: Range<usize>,
+    pub overlaps: Range<usize>,
 }
 
 #[derive(Debug)]
@@ -55,7 +55,7 @@ pub struct FlatGFA {
 
     pub steps: Vec<Handle>,
     pub seqdata: Vec<u8>,
-    pub align_chunks: Vec<Range<usize>>,
+    pub overlaps: Vec<Range<usize>>,
     pub alignment: Vec<AlignOp>,
 }
 
@@ -66,6 +66,14 @@ impl FlatGFA {
 
     pub fn get_steps(&self, path: &PathInfo) -> &[Handle] {
         &self.steps[path.steps.clone()]
+    }
+
+    pub fn get_overlaps(&self, path: &PathInfo) -> &[Range<usize>] {
+        &self.overlaps[path.overlaps.clone()]
+    }
+
+    pub fn get_alignment(&self, overlap: &Range<usize>) -> &[AlignOp] {
+        &self.alignment[overlap.clone()]
     }
 
     pub fn add_header(&mut self, version: Vec<u8>) {
@@ -97,15 +105,15 @@ impl FlatGFA {
                 start: self.steps.len(),
                 end: self.steps.len() + steps.len(),
             },
-            alignment: Range {
-                start: self.align_chunks.len(),
-                end: self.align_chunks.len() + overlaps.len(),
+            overlaps: Range {
+                start: self.overlaps.len(),
+                end: self.overlaps.len() + overlaps.len(),
             },
         });
         self.steps.extend(steps);
 
         for align in overlaps {
-            self.align_chunks.push(Range {
+            self.overlaps.push(Range {
                 start: self.alignment.len(),
                 end: self.alignment.len() + align.len(),
             });

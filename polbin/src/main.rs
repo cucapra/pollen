@@ -14,6 +14,18 @@ fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
     print_orient(&handle.orient);
 }
 
+fn print_cigar(ops: &[flatgfa::AlignOp]) {
+    for op in ops {
+        print!("{}", op.len);
+        match op.op {
+            flatgfa::AlignOpcode::Match => print!("M"),
+            flatgfa::AlignOpcode::Gap => print!("N"),
+            flatgfa::AlignOpcode::Insertion => print!("D"),
+            flatgfa::AlignOpcode::Deletion => print!("I"),
+        }
+    }
+}
+
 fn main() {
     let stdin = std::io::stdin();
     let gfa = parse::Parser::parse(stdin.lock());
@@ -32,6 +44,17 @@ fn main() {
         for step in steps[1..].iter() {
             print!(",");
             print_step(&gfa, step);
+        }
+        print!("\t");
+        let overlaps = gfa.get_overlaps(path);
+        if overlaps.is_empty() {
+            print!("*");
+        } else {
+            print_cigar(gfa.get_alignment(&overlaps[0]));
+            for overlap in overlaps[1..].iter() {
+                print!(",");
+                print_cigar(gfa.get_alignment(overlap));
+            }
         }
         println!();
     }
