@@ -5,6 +5,7 @@ use std::ops::Range;
 pub struct SegInfo {
     pub name: usize,
     pub seq: Range<usize>,
+    pub optional: Range<usize>,
 }
 
 #[derive(Debug)]
@@ -73,6 +74,7 @@ pub struct FlatGFA {
     pub overlaps: Vec<Range<usize>>,
     pub alignment: Vec<AlignOp>,
     pub namedata: BString,
+    pub optional_data: BString,
 
     pub line_order: Vec<LineKind>,
 }
@@ -94,6 +96,10 @@ impl FlatGFA {
         self.namedata[path.name.clone()].as_ref()
     }
 
+    pub fn get_optional_data(&self, seg: &SegInfo) -> &BStr {
+        self.optional_data[seg.optional.clone()].as_ref()
+    }
+
     pub fn get_alignment(&self, overlap: &Range<usize>) -> Alignment {
         Alignment {
             ops: &self.alignment[overlap.clone()],
@@ -105,12 +111,13 @@ impl FlatGFA {
         self.header = Some(version.into());
     }
 
-    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>) -> usize {
+    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>, optional: Vec<u8>) -> usize {
         pool_push(
             &mut self.segs,
             SegInfo {
                 name,
                 seq: pool_append(&mut self.seqdata, seq),
+                optional: pool_append(&mut self.optional_data, optional),
             },
         )
     }
