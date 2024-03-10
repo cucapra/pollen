@@ -30,7 +30,9 @@ impl Parser {
     /// Parse a single GFA line and add it to the flat representation.
     fn parse_line(&mut self, line: Line<usize, ()>) {
         match line {
-            Line::Header(_) => {}
+            Line::Header(h) => {
+                self.flat.add_header(h.version.unwrap());
+            }
             Line::Segment(s) => {
                 let seg_id = self.flat.add_seg(s.name, s.sequence);
                 self.segs_by_name.insert(s.name, seg_id);
