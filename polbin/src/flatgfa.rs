@@ -20,9 +20,15 @@ pub struct LinkInfo {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum Orientation {
+    Forward,
+    Backward,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Handle {
     pub segment: usize,
-    pub forward: bool,
+    pub orient: Orientation,
 }
 
 #[derive(Debug, Default)]
