@@ -2,23 +2,28 @@ use bstr::{BStr, BString};
 use std::ops::Range;
 
 /// An efficient flattened representation of a GFA file.
-#[derive(Debug, Default)]
-pub struct FlatGFA {
+///
+/// This struct *borrows* the underlying data from some other data store. Namely, the
+/// `FlatGFAStore` struct contains `Vec`s as backing stores for each of the slices
+/// in this struct. `FlatGFA` itself provides immutable access to the GFA data
+/// structure that is agnostic to the location of the underlying bytes.
+pub struct FlatGFA<'a> {
     /// A GFA may optionally have a single header line, with a version number.
-    pub header: Option<BString>,
+    /// If this is empty, there is no header line.
+    pub header: &'a BStr,
 
     /// The segment (S) lines in the GFA file.
-    pub segs: Vec<Segment>,
+    pub segs: &'a [Segment],
 
     /// The path (P) lines.
-    pub paths: Vec<Path>,
+    pub paths: &'a [Path],
 
     /// The link (L) lines.
-    pub links: Vec<Link>,
+    pub links: &'a [Link],
 
     /// Paths consist of steps. This is a flat pool of steps, chunks of which are
     /// associated with each path.
-    steps: Vec<Handle>,
+    steps: &'a [Handle],
 
     /// The actual base-pair sequences for the segments. This is a pool of
     /// base-pair symbols, chunks of which are associated with each segment.
@@ -26,29 +31,49 @@ pub struct FlatGFA {
     /// TODO: This could certainly use a smaller representation than `u8`
     /// (since we care only about 4 base pairs). If we want to pay the cost
     /// of bit-packing.
-    seq_data: Vec<u8>,
+    seq_data: &'a [u8],
 
     /// Both paths and links can have overlaps, which are CIGAR sequences. They
     /// are all stored together here in a flat pool, elements of which point
     /// to chunks of `alignment`.
-    overlaps: Vec<Range<usize>>,
+    overlaps: &'a [Range<usize>],
 
     /// The CIGAR aligment operations that make up the overlaps. `overlaps`
     /// contains range of indices in this pool.
-    alignment: Vec<AlignOp>,
+    alignment: &'a [AlignOp],
 
     /// The string names: currenly, just of paths. (We assume segments have integer
     /// names, so they don't need to be stored separately.)
-    name_data: BString,
+    name_data: &'a BStr,
 
     /// Segments can come with optional extra fields, which we store in a flat pool
     /// as raw characters because we don't currently care about them.
-    optional_data: BString,
+    optional_data: &'a BStr,
 
     /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
     /// fidelity: we record the order of lines as we saw them when parsing a GFA file
     /// so we can emit them again in that order.
-    pub(crate) line_order: Vec<LineKind>,
+    pub(crate) line_order: &'a [LineKind],
+}
+
+/// A mutable, in-memory data store for `FlatGFA`.
+///
+/// This struct contains a bunch of `Vec`s: one per array required to implement a
+/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
+/// useful for creating new ones from scratch.
+#[derive(Default)]
+pub struct FlatGFAStore {
+    header: BString,
+    segs: Vec<Segment>,
+    paths: Vec<Path>,
+    links: Vec<Link>,
+    steps: Vec<Handle>,
+    seq_data: Vec<u8>,
+    overlaps: Vec<Range<usize>>,
+    alignment: Vec<AlignOp>,
+    name_data: BString,
+    optional_data: BString,
+    line_order: Vec<LineKind>,
 }
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
@@ -150,7 +175,7 @@ pub enum LineKind {
     Link,
 }
 
-impl FlatGFA {
+impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
         self.seq_data[seg.seq.clone()].as_ref()
@@ -182,11 +207,13 @@ impl FlatGFA {
             ops: &self.alignment[overlap.clone()],
         }
     }
+}
 
+impl FlatGFAStore {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: Vec<u8>) {
-        assert!(self.header.is_none());
-        self.header = Some(version.into());
+        assert!(self.header.is_empty());
+        self.header = version.into();
     }
 
     /// Add a new segment to the GFA file.
@@ -242,6 +269,23 @@ impl FlatGFA {
     /// Record a line type to preserve the line order.
     pub fn record_line(&mut self, kind: LineKind) {
         self.line_order.push(kind);
+    }
+
+    /// Borrow a FlatGFA view of this data store.
+    pub fn view<'a>(&'a self) -> FlatGFA<'a> {
+        FlatGFA {
+            header: self.header.as_ref(),
+            segs: &self.segs,
+            paths: &self.paths,
+            links: &self.links,
+            name_data: self.name_data.as_ref(),
+            seq_data: &self.seq_data,
+            steps: &self.steps,
+            overlaps: &self.overlaps,
+            alignment: &self.alignment,
+            optional_data: self.optional_data.as_ref(),
+            line_order: &self.line_order,
+        }
     }
 }
 

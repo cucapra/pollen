@@ -80,10 +80,11 @@ pub fn print(gfa: &flatgfa::FlatGFA) {
     let mut seg_iter = gfa.segs.iter();
     let mut path_iter = gfa.paths.iter();
     let mut link_iter = gfa.links.iter();
-    for kind in &gfa.line_order {
+    for kind in gfa.line_order {
         match kind {
             flatgfa::LineKind::Header => {
-                let version = gfa.header.as_ref().expect("header line without version");
+                let version = gfa.header;
+                assert!(!version.is_empty());
                 println!("H\tVN:Z:{}", version);
             }
             flatgfa::LineKind::Segment => {
