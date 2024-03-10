@@ -36,7 +36,7 @@ impl FlatGFA {
         &self.steps[path.steps.clone()]
     }
 
-    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>) {
+    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>) -> usize {
         self.segs.push(SegInfo {
             name,
             seq: Range {
@@ -45,9 +45,10 @@ impl FlatGFA {
             },
         });
         self.seqdata.extend(seq);
+        self.segs.len() - 1
     }
 
-    pub fn add_path(&mut self, name: Vec<u8>, steps: Vec<Handle>) {
+    pub fn add_path(&mut self, name: Vec<u8>, steps: Vec<Handle>) -> usize {
         self.paths.push(PathInfo {
             name: BString::new(name),
             steps: Range {
@@ -56,7 +57,7 @@ impl FlatGFA {
             },
         });
         self.steps.extend(steps);
-
         // TODO Include the overlaps.
+        self.paths.len() - 1
     }
 }
