@@ -1,4 +1,4 @@
-use crate::flatgfa::{AlignOp, FlatGFA, Handle, Orientation};
+use crate::flatgfa::{AlignOp, FlatGFA, Handle, LineKind, Orientation};
 use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
@@ -37,16 +37,20 @@ impl Parser {
     fn parse_line(&mut self, line: Line<usize, ()>) {
         match line {
             Line::Header(h) => {
+                self.flat.line_order.push(LineKind::Header);
                 self.flat.add_header(h.version.unwrap());
             }
             Line::Segment(s) => {
+                self.flat.line_order.push(LineKind::Segment);
                 let seg_id = self.flat.add_seg(s.name, s.sequence);
                 self.segs_by_name.insert(s.name, seg_id);
             }
             Line::Link(l) => {
+                self.flat.line_order.push(LineKind::Link);
                 self.links.push(l);
             }
             Line::Path(p) => {
+                self.flat.line_order.push(LineKind::Path);
                 self.paths.push(p);
             }
             Line::Containment(_) => unimplemented!(),
