@@ -35,6 +35,38 @@ fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
     print!("{}{}", seg.name, handle.orient);
 }
 
+fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::PathInfo) {
+    print!("P\t{}\t", gfa.get_path_name(path));
+    let steps = gfa.get_steps(path);
+    print_step(&gfa, &steps[0]);
+    for step in steps[1..].iter() {
+        print!(",");
+        print_step(&gfa, step);
+    }
+    print!("\t");
+    let overlaps = gfa.get_overlaps(path);
+    if overlaps.is_empty() {
+        print!("*");
+    } else {
+        print!("{}", gfa.get_alignment(&overlaps[0]));
+        for overlap in overlaps[1..].iter() {
+            print!(",{}", gfa.get_alignment(overlap));
+        }
+    }
+    println!();
+}
+
+fn print_link(gfa: &flatgfa::FlatGFA, link: &flatgfa::LinkInfo) {
+    println!(
+        "L\t{}\t{}\t{}\t{}\t{}",
+        gfa.segs[link.from.segment].name,
+        link.from.orient,
+        gfa.segs[link.to.segment].name,
+        link.to.orient,
+        gfa.get_alignment(&link.overlap)
+    );
+}
+
 /// Print our flat representation as a GFA text file to stdout.
 pub fn print(gfa: &flatgfa::FlatGFA) {
     match &gfa.header {
@@ -45,33 +77,9 @@ pub fn print(gfa: &flatgfa::FlatGFA) {
         println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
     }
     for path in &gfa.paths {
-        print!("P\t{}\t", gfa.get_path_name(path));
-        let steps = gfa.get_steps(path);
-        print_step(&gfa, &steps[0]);
-        for step in steps[1..].iter() {
-            print!(",");
-            print_step(&gfa, step);
-        }
-        print!("\t");
-        let overlaps = gfa.get_overlaps(path);
-        if overlaps.is_empty() {
-            print!("*");
-        } else {
-            print!("{}", gfa.get_alignment(&overlaps[0]));
-            for overlap in overlaps[1..].iter() {
-                print!(",{}", gfa.get_alignment(overlap));
-            }
-        }
-        println!();
+        print_path(gfa, path);
     }
     for link in &gfa.links {
-        println!(
-            "L\t{}\t{}\t{}\t{}\t{}",
-            gfa.segs[link.from.segment].name,
-            link.from.orient,
-            gfa.segs[link.to.segment].name,
-            link.to.orient,
-            gfa.get_alignment(&link.overlap)
-        );
+        print_link(gfa, link);
     }
 }
