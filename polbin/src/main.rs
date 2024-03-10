@@ -1,8 +1,9 @@
 mod flatgfa;
 mod parse;
 
-fn print_step(handle: &flatgfa::Handle) {
-    print!("{}", handle.segment);
+fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
+    let seg = &gfa.segs[handle.segment];
+    print!("{}", seg.name);
     if handle.forward {
         print!("+");
     } else {
@@ -12,18 +13,18 @@ fn print_step(handle: &flatgfa::Handle) {
 
 fn main() {
     let stdin = std::io::stdin();
-    let flat = parse::parse(stdin.lock());
+    let gfa = parse::parse(stdin.lock());
 
-    for seg in &flat.segs {
-        println!("S\t{}\t{}", seg.name, flat.get_seq(seg));
+    for seg in &gfa.segs {
+        println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
     }
-    for path in &flat.paths {
+    for path in &gfa.paths {
         print!("P\t{}\t", path.name);
-        let steps = flat.get_steps(path);
-        print_step(&steps[0]);
+        let steps = gfa.get_steps(path);
+        print_step(&gfa, &steps[0]);
         for step in steps[1..].iter() {
             print!(",");
-            print_step(step);
+            print_step(&gfa, step);
         }
         println!();
     }
