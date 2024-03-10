@@ -106,23 +106,21 @@ impl FlatGFA {
         steps: Vec<Handle>,
         overlaps: Vec<Vec<AlignOp>>,
     ) -> usize {
-        let path_id = pool_push(
+        let overlap_count = overlaps.len();
+        pool_push(
             &mut self.paths,
             PathInfo {
                 name: BString::new(name),
                 steps: pool_append(&mut self.steps, steps),
-                overlaps: Range {
-                    start: self.overlaps.len(),
-                    end: self.overlaps.len() + overlaps.len(),
-                },
+                overlaps: pool_extend(
+                    &mut self.overlaps,
+                    overlaps
+                        .into_iter()
+                        .map(|align| pool_append(&mut self.alignment, align)),
+                    overlap_count,
+                ),
             },
-        );
-
-        for align in overlaps {
-            self.overlaps.push(pool_append(&mut self.alignment, align));
-        }
-
-        path_id
+        )
     }
 
     pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> usize {
@@ -144,10 +142,23 @@ fn pool_push<T>(vec: &mut Vec<T>, item: T) -> usize {
     len
 }
 
-/// Add an entire collection of items to a "pool" vector and return the
+/// Add an entire vector of items to a "pool" vector and return the
 /// range of new indices (IDs).
 fn pool_append<T>(vec: &mut Vec<T>, items: Vec<T>) -> Range<usize> {
-    let range = vec.len()..(vec.len() + items.len());
-    vec.extend(items);
+    let count = items.len();
+    pool_extend(vec, items, count)
+}
+
+/// Like `pool_append`, for an iterator. It's pretty important that `count`
+/// actually be the number of items in the iterator!
+fn pool_extend<T>(
+    vec: &mut Vec<T>,
+    iter: impl IntoIterator<Item = T>,
+    count: usize,
+) -> Range<usize> {
+    let range = vec.len()..(vec.len() + count);
+    let old_len = vec.len();
+    vec.extend(iter);
+    assert_eq!(vec.len(), old_len + count);
     range
 }
