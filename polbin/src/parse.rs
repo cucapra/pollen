@@ -3,47 +3,54 @@ use gfa::gfa::Line;
 use gfa::parser::GFAParserBuilder;
 use std::collections::HashMap;
 
-/// Parse a GFA text file.
-pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFA {
-    let parser = GFAParserBuilder::none()
-        .segments(true)
-        .paths(true)
-        .build_usize_id::<()>();
-
+#[derive(Default)]
+pub struct Parser {
     // Track the segment IDs by their name, which we need to refer to segments in paths.
-    let mut segs_by_name: HashMap<usize, usize> = HashMap::new();
+    segs_by_name: HashMap<usize, usize>,
 
-    let mut flat = FlatGFA::default();
-    for line in stream.lines() {
-        let gfa_line = parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
-        parse_line(&mut flat, &mut segs_by_name, gfa_line);
-    }
-    flat
+    // The flat representation we're building.
+    flat: FlatGFA,
 }
 
-/// Parse a single GFA line and add it to the flat representation.
-fn parse_line(flat: &mut FlatGFA, segs_by_name: &mut HashMap<usize, usize>, line: Line<usize, ()>) {
-    match line {
-        Line::Header(_) => {}
-        Line::Segment(s) => {
-            let seg_id = flat.add_seg(s.name, s.sequence);
-            segs_by_name.insert(s.name, seg_id);
+impl Parser {
+    /// Parse a GFA text file.
+    pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFA {
+        let gfa_parser = GFAParserBuilder::none()
+            .segments(true)
+            .paths(true)
+            .build_usize_id::<()>();
+        let mut parser = Self::default();
+        for line in stream.lines() {
+            let gfa_line = gfa_parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
+            parser.parse_line(gfa_line);
         }
-        Line::Link(_) => {}
-        Line::Path(p) => {
-            let steps = parse_path_steps(p.segment_names);
-            flat.add_path(
-                p.path_name,
-                steps
-                    .into_iter()
-                    .map(|(name, dir)| Handle {
-                        segment: segs_by_name[&name],
-                        forward: dir,
-                    })
-                    .collect(),
-            );
+        parser.flat
+    }
+
+    /// Parse a single GFA line and add it to the flat representation.
+    fn parse_line(&mut self, line: Line<usize, ()>) {
+        match line {
+            Line::Header(_) => {}
+            Line::Segment(s) => {
+                let seg_id = self.flat.add_seg(s.name, s.sequence);
+                self.segs_by_name.insert(s.name, seg_id);
+            }
+            Line::Link(_) => {}
+            Line::Path(p) => {
+                let steps = parse_path_steps(p.segment_names);
+                self.flat.add_path(
+                    p.path_name,
+                    steps
+                        .into_iter()
+                        .map(|(name, dir)| Handle {
+                            segment: self.segs_by_name[&name],
+                            forward: dir,
+                        })
+                        .collect(),
+                );
+            }
+            Line::Containment(_) => {}
         }
-        Line::Containment(_) => {}
     }
 }
 

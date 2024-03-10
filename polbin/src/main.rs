@@ -13,7 +13,7 @@ fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
 
 fn main() {
     let stdin = std::io::stdin();
-    let gfa = parse::parse(stdin.lock());
+    let gfa = parse::Parser::parse(stdin.lock());
 
     for seg in &gfa.segs {
         println!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
