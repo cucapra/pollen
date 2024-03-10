@@ -4,11 +4,14 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct Parser {
+    // The flat representation we're building.
+    flat: FlatGFA,
+
     // Track the segment IDs by their name, which we need to refer to segments in paths.
     segs_by_name: HashMap<usize, usize>,
 
-    // The flat representation we're building.
-    flat: FlatGFA,
+    links: Vec<gfa::gfa::Link<usize, ()>>,
+    paths: Vec<gfa::gfa::Path<usize, ()>>,
 }
 
 impl Parser {
@@ -23,10 +26,14 @@ impl Parser {
             let gfa_line = gfa_parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
             parser.parse_line(gfa_line);
         }
-        parser.flat
+        parser.finish()
     }
 
-    /// Parse a single GFA line and add it to the flat representation.
+    /// Parse a single GFA line.
+    ///
+    /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
+    /// in our internal vectors, because we must see all the segments first before we can
+    /// resolve their segment name references.
     fn parse_line(&mut self, line: Line<usize, ()>) {
         match line {
             Line::Header(h) => {
@@ -37,41 +44,59 @@ impl Parser {
                 self.segs_by_name.insert(s.name, seg_id);
             }
             Line::Link(l) => {
-                let cigar = cigar::CIGAR::from_bytestring(&l.overlap).unwrap();
-                let from = Handle {
-                    segment: self.segs_by_name[&l.from_segment],
-                    orient: convert_orient(l.from_orient),
-                };
-                let to = Handle {
-                    segment: self.segs_by_name[&l.to_segment],
-                    orient: convert_orient(l.to_orient),
-                };
-                self.flat.add_link(from, to, convert_cigar(&cigar));
+                self.links.push(l);
             }
             Line::Path(p) => {
-                let steps = parse_path_steps(p.segment_names)
-                    .into_iter()
-                    .map(|(name, dir)| Handle {
-                        segment: self.segs_by_name[&name],
-                        orient: if dir {
-                            Orientation::Forward
-                        } else {
-                            Orientation::Backward
-                        },
-                    })
-                    .collect();
-                let overlaps: Vec<Vec<_>> = p
-                    .overlaps
-                    .iter()
-                    .map(|o| match o {
-                        Some(c) => convert_cigar(c),
-                        None => unimplemented!(),
-                    })
-                    .collect();
-                self.flat.add_path(p.path_name, steps, overlaps);
+                self.paths.push(p);
             }
             Line::Containment(_) => unimplemented!(),
         }
+    }
+
+    /// Finish parsing and return the flat representation.
+    ///
+    /// We "unwind" the buffers of links and paths, now that we have all
+    /// the segments.
+    fn finish(mut self) -> FlatGFA {
+        // Add all the bufferred links.
+        for link in self.links {
+            let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
+            let from = Handle {
+                segment: self.segs_by_name[&link.from_segment],
+                orient: convert_orient(link.from_orient),
+            };
+            let to = Handle {
+                segment: self.segs_by_name[&link.to_segment],
+                orient: convert_orient(link.to_orient),
+            };
+            self.flat.add_link(from, to, convert_cigar(&cigar));
+        }
+
+        // Add all the bufferred paths.
+        for path in self.paths {
+            let steps = parse_path_steps(path.segment_names)
+                .into_iter()
+                .map(|(name, dir)| Handle {
+                    segment: self.segs_by_name[&name],
+                    orient: if dir {
+                        Orientation::Forward
+                    } else {
+                        Orientation::Backward
+                    },
+                })
+                .collect();
+            let overlaps: Vec<Vec<_>> = path
+                .overlaps
+                .iter()
+                .map(|o| match o {
+                    Some(c) => convert_cigar(c),
+                    None => unimplemented!(),
+                })
+                .collect();
+            self.flat.add_path(path.path_name, steps, overlaps);
+        }
+
+        self.flat
     }
 }
 
