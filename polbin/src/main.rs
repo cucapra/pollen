@@ -10,14 +10,14 @@ fn map_file(name: &str) -> Mmap {
     unsafe { Mmap::map(&file) }.unwrap()
 }
 
-fn map_file_mut(name: &str) -> MmapMut {
+fn map_file_mut(name: &str, size: u64) -> MmapMut {
     let file = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
         .create(true)
         .open(name)
         .unwrap();
-    file.set_len(8092).unwrap(); // TODO Estimate the size?
+    file.set_len(size).unwrap();
     unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
 
@@ -54,8 +54,9 @@ fn main() {
     // Write the output to a file (binary) or stdout (text).
     match args.output {
         Some(name) => {
-            let mut mmap = map_file_mut(&name);
+            let mut mmap = map_file_mut(&name, file::size(&gfa) as u64);
             file::dump(&gfa, &mut mmap);
+            mmap.flush().unwrap();
         }
         None => print::print(&gfa),
     }
