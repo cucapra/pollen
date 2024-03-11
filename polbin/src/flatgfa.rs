@@ -1,4 +1,5 @@
 use bstr::{BStr, BString};
+use zerocopy::{FromBytes, FromZeroes};
 
 /// An efficient flattened representation of a GFA file.
 ///
@@ -77,7 +78,7 @@ pub struct FlatGFAStore {
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
 /// that can be strung together into paths.
-#[derive(Debug)]
+#[derive(Debug, FromZeroes, FromBytes)]
 pub struct Segment {
     /// The segment's name. We assume all names are just plain numbers.
     pub name: usize,
@@ -90,7 +91,7 @@ pub struct Segment {
 }
 
 /// A path is a sequence of oriented references to segments.
-#[derive(Debug)]
+#[derive(Debug, FromZeroes, FromBytes)]
 pub struct Path {
     /// The path's name. This can be an arbitrary string. It is a renge in the
     /// `name_data` pool.
@@ -120,6 +121,7 @@ pub struct Link {
 
 /// A foroward or backward direction.
 #[derive(Debug, PartialEq)]
+#[repr(u8)]
 pub enum Orientation {
     Forward,  // +
     Backward, // -
@@ -139,6 +141,7 @@ pub struct Handle {
 
 /// The kind of each operation in a CIGAR alignment.
 #[derive(Debug)]
+#[repr(u8)]
 pub enum AlignOpcode {
     Match,     // M
     Gap,       // N
@@ -167,6 +170,7 @@ pub struct Alignment<'a> {
 /// A kind of GFA line. We use this in `line_order` to preserve the textual order
 /// in a GFA file for round-tripping.
 #[derive(Debug)]
+#[repr(u8)]
 pub enum LineKind {
     Header,
     Segment,
@@ -178,7 +182,7 @@ pub enum LineKind {
 ///
 /// TODO: Consider smaller indices for this, and possibly base/offset instead
 /// of start/end.
-#[derive(Debug)]
+#[derive(Debug, FromZeroes, FromBytes)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
