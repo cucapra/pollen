@@ -2,11 +2,22 @@ mod file;
 mod flatgfa;
 mod parse;
 mod print;
-use memmap::Mmap;
+use memmap::{Mmap, MmapMut};
 
 fn map_file(name: &str) -> Mmap {
     let file = std::fs::File::open(name).unwrap();
     unsafe { Mmap::map(&file) }.unwrap()
+}
+
+fn map_file_mut(name: &str) -> MmapMut {
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(name)
+        .unwrap();
+    file.set_len(8092).unwrap(); // TODO Estimate the size?
+    unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
 
 fn main() {
@@ -20,5 +31,9 @@ fn main() {
         let store = parse::Parser::parse(stdin.lock());
         let gfa = store.view();
         print::print(&gfa);
+
+        // TODO Just try dumping to a file.
+        let mut mmap = map_file_mut("hello.flatgfa");
+        file::dump(&gfa, &mut mmap);
     }
 }
