@@ -204,6 +204,7 @@ version = "0.1.0"
 dependencies = [
  "bstr 1.9.1",
  "gfa",
+ "memmap",
  "num_enum",
  "zerocopy",
 ]
