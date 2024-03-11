@@ -1,0 +1,10 @@
+[package]
+name = "polbin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bstr = "1.9.1"
+gfa = "0.10.1"
+num_enum = "0.7.2"
+zerocopy = { version = "0.7.32", features = ["derive"] }
