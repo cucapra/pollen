@@ -24,7 +24,7 @@ impl fmt::Display for flatgfa::AlignOpcode {
 impl<'a> fmt::Display for flatgfa::Alignment<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for op in self.ops {
-            write!(f, "{}{}", op.len, op.op)?;
+            write!(f, "{}{}", op.len(), op.op())?;
         }
         Ok(())
     }
