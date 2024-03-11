@@ -1,5 +1,4 @@
 use crate::flatgfa;
-use bstr::BStr;
 use zerocopy::{FromBytes, FromZeroes};
 
 const MAGIC_NUMBER: usize = 0x1337_4915;
