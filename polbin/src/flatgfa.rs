@@ -1,5 +1,4 @@
 use bstr::{BStr, BString};
-use std::ops::Range;
 
 /// An efficient flattened representation of a GFA file.
 ///
@@ -36,7 +35,7 @@ pub struct FlatGFA<'a> {
     /// Both paths and links can have overlaps, which are CIGAR sequences. They
     /// are all stored together here in a flat pool, elements of which point
     /// to chunks of `alignment`.
-    overlaps: &'a [Range<usize>],
+    overlaps: &'a [Span],
 
     /// The CIGAR aligment operations that make up the overlaps. `overlaps`
     /// contains range of indices in this pool.
@@ -69,7 +68,7 @@ pub struct FlatGFAStore {
     links: Vec<Link>,
     steps: Vec<Handle>,
     seq_data: Vec<u8>,
-    overlaps: Vec<Range<usize>>,
+    overlaps: Vec<Span>,
     alignment: Vec<AlignOp>,
     name_data: BString,
     optional_data: BString,
@@ -84,10 +83,10 @@ pub struct Segment {
     pub name: usize,
 
     /// The base-pair sequence for the segment. This is a range in the `seq_data` pool.
-    pub seq: Range<usize>,
+    pub seq: Span,
 
     /// Segments can have optional fields. This is a range in the `optional_data` pool.
-    pub optional: Range<usize>,
+    pub optional: Span,
 }
 
 /// A path is a sequence of oriented references to segments.
@@ -95,14 +94,14 @@ pub struct Segment {
 pub struct Path {
     /// The path's name. This can be an arbitrary string. It is a renge in the
     /// `name_data` pool.
-    pub name: Range<usize>,
+    pub name: Span,
 
     /// The squence of path steps. This is a range in the `steps` pool.
-    pub steps: Range<usize>,
+    pub steps: Span,
 
     /// The CIGAR overlaps for each step on the path. This is a range in the
     /// `overlaps` pool.
-    pub overlaps: Range<usize>,
+    pub overlaps: Span,
 }
 
 /// An allowed edge between two oriented segments.
@@ -116,7 +115,7 @@ pub struct Link {
 
     /// The CIGAR overlap between the segments. This is a range in the
     /// `overlaps` pool.
-    pub overlap: Range<usize>,
+    pub overlap: Span,
 }
 
 /// A foroward or backward direction.
@@ -175,36 +174,62 @@ pub enum LineKind {
     Link,
 }
 
+/// A range of indices into a pool.
+///
+/// TODO: Consider smaller indices for this, and possibly base/offset instead
+/// of start/end.
+#[derive(Debug)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Into<std::ops::Range<usize>> for Span {
+    fn into(self) -> std::ops::Range<usize> {
+        self.start..self.end
+    }
+}
+
+impl Span {
+    pub fn is_empty(&self) -> bool {
+        self.start == self.end
+    }
+
+    pub fn range(&self) -> std::ops::Range<usize> {
+        self.start..self.end
+    }
+}
+
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
-        self.seq_data[seg.seq.clone()].as_ref()
+        self.seq_data[seg.seq.range()].as_ref()
     }
 
     /// Get all the steps for a path.
     pub fn get_steps(&self, path: &Path) -> &[Handle] {
-        &self.steps[path.steps.clone()]
+        &self.steps[path.steps.range()]
     }
 
     /// Get all the overlaps for a path. This may be empty (`*` in the GFA file).
-    pub fn get_overlaps(&self, path: &Path) -> &[Range<usize>] {
-        &self.overlaps[path.overlaps.clone()]
+    pub fn get_overlaps(&self, path: &Path) -> &[Span] {
+        &self.overlaps[path.overlaps.range()]
     }
 
     /// Get the string name of a path.
     pub fn get_path_name(&self, path: &Path) -> &BStr {
-        self.name_data[path.name.clone()].as_ref()
+        self.name_data[path.name.range()].as_ref()
     }
 
     /// Get the optional data for a segment, as a tab-separated string.
     pub fn get_optional_data(&self, seg: &Segment) -> &BStr {
-        self.optional_data[seg.optional.clone()].as_ref()
+        self.optional_data[seg.optional.range()].as_ref()
     }
 
     /// Look up a CIGAR alignment.
-    pub fn get_alignment(&self, overlap: &Range<usize>) -> Alignment {
+    pub fn get_alignment(&self, overlap: &Span) -> Alignment {
         Alignment {
-            ops: &self.alignment[overlap.clone()],
+            ops: &self.alignment[overlap.range()],
         }
     }
 }
@@ -298,21 +323,20 @@ fn pool_push<T>(vec: &mut Vec<T>, item: T) -> usize {
 
 /// Add an entire vector of items to a "pool" vector and return the
 /// range of new indices (IDs).
-fn pool_append<T>(vec: &mut Vec<T>, items: Vec<T>) -> Range<usize> {
+fn pool_append<T>(vec: &mut Vec<T>, items: Vec<T>) -> Span {
     let count = items.len();
     pool_extend(vec, items, count)
 }
 
 /// Like `pool_append`, for an iterator. It's pretty important that `count`
 /// actually be the number of items in the iterator!
-fn pool_extend<T>(
-    vec: &mut Vec<T>,
-    iter: impl IntoIterator<Item = T>,
-    count: usize,
-) -> Range<usize> {
-    let range = vec.len()..(vec.len() + count);
+fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>, count: usize) -> Span {
+    let span = Span {
+        start: vec.len(),
+        end: (vec.len() + count),
+    };
     let old_len = vec.len();
     vec.extend(iter);
     assert_eq!(vec.len(), old_len + count);
-    range
+    span
 }
