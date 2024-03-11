@@ -157,7 +157,7 @@ impl Handle {
 }
 
 /// The kind of each operation in a CIGAR alignment.
-#[derive(Debug)]
+#[derive(Debug, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum AlignOpcode {
     Match,     // M
@@ -167,13 +167,29 @@ pub enum AlignOpcode {
 }
 
 /// A single operation in a CIGAR alignment, like "3M" or "1D".
-#[derive(Debug)]
-pub struct AlignOp {
-    /// The operation (M, I, etc.).
-    pub op: AlignOpcode,
+///
+/// Logically, this is a pair of a number and an `AlignOpcode`. We pack the two
+/// into a single u32.
+#[derive(Debug, FromZeroes, FromBytes)]
+pub struct AlignOp(u32);
 
-    /// The count for this operation.
-    pub len: u32,
+impl AlignOp {
+    /// Create a new alignment operation from an opcode and count.
+    pub fn new(op: AlignOpcode, len: u32) -> Self {
+        let op_byte: u8 = op.into();
+        assert!(len & !0xff == 0, "length too large");
+        Self((len << 8) | (op_byte as u32))
+    }
+
+    /// Get the operation (M, I, etc.) for this operation.
+    pub fn op(&self) -> AlignOpcode {
+        ((self.0 & 0xff) as u8).try_into().unwrap()
+    }
+
+    /// Get the length of the operation.
+    pub fn len(&self) -> u32 {
+        self.0 >> 8
+    }
 }
 
 /// An entire CIGAR alignment string, like "3M1D2M".

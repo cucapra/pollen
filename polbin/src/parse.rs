@@ -158,16 +158,16 @@ fn convert_orient(o: gfa::gfa::Orientation) -> Orientation {
 }
 
 fn convert_align_op(c: &cigar::CIGARPair) -> AlignOp {
-    AlignOp {
-        op: match c.op() {
+    AlignOp::new(
+        match c.op() {
             cigar::CIGAROp::M => crate::flatgfa::AlignOpcode::Match,
             cigar::CIGAROp::N => crate::flatgfa::AlignOpcode::Gap,
             cigar::CIGAROp::D => crate::flatgfa::AlignOpcode::Deletion,
             cigar::CIGAROp::I => crate::flatgfa::AlignOpcode::Insertion,
             _ => unimplemented!(),
         },
-        len: c.len(),
-    }
+        c.len(),
+    )
 }
 
 fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
