@@ -107,7 +107,7 @@ pub struct Path {
 }
 
 /// An allowed edge between two oriented segments.
-#[derive(Debug)]
+#[derive(Debug, FromBytes, FromZeroes)]
 pub struct Link {
     /// The source of the edge.
     pub from: Handle,
@@ -133,7 +133,7 @@ pub enum Orientation {
 /// A Handle refers to the forward (+) or backward (-) orientation for a given segment.
 /// So, logically, it consists of a pair of a segment reference (usize) and an
 /// orientation (1 bit). We pack the two values into a single word.
-#[derive(Debug)]
+#[derive(Debug, FromBytes, FromZeroes)]
 pub struct Handle(usize);
 
 impl Handle {
@@ -205,9 +205,9 @@ pub struct Span {
     pub end: usize,
 }
 
-impl Into<std::ops::Range<usize>> for Span {
-    fn into(self) -> std::ops::Range<usize> {
-        self.start..self.end
+impl From<Span> for std::ops::Range<usize> {
+    fn from(span: Span) -> std::ops::Range<usize> {
+        span.start..span.end
     }
 }
 
@@ -318,7 +318,7 @@ impl FlatGFAStore {
     }
 
     /// Borrow a FlatGFA view of this data store.
-    pub fn view<'a>(&'a self) -> FlatGFA<'a> {
+    pub fn view(&self) -> FlatGFA {
         FlatGFA {
             header: self.header.as_ref(),
             segs: &self.segs,
