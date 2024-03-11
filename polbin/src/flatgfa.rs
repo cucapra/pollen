@@ -138,7 +138,7 @@ pub enum Orientation {
 /// So, logically, it consists of a pair of a segment reference (usize) and an
 /// orientation (1 bit). We pack the two values into a single word.
 #[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
-#[repr(transparent)]
+#[repr(packed)]
 pub struct Handle(usize);
 
 impl Handle {
@@ -176,7 +176,7 @@ pub enum AlignOpcode {
 /// Logically, this is a pair of a number and an `AlignOpcode`. We pack the two
 /// into a single u32.
 #[derive(Debug, FromZeroes, FromBytes, AsBytes)]
-#[repr(transparent)]
+#[repr(packed)]
 pub struct AlignOp(u32);
 
 impl AlignOp {
