@@ -31,8 +31,9 @@ impl<'a> fmt::Display for flatgfa::Alignment<'a> {
 }
 
 fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
-    let seg = &gfa.segs[handle.segment()];
-    print!("{}{}", seg.name, handle.orient());
+    let seg = gfa.segs[handle.segment()];
+    let name = seg.name;
+    print!("{}{}", name, handle.orient());
 }
 
 fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
@@ -57,18 +58,23 @@ fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
 }
 
 fn print_link(gfa: &flatgfa::FlatGFA, link: &flatgfa::Link) {
+    let from = link.from;
+    let from_name = gfa.segs[from.segment()].name;
+    let to = link.to;
+    let to_name = gfa.segs[to.segment()].name;
     println!(
         "L\t{}\t{}\t{}\t{}\t{}",
-        gfa.segs[link.from.segment()].name,
-        link.from.orient(),
-        gfa.segs[link.to.segment()].name,
-        link.to.orient(),
+        from_name,
+        from.orient(),
+        to_name,
+        to.orient(),
         gfa.get_alignment(&link.overlap)
     );
 }
 
 fn print_seg(gfa: &flatgfa::FlatGFA, seg: &flatgfa::Segment) {
-    print!("S\t{}\t{}", seg.name, gfa.get_seq(seg));
+    let name = seg.name;
+    print!("S\t{}\t{}", name, gfa.get_seq(seg));
     if !seg.optional.is_empty() {
         print!("\t{}", gfa.get_optional_data(seg));
     }
