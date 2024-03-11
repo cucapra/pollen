@@ -13,7 +13,7 @@ fn main() {
     // Read either GFA text from stdin or a binary file from the first argument.
     if let Some(name) = std::env::args().nth(1) {
         let mmap = map_file(&name);
-        let gfa = file::load(&mmap);
+        let gfa = file::view(&mmap);
         print::print(&gfa);
     } else {
         let stdin = std::io::stdin();
