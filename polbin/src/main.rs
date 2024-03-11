@@ -1,3 +1,4 @@
+mod file;
 mod flatgfa;
 mod parse;
 mod print;
