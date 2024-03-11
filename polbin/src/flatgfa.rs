@@ -24,7 +24,7 @@ pub struct FlatGFA<'a> {
 
     /// Paths consist of steps. This is a flat pool of steps, chunks of which are
     /// associated with each path.
-    steps: &'a [Handle],
+    pub steps: &'a [Handle],
 
     /// The actual base-pair sequences for the segments. This is a pool of
     /// base-pair symbols, chunks of which are associated with each segment.
@@ -32,30 +32,30 @@ pub struct FlatGFA<'a> {
     /// TODO: This could certainly use a smaller representation than `u8`
     /// (since we care only about 4 base pairs). If we want to pay the cost
     /// of bit-packing.
-    seq_data: &'a [u8],
+    pub seq_data: &'a [u8],
 
     /// Both paths and links can have overlaps, which are CIGAR sequences. They
     /// are all stored together here in a flat pool, elements of which point
     /// to chunks of `alignment`.
-    overlaps: &'a [Span],
+    pub overlaps: &'a [Span],
 
     /// The CIGAR aligment operations that make up the overlaps. `overlaps`
     /// contains range of indices in this pool.
-    alignment: &'a [AlignOp],
+    pub alignment: &'a [AlignOp],
 
     /// The string names: currenly, just of paths. (We assume segments have integer
     /// names, so they don't need to be stored separately.)
-    name_data: &'a BStr,
+    pub name_data: &'a BStr,
 
     /// Segments can come with optional extra fields, which we store in a flat pool
     /// as raw characters because we don't currently care about them.
-    optional_data: &'a BStr,
+    pub optional_data: &'a BStr,
 
     /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
     /// fidelity: we record the order of lines as we saw them when parsing a GFA file
     /// so we can emit them again in that order. Elements should be `LineKind` values
     /// (but they are checked before we use them).
-    line_order: &'a [u8],
+    pub line_order: &'a [u8],
 }
 
 /// A mutable, in-memory data store for `FlatGFA`.
