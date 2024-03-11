@@ -1,4 +1,5 @@
 use crate::flatgfa;
+use std::mem::{size_of, size_of_val};
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 const MAGIC_NUMBER: usize = 0x1337_4915;
@@ -30,7 +31,7 @@ fn get_prefix(data: &[u8], len: usize) -> (&[u8], &[u8]) {
 pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     // Table of contents.
     let toc = TOC::ref_from_prefix(data).unwrap();
-    let rest = &data[std::mem::size_of::<TOC>()..];
+    let rest = &data[size_of::<TOC>()..];
     let magic = toc.magic;
     assert_eq!(magic, MAGIC_NUMBER);
 
@@ -63,7 +64,7 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
 }
 
 fn write_bump<'a, 'b, T: AsBytes + ?Sized>(buf: &'a mut [u8], data: &'b T) -> Option<&'a mut [u8]> {
-    let len = std::mem::size_of_val(data);
+    let len = size_of_val(data);
     data.write_to_prefix(buf)?;
     Some(&mut buf[len..])
 }
@@ -105,4 +106,21 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
     let rest = write_bytes(rest, gfa.name_data).unwrap();
     let rest = write_bytes(rest, gfa.optional_data).unwrap();
     write_bytes(rest, gfa.line_order).unwrap();
+}
+
+/// Get the total size in bytes of a FlatGFA structure. This should result in a big
+/// enough buffer to write the entire FlatGFA into with `dump`.
+pub fn size(gfa: &flatgfa::FlatGFA) -> usize {
+    size_of::<TOC>()
+        + gfa.header.len()
+        + gfa.segs.len() * size_of::<flatgfa::Segment>()
+        + gfa.paths.len() * size_of::<flatgfa::Path>()
+        + gfa.links.len() * size_of::<flatgfa::Link>()
+        + gfa.steps.len() * size_of::<flatgfa::Handle>()
+        + gfa.seq_data.len()
+        + gfa.overlaps.len() * size_of::<flatgfa::Span>()
+        + gfa.alignment.len() * size_of::<flatgfa::AlignOp>()
+        + gfa.name_data.len()
+        + gfa.optional_data.len()
+        + gfa.line_order.len()
 }
