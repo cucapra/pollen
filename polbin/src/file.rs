@@ -2,12 +2,12 @@ use crate::flatgfa;
 use std::mem::{size_of, size_of_val};
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
-const MAGIC_NUMBER: usize = 0x1337_4915;
+const MAGIC_NUMBER: u64 = 0xB101_1054;
 
 #[derive(FromBytes, FromZeroes, AsBytes)]
 #[repr(packed)]
 struct TOC {
-    magic: usize,
+    magic: u64,
     header_len: usize,
     segs_count: usize,
     paths_count: usize,
