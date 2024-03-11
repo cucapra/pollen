@@ -159,6 +159,10 @@ binary = true
 command = "pollen_data_gen simple {filename} | jq .depth"
 output.json = "-"
 
-[envs.polbin_roundtrip]
+[envs.polbin_mem]
 command = "../polbin/target/debug/polbin < {filename}"
+output.gfa = "-"
+
+[envs.polbin_file]
+command = "../polbin/target/debug/polbin < {filename} -o {base}.flatgfa ; ../polbin/target/debug/polbin -i {base}.flatgfa"
 output.gfa = "-"
