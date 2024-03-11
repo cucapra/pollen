@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+argh = "0.1.12"
 bstr = "1.9.1"
 gfa = "0.10.1"
 memmap = "0.7.0"

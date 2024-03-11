@@ -1,6 +1,6 @@
 use bstr::{BStr, BString};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use zerocopy::{FromBytes, FromZeroes};
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 /// An efficient flattened representation of a GFA file.
 ///
@@ -65,22 +65,23 @@ pub struct FlatGFA<'a> {
 /// useful for creating new ones from scratch.
 #[derive(Default)]
 pub struct FlatGFAStore {
-    header: BString,
-    segs: Vec<Segment>,
-    paths: Vec<Path>,
-    links: Vec<Link>,
-    steps: Vec<Handle>,
-    seq_data: Vec<u8>,
-    overlaps: Vec<Span>,
-    alignment: Vec<AlignOp>,
-    name_data: BString,
-    optional_data: BString,
-    line_order: Vec<u8>,
+    pub header: BString,
+    pub segs: Vec<Segment>,
+    pub paths: Vec<Path>,
+    pub links: Vec<Link>,
+    pub steps: Vec<Handle>,
+    pub seq_data: Vec<u8>,
+    pub overlaps: Vec<Span>,
+    pub alignment: Vec<AlignOp>,
+    pub name_data: BString,
+    pub optional_data: BString,
+    pub line_order: Vec<u8>,
 }
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
 /// that can be strung together into paths.
-#[derive(Debug, FromZeroes, FromBytes)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
+#[repr(packed)]
 pub struct Segment {
     /// The segment's name. We assume all names are just plain numbers.
     pub name: usize,
@@ -93,7 +94,8 @@ pub struct Segment {
 }
 
 /// A path is a sequence of oriented references to segments.
-#[derive(Debug, FromZeroes, FromBytes)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
+#[repr(packed)]
 pub struct Path {
     /// The path's name. This can be an arbitrary string. It is a renge in the
     /// `name_data` pool.
@@ -108,7 +110,8 @@ pub struct Path {
 }
 
 /// An allowed edge between two oriented segments.
-#[derive(Debug, FromBytes, FromZeroes)]
+#[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
+#[repr(packed)]
 pub struct Link {
     /// The source of the edge.
     pub from: Handle,
@@ -134,7 +137,8 @@ pub enum Orientation {
 /// A Handle refers to the forward (+) or backward (-) orientation for a given segment.
 /// So, logically, it consists of a pair of a segment reference (usize) and an
 /// orientation (1 bit). We pack the two values into a single word.
-#[derive(Debug, FromBytes, FromZeroes)]
+#[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
+#[repr(packed)]
 pub struct Handle(usize);
 
 impl Handle {
@@ -171,7 +175,8 @@ pub enum AlignOpcode {
 ///
 /// Logically, this is a pair of a number and an `AlignOpcode`. We pack the two
 /// into a single u32.
-#[derive(Debug, FromZeroes, FromBytes)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes)]
+#[repr(packed)]
 pub struct AlignOp(u32);
 
 impl AlignOp {
@@ -216,7 +221,8 @@ pub enum LineKind {
 ///
 /// TODO: Consider smaller indices for this, and possibly base/offset instead
 /// of start/end.
-#[derive(Debug, FromZeroes, FromBytes)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
+#[repr(packed)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
