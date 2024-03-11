@@ -25,7 +25,7 @@ fn get_prefix(data: &[u8], len: usize) -> (&[u8], &[u8]) {
     (&data[0..len], &data[len..])
 }
 
-pub fn load(data: &[u8]) -> flatgfa::FlatGFA {
+pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     // Table of contents.
     let toc = TOC::ref_from_prefix(data).unwrap();
     let rest = &data[std::mem::size_of::<TOC>()..];
