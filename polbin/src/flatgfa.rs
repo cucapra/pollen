@@ -1,4 +1,5 @@
 use bstr::{BStr, BString};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zerocopy::{FromBytes, FromZeroes};
 
 /// An efficient flattened representation of a GFA file.
@@ -119,8 +120,8 @@ pub struct Link {
     pub overlap: Span,
 }
 
-/// A foroward or backward direction.
-#[derive(Debug, PartialEq)]
+/// A forward or backward direction.
+#[derive(Debug, PartialEq, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Orientation {
     Forward,  // +
@@ -129,14 +130,30 @@ pub enum Orientation {
 
 /// An oriented reference to a segment.
 ///
-/// We can refer to the + (forward) or - (backward) handle for a given segment.
-#[derive(Debug, PartialEq)]
-pub struct Handle {
-    /// The segment we're referring to. This is an index in the `segs` pool.
-    pub segment: usize,
+/// A Handle refers to the forward (+) or backward (-) orientation for a given segment.
+/// So, logically, it consists of a pair of a segment reference (usize) and an
+/// orientation (1 bit). We pack the two values into a single word.
+#[derive(Debug)]
+pub struct Handle(usize);
 
-    /// The orientation (+ or -) of the reference.
-    pub orient: Orientation,
+impl Handle {
+    /// Create a new handle referring to a segment ID and an orientation.
+    pub fn new(segment: usize, orient: Orientation) -> Self {
+        assert!(segment & (1 << (usize::BITS - 1)) == 0, "index too large");
+        let orient_bit: u8 = orient.into();
+        assert!(orient_bit & !1 == 0, "invalid orientation");
+        Self(segment << 1 | (orient_bit as usize))
+    }
+
+    /// Get the segment ID. This is an index in the `segs` pool.
+    pub fn segment(&self) -> usize {
+        self.0 >> 1
+    }
+
+    /// Get the orientation (+ or -) for the handle.
+    pub fn orient(&self) -> Orientation {
+        ((self.0 & 1) as u8).try_into().unwrap()
+    }
 }
 
 /// The kind of each operation in a CIGAR alignment.

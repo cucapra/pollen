@@ -100,14 +100,14 @@ impl Parser {
         // Add all the bufferred links.
         for link in self.links {
             let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
-            let from = Handle {
-                segment: self.segs_by_name[&link.from_segment],
-                orient: convert_orient(link.from_orient),
-            };
-            let to = Handle {
-                segment: self.segs_by_name[&link.to_segment],
-                orient: convert_orient(link.to_orient),
-            };
+            let from = Handle::new(
+                self.segs_by_name[&link.from_segment],
+                convert_orient(link.from_orient),
+            );
+            let to = Handle::new(
+                self.segs_by_name[&link.to_segment],
+                convert_orient(link.to_orient),
+            );
             self.flat.add_link(from, to, convert_cigar(&cigar));
         }
 
@@ -115,13 +115,15 @@ impl Parser {
         for path in self.paths {
             let steps = parse_path_steps(path.segment_names)
                 .into_iter()
-                .map(|(name, dir)| Handle {
-                    segment: self.segs_by_name[&name],
-                    orient: if dir {
-                        Orientation::Forward
-                    } else {
-                        Orientation::Backward
-                    },
+                .map(|(name, dir)| {
+                    Handle::new(
+                        self.segs_by_name[&name],
+                        if dir {
+                            Orientation::Forward
+                        } else {
+                            Orientation::Backward
+                        },
+                    )
                 })
                 .collect();
 

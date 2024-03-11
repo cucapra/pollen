@@ -31,8 +31,8 @@ impl<'a> fmt::Display for flatgfa::Alignment<'a> {
 }
 
 fn print_step(gfa: &flatgfa::FlatGFA, handle: &flatgfa::Handle) {
-    let seg = &gfa.segs[handle.segment];
-    print!("{}{}", seg.name, handle.orient);
+    let seg = &gfa.segs[handle.segment()];
+    print!("{}{}", seg.name, handle.orient());
 }
 
 fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
@@ -59,10 +59,10 @@ fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
 fn print_link(gfa: &flatgfa::FlatGFA, link: &flatgfa::Link) {
     println!(
         "L\t{}\t{}\t{}\t{}\t{}",
-        gfa.segs[link.from.segment].name,
-        link.from.orient,
-        gfa.segs[link.to.segment].name,
-        link.to.orient,
+        gfa.segs[link.from.segment()].name,
+        link.from.orient(),
+        gfa.segs[link.to.segment()].name,
+        link.to.orient(),
         gfa.get_alignment(&link.overlap)
     );
 }
