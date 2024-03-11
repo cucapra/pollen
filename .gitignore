@@ -17,7 +17,8 @@ __pycache__/
 og_to_gfa.py
 compute_maxes.py
 
-pollen/target/*
+pollen/target
+polbin/target
 pollen/*.rlib
 
 slow_odgi/dist/
