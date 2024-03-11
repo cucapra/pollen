@@ -53,8 +53,9 @@ pub struct FlatGFA<'a> {
 
     /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
     /// fidelity: we record the order of lines as we saw them when parsing a GFA file
-    /// so we can emit them again in that order.
-    pub(crate) line_order: &'a [LineKind],
+    /// so we can emit them again in that order. Elements should be `LineKind` values
+    /// (but they are checked before we use them).
+    line_order: &'a [u8],
 }
 
 /// A mutable, in-memory data store for `FlatGFA`.
@@ -74,7 +75,7 @@ pub struct FlatGFAStore {
     alignment: Vec<AlignOp>,
     name_data: BString,
     optional_data: BString,
-    line_order: Vec<LineKind>,
+    line_order: Vec<u8>,
 }
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
@@ -202,7 +203,7 @@ pub struct Alignment<'a> {
 
 /// A kind of GFA line. We use this in `line_order` to preserve the textual order
 /// in a GFA file for round-tripping.
-#[derive(Debug)]
+#[derive(Debug, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
 pub enum LineKind {
     Header,
@@ -269,6 +270,11 @@ impl<'a> FlatGFA<'a> {
             ops: &self.alignment[overlap.range()],
         }
     }
+
+    /// Get the recorded order of line kinds.
+    pub fn get_line_order(&self) -> impl Iterator<Item = LineKind> + 'a {
+        self.line_order.iter().map(|b| (*b).try_into().unwrap())
+    }
 }
 
 impl FlatGFAStore {
@@ -330,7 +336,7 @@ impl FlatGFAStore {
 
     /// Record a line type to preserve the line order.
     pub fn record_line(&mut self, kind: LineKind) {
-        self.line_order.push(kind);
+        self.line_order.push(kind.into());
     }
 
     /// Borrow a FlatGFA view of this data store.
