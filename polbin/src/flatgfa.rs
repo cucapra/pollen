@@ -296,8 +296,8 @@ impl FlatGFAStore {
             &mut self.segs,
             Segment {
                 name,
-                seq: pool_append(&mut self.seq_data, seq),
-                optional: pool_append(&mut self.optional_data, optional),
+                seq: pool_extend(&mut self.seq_data, seq),
+                optional: pool_extend(&mut self.optional_data, optional),
             },
         )
     }
@@ -309,20 +309,18 @@ impl FlatGFAStore {
         steps: Vec<Handle>,
         overlaps: Vec<Vec<AlignOp>>,
     ) -> usize {
-        let overlap_count = overlaps.len();
         let overlaps = pool_extend(
             &mut self.overlaps,
             overlaps
                 .into_iter()
-                .map(|align| pool_append(&mut self.alignment, align)),
-            overlap_count,
+                .map(|align| pool_extend(&mut self.alignment, align)),
         );
 
         pool_push(
             &mut self.paths,
             Path {
-                name: pool_append(&mut self.name_data, name),
-                steps: pool_append(&mut self.steps, steps),
+                name: pool_extend(&mut self.name_data, name),
+                steps: pool_extend(&mut self.steps, steps),
                 overlaps,
             },
         )
@@ -335,7 +333,7 @@ impl FlatGFAStore {
             Link {
                 from,
                 to,
-                overlap: pool_append(&mut self.alignment, overlap),
+                overlap: pool_extend(&mut self.alignment, overlap),
             },
         )
     }
@@ -370,22 +368,13 @@ fn pool_push<T>(vec: &mut Vec<T>, item: T) -> usize {
     len
 }
 
-/// Add an entire vector of items to a "pool" vector and return the
+/// Add an entire sequence of items to a "pool" vector and return the
 /// range of new indices (IDs).
-fn pool_append<T>(vec: &mut Vec<T>, items: Vec<T>) -> Span {
-    let count = items.len();
-    pool_extend(vec, items, count)
-}
-
-/// Like `pool_append`, for an iterator. It's pretty important that `count`
-/// actually be the number of items in the iterator!
-fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>, count: usize) -> Span {
-    let span = Span {
-        start: vec.len(),
-        end: (vec.len() + count),
-    };
+fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>) -> Span {
     let old_len = vec.len();
     vec.extend(iter);
-    assert_eq!(vec.len(), old_len + count);
-    span
+    Span {
+        start: old_len,
+        end: vec.len(),
+    }
 }
