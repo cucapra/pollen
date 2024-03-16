@@ -307,7 +307,7 @@ impl FlatGFAStore {
         &mut self,
         name: Vec<u8>,
         steps: impl Iterator<Item = Handle>,
-        overlaps: Vec<Vec<AlignOp>>,
+        overlaps: impl Iterator<Item = Vec<AlignOp>>,
     ) -> usize {
         let overlaps = pool_extend(
             &mut self.overlaps,
