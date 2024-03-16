@@ -113,7 +113,7 @@ impl Parser {
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps = parse_path_steps(path.segment_names)
+        let steps = StepsParser::new(&path.segment_names)
             .into_iter()
             .map(|(name, dir)| {
                 Handle::new(
@@ -218,45 +218,69 @@ fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
 /// The underlying gfa-rs library does not yet parse the actual segments
 /// involved in the path. So we do it ourselves: splitting on commas and
 /// matching the direction.
-fn parse_path_steps(data: Vec<u8>) -> Vec<(usize, bool)> {
-    // The parser state: we're either looking for a segment name (or a +/- terminator),
-    // or we're expecting a comma (or end of string).
-    enum PathParseState {
-        Seg,
-        Comma,
-    }
+struct StepsParser<'a> {
+    str: &'a [u8],
+    index: usize,
+    state: StepsParseState,
+    seg: usize,
+}
 
-    let mut state = PathParseState::Seg;
-    let mut seg: usize = 0;
-    let mut steps = vec![];
-    for byte in data {
-        match state {
-            PathParseState::Seg => {
-                if byte == b'+' || byte == b'-' {
-                    steps.push((seg, byte == b'+'));
-                    state = PathParseState::Comma;
-                } else if byte.is_ascii_digit() {
-                    seg *= 10;
-                    seg += (byte - b'0') as usize;
-                } else {
-                    panic!("unexpected character in path: {}", byte as char);
+/// The parser state: we're either looking for a segment name (or a +/- terminator),
+/// or we're expecting a comma (or end of string).
+enum StepsParseState {
+    Seg,
+    Comma,
+}
+
+impl<'a> StepsParser<'a> {
+    pub fn new(str: &'a [u8]) -> Self {
+        StepsParser {
+            str,
+            index: 0,
+            state: StepsParseState::Seg,
+            seg: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for StepsParser<'a> {
+    type Item = (usize, bool);
+    fn next(&mut self) -> Option<(usize, bool)> {
+        while self.index < self.str.len() {
+            // Consume one byte.
+            let byte = self.str[self.index];
+            self.index += 1;
+
+            match self.state {
+                StepsParseState::Seg => {
+                    if byte == b'+' || byte == b'-' {
+                        self.state = StepsParseState::Comma;
+                        return Some((self.seg, byte == b'+'));
+                    } else if byte.is_ascii_digit() {
+                        self.seg *= 10;
+                        self.seg += (byte - b'0') as usize;
+                    } else {
+                        panic!("unexpected character in path: {}", byte as char);
+                    }
                 }
-            }
-            PathParseState::Comma => {
-                if byte == b',' {
-                    state = PathParseState::Seg;
-                    seg = 0;
-                } else {
-                    panic!("unexpected character in path: {}", byte as char);
+                StepsParseState::Comma => {
+                    if byte == b',' {
+                        self.state = StepsParseState::Seg;
+                        self.seg = 0;
+                    } else {
+                        panic!("unexpected character in path: {}", byte as char);
+                    }
                 }
             }
         }
+
+        None
     }
-    steps
 }
 
 #[test]
 fn test_parse_path() {
-    let path = parse_path_steps(b"1+,23-,4+".to_vec());
+    let str = b"1+,23-,4+";
+    let path: Vec<_> = StepsParser::new(str).collect();
     assert_eq!(path, vec![(1, true), (23, false), (4, true)]);
 }
