@@ -42,12 +42,8 @@ pub struct Parser {
     /// The flat representation we're building.
     flat: FlatGFAStore,
 
-    /// Segment names at most this are assigned *sequential* IDs, i.e., the ID is just
-    /// the name minus one.
-    sequential_seg_names: usize,
-
-    /// Track the segment IDs by their name, which we need to refer to segments in paths.
-    segs_by_name: HashMap<usize, u32>,
+    /// All segment IDs, indexed by their names, which we need to refer to segments in paths.
+    seg_ids: NameMap,
 }
 
 /// Holds data structures that we haven't added to the flat representation yet.
@@ -89,7 +85,7 @@ impl Parser {
             Line::Segment(s) => {
                 self.flat.record_line(LineKind::Segment);
                 let seg_id = self.flat.add_seg(s.name, s.sequence, s.optional.0);
-                self.record_seg(s.name, seg_id);
+                self.seg_ids.insert(s.name, seg_id);
             }
             Line::Link(l) => {
                 self.flat.record_line(LineKind::Link);
@@ -103,50 +99,32 @@ impl Parser {
         }
     }
 
-    /// Record a mapping from segment name to segment ID.
-    fn record_seg(&mut self, name: usize, id: u32) {
-        // Is this the next sequential name? If so, no need to record it in our hash table;
-        // just bump the number of sequential names we've seen.
-        if (name - 1) == self.sequential_seg_names && (name - 1) == (id as usize) {
-            self.sequential_seg_names += 1;
-        } else {
-            self.segs_by_name.insert(name, id);
-        }
-    }
-
-    /// Get the actual segment ID for a segment name.
-    fn seg_id(&self, name: usize) -> u32 {
-        if name <= self.sequential_seg_names {
-            (name - 1) as u32
-        } else {
-            self.segs_by_name[&name]
-        }
-    }
-
     fn add_link(&mut self, link: gfa::gfa::Link<usize, OptFields>) {
         let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
         let from = Handle::new(
-            self.seg_id(link.from_segment),
+            self.seg_ids.get(link.from_segment),
             convert_orient(link.from_orient),
         );
-        let to = Handle::new(self.seg_id(link.to_segment), convert_orient(link.to_orient));
+        let to = Handle::new(
+            self.seg_ids.get(link.to_segment),
+            convert_orient(link.to_orient),
+        );
         self.flat.add_link(from, to, convert_cigar(&cigar));
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps: Vec<_> = parse_path_steps(path.segment_names)
+        let steps = parse_path_steps(path.segment_names)
             .into_iter()
             .map(|(name, dir)| {
                 Handle::new(
-                    self.seg_id(name),
+                    self.seg_ids.get(name),
                     if dir {
                         Orientation::Forward
                     } else {
                         Orientation::Backward
                     },
                 )
-            })
-            .collect();
+            });
 
         // When the overlaps section is just `*`, the rs-gfa library produces a
         // vector like `[None]`. I'm not sure if we really need to handle `None`
@@ -178,6 +156,36 @@ impl Parser {
             self.add_path(path);
         }
         self.flat
+    }
+}
+
+#[derive(Default)]
+struct NameMap {
+    /// Names at most this are assigned *sequential* IDs, i.e., the ID is just the name
+    /// minus one.
+    sequential_max: usize,
+
+    /// Non-sequential names go here.
+    others: HashMap<usize, u32>,
+}
+
+impl NameMap {
+    fn insert(&mut self, name: usize, id: u32) {
+        // Is this the next sequential name? If so, no need to record it in our hash table;
+        // just bump the number of sequential names we've seen.
+        if (name - 1) == self.sequential_max && (name - 1) == (id as usize) {
+            self.sequential_max += 1;
+        } else {
+            self.others.insert(name, id);
+        }
+    }
+
+    fn get(&self, name: usize) -> u32 {
+        if name <= self.sequential_max {
+            (name - 1) as u32
+        } else {
+            self.others[&name]
+        }
     }
 }
 
