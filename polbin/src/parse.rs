@@ -130,17 +130,15 @@ impl Parser {
             // vector like `[None]`. I'm not sure if we really need to handle `None`
             // otherwise: all the real data I've seen either has *real* overlaps or
             // is just `*`.
-            let overlaps: Vec<Vec<_>> = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
+            let overlaps = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
                 vec![]
             } else {
                 path.overlaps
-                    .iter()
-                    .map(|o| match o {
-                        Some(c) => convert_cigar(c),
-                        None => unimplemented!(),
-                    })
-                    .collect()
             };
+            let overlaps = overlaps.iter().map(|o| match o {
+                Some(c) => convert_cigar(c),
+                None => unimplemented!(),
+            });
 
             self.flat.add_path(path.path_name, steps, overlaps);
         }
