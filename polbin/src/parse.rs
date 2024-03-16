@@ -43,7 +43,7 @@ pub struct Parser {
     flat: FlatGFAStore,
 
     // Track the segment IDs by their name, which we need to refer to segments in paths.
-    segs_by_name: HashMap<usize, usize>,
+    segs_by_name: HashMap<usize, u32>,
 
     links: Vec<gfa::gfa::Link<usize, OptFields>>,
     paths: Vec<gfa::gfa::Path<usize, OptFields>>,
