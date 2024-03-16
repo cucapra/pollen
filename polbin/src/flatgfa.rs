@@ -306,7 +306,7 @@ impl FlatGFAStore {
     pub fn add_path(
         &mut self,
         name: Vec<u8>,
-        steps: Vec<Handle>,
+        steps: impl Iterator<Item = Handle>,
         overlaps: Vec<Vec<AlignOp>>,
     ) -> usize {
         let overlaps = pool_extend(
