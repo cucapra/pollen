@@ -139,19 +139,19 @@ pub enum Orientation {
 /// orientation (1 bit). We pack the two values into a single word.
 #[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
 #[repr(packed)]
-pub struct Handle(usize);
+pub struct Handle(u32);
 
 impl Handle {
     /// Create a new handle referring to a segment ID and an orientation.
-    pub fn new(segment: usize, orient: Orientation) -> Self {
-        assert!(segment & (1 << (usize::BITS - 1)) == 0, "index too large");
+    pub fn new(segment: Index, orient: Orientation) -> Self {
+        assert!(segment & (1 << (u32::BITS - 1)) == 0, "index too large");
         let orient_bit: u8 = orient.into();
         assert!(orient_bit & !1 == 0, "invalid orientation");
-        Self(segment << 1 | (orient_bit as usize))
+        Self(segment << 1 | (orient_bit as u32))
     }
 
     /// Get the segment ID. This is an index in the `segs` pool.
-    pub fn segment(&self) -> usize {
+    pub fn segment(&self) -> Index {
         self.0 >> 1
     }
 
@@ -217,6 +217,11 @@ pub enum LineKind {
     Link,
 }
 
+/// An index into a pool.
+///
+/// TODO: Consider using newtypes for each distinct type.
+type Index = u32;
+
 /// A range of indices into a pool.
 ///
 /// TODO: Consider smaller indices for this, and possibly base/offset instead
@@ -224,13 +229,13 @@ pub enum LineKind {
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
 pub struct Span {
-    pub start: usize,
-    pub end: usize,
+    pub start: Index,
+    pub end: Index,
 }
 
 impl From<Span> for std::ops::Range<usize> {
     fn from(span: Span) -> std::ops::Range<usize> {
-        span.start..span.end
+        (span.start as usize)..(span.end as usize)
     }
 }
 
@@ -240,7 +245,7 @@ impl Span {
     }
 
     pub fn range(&self) -> std::ops::Range<usize> {
-        self.start..self.end
+        (*self).into()
     }
 }
 
@@ -263,6 +268,11 @@ impl<'a> FlatGFA<'a> {
     /// Get the string name of a path.
     pub fn get_path_name(&self, path: &Path) -> &BStr {
         self.name_data[path.name.range()].as_ref()
+    }
+
+    /// Get a handle's associated segment.
+    pub fn get_handle_seg(&self, handle: Handle) -> &Segment {
+        &self.segs[handle.segment() as usize]
     }
 
     /// Get the optional data for a segment, as a tab-separated string.
@@ -291,13 +301,13 @@ impl FlatGFAStore {
     }
 
     /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>, optional: Vec<u8>) -> usize {
+    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>, optional: Vec<u8>) -> Index {
         pool_push(
             &mut self.segs,
             Segment {
                 name,
-                seq: pool_append(&mut self.seq_data, seq),
-                optional: pool_append(&mut self.optional_data, optional),
+                seq: pool_extend(&mut self.seq_data, seq),
+                optional: pool_extend(&mut self.optional_data, optional),
             },
         )
     }
@@ -306,36 +316,34 @@ impl FlatGFAStore {
     pub fn add_path(
         &mut self,
         name: Vec<u8>,
-        steps: Vec<Handle>,
-        overlaps: Vec<Vec<AlignOp>>,
-    ) -> usize {
-        let overlap_count = overlaps.len();
+        steps: impl Iterator<Item = Handle>,
+        overlaps: impl Iterator<Item = Vec<AlignOp>>,
+    ) -> Index {
         let overlaps = pool_extend(
             &mut self.overlaps,
             overlaps
                 .into_iter()
-                .map(|align| pool_append(&mut self.alignment, align)),
-            overlap_count,
+                .map(|align| pool_extend(&mut self.alignment, align)),
         );
 
         pool_push(
             &mut self.paths,
             Path {
-                name: pool_append(&mut self.name_data, name),
-                steps: pool_append(&mut self.steps, steps),
+                name: pool_extend(&mut self.name_data, name),
+                steps: pool_extend(&mut self.steps, steps),
                 overlaps,
             },
         )
     }
 
     /// Add a link between two (oriented) segments.
-    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> usize {
+    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
         pool_push(
             &mut self.links,
             Link {
                 from,
                 to,
-                overlap: pool_append(&mut self.alignment, overlap),
+                overlap: pool_extend(&mut self.alignment, overlap),
             },
         )
     }
@@ -364,28 +372,19 @@ impl FlatGFAStore {
 }
 
 /// Add an item to a "pool" vector and get the new index (ID).
-fn pool_push<T>(vec: &mut Vec<T>, item: T) -> usize {
-    let len = vec.len();
+fn pool_push<T>(vec: &mut Vec<T>, item: T) -> Index {
+    let len: u32 = vec.len().try_into().expect("size too large");
     vec.push(item);
     len
 }
 
-/// Add an entire vector of items to a "pool" vector and return the
+/// Add an entire sequence of items to a "pool" vector and return the
 /// range of new indices (IDs).
-fn pool_append<T>(vec: &mut Vec<T>, items: Vec<T>) -> Span {
-    let count = items.len();
-    pool_extend(vec, items, count)
-}
-
-/// Like `pool_append`, for an iterator. It's pretty important that `count`
-/// actually be the number of items in the iterator!
-fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>, count: usize) -> Span {
-    let span = Span {
-        start: vec.len(),
-        end: (vec.len() + count),
-    };
-    let old_len = vec.len();
+fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>) -> Span {
+    let old_len: u32 = vec.len().try_into().expect("old size too large");
     vec.extend(iter);
-    assert_eq!(vec.len(), old_len + count);
-    span
+    Span {
+        start: old_len,
+        end: vec.len().try_into().expect("new size too large"),
+    }
 }

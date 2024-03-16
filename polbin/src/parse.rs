@@ -39,12 +39,15 @@ impl gfa::optfields::OptFields for OptFields {
 
 #[derive(Default)]
 pub struct Parser {
-    // The flat representation we're building.
+    /// The flat representation we're building.
     flat: FlatGFAStore,
 
-    // Track the segment IDs by their name, which we need to refer to segments in paths.
-    segs_by_name: HashMap<usize, usize>,
+    /// All segment IDs, indexed by their names, which we need to refer to segments in paths.
+    seg_ids: NameMap,
+}
 
+/// Holds data structures that we haven't added to the flat representation yet.
+struct Deferred {
     links: Vec<gfa::gfa::Link<usize, OptFields>>,
     paths: Vec<gfa::gfa::Path<usize, OptFields>>,
 }
@@ -57,11 +60,15 @@ impl Parser {
             .paths(true)
             .build_usize_id::<OptFields>();
         let mut parser = Self::default();
+        let mut deferred = Deferred {
+            links: Vec::new(),
+            paths: Vec::new(),
+        };
         for line in stream.lines() {
             let gfa_line = gfa_parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
-            parser.parse_line(gfa_line);
+            parser.parse_line(gfa_line, &mut deferred);
         }
-        parser.finish()
+        parser.finish(deferred)
     }
 
     /// Parse a single GFA line.
@@ -69,7 +76,7 @@ impl Parser {
     /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
-    fn parse_line(&mut self, line: Line<usize, OptFields>) {
+    fn parse_line(&mut self, line: Line<usize, OptFields>, deferred: &mut Deferred) {
         match line {
             Line::Header(h) => {
                 self.flat.record_line(LineKind::Header);
@@ -78,75 +85,107 @@ impl Parser {
             Line::Segment(s) => {
                 self.flat.record_line(LineKind::Segment);
                 let seg_id = self.flat.add_seg(s.name, s.sequence, s.optional.0);
-                self.segs_by_name.insert(s.name, seg_id);
+                self.seg_ids.insert(s.name, seg_id);
             }
             Line::Link(l) => {
                 self.flat.record_line(LineKind::Link);
-                self.links.push(l);
+                deferred.links.push(l);
             }
             Line::Path(p) => {
                 self.flat.record_line(LineKind::Path);
-                self.paths.push(p);
+                deferred.paths.push(p);
             }
             Line::Containment(_) => unimplemented!(),
         }
+    }
+
+    fn add_link(&mut self, link: gfa::gfa::Link<usize, OptFields>) {
+        let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
+        let from = Handle::new(
+            self.seg_ids.get(link.from_segment),
+            convert_orient(link.from_orient),
+        );
+        let to = Handle::new(
+            self.seg_ids.get(link.to_segment),
+            convert_orient(link.to_orient),
+        );
+        self.flat.add_link(from, to, convert_cigar(&cigar));
+    }
+
+    fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
+        let steps = StepsParser::new(&path.segment_names)
+            .into_iter()
+            .map(|(name, dir)| {
+                Handle::new(
+                    self.seg_ids.get(name),
+                    if dir {
+                        Orientation::Forward
+                    } else {
+                        Orientation::Backward
+                    },
+                )
+            });
+
+        // When the overlaps section is just `*`, the rs-gfa library produces a
+        // vector like `[None]`. I'm not sure if we really need to handle `None`
+        // otherwise: all the real data I've seen either has *real* overlaps or
+        // is just `*`.
+        let overlaps = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
+            vec![]
+        } else {
+            path.overlaps
+        };
+        let overlaps = overlaps.iter().map(|o| match o {
+            Some(c) => convert_cigar(c),
+            None => unimplemented!(),
+        });
+
+        self.flat
+            .add_path(path.path_name, steps.into_iter(), overlaps);
     }
 
     /// Finish parsing and return the flat representation.
     ///
     /// We "unwind" the buffers of links and paths, now that we have all
     /// the segments.
-    fn finish(mut self) -> FlatGFAStore {
-        // Add all the bufferred links.
-        for link in self.links {
-            let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
-            let from = Handle::new(
-                self.segs_by_name[&link.from_segment],
-                convert_orient(link.from_orient),
-            );
-            let to = Handle::new(
-                self.segs_by_name[&link.to_segment],
-                convert_orient(link.to_orient),
-            );
-            self.flat.add_link(from, to, convert_cigar(&cigar));
+    fn finish(mut self, deferred: Deferred) -> FlatGFAStore {
+        for link in deferred.links {
+            self.add_link(link);
         }
-
-        // Add all the bufferred paths.
-        for path in self.paths {
-            let steps = parse_path_steps(path.segment_names)
-                .into_iter()
-                .map(|(name, dir)| {
-                    Handle::new(
-                        self.segs_by_name[&name],
-                        if dir {
-                            Orientation::Forward
-                        } else {
-                            Orientation::Backward
-                        },
-                    )
-                })
-                .collect();
-
-            // When the overlaps section is just `*`, the rs-gfa library produces a
-            // vector like `[None]`. I'm not sure if we really need to handle `None`
-            // otherwise: all the real data I've seen either has *real* overlaps or
-            // is just `*`.
-            let overlaps: Vec<Vec<_>> = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
-                vec![]
-            } else {
-                path.overlaps
-                    .iter()
-                    .map(|o| match o {
-                        Some(c) => convert_cigar(c),
-                        None => unimplemented!(),
-                    })
-                    .collect()
-            };
-
-            self.flat.add_path(path.path_name, steps, overlaps);
+        for path in deferred.paths {
+            self.add_path(path);
         }
-
         self.flat
+    }
+}
+
+#[derive(Default)]
+struct NameMap {
+    /// Names at most this are assigned *sequential* IDs, i.e., the ID is just the name
+    /// minus one.
+    sequential_max: usize,
+
+    /// Non-sequential names go here.
+    others: HashMap<usize, u32>,
+}
+
+impl NameMap {
+    fn insert(&mut self, name: usize, id: u32) {
+        // Is this the next sequential name? If so, no need to record it in our hash table;
+        // just bump the number of sequential names we've seen.
+        if (name - 1) == self.sequential_max && (name - 1) == (id as usize) {
+            self.sequential_max += 1;
+        } else {
+            self.others.insert(name, id);
+        }
+    }
+
+    fn get(&self, name: usize) -> u32 {
+        if name <= self.sequential_max {
+            (name - 1) as u32
+        } else {
+            self.others[&name]
+        }
     }
 }
 
@@ -179,45 +218,69 @@ fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
 /// The underlying gfa-rs library does not yet parse the actual segments
 /// involved in the path. So we do it ourselves: splitting on commas and
 /// matching the direction.
-fn parse_path_steps(data: Vec<u8>) -> Vec<(usize, bool)> {
-    // The parser state: we're either looking for a segment name (or a +/- terminator),
-    // or we're expecting a comma (or end of string).
-    enum PathParseState {
-        Seg,
-        Comma,
-    }
+struct StepsParser<'a> {
+    str: &'a [u8],
+    index: usize,
+    state: StepsParseState,
+    seg: usize,
+}
 
-    let mut state = PathParseState::Seg;
-    let mut seg: usize = 0;
-    let mut steps = vec![];
-    for byte in data {
-        match state {
-            PathParseState::Seg => {
-                if byte == b'+' || byte == b'-' {
-                    steps.push((seg, byte == b'+'));
-                    state = PathParseState::Comma;
-                } else if byte.is_ascii_digit() {
-                    seg *= 10;
-                    seg += (byte - b'0') as usize;
-                } else {
-                    panic!("unexpected character in path: {}", byte as char);
+/// The parser state: we're either looking for a segment name (or a +/- terminator),
+/// or we're expecting a comma (or end of string).
+enum StepsParseState {
+    Seg,
+    Comma,
+}
+
+impl<'a> StepsParser<'a> {
+    pub fn new(str: &'a [u8]) -> Self {
+        StepsParser {
+            str,
+            index: 0,
+            state: StepsParseState::Seg,
+            seg: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for StepsParser<'a> {
+    type Item = (usize, bool);
+    fn next(&mut self) -> Option<(usize, bool)> {
+        while self.index < self.str.len() {
+            // Consume one byte.
+            let byte = self.str[self.index];
+            self.index += 1;
+
+            match self.state {
+                StepsParseState::Seg => {
+                    if byte == b'+' || byte == b'-' {
+                        self.state = StepsParseState::Comma;
+                        return Some((self.seg, byte == b'+'));
+                    } else if byte.is_ascii_digit() {
+                        self.seg *= 10;
+                        self.seg += (byte - b'0') as usize;
+                    } else {
+                        panic!("unexpected character in path: {}", byte as char);
+                    }
                 }
-            }
-            PathParseState::Comma => {
-                if byte == b',' {
-                    state = PathParseState::Seg;
-                    seg = 0;
-                } else {
-                    panic!("unexpected character in path: {}", byte as char);
+                StepsParseState::Comma => {
+                    if byte == b',' {
+                        self.state = StepsParseState::Seg;
+                        self.seg = 0;
+                    } else {
+                        panic!("unexpected character in path: {}", byte as char);
+                    }
                 }
             }
         }
+
+        None
     }
-    steps
 }
 
 #[test]
 fn test_parse_path() {
-    let path = parse_path_steps(b"1+,23-,4+".to_vec());
+    let str = b"1+,23-,4+";
+    let path: Vec<_> = StepsParser::new(str).collect();
     assert_eq!(path, vec![(1, true), (23, false), (4, true)]);
 }
