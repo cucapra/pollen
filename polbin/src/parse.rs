@@ -42,6 +42,10 @@ pub struct Parser {
     /// The flat representation we're building.
     flat: FlatGFAStore,
 
+    /// Segment names at most this are assigned *sequential* IDs, i.e., the ID is just
+    /// the name minus one.
+    sequential_seg_names: usize,
+
     /// Track the segment IDs by their name, which we need to refer to segments in paths.
     segs_by_name: HashMap<usize, u32>,
 }
@@ -99,12 +103,24 @@ impl Parser {
         }
     }
 
+    /// Record a mapping from segment name to segment ID.
     fn record_seg(&mut self, name: usize, id: u32) {
-        self.segs_by_name.insert(name, id);
+        // Is this the next sequential name? If so, no need to record it in our hash table;
+        // just bump the number of sequential names we've seen.
+        if (name - 1) == self.sequential_seg_names && (name - 1) == (id as usize) {
+            self.sequential_seg_names += 1;
+        } else {
+            self.segs_by_name.insert(name, id);
+        }
     }
 
+    /// Get the actual segment ID for a segment name.
     fn seg_id(&self, name: usize) -> u32 {
-        self.segs_by_name[&name]
+        if name <= self.sequential_seg_names {
+            (name - 1) as u32
+        } else {
+            self.segs_by_name[&name]
+        }
     }
 
     fn add_link(&mut self, link: gfa::gfa::Link<usize, OptFields>) {
@@ -118,18 +134,19 @@ impl Parser {
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps = parse_path_steps(path.segment_names)
+        let steps: Vec<_> = parse_path_steps(path.segment_names)
             .into_iter()
             .map(|(name, dir)| {
                 Handle::new(
-                    self.segs_by_name[&name],
+                    self.seg_id(name),
                     if dir {
                         Orientation::Forward
                     } else {
                         Orientation::Backward
                     },
                 )
-            });
+            })
+            .collect();
 
         // When the overlaps section is just `*`, the rs-gfa library produces a
         // vector like `[None]`. I'm not sure if we really need to handle `None`
@@ -145,7 +162,8 @@ impl Parser {
             None => unimplemented!(),
         });
 
-        self.flat.add_path(path.path_name, steps, overlaps);
+        self.flat
+            .add_path(path.path_name, steps.into_iter(), overlaps);
     }
 
     /// Finish parsing and return the flat representation.
