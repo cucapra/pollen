@@ -39,12 +39,15 @@ impl gfa::optfields::OptFields for OptFields {
 
 #[derive(Default)]
 pub struct Parser {
-    // The flat representation we're building.
+    /// The flat representation we're building.
     flat: FlatGFAStore,
 
-    // Track the segment IDs by their name, which we need to refer to segments in paths.
+    /// Track the segment IDs by their name, which we need to refer to segments in paths.
     segs_by_name: HashMap<usize, u32>,
+}
 
+/// Holds data structures that we haven't added to the flat representation yet.
+struct Deferred {
     links: Vec<gfa::gfa::Link<usize, OptFields>>,
     paths: Vec<gfa::gfa::Path<usize, OptFields>>,
 }
@@ -57,11 +60,15 @@ impl Parser {
             .paths(true)
             .build_usize_id::<OptFields>();
         let mut parser = Self::default();
+        let mut deferred = Deferred {
+            links: Vec::new(),
+            paths: Vec::new(),
+        };
         for line in stream.lines() {
             let gfa_line = gfa_parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
-            parser.parse_line(gfa_line);
+            parser.parse_line(gfa_line, &mut deferred);
         }
-        parser.finish()
+        parser.finish(deferred)
     }
 
     /// Parse a single GFA line.
@@ -69,7 +76,7 @@ impl Parser {
     /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
-    fn parse_line(&mut self, line: Line<usize, OptFields>) {
+    fn parse_line(&mut self, line: Line<usize, OptFields>, deferred: &mut Deferred) {
         match line {
             Line::Header(h) => {
                 self.flat.record_line(LineKind::Header);
@@ -78,71 +85,80 @@ impl Parser {
             Line::Segment(s) => {
                 self.flat.record_line(LineKind::Segment);
                 let seg_id = self.flat.add_seg(s.name, s.sequence, s.optional.0);
-                self.segs_by_name.insert(s.name, seg_id);
+                self.record_seg(s.name, seg_id);
             }
             Line::Link(l) => {
                 self.flat.record_line(LineKind::Link);
-                self.links.push(l);
+                deferred.links.push(l);
             }
             Line::Path(p) => {
                 self.flat.record_line(LineKind::Path);
-                self.paths.push(p);
+                deferred.paths.push(p);
             }
             Line::Containment(_) => unimplemented!(),
         }
+    }
+
+    fn record_seg(&mut self, name: usize, id: u32) {
+        self.segs_by_name.insert(name, id);
+    }
+
+    fn seg_id(&self, name: usize) -> u32 {
+        self.segs_by_name[&name]
+    }
+
+    fn add_link(&mut self, link: gfa::gfa::Link<usize, OptFields>) {
+        let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
+        let from = Handle::new(
+            self.seg_id(link.from_segment),
+            convert_orient(link.from_orient),
+        );
+        let to = Handle::new(self.seg_id(link.to_segment), convert_orient(link.to_orient));
+        self.flat.add_link(from, to, convert_cigar(&cigar));
+    }
+
+    fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
+        let steps = parse_path_steps(path.segment_names)
+            .into_iter()
+            .map(|(name, dir)| {
+                Handle::new(
+                    self.segs_by_name[&name],
+                    if dir {
+                        Orientation::Forward
+                    } else {
+                        Orientation::Backward
+                    },
+                )
+            });
+
+        // When the overlaps section is just `*`, the rs-gfa library produces a
+        // vector like `[None]`. I'm not sure if we really need to handle `None`
+        // otherwise: all the real data I've seen either has *real* overlaps or
+        // is just `*`.
+        let overlaps = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
+            vec![]
+        } else {
+            path.overlaps
+        };
+        let overlaps = overlaps.iter().map(|o| match o {
+            Some(c) => convert_cigar(c),
+            None => unimplemented!(),
+        });
+
+        self.flat.add_path(path.path_name, steps, overlaps);
     }
 
     /// Finish parsing and return the flat representation.
     ///
     /// We "unwind" the buffers of links and paths, now that we have all
     /// the segments.
-    fn finish(mut self) -> FlatGFAStore {
-        // Add all the bufferred links.
-        for link in self.links {
-            let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
-            let from = Handle::new(
-                self.segs_by_name[&link.from_segment],
-                convert_orient(link.from_orient),
-            );
-            let to = Handle::new(
-                self.segs_by_name[&link.to_segment],
-                convert_orient(link.to_orient),
-            );
-            self.flat.add_link(from, to, convert_cigar(&cigar));
+    fn finish(mut self, deferred: Deferred) -> FlatGFAStore {
+        for link in deferred.links {
+            self.add_link(link);
         }
-
-        // Add all the bufferred paths.
-        for path in self.paths {
-            let steps = parse_path_steps(path.segment_names)
-                .into_iter()
-                .map(|(name, dir)| {
-                    Handle::new(
-                        self.segs_by_name[&name],
-                        if dir {
-                            Orientation::Forward
-                        } else {
-                            Orientation::Backward
-                        },
-                    )
-                });
-
-            // When the overlaps section is just `*`, the rs-gfa library produces a
-            // vector like `[None]`. I'm not sure if we really need to handle `None`
-            // otherwise: all the real data I've seen either has *real* overlaps or
-            // is just `*`.
-            let overlaps = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
-                vec![]
-            } else {
-                path.overlaps
-            };
-            let overlaps = overlaps.iter().map(|o| match o {
-                Some(c) => convert_cigar(c),
-                None => unimplemented!(),
-            });
-
-            self.flat.add_path(path.path_name, steps, overlaps);
+        for path in deferred.paths {
+            self.add_path(path);
         }
-
         self.flat
     }
 }
