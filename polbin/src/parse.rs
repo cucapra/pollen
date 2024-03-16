@@ -124,8 +124,7 @@ impl Parser {
                             Orientation::Backward
                         },
                     )
-                })
-                .collect();
+                });
 
             // When the overlaps section is just `*`, the rs-gfa library produces a
             // vector like `[None]`. I'm not sure if we really need to handle `None`
