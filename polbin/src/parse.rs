@@ -14,7 +14,7 @@ pub struct Parser {
 /// Holds data structures that we haven't added to the flat representation yet.
 struct Deferred {
     links: Vec<gfaline::Link>,
-    paths: Vec<String>,
+    paths: Vec<Vec<u8>>,
 }
 
 impl Parser {
@@ -25,7 +25,7 @@ impl Parser {
             links: Vec::new(),
             paths: Vec::new(),
         };
-        for line in stream.lines() {
+        for line in stream.split(b'\n') {
             let line = line.unwrap();
             parser.parse_line(line, &mut deferred);
         }
@@ -37,9 +37,9 @@ impl Parser {
     /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
-    fn parse_line(&mut self, line: String, deferred: &mut Deferred) {
+    fn parse_line(&mut self, line: Vec<u8>, deferred: &mut Deferred) {
         // Avoid parsing paths entirely for now; just preserve the entire line for later.
-        if line.as_bytes()[0] == b'P' {
+        if line[0] == b'P' {
             self.flat.record_line(LineKind::Path);
             deferred.paths.push(line);
             return;
@@ -72,9 +72,8 @@ impl Parser {
         self.flat.add_link(from, to, link.overlap);
     }
 
-    fn add_path(&mut self, line: String) {
+    fn add_path(&mut self, line: Vec<u8>) {
         // This must be a path line.
-        let line = &line.as_bytes();
         assert_eq!(&line[..2], b"P\t");
         let line = &line[2..];
 
