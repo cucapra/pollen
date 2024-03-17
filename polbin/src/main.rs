@@ -1,5 +1,6 @@
 mod file;
 mod flatgfa;
+mod gfaline;
 mod parse;
 mod print;
 use argh::FromArgs;

@@ -295,7 +295,7 @@ impl<'a> FlatGFA<'a> {
 
 impl FlatGFAStore {
     /// Add a header line for the GFA file. This may only be added once.
-    pub fn add_header(&mut self, version: Vec<u8>) {
+    pub fn add_header(&mut self, version: &[u8]) {
         assert!(self.header.is_empty());
         self.header = version.into();
     }
