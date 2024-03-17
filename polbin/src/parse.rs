@@ -1,4 +1,5 @@
 use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
+use crate::gfaline;
 use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
@@ -65,7 +66,19 @@ impl Parser {
             paths: Vec::new(),
         };
         for line in stream.lines() {
-            let gfa_line = gfa_parser.parse_gfa_line(line.unwrap().as_ref()).unwrap();
+            let line = line.unwrap();
+
+            // Try using our hand-rolled parser for some lines.
+            match gfaline::parse_line(line.as_ref()) {
+                Ok(l) => {
+                    parser.add_line(l);
+                    continue;
+                }
+                Err(_) => {}
+            }
+
+            // Use the gfa-rs parser to parse most lines.
+            let gfa_line = gfa_parser.parse_gfa_line(line.as_ref()).unwrap();
             parser.parse_line(gfa_line, &mut deferred);
         }
         parser.finish(deferred)
@@ -78,9 +91,8 @@ impl Parser {
     /// resolve their segment name references.
     fn parse_line(&mut self, line: Line<usize, OptFields>, deferred: &mut Deferred) {
         match line {
-            Line::Header(h) => {
-                self.flat.record_line(LineKind::Header);
-                self.flat.add_header(h.version.unwrap());
+            Line::Header(_) => {
+                panic!("headers handled by hand-rolled parser");
             }
             Line::Segment(s) => {
                 self.flat.record_line(LineKind::Segment);
@@ -96,6 +108,16 @@ impl Parser {
                 deferred.paths.push(p);
             }
             Line::Containment(_) => unimplemented!(),
+        }
+    }
+
+    /// Handle lines from our hand-rolled parser.
+    fn add_line(&mut self, line: gfaline::Line) {
+        match line {
+            gfaline::Line::Header { data } => {
+                self.flat.record_line(LineKind::Header);
+                self.flat.add_header(data);
+            }
         }
     }
 
