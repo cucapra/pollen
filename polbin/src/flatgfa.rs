@@ -301,13 +301,13 @@ impl FlatGFAStore {
     }
 
     /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: Vec<u8>, optional: Vec<u8>) -> Index {
+    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index {
         pool_push(
             &mut self.segs,
             Segment {
                 name,
-                seq: pool_extend(&mut self.seq_data, seq),
-                optional: pool_extend(&mut self.optional_data, optional),
+                seq: pool_extend_from_slice(&mut self.seq_data, seq),
+                optional: pool_extend_from_slice(&mut self.optional_data, optional),
             },
         )
     }
@@ -383,6 +383,16 @@ fn pool_push<T>(vec: &mut Vec<T>, item: T) -> Index {
 fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>) -> Span {
     let old_len: u32 = vec.len().try_into().expect("old size too large");
     vec.extend(iter);
+    Span {
+        start: old_len,
+        end: vec.len().try_into().expect("new size too large"),
+    }
+}
+
+/// Like `pool_extend`, but for slices.
+fn pool_extend_from_slice(vec: &mut Vec<u8>, slice: &[u8]) -> Span {
+    let old_len: u32 = vec.len().try_into().expect("old size too large");
+    vec.extend_from_slice(slice);
     Span {
         start: old_len,
         end: vec.len().try_into().expect("new size too large"),

@@ -91,13 +91,8 @@ impl Parser {
     /// resolve their segment name references.
     fn parse_line(&mut self, line: Line<usize, OptFields>, deferred: &mut Deferred) {
         match line {
-            Line::Header(_) => {
-                panic!("headers handled by hand-rolled parser");
-            }
-            Line::Segment(s) => {
-                self.flat.record_line(LineKind::Segment);
-                let seg_id = self.flat.add_seg(s.name, s.sequence, s.optional.0);
-                self.seg_ids.insert(s.name, seg_id);
+            Line::Header(_) | Line::Segment(_) => {
+                panic!("handled by hand-rolled parser");
             }
             Line::Link(l) => {
                 self.flat.record_line(LineKind::Link);
@@ -117,6 +112,11 @@ impl Parser {
             gfaline::Line::Header { data } => {
                 self.flat.record_line(LineKind::Header);
                 self.flat.add_header(data);
+            }
+            gfaline::Line::Segment { name, seq, data } => {
+                self.flat.record_line(LineKind::Segment);
+                let seg_id = self.flat.add_seg(name, seq, data);
+                self.seg_ids.insert(name, seg_id);
             }
         }
     }
