@@ -128,18 +128,16 @@ impl Parser {
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps = StepsParser::new(&path.segment_names)
-            .into_iter()
-            .map(|(name, dir)| {
-                Handle::new(
-                    self.seg_ids.get(name),
-                    if dir {
-                        Orientation::Forward
-                    } else {
-                        Orientation::Backward
-                    },
-                )
-            });
+        let steps = StepsParser::new(&path.segment_names).map(|(name, dir)| {
+            Handle::new(
+                self.seg_ids.get(name),
+                if dir {
+                    Orientation::Forward
+                } else {
+                    Orientation::Backward
+                },
+            )
+        });
 
         // When the overlaps section is just `*`, the rs-gfa library produces a
         // vector like `[None]`. I'm not sure if we really need to handle `None`
