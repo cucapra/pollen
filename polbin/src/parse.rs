@@ -1,4 +1,5 @@
-use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
+use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation, Path};
+use crate::gfaline;
 use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
@@ -113,18 +114,7 @@ impl Parser {
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps = StepsParser::new(&path.segment_names)
-            .into_iter()
-            .map(|(name, dir)| {
-                Handle::new(
-                    self.seg_ids.get(name),
-                    if dir {
-                        Orientation::Forward
-                    } else {
-                        Orientation::Backward
-                    },
-                )
-            });
+        let steps = gfaline::parse_steps(&mut self.flat, &path.segment_names);
 
         // When the overlaps section is just `*`, the rs-gfa library produces a
         // vector like `[None]`. I'm not sure if we really need to handle `None`
@@ -135,13 +125,17 @@ impl Parser {
         } else {
             path.overlaps
         };
-        let overlaps = overlaps.iter().map(|o| match o {
+        let overlaps = self.flat.add_overlaps(overlaps.iter().map(|o| match o {
             Some(c) => convert_cigar(c),
             None => unimplemented!(),
-        });
+        }));
 
-        self.flat
-            .add_path(path.path_name, steps.into_iter(), overlaps);
+        let name = self.flat.add_name(path.path_name);
+        self.flat.paths.push(Path {
+            name,
+            steps,
+            overlaps,
+        });
     }
 
     /// Finish parsing and return the flat representation.

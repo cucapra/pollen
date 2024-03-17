@@ -319,20 +319,36 @@ impl FlatGFAStore {
         steps: impl Iterator<Item = Handle>,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
     ) -> Index {
-        let overlaps = pool_extend(
+        let name = self.add_name(name);
+        let steps = self.add_steps(steps);
+        let overlaps = self.add_overlaps(overlaps);
+        pool_push(
+            &mut self.paths,
+            Path {
+                name,
+                steps,
+                overlaps,
+            },
+        )
+    }
+
+    /// Add a sequence of steps.
+    pub fn add_steps(&mut self, steps: impl IntoIterator<Item = Handle>) -> Span {
+        pool_extend(&mut self.steps, steps)
+    }
+
+    /// Add a name string.
+    pub fn add_name(&mut self, name: impl IntoIterator<Item = u8>) -> Span {
+        pool_extend(&mut self.name_data, name)
+    }
+
+    /// Add a sequence of overlaps.
+    pub fn add_overlaps(&mut self, overlaps: impl IntoIterator<Item = Vec<AlignOp>>) -> Span {
+        pool_extend(
             &mut self.overlaps,
             overlaps
                 .into_iter()
                 .map(|align| pool_extend(&mut self.alignment, align)),
-        );
-
-        pool_push(
-            &mut self.paths,
-            Path {
-                name: pool_extend(&mut self.name_data, name),
-                steps: pool_extend(&mut self.steps, steps),
-                overlaps,
-            },
         )
     }
 
