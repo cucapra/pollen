@@ -202,7 +202,7 @@ pub struct StepsParser<'a> {
     str: &'a [u8],
     index: usize,
     state: StepsParseState,
-    seg_start: usize,
+    seg: usize,
 }
 
 /// The parser state: we're either looking for a segment name (or a +/- terminator),
@@ -218,7 +218,7 @@ impl<'a> StepsParser<'a> {
             str,
             index: 0,
             state: StepsParseState::Seg,
-            seg_start: 0,
+            seg: 0,
         }
     }
 
@@ -239,16 +239,10 @@ impl<'a> Iterator for StepsParser<'a> {
                 StepsParseState::Seg => {
                     if byte == b'+' || byte == b'-' {
                         self.state = StepsParseState::Comma;
-
-                        // Parse the segment integer. This is safe because we know the bytes
-                        // are ASCII.
-                        let seg_bytes = &self.str[self.seg_start..self.index - 1];
-                        let seg_str = unsafe { std::str::from_utf8_unchecked(seg_bytes) };
-                        let seg = seg_str.parse().unwrap();
-
-                        return Some((seg, byte == b'+'));
+                        return Some((self.seg, byte == b'+'));
                     } else if byte.is_ascii_digit() {
-                        // Proceed to the next character.
+                        self.seg *= 10;
+                        self.seg += (byte - b'0') as usize;
                     } else {
                         return None;
                     }
@@ -256,7 +250,7 @@ impl<'a> Iterator for StepsParser<'a> {
                 StepsParseState::Comma => {
                     if byte == b',' {
                         self.state = StepsParseState::Seg;
-                        self.seg_start = self.index;
+                        self.seg = 0;
                     } else {
                         return None;
                     }
