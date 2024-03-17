@@ -1,42 +1,6 @@
 use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
 use crate::gfaline;
-use gfa;
 use std::collections::HashMap;
-
-/// A newtype to preserve optional fields without parsing them.
-///
-/// The underlying gfa-rs library lets you specify a type to hold optional
-/// fields. We just store a plain (byte) string.
-#[derive(Clone, Default, Debug)]
-struct OptFields(Vec<u8>);
-
-impl gfa::optfields::OptFields for OptFields {
-    fn get_field(&self, _: &[u8]) -> Option<&gfa::optfields::OptField> {
-        None
-    }
-
-    fn fields(&self) -> &[gfa::optfields::OptField] {
-        &[]
-    }
-
-    fn parse<T>(input: T) -> Self
-    where
-        T: IntoIterator,
-        T::Item: AsRef<[u8]>,
-    {
-        let mut out: Vec<u8> = vec![];
-        let mut first = true;
-        for i in input {
-            if first {
-                first = false;
-            } else {
-                out.push(b'\t');
-            }
-            out.extend(i.as_ref());
-        }
-        Self(out)
-    }
-}
 
 #[derive(Default)]
 pub struct Parser {
