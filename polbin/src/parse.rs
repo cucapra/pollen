@@ -41,10 +41,10 @@ impl gfa::optfields::OptFields for OptFields {
 #[derive(Default)]
 pub struct Parser {
     /// The flat representation we're building.
-    flat: FlatGFAStore,
+    pub(crate) flat: FlatGFAStore,
 
     /// All segment IDs, indexed by their names, which we need to refer to segments in paths.
-    seg_ids: NameMap,
+    pub(crate) seg_ids: NameMap,
 }
 
 /// Holds data structures that we haven't added to the flat representation yet.
@@ -114,7 +114,7 @@ impl Parser {
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps = gfaline::parse_steps(&mut self.flat, &path.segment_names);
+        let steps = self.parse_steps(&path.segment_names);
 
         // When the overlaps section is just `*`, the rs-gfa library produces a
         // vector like `[None]`. I'm not sure if we really need to handle `None`

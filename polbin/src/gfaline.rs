@@ -1,4 +1,5 @@
 use crate::flatgfa::{FlatGFAStore, Handle, Orientation, Span};
+use crate::parse;
 use combine::error::UnexpectedParse;
 use combine::parser::byte::{byte, digit};
 use combine::parser::range::recognize;
@@ -29,28 +30,28 @@ fn steps<'a>() -> impl Parser<&'a [u8], Output = Vec<Handle>> {
     sep_by(handle(), byte(b','))
 }
 
-fn steps_insert<'a, 'b: 'a>(
-    store: &'a mut FlatGFAStore,
-) -> impl Parser<&'b [u8], Output = Span> + 'a {
-    parser(|input: &mut &[u8]| {
-        // A bit of a hack to get `sep_by` behavior with iteration: first parse one step.
-        let first;
-        (first, *input) = handle().parse(input).unwrap();
-        store.steps.push(first);
+impl parse::Parser {
+    fn steps_insert<'a, 'b: 'a>(&'a mut self) -> impl Parser<&'b [u8], Output = Span> + 'a {
+        parser(|input: &mut &[u8]| {
+            // A bit of a hack to get `sep_by` behavior with iteration: first parse one step.
+            let first;
+            (first, *input) = handle().parse(input).unwrap();
+            self.flat.steps.push(first);
 
-        // Then iterate over all the rest of the steps, requiring a comma before each.
-        let mut iter = byte(b',').with(handle()).iter(input);
-        let span = store.add_steps(&mut iter);
+            // Then iterate over all the rest of the steps, requiring a comma before each.
+            let mut iter = byte(b',').with(handle()).iter(input);
+            let span = self.flat.add_steps(&mut iter);
 
-        iter.into_result(Span {
-            start: span.start - 1, // Account for the `push` above.
-            end: span.end,
+            iter.into_result(Span {
+                start: span.start - 1, // Account for the `push` above.
+                end: span.end,
+            })
         })
-    })
-}
+    }
 
-pub fn parse_steps(store: &mut FlatGFAStore, str: &[u8]) -> Span {
-    let mut parser = steps_insert(store);
-    let (parsed, _) = parser.parse(str).unwrap();
-    parsed
+    pub fn parse_steps(&mut self, str: &[u8]) -> Span {
+        let mut parser = self.steps_insert();
+        let (parsed, _) = parser.parse(str).unwrap();
+        parsed
+    }
 }
