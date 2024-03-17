@@ -17,10 +17,17 @@ pub struct Link {
     pub overlap: Vec<AlignOp>,
 }
 
+pub struct Path<'a> {
+    pub name: &'a [u8],
+    pub steps: &'a [u8],
+    pub overlaps: Vec<Vec<AlignOp>>,
+}
+
 pub enum Line<'a> {
     Header(&'a [u8]),
     Segment(Segment<'a>),
     Link(Link),
+    Path(Path<'a>),
 }
 
 pub fn parse_line(line: &[u8]) -> ParseResult {
@@ -32,6 +39,7 @@ pub fn parse_line(line: &[u8]) -> ParseResult {
         b'H' => parse_header(rest),
         b'S' => parse_seg(rest),
         b'L' => parse_link(rest),
+        b'P' => parse_path(rest),
         _ => Err("unhandled line kind"),
     }
 }
@@ -43,12 +51,7 @@ fn parse_header(line: &[u8]) -> ParseResult {
 fn parse_seg(line: &[u8]) -> ParseResult {
     let (name, rest) = parse_num(line)?;
     let rest = parse_byte(rest, b'\t')?;
-    let (seq, rest) = parse_field(rest)?;
-    let data = if rest.is_empty() {
-        &[]
-    } else {
-        parse_byte(rest, b'\t')?
-    };
+    let (seq, data) = parse_field(rest)?;
     Ok(Line::Segment(Segment { name, seq, data }))
 }
 
@@ -74,9 +77,54 @@ fn parse_link(line: &[u8]) -> ParseResult {
     }))
 }
 
+fn parse_path(line: &[u8]) -> ParseResult {
+    let (name, rest) = parse_field(line)?;
+    let (steps, rest) = parse_field(rest)?;
+
+    // The overlaps look like either `*` or `3M2I,2M`.
+    let (overlaps, rest) = if rest == b"*" {
+        (vec![], &rest[1..])
+    } else {
+        parse_overlap_list(rest)?
+    };
+
+    if !rest.is_empty() {
+        return Err("expected end of line");
+    }
+    Ok(Line::Path(Path {
+        name,
+        steps,
+        overlaps,
+    }))
+}
+
+/// Parse a comma-separated list of CIGAR strings.
+///
+/// TODO: This could be optimized to avoid accumulating into a vector.
+fn parse_overlap_list(s: &[u8]) -> Result<(Vec<Vec<AlignOp>>, &[u8]), &'static str> {
+    let mut rest = s;
+    let mut overlaps = vec![];
+    while !rest.is_empty() {
+        let (overlap, new_rest) = parse_until(rest, b',')?;
+        overlaps.push(parse_cigar(overlap));
+        rest = new_rest;
+    }
+    Ok((overlaps, rest))
+}
+
+fn parse_until(line: &[u8], marker: u8) -> Result<(&[u8], &[u8]), &'static str> {
+    let end = line.iter().position(|&b| b == marker).unwrap_or(line.len());
+    let rest = if end == line.len() {
+        &[]
+    } else {
+        &line[end + 1..]
+    };
+    Ok((&line[..end], rest))
+}
+
+/// Consume a string from the line, until a tab (or the end of the line).
 fn parse_field(line: &[u8]) -> Result<(&[u8], &[u8]), &'static str> {
-    let end = line.iter().position(|&b| b == b'\t').unwrap_or(line.len());
-    Ok((&line[..end], &line[end..]))
+    parse_until(line, b'\t')
 }
 
 fn parse_byte(s: &[u8], byte: u8) -> Result<&[u8], &'static str> {
