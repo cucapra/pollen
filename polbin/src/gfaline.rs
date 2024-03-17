@@ -210,10 +210,6 @@ fn parse_align(s: &[u8]) -> PartialParseResult<Vec<AlignOp>> {
 }
 
 /// Parse GFA paths' segment lists. These look like `1+,2-,3+`.
-///
-/// The underlying gfa-rs library does not yet parse the actual segments
-/// involved in the path. So we do it ourselves: splitting on commas and
-/// matching the direction.
 pub struct StepsParser<'a> {
     str: &'a [u8],
     index: usize,
