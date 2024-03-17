@@ -33,8 +33,7 @@ impl Parser {
         };
         for line in stream.lines() {
             let line = line.unwrap();
-            let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
-            parser.add_line(gfa_line, &mut deferred);
+            parser.parse_line(line, &mut deferred);
         }
         parser.finish(deferred)
     }
@@ -44,8 +43,9 @@ impl Parser {
     /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
-    fn add_line(&mut self, line: gfaline::Line, deferred: &mut Deferred) {
-        match line {
+    fn parse_line(&mut self, line: String, deferred: &mut Deferred) {
+        let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
+        match gfa_line {
             gfaline::Line::Header(data) => {
                 self.flat.record_line(LineKind::Header);
                 self.flat.add_header(data);
