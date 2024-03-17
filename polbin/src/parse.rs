@@ -1,6 +1,6 @@
-use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
+use crate::flatgfa::{FlatGFAStore, Handle, LineKind, Orientation};
 use crate::gfaline;
-use gfa::{self, cigar, gfa::Line, parser::GFAParserBuilder};
+use gfa::{self, gfa::Line, parser::GFAParserBuilder};
 use std::collections::HashMap;
 
 /// A newtype to preserve optional fields without parsing them.
@@ -49,7 +49,7 @@ pub struct Parser {
 
 /// Holds data structures that we haven't added to the flat representation yet.
 struct Deferred {
-    links: Vec<gfa::gfa::Link<usize, OptFields>>,
+    links: Vec<gfaline::Link>,
     paths: Vec<gfa::gfa::Path<usize, OptFields>>,
 }
 
@@ -71,7 +71,7 @@ impl Parser {
             // Try using our hand-rolled parser for some lines.
             match gfaline::parse_line(line.as_ref()) {
                 Ok(l) => {
-                    parser.add_line(l);
+                    parser.add_line(l, &mut deferred);
                     continue;
                 }
                 Err(_) => {}
@@ -91,12 +91,8 @@ impl Parser {
     /// resolve their segment name references.
     fn parse_line(&mut self, line: Line<usize, OptFields>, deferred: &mut Deferred) {
         match line {
-            Line::Header(_) | Line::Segment(_) => {
+            Line::Header(_) | Line::Segment(_) | Line::Link(_) => {
                 panic!("handled by hand-rolled parser");
-            }
-            Line::Link(l) => {
-                self.flat.record_line(LineKind::Link);
-                deferred.links.push(l);
             }
             Line::Path(p) => {
                 self.flat.record_line(LineKind::Path);
@@ -107,31 +103,28 @@ impl Parser {
     }
 
     /// Handle lines from our hand-rolled parser.
-    fn add_line(&mut self, line: gfaline::Line) {
+    fn add_line(&mut self, line: gfaline::Line, deferred: &mut Deferred) {
         match line {
-            gfaline::Line::Header { data } => {
+            gfaline::Line::Header(data) => {
                 self.flat.record_line(LineKind::Header);
                 self.flat.add_header(data);
             }
-            gfaline::Line::Segment { name, seq, data } => {
+            gfaline::Line::Segment(seg) => {
                 self.flat.record_line(LineKind::Segment);
-                let seg_id = self.flat.add_seg(name, seq, data);
-                self.seg_ids.insert(name, seg_id);
+                let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
+                self.seg_ids.insert(seg.name, seg_id);
+            }
+            gfaline::Line::Link(link) => {
+                self.flat.record_line(LineKind::Link);
+                deferred.links.push(link);
             }
         }
     }
 
-    fn add_link(&mut self, link: gfa::gfa::Link<usize, OptFields>) {
-        let cigar = cigar::CIGAR::from_bytestring(&link.overlap).unwrap();
-        let from = Handle::new(
-            self.seg_ids.get(link.from_segment),
-            convert_orient(link.from_orient),
-        );
-        let to = Handle::new(
-            self.seg_ids.get(link.to_segment),
-            convert_orient(link.to_orient),
-        );
-        self.flat.add_link(from, to, convert_cigar(&cigar));
+    fn add_link(&mut self, link: gfaline::Link) {
+        let from = Handle::new(self.seg_ids.get(link.from_seg), link.from_orient);
+        let to = Handle::new(self.seg_ids.get(link.to_seg), link.to_orient);
+        self.flat.add_link(from, to, link.overlap);
     }
 
     fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
@@ -158,7 +151,7 @@ impl Parser {
             path.overlaps
         };
         let overlaps = overlaps.iter().map(|o| match o {
-            Some(c) => convert_cigar(c),
+            Some(c) => gfaline::convert_cigar(c),
             None => unimplemented!(),
         });
 
@@ -209,30 +202,6 @@ impl NameMap {
             self.others[&name]
         }
     }
-}
-
-fn convert_orient(o: gfa::gfa::Orientation) -> Orientation {
-    match o {
-        gfa::gfa::Orientation::Forward => Orientation::Forward,
-        gfa::gfa::Orientation::Backward => Orientation::Backward,
-    }
-}
-
-fn convert_align_op(c: &cigar::CIGARPair) -> AlignOp {
-    AlignOp::new(
-        match c.op() {
-            cigar::CIGAROp::M => crate::flatgfa::AlignOpcode::Match,
-            cigar::CIGAROp::N => crate::flatgfa::AlignOpcode::Gap,
-            cigar::CIGAROp::D => crate::flatgfa::AlignOpcode::Deletion,
-            cigar::CIGAROp::I => crate::flatgfa::AlignOpcode::Insertion,
-            _ => unimplemented!(),
-        },
-        c.len(),
-    )
-}
-
-fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
-    c.0.iter().map(convert_align_op).collect()
 }
 
 /// Parse GFA paths' segment lists. These look like `1+,2-,3+`.
