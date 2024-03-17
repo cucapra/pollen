@@ -315,7 +315,7 @@ impl FlatGFAStore {
     /// Add a new path.
     pub fn add_path(
         &mut self,
-        name: Vec<u8>,
+        name: &[u8],
         steps: impl Iterator<Item = Handle>,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
     ) -> Index {
@@ -326,10 +326,11 @@ impl FlatGFAStore {
                 .map(|align| pool_extend(&mut self.alignment, align)),
         );
 
+        let name = pool_extend_from_slice(&mut self.name_data, name);
         pool_push(
             &mut self.paths,
             Path {
-                name: pool_extend(&mut self.name_data, name),
+                name,
                 steps: pool_extend(&mut self.steps, steps),
                 overlaps,
             },
