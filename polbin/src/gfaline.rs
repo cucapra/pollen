@@ -1,18 +1,18 @@
-use crate::flatgfa::{FlatGFAStore, Handle, Orientation, Span};
+use crate::flatgfa::{Handle, Orientation, Span};
 use crate::parse;
 use combine::error::UnexpectedParse;
 use combine::parser::byte::{byte, digit};
 use combine::parser::range::recognize;
-use combine::parser::repeat::{sep_by, skip_many1};
+use combine::parser::repeat::skip_many1;
 use combine::{parser, Parser};
 use std::str;
 
-fn number<'a>() -> impl Parser<&'a [u8], Output = u32> {
+fn number<'a>() -> impl Parser<&'a [u8], Output = usize> {
     recognize(skip_many1(digit())).and_then(|bs: &[u8]| {
         // Following the Combine docs' example, this is safe because the string is
         // guaranteed to be ASCII.
         let s = unsafe { str::from_utf8_unchecked(bs) };
-        s.parse::<u32>().map_err(|_| UnexpectedParse::Unexpected)
+        s.parse::<usize>().map_err(|_| UnexpectedParse::Unexpected)
     })
 }
 
@@ -22,12 +22,10 @@ fn orient<'a>() -> impl Parser<&'a [u8], Output = Orientation> {
         .or(byte(b'-').map(|_| Orientation::Backward))
 }
 
-fn handle<'a>() -> impl Parser<&'a [u8], Output = Handle> {
-    number().and(orient()).map(|(n, o)| Handle::new(n, o))
-}
-
-fn steps<'a>() -> impl Parser<&'a [u8], Output = Vec<Handle>> {
-    sep_by(handle(), byte(b','))
+fn handle<'a, 'b: 'a>(seg_ids: &'a parse::NameMap) -> impl Parser<&'b [u8], Output = Handle> + 'a {
+    number()
+        .and(orient())
+        .map(|(n, o)| Handle::new(seg_ids.get(n), o))
 }
 
 impl parse::Parser {
@@ -35,11 +33,11 @@ impl parse::Parser {
         parser(|input: &mut &[u8]| {
             // A bit of a hack to get `sep_by` behavior with iteration: first parse one step.
             let first;
-            (first, *input) = handle().parse(input).unwrap();
+            (first, *input) = handle(&self.seg_ids).parse(input).unwrap();
             self.flat.steps.push(first);
 
             // Then iterate over all the rest of the steps, requiring a comma before each.
-            let mut iter = byte(b',').with(handle()).iter(input);
+            let mut iter = byte(b',').with(handle(&self.seg_ids)).iter(input);
             let span = self.flat.add_steps(&mut iter);
 
             iter.into_result(Span {
