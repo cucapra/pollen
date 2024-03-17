@@ -4,6 +4,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 const MAGIC_NUMBER: u64 = 0xB101_1054;
 
+/// A table of contents for the FlatGFA file.
 #[derive(FromBytes, FromZeroes, AsBytes)]
 #[repr(packed)]
 struct Toc {
@@ -21,10 +22,14 @@ struct Toc {
     line_order: Size,
 }
 
+/// A table-of-contents entry for a pool in the FlatGFA file.
 #[derive(FromBytes, FromZeroes, AsBytes, Clone, Copy)]
 #[repr(packed)]
 struct Size {
+    /// The number of actual elements in the pool.
     len: usize,
+
+    // The allocated space for the pool. `capacity - len` slots are "empty."
     capacity: usize,
 }
 
