@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 argh = "0.1.12"
 bstr = "1.9.1"
-gfa = "0.10.1"
 memmap = "0.7.0"
 num_enum = "0.7.2"
 zerocopy = { version = "0.7.32", features = ["derive"] }
