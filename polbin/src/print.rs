@@ -91,7 +91,7 @@ pub fn print(gfa: &flatgfa::FlatGFA) {
             flatgfa::LineKind::Header => {
                 let version = gfa.header;
                 assert!(!version.is_empty());
-                println!("H\tVN:Z:{}", version);
+                println!("H\t{}", version);
             }
             flatgfa::LineKind::Segment => {
                 print_seg(gfa, seg_iter.next().expect("too few segments"));
