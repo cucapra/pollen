@@ -316,7 +316,7 @@ impl FlatGFAStore {
     pub fn add_path(
         &mut self,
         name: &[u8],
-        steps: impl Iterator<Item = Handle>,
+        steps: Span,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
     ) -> Index {
         let overlaps = pool_extend(
@@ -331,10 +331,15 @@ impl FlatGFAStore {
             &mut self.paths,
             Path {
                 name,
-                steps: pool_extend(&mut self.steps, steps),
+                steps,
                 overlaps,
             },
         )
+    }
+
+    /// Add a sequence of steps.
+    pub fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
+        pool_extend(&mut self.steps, steps)
     }
 
     /// Add a link between two (oriented) segments.
