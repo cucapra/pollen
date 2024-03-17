@@ -1,5 +1,4 @@
 use crate::flatgfa::{AlignOp, Orientation};
-use gfa::cigar;
 
 type ParseResult<T> = Result<T, &'static str>;
 type LineResult<'a> = ParseResult<Line<'a>>;
@@ -71,7 +70,7 @@ fn parse_link(line: &[u8]) -> LineResult {
     let rest = parse_byte(rest, b'\t')?;
     let (to_orient, rest) = parse_orient(rest)?;
     let rest = parse_byte(rest, b'\t')?;
-    let (overlap, rest) = parse_field(rest)?;
+    let (overlap, rest) = parse_align(rest)?;
     if !rest.is_empty() {
         return Err("expected end of line");
     }
@@ -80,7 +79,7 @@ fn parse_link(line: &[u8]) -> LineResult {
         from_orient,
         to_seg,
         to_orient,
-        overlap: parse_cigar(overlap),
+        overlap,
     }))
 }
 
@@ -115,9 +114,12 @@ fn parse_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>>> {
     let mut rest = s;
     let mut overlaps = vec![];
     while !rest.is_empty() {
-        let (overlap, new_rest) = parse_until(rest, b',')?;
-        overlaps.push(parse_cigar(overlap));
-        rest = new_rest;
+        let overlap;
+        (overlap, rest) = parse_align(rest)?;
+        overlaps.push(overlap);
+        if !rest.is_empty() {
+            rest = parse_byte(rest, b',')?;
+        }
     }
     Ok((overlaps, rest))
 }
@@ -179,31 +181,32 @@ fn parse_orient(line: &[u8]) -> PartialParseResult<Orientation> {
     Ok((orient, &line[1..]))
 }
 
-/// Convert from the `gfa-rs` library's CIGAR representation to our own.
-fn convert_align_op(c: &cigar::CIGARPair) -> AlignOp {
-    AlignOp::new(
-        match c.op() {
-            cigar::CIGAROp::M => crate::flatgfa::AlignOpcode::Match,
-            cigar::CIGAROp::N => crate::flatgfa::AlignOpcode::Gap,
-            cigar::CIGAROp::D => crate::flatgfa::AlignOpcode::Deletion,
-            cigar::CIGAROp::I => crate::flatgfa::AlignOpcode::Insertion,
-            _ => unimplemented!(),
-        },
-        c.len(),
-    )
+/// Parse a single CIGAR alignment operation (like `4D`).
+fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
+    // TODO just parse a u32
+    let (len, rest) = parse_num(s)?;
+    let op = match rest[0] {
+        b'M' => crate::flatgfa::AlignOpcode::Match,
+        b'N' => crate::flatgfa::AlignOpcode::Gap,
+        b'D' => crate::flatgfa::AlignOpcode::Deletion,
+        b'I' => crate::flatgfa::AlignOpcode::Insertion,
+        _ => return Err("expected align op"),
+    };
+    Ok((AlignOp::new(op, len.try_into().unwrap()), &rest[1..]))
 }
 
-pub fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
-    c.0.iter().map(convert_align_op).collect()
-}
-
-/// Parse a CIGAR string.
+/// Parse a complete CIGAR alignment string (like `3M2I`).
 ///
-/// TODO: This both relies on the `gfa-rs` crate and collects results into a
-/// `Vec` instead of streaming. Both could be fixed.
-fn parse_cigar(s: &[u8]) -> Vec<AlignOp> {
-    let cigar = cigar::CIGAR::from_bytestring(s).unwrap();
-    convert_cigar(&cigar)
+/// TODO This could be optimized to avoid collecting into a vector.
+fn parse_align(s: &[u8]) -> PartialParseResult<Vec<AlignOp>> {
+    let mut rest = s;
+    let mut align = vec![];
+    while !rest.is_empty() && rest[0].is_ascii_digit() {
+        let op;
+        (op, rest) = parse_align_op(rest)?;
+        align.push(op);
+    }
+    Ok((align, rest))
 }
 
 /// Parse GFA paths' segment lists. These look like `1+,2-,3+`.
