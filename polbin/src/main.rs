@@ -2,6 +2,7 @@ mod file;
 mod flatgfa;
 mod gfaline;
 mod parse;
+mod pool;
 mod print;
 use argh::FromArgs;
 use memmap::{Mmap, MmapMut};
