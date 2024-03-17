@@ -6,7 +6,7 @@ const MAGIC_NUMBER: u64 = 0xB101_1054;
 
 #[derive(FromBytes, FromZeroes, AsBytes)]
 #[repr(packed)]
-struct TOC {
+struct Toc {
     magic: u64,
     header_len: usize,
     segs_count: usize,
@@ -30,8 +30,8 @@ fn get_prefix(data: &[u8], len: usize) -> (&[u8], &[u8]) {
 /// Get a FlatGFA backed by the data in a byte buffer.
 pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     // Table of contents.
-    let toc = TOC::ref_from_prefix(data).unwrap();
-    let rest = &data[size_of::<TOC>()..];
+    let toc = Toc::ref_from_prefix(data).unwrap();
+    let rest = &data[size_of::<Toc>()..];
     let magic = toc.magic;
     assert_eq!(magic, MAGIC_NUMBER);
 
@@ -63,13 +63,13 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     }
 }
 
-fn write_bump<'a, 'b, T: AsBytes + ?Sized>(buf: &'a mut [u8], data: &'b T) -> Option<&'a mut [u8]> {
+fn write_bump<'a, T: AsBytes + ?Sized>(buf: &'a mut [u8], data: &T) -> Option<&'a mut [u8]> {
     let len = size_of_val(data);
     data.write_to_prefix(buf)?;
     Some(&mut buf[len..])
 }
 
-fn write_bytes<'a, 'b>(buf: &'a mut [u8], data: &'b [u8]) -> Option<&'a mut [u8]> {
+fn write_bytes<'a>(buf: &'a mut [u8], data: &[u8]) -> Option<&'a mut [u8]> {
     let len = data.len();
     buf[0..len].copy_from_slice(data);
     Some(&mut buf[len..])
@@ -78,7 +78,7 @@ fn write_bytes<'a, 'b>(buf: &'a mut [u8], data: &'b [u8]) -> Option<&'a mut [u8]
 /// Copy a FlatGFA into a byte buffer.
 pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
     // Table of contents.
-    let toc = TOC {
+    let toc = Toc {
         magic: MAGIC_NUMBER,
         header_len: gfa.header.len(),
         segs_count: gfa.segs.len(),
@@ -111,15 +111,15 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
 /// Get the total size in bytes of a FlatGFA structure. This should result in a big
 /// enough buffer to write the entire FlatGFA into with `dump`.
 pub fn size(gfa: &flatgfa::FlatGFA) -> usize {
-    size_of::<TOC>()
+    size_of::<Toc>()
         + gfa.header.len()
-        + gfa.segs.len() * size_of::<flatgfa::Segment>()
-        + gfa.paths.len() * size_of::<flatgfa::Path>()
-        + gfa.links.len() * size_of::<flatgfa::Link>()
-        + gfa.steps.len() * size_of::<flatgfa::Handle>()
-        + gfa.seq_data.len()
-        + gfa.overlaps.len() * size_of::<flatgfa::Span>()
-        + gfa.alignment.len() * size_of::<flatgfa::AlignOp>()
+        + size_of_val(gfa.segs)
+        + size_of_val(gfa.paths)
+        + size_of_val(gfa.links)
+        + size_of_val(gfa.steps)
+        + size_of_val(gfa.seq_data)
+        + size_of_val(gfa.overlaps)
+        + size_of_val(gfa.alignment)
         + gfa.name_data.len()
         + gfa.optional_data.len()
         + gfa.line_order.len()
