@@ -72,8 +72,18 @@ impl Parser {
         self.flat.add_link(from, to, link.overlap);
     }
 
-    fn add_path(&mut self, path: gfaline::Path) {
-        let steps = gfaline::StepsParser::new(&path.steps).map(|(name, dir)| {
+    fn add_path(&mut self, line: String) {
+        // This must be a path line.
+        let line = &line.as_bytes();
+        assert_eq!(&line[..2], b"P\t");
+        let line = &line[2..];
+
+        // Parse the name.
+        let (name, rest) = gfaline::parse_field(line).unwrap();
+
+        // Parse the steps.
+        let mut step_parser = gfaline::StepsParser::new(rest);
+        let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
                 self.seg_ids.get(name),
                 if dir {
@@ -82,9 +92,14 @@ impl Parser {
                     Orientation::Backward
                 },
             )
-        });
-        self.flat
-            .add_path(path.name, steps.into_iter(), path.overlaps.into_iter());
+        }));
+        let rest = step_parser.rest();
+
+        // Parse the overlaps.
+        let (overlaps, rest) = gfaline::parse_maybe_overlap_list(rest).unwrap();
+
+        assert!(rest.is_empty());
+        self.flat.add_path(name, steps, overlaps.into_iter());
     }
 
     /// Finish parsing and return the flat representation.
@@ -96,10 +111,7 @@ impl Parser {
             self.add_link(link);
         }
         for line in deferred.paths {
-            match gfaline::parse_line(line.as_ref()).unwrap() {
-                gfaline::Line::Path(path) => self.add_path(path),
-                _ => panic!("non-path line deferred"),
-            };
+            self.add_path(line);
         }
         self.flat
     }

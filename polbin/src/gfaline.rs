@@ -80,14 +80,7 @@ fn parse_link(line: &[u8]) -> ParseResult {
 fn parse_path(line: &[u8]) -> ParseResult {
     let (name, rest) = parse_field(line)?;
     let (steps, rest) = parse_field(rest)?;
-
-    // The overlaps look like either `*` or `3M2I,2M`.
-    let (overlaps, rest) = if rest == b"*" {
-        (vec![], &rest[1..])
-    } else {
-        parse_overlap_list(rest)?
-    };
-
+    let (overlaps, rest) = parse_maybe_overlap_list(rest)?;
     if !rest.is_empty() {
         return Err("expected end of line");
     }
@@ -96,6 +89,15 @@ fn parse_path(line: &[u8]) -> ParseResult {
         steps,
         overlaps,
     }))
+}
+
+/// Parse a *possible* overlap list, which may be `*` (empty).
+pub fn parse_maybe_overlap_list(s: &[u8]) -> Result<(Vec<Vec<AlignOp>>, &[u8]), &'static str> {
+    if s == b"*" {
+        Ok((vec![], &s[1..]))
+    } else {
+        parse_overlap_list(s)
+    }
 }
 
 /// Parse a comma-separated list of CIGAR strings.
@@ -123,7 +125,7 @@ fn parse_until(line: &[u8], marker: u8) -> Result<(&[u8], &[u8]), &'static str> 
 }
 
 /// Consume a string from the line, until a tab (or the end of the line).
-fn parse_field(line: &[u8]) -> Result<(&[u8], &[u8]), &'static str> {
+pub fn parse_field(line: &[u8]) -> Result<(&[u8], &[u8]), &'static str> {
     parse_until(line, b'\t')
 }
 
@@ -221,6 +223,10 @@ impl<'a> StepsParser<'a> {
             seg: 0,
         }
     }
+
+    pub fn rest(&self) -> &[u8] {
+        &self.str[self.index..]
+    }
 }
 
 impl<'a> Iterator for StepsParser<'a> {
@@ -240,7 +246,7 @@ impl<'a> Iterator for StepsParser<'a> {
                         self.seg *= 10;
                         self.seg += (byte - b'0') as usize;
                     } else {
-                        panic!("unexpected character in path: {}", byte as char);
+                        return None;
                     }
                 }
                 StepsParseState::Comma => {
@@ -248,7 +254,7 @@ impl<'a> Iterator for StepsParser<'a> {
                         self.state = StepsParseState::Seg;
                         self.seg = 0;
                     } else {
-                        panic!("unexpected character in path: {}", byte as char);
+                        return None;
                     }
                 }
             }
@@ -259,8 +265,10 @@ impl<'a> Iterator for StepsParser<'a> {
 }
 
 #[test]
-fn test_parse_path() {
-    let str = b"1+,23-,4+";
-    let path: Vec<_> = StepsParser::new(str).collect();
+fn test_parse_steps() {
+    let s = b"1+,23-,4+ suffix";
+    let mut parser = StepsParser::new(s);
+    let path: Vec<_> = (&mut parser).collect();
     assert_eq!(path, vec![(1, true), (23, false), (4, true)]);
+    assert_eq!(parser.rest(), b"suffix");
 }
