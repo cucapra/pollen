@@ -312,26 +312,6 @@ impl FlatGFAStore {
         )
     }
 
-    /// Add a new path.
-    pub fn add_path(
-        &mut self,
-        name: Vec<u8>,
-        steps: impl Iterator<Item = Handle>,
-        overlaps: impl Iterator<Item = Vec<AlignOp>>,
-    ) -> Index {
-        let name = self.add_name(name);
-        let steps = self.add_steps(steps);
-        let overlaps = self.add_overlaps(overlaps);
-        pool_push(
-            &mut self.paths,
-            Path {
-                name,
-                steps,
-                overlaps,
-            },
-        )
-    }
-
     /// Add a sequence of steps.
     pub fn add_steps(&mut self, steps: impl IntoIterator<Item = Handle>) -> Span {
         pool_extend(&mut self.steps, steps)
