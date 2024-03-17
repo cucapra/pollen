@@ -1,6 +1,6 @@
-use crate::flatgfa::{FlatGFAStore, Handle, LineKind, Orientation};
+use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
 use crate::gfaline;
-use gfa::{self, gfa::Line, parser::GFAParserBuilder};
+use gfa;
 use std::collections::HashMap;
 
 /// A newtype to preserve optional fields without parsing them.
@@ -50,16 +50,18 @@ pub struct Parser {
 /// Holds data structures that we haven't added to the flat representation yet.
 struct Deferred {
     links: Vec<gfaline::Link>,
-    paths: Vec<gfa::gfa::Path<usize, OptFields>>,
+    paths: Vec<DeferredPath>,
+}
+
+struct DeferredPath {
+    pub name: Vec<u8>,
+    pub steps: Vec<u8>,
+    pub overlaps: Vec<Vec<AlignOp>>,
 }
 
 impl Parser {
     /// Parse a GFA text file.
     pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFAStore {
-        let gfa_parser = GFAParserBuilder::none()
-            .segments(true)
-            .paths(true)
-            .build_usize_id::<OptFields>();
         let mut parser = Self::default();
         let mut deferred = Deferred {
             links: Vec::new(),
@@ -67,19 +69,8 @@ impl Parser {
         };
         for line in stream.lines() {
             let line = line.unwrap();
-
-            // Try using our hand-rolled parser for some lines.
-            match gfaline::parse_line(line.as_ref()) {
-                Ok(l) => {
-                    parser.add_line(l, &mut deferred);
-                    continue;
-                }
-                Err(_) => {}
-            }
-
-            // Use the gfa-rs parser to parse most lines.
-            let gfa_line = gfa_parser.parse_gfa_line(line.as_ref()).unwrap();
-            parser.parse_line(gfa_line, &mut deferred);
+            let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
+            parser.add_line(gfa_line, &mut deferred);
         }
         parser.finish(deferred)
     }
@@ -89,20 +80,6 @@ impl Parser {
     /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
-    fn parse_line(&mut self, line: Line<usize, OptFields>, deferred: &mut Deferred) {
-        match line {
-            Line::Header(_) | Line::Segment(_) | Line::Link(_) => {
-                panic!("handled by hand-rolled parser");
-            }
-            Line::Path(p) => {
-                self.flat.record_line(LineKind::Path);
-                deferred.paths.push(p);
-            }
-            Line::Containment(_) => unimplemented!(),
-        }
-    }
-
-    /// Handle lines from our hand-rolled parser.
     fn add_line(&mut self, line: gfaline::Line, deferred: &mut Deferred) {
         match line {
             gfaline::Line::Header(data) => {
@@ -118,6 +95,16 @@ impl Parser {
                 self.flat.record_line(LineKind::Link);
                 deferred.links.push(link);
             }
+            gfaline::Line::Path(path) => {
+                // TODO: We could avoid copying these strings somehow?
+                // Just preserve the entire line?
+                self.flat.record_line(LineKind::Path);
+                deferred.paths.push(DeferredPath {
+                    name: path.name.into(),
+                    steps: path.steps.into(),
+                    overlaps: path.overlaps,
+                });
+            }
         }
     }
 
@@ -127,8 +114,8 @@ impl Parser {
         self.flat.add_link(from, to, link.overlap);
     }
 
-    fn add_path(&mut self, path: gfa::gfa::Path<usize, OptFields>) {
-        let steps = StepsParser::new(&path.segment_names).map(|(name, dir)| {
+    fn add_path(&mut self, path: DeferredPath) {
+        let steps = StepsParser::new(&path.steps).map(|(name, dir)| {
             Handle::new(
                 self.seg_ids.get(name),
                 if dir {
@@ -138,23 +125,8 @@ impl Parser {
                 },
             )
         });
-
-        // When the overlaps section is just `*`, the rs-gfa library produces a
-        // vector like `[None]`. I'm not sure if we really need to handle `None`
-        // otherwise: all the real data I've seen either has *real* overlaps or
-        // is just `*`.
-        let overlaps = if path.overlaps.len() == 1 && path.overlaps[0].is_none() {
-            vec![]
-        } else {
-            path.overlaps
-        };
-        let overlaps = overlaps.iter().map(|o| match o {
-            Some(c) => gfaline::convert_cigar(c),
-            None => unimplemented!(),
-        });
-
         self.flat
-            .add_path(path.path_name, steps.into_iter(), overlaps);
+            .add_path(path.name, steps.into_iter(), path.overlaps.into_iter());
     }
 
     /// Finish parsing and return the flat representation.
