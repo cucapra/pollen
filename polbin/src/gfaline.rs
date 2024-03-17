@@ -146,11 +146,9 @@ fn parse_num(line: &[u8]) -> Result<(usize, &[u8]), &'static str> {
         return Err("expected number");
     }
 
-    // Convert the digits to a number.
-    // TODO could use `unsafe` here to avoid the cost of `from_utf8`...
+    // Convert the digits to a number. This is safe because we know the bytes are ASCII.
     let s = &line[0..index];
-    let num = std::str::from_utf8(s)
-        .unwrap()
+    let num = unsafe { std::str::from_utf8_unchecked(s) }
         .parse()
         .map_err(|_| "number too large")?;
 
