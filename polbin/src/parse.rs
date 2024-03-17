@@ -1,4 +1,4 @@
-use crate::flatgfa::{AlignOp, FlatGFAStore, Handle, LineKind, Orientation};
+use crate::flatgfa::{FlatGFAStore, Handle, LineKind, Orientation};
 use crate::gfaline;
 use std::collections::HashMap;
 
@@ -14,13 +14,7 @@ pub struct Parser {
 /// Holds data structures that we haven't added to the flat representation yet.
 struct Deferred {
     links: Vec<gfaline::Link>,
-    paths: Vec<DeferredPath>,
-}
-
-struct DeferredPath {
-    pub name: Vec<u8>,
-    pub steps: Vec<u8>,
-    pub overlaps: Vec<Vec<AlignOp>>,
+    paths: Vec<String>,
 }
 
 impl Parser {
@@ -44,6 +38,13 @@ impl Parser {
     /// in our internal vectors, because we must see all the segments first before we can
     /// resolve their segment name references.
     fn parse_line(&mut self, line: String, deferred: &mut Deferred) {
+        // Avoid parsing paths entirely for now; just preserve the entire line for later.
+        if line.as_bytes()[0] == b'P' {
+            self.flat.record_line(LineKind::Path);
+            deferred.paths.push(line);
+            return;
+        }
+
         let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
         match gfa_line {
             gfaline::Line::Header(data) => {
@@ -59,15 +60,8 @@ impl Parser {
                 self.flat.record_line(LineKind::Link);
                 deferred.links.push(link);
             }
-            gfaline::Line::Path(path) => {
-                // TODO: We could avoid copying these strings somehow?
-                // Just preserve the entire line?
-                self.flat.record_line(LineKind::Path);
-                deferred.paths.push(DeferredPath {
-                    name: path.name.into(),
-                    steps: path.steps.into(),
-                    overlaps: path.overlaps,
-                });
+            gfaline::Line::Path(_) => {
+                unreachable!("paths handled separately")
             }
         }
     }
@@ -78,7 +72,7 @@ impl Parser {
         self.flat.add_link(from, to, link.overlap);
     }
 
-    fn add_path(&mut self, path: DeferredPath) {
+    fn add_path(&mut self, path: gfaline::Path) {
         let steps = gfaline::StepsParser::new(&path.steps).map(|(name, dir)| {
             Handle::new(
                 self.seg_ids.get(name),
@@ -101,8 +95,11 @@ impl Parser {
         for link in deferred.links {
             self.add_link(link);
         }
-        for path in deferred.paths {
-            self.add_path(path);
+        for line in deferred.paths {
+            match gfaline::parse_line(line.as_ref()).unwrap() {
+                gfaline::Line::Path(path) => self.add_path(path),
+                _ => panic!("non-path line deferred"),
+            };
         }
         self.flat
     }
