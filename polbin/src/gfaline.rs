@@ -192,3 +192,75 @@ fn parse_cigar(s: &[u8]) -> Vec<AlignOp> {
 pub fn convert_cigar(c: &cigar::CIGAR) -> Vec<AlignOp> {
     c.0.iter().map(convert_align_op).collect()
 }
+
+/// Parse GFA paths' segment lists. These look like `1+,2-,3+`.
+///
+/// The underlying gfa-rs library does not yet parse the actual segments
+/// involved in the path. So we do it ourselves: splitting on commas and
+/// matching the direction.
+pub struct StepsParser<'a> {
+    str: &'a [u8],
+    index: usize,
+    state: StepsParseState,
+    seg: usize,
+}
+
+/// The parser state: we're either looking for a segment name (or a +/- terminator),
+/// or we're expecting a comma (or end of string).
+enum StepsParseState {
+    Seg,
+    Comma,
+}
+
+impl<'a> StepsParser<'a> {
+    pub fn new(str: &'a [u8]) -> Self {
+        StepsParser {
+            str,
+            index: 0,
+            state: StepsParseState::Seg,
+            seg: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for StepsParser<'a> {
+    type Item = (usize, bool);
+    fn next(&mut self) -> Option<(usize, bool)> {
+        while self.index < self.str.len() {
+            // Consume one byte.
+            let byte = self.str[self.index];
+            self.index += 1;
+
+            match self.state {
+                StepsParseState::Seg => {
+                    if byte == b'+' || byte == b'-' {
+                        self.state = StepsParseState::Comma;
+                        return Some((self.seg, byte == b'+'));
+                    } else if byte.is_ascii_digit() {
+                        self.seg *= 10;
+                        self.seg += (byte - b'0') as usize;
+                    } else {
+                        panic!("unexpected character in path: {}", byte as char);
+                    }
+                }
+                StepsParseState::Comma => {
+                    if byte == b',' {
+                        self.state = StepsParseState::Seg;
+                        self.seg = 0;
+                    } else {
+                        panic!("unexpected character in path: {}", byte as char);
+                    }
+                }
+            }
+        }
+
+        None
+    }
+}
+
+#[test]
+fn test_parse_path() {
+    let str = b"1+,23-,4+";
+    let path: Vec<_> = StepsParser::new(str).collect();
+    assert_eq!(path, vec![(1, true), (23, false), (4, true)]);
+}
