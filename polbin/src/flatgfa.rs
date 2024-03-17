@@ -162,7 +162,7 @@ impl Handle {
 }
 
 /// The kind of each operation in a CIGAR alignment.
-#[derive(Debug, IntoPrimitive, TryFromPrimitive)]
+#[derive(Debug, IntoPrimitive, TryFromPrimitive, Clone, Copy)]
 #[repr(u8)]
 pub enum AlignOpcode {
     Match,     // M
@@ -175,7 +175,7 @@ pub enum AlignOpcode {
 ///
 /// Logically, this is a pair of a number and an `AlignOpcode`. We pack the two
 /// into a single u32.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
 pub struct AlignOp(u32);
 
@@ -302,14 +302,11 @@ impl FlatGFAStore {
 
     /// Add a new segment to the GFA file.
     pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index {
-        pool_push(
-            &mut self.segs,
-            Segment {
-                name,
-                seq: pool_extend_from_slice(&mut self.seq_data, seq),
-                optional: pool_extend_from_slice(&mut self.optional_data, optional),
-            },
-        )
+        self.segs.add(Segment {
+            name,
+            seq: self.seq_data.add_slice(seq),
+            optional: self.optional_data.add_slice(optional),
+        })
     }
 
     /// Add a new path.
@@ -319,39 +316,31 @@ impl FlatGFAStore {
         steps: Span,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
     ) -> Index {
-        let overlaps = pool_extend(
-            &mut self.overlaps,
+        let overlaps = self.overlaps.add_iter(
             overlaps
                 .into_iter()
-                .map(|align| pool_extend(&mut self.alignment, align)),
+                .map(|align| self.alignment.add_iter(align)),
         );
-
-        let name = pool_extend_from_slice(&mut self.name_data, name);
-        pool_push(
-            &mut self.paths,
-            Path {
-                name,
-                steps,
-                overlaps,
-            },
-        )
+        let name = self.name_data.add_slice(name);
+        self.paths.add(Path {
+            name,
+            steps,
+            overlaps,
+        })
     }
 
     /// Add a sequence of steps.
     pub fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
-        pool_extend(&mut self.steps, steps)
+        self.steps.add_iter(steps)
     }
 
     /// Add a link between two (oriented) segments.
     pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
-        pool_push(
-            &mut self.links,
-            Link {
-                from,
-                to,
-                overlap: pool_extend(&mut self.alignment, overlap),
-            },
-        )
+        self.links.add(Link {
+            from,
+            to,
+            overlap: self.alignment.add_iter(overlap),
+        })
     }
 
     /// Record a line type to preserve the line order.
@@ -377,30 +366,54 @@ impl FlatGFAStore {
     }
 }
 
-/// Add an item to a "pool" vector and get the new index (ID).
-fn pool_push<T>(vec: &mut Vec<T>, item: T) -> Index {
-    let len: u32 = vec.len().try_into().expect("size too large");
-    vec.push(item);
-    len
+trait Pool<T: Clone> {
+    /// Add an item to the pool and get the new index (ID).
+    fn add(&mut self, item: T) -> Index;
+
+    /// Add an entire sequence of items to a "pool" vector and return the
+    /// range of new indices (IDs).
+    fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span;
+
+    /// Like `add_iter`, but for slices.
+    fn add_slice(&mut self, slice: &[T]) -> Span;
+
+    /// Get a single element from the pool by its ID.
+    fn get(&self, index: Index) -> &T;
+
+    /// Get a range of elements from the pool using their IDs.
+    fn get_span(&self, span: Span) -> &[T];
 }
 
-/// Add an entire sequence of items to a "pool" vector and return the
-/// range of new indices (IDs).
-fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>) -> Span {
-    let old_len: u32 = vec.len().try_into().expect("old size too large");
-    vec.extend(iter);
-    Span {
-        start: old_len,
-        end: vec.len().try_into().expect("new size too large"),
+impl<T: Clone> Pool<T> for Vec<T> {
+    fn add(&mut self, item: T) -> Index {
+        let len: u32 = self.len().try_into().expect("size too large");
+        self.push(item);
+        len
     }
-}
 
-/// Like `pool_extend`, but for slices.
-fn pool_extend_from_slice(vec: &mut Vec<u8>, slice: &[u8]) -> Span {
-    let old_len: u32 = vec.len().try_into().expect("old size too large");
-    vec.extend_from_slice(slice);
-    Span {
-        start: old_len,
-        end: vec.len().try_into().expect("new size too large"),
+    fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span {
+        let old_len: u32 = self.len().try_into().expect("old size too large");
+        self.extend(iter);
+        Span {
+            start: old_len,
+            end: self.len().try_into().expect("new size too large"),
+        }
+    }
+
+    fn add_slice(&mut self, slice: &[T]) -> Span {
+        let old_len: u32 = self.len().try_into().expect("old size too large");
+        self.extend_from_slice(slice);
+        Span {
+            start: old_len,
+            end: self.len().try_into().expect("new size too large"),
+        }
+    }
+
+    fn get(&self, index: Index) -> &T {
+        &self[index as usize]
+    }
+
+    fn get_span(&self, span: Span) -> &[T] {
+        &self[span.range()]
     }
 }
