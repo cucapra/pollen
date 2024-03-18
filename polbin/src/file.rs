@@ -54,7 +54,7 @@ impl Size {
 
 impl Toc {
     /// Get the total size in bytes of the file described.
-    fn size(&self) -> usize {
+    pub fn size(&self) -> usize {
         size_of::<Self>()
             + self.header.bytes::<u8>()
             + self.segs.bytes::<flatgfa::Segment>()
@@ -88,7 +88,7 @@ impl Toc {
     }
 
     /// Guess a reasonable set of capacities for a fresh file.
-    fn guess(factor: usize) -> Self {
+    pub fn guess(factor: usize) -> Self {
         Self {
             magic: MAGIC_NUMBER,
             header: Size::empty(128),
