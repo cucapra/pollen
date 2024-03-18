@@ -246,12 +246,6 @@ pub trait PoolFamily {
     type Pool<T: Clone>: crate::pool::Pool<T>;
 }
 
-#[derive(Default)]
-pub struct VecPoolFamily;
-impl PoolFamily for VecPoolFamily {
-    type Pool<T: Clone> = Vec<T>;
-}
-
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
 pub struct Store<P: PoolFamily> {
@@ -339,6 +333,12 @@ impl<P: PoolFamily> Store<P> {
             line_order: self.line_order.all(),
         }
     }
+}
+
+#[derive(Default)]
+pub struct VecPoolFamily;
+impl PoolFamily for VecPoolFamily {
+    type Pool<T: Clone> = Vec<T>;
 }
 
 /// A mutable, in-memory data store for `FlatGFA`.
