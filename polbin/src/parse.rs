@@ -1,11 +1,11 @@
-use crate::flatgfa::{FlatGFAStore, Handle, LineKind, Orientation};
+use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
 use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct Parser {
     /// The flat representation we're building.
-    flat: FlatGFAStore,
+    flat: flatgfa::HeapStore,
 
     /// All segment IDs, indexed by their names, which we need to refer to segments in paths.
     seg_ids: NameMap,
@@ -19,7 +19,7 @@ struct Deferred {
 
 impl Parser {
     /// Parse a GFA text file.
-    pub fn parse<R: std::io::BufRead>(stream: R) -> FlatGFAStore {
+    pub fn parse<R: std::io::BufRead>(stream: R) -> flatgfa::HeapStore {
         let mut parser = Self::default();
         let mut deferred = Deferred {
             links: Vec::new(),
@@ -105,7 +105,7 @@ impl Parser {
     ///
     /// We "unwind" the buffers of links and paths, now that we have all
     /// the segments.
-    fn finish(mut self, deferred: Deferred) -> FlatGFAStore {
+    fn finish(mut self, deferred: Deferred) -> flatgfa::HeapStore {
         for link in deferred.links {
             self.add_link(link);
         }

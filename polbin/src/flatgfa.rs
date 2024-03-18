@@ -1,5 +1,5 @@
 use crate::pool::{Index, Pool, Span};
-use bstr::{BStr, BString};
+use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
@@ -12,7 +12,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 pub struct FlatGFA<'a> {
     /// A GFA may optionally have a single header line, with a version number.
     /// If this is empty, there is no header line.
-    pub header: &'a BStr,
+    pub header: &'a [u8],
 
     /// The segment (S) lines in the GFA file.
     pub segs: &'a [Segment],
@@ -46,37 +46,17 @@ pub struct FlatGFA<'a> {
 
     /// The string names: currenly, just of paths. (We assume segments have integer
     /// names, so they don't need to be stored separately.)
-    pub name_data: &'a BStr,
+    pub name_data: &'a [u8],
 
     /// Segments can come with optional extra fields, which we store in a flat pool
     /// as raw characters because we don't currently care about them.
-    pub optional_data: &'a BStr,
+    pub optional_data: &'a [u8],
 
     /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
     /// fidelity: we record the order of lines as we saw them when parsing a GFA file
     /// so we can emit them again in that order. Elements should be `LineKind` values
     /// (but they are checked before we use them).
     pub line_order: &'a [u8],
-}
-
-/// A mutable, in-memory data store for `FlatGFA`.
-///
-/// This struct contains a bunch of `Vec`s: one per array required to implement a
-/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
-/// useful for creating new ones from scratch.
-#[derive(Default)]
-pub struct FlatGFAStore {
-    pub header: BString,
-    pub segs: Vec<Segment>,
-    pub paths: Vec<Path>,
-    pub links: Vec<Link>,
-    pub steps: Vec<Handle>,
-    pub seq_data: Vec<u8>,
-    pub overlaps: Vec<Span>,
-    pub alignment: Vec<AlignOp>,
-    pub name_data: BString,
-    pub optional_data: BString,
-    pub line_order: Vec<u8>,
 }
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
@@ -262,11 +242,37 @@ impl<'a> FlatGFA<'a> {
     }
 }
 
-impl FlatGFAStore {
+pub trait PoolFamily {
+    type Pool<T: Clone>: crate::pool::Pool<T>;
+}
+
+#[derive(Default)]
+pub struct VecPoolFamily;
+impl PoolFamily for VecPoolFamily {
+    type Pool<T: Clone> = Vec<T>;
+}
+
+/// The data storage pools for a `FlatGFA`.
+#[derive(Default)]
+pub struct Store<P: PoolFamily> {
+    pub header: P::Pool<u8>,
+    pub segs: P::Pool<Segment>,
+    pub paths: P::Pool<Path>,
+    pub links: P::Pool<Link>,
+    pub steps: P::Pool<Handle>,
+    pub seq_data: P::Pool<u8>,
+    pub overlaps: P::Pool<Span>,
+    pub alignment: P::Pool<AlignOp>,
+    pub name_data: P::Pool<u8>,
+    pub optional_data: P::Pool<u8>,
+    pub line_order: P::Pool<u8>,
+}
+
+impl<P: PoolFamily> Store<P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
-        assert!(self.header.is_empty());
-        self.header = version.into();
+        assert!(self.header.count() == 0);
+        self.header.add_slice(version);
     }
 
     /// Add a new segment to the GFA file.
@@ -314,23 +320,30 @@ impl FlatGFAStore {
 
     /// Record a line type to preserve the line order.
     pub fn record_line(&mut self, kind: LineKind) {
-        self.line_order.push(kind.into());
+        self.line_order.add(kind.into());
     }
 
     /// Borrow a FlatGFA view of this data store.
     pub fn view(&self) -> FlatGFA {
         FlatGFA {
-            header: self.header.as_ref(),
-            segs: &self.segs,
-            paths: &self.paths,
-            links: &self.links,
-            name_data: self.name_data.as_ref(),
-            seq_data: &self.seq_data,
-            steps: &self.steps,
-            overlaps: &self.overlaps,
-            alignment: &self.alignment,
-            optional_data: self.optional_data.as_ref(),
-            line_order: &self.line_order,
+            header: self.header.all(),
+            segs: self.segs.all(),
+            paths: self.paths.all(),
+            links: self.links.all(),
+            name_data: self.name_data.all(),
+            seq_data: self.seq_data.all(),
+            steps: self.steps.all(),
+            overlaps: self.overlaps.all(),
+            alignment: self.alignment.all(),
+            optional_data: self.optional_data.all(),
+            line_order: self.line_order.all(),
         }
     }
 }
+
+/// A mutable, in-memory data store for `FlatGFA`.
+///
+/// This struct contains a bunch of `Vec`s: one per array required to implement a
+/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
+/// useful for creating new ones from scratch.
+pub type HeapStore = Store<VecPoolFamily>;

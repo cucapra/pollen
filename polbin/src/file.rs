@@ -72,7 +72,7 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     let (line_order, _) = slice_prefix(rest, toc.line_order);
 
     flatgfa::FlatGFA {
-        header: header.into(),
+        header,
         segs,
         paths,
         links,
@@ -80,8 +80,8 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
         seq_data,
         overlaps,
         alignment,
-        name_data: name_data.into(),
-        optional_data: optional_data.into(),
+        name_data,
+        optional_data,
         line_order,
     }
 }

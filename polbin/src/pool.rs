@@ -48,6 +48,12 @@ pub trait Pool<T: Clone> {
 
     /// Get a range of elements from the pool using their IDs.
     fn get_span(&self, span: Span) -> &[T];
+
+    /// Get the number of items in the pool.
+    fn count(&self) -> usize;
+
+    /// Get all items in the pool.
+    fn all(&self) -> &[T];
 }
 
 impl<T: Clone> Pool<T> for Vec<T> {
@@ -81,5 +87,13 @@ impl<T: Clone> Pool<T> for Vec<T> {
 
     fn get_span(&self, span: Span) -> &[T] {
         &self[span.range()]
+    }
+
+    fn count(&self) -> usize {
+        self.len()
+    }
+
+    fn all(&self) -> &[T] {
+        self
     }
 }
