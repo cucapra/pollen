@@ -56,11 +56,21 @@ fn main() {
     if args.mutate {
         if let (None, Some(out_name)) = (&args.input, &args.output) {
             let stdin = std::io::stdin();
-            let toc = file::Toc::guess(5);
-            let mut mmap = map_new_file(out_name, toc.size() as u64);
-            let store = file::init(&mut mmap, toc);
-            let parser = parse::Parser::new(store);
-            parser.parse(stdin.lock());
+
+            // Create a file with an empty table of contents.
+            let empty_toc = file::Toc::guess(5);
+            let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
+            let (toc, store) = file::init(&mut mmap, empty_toc);
+
+            // Parse the input.
+            let store = {
+                let parser = parse::Parser::new(store);
+                parser.parse(stdin.lock())
+            };
+
+            // Update the table of contents.
+            *toc = file::Toc::for_slice_store(&store);
+
             mmap.flush().unwrap();
             return;
         }
