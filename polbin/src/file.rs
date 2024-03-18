@@ -46,6 +46,10 @@ impl Size {
     fn bytes<T>(&self) -> usize {
         self.capacity * size_of::<T>()
     }
+
+    fn empty(capacity: usize) -> Self {
+        Size { len: 0, capacity }
+    }
 }
 
 impl Toc {
@@ -67,7 +71,7 @@ impl Toc {
 
     /// Get a table of contents that fits a FlatGFA with no spare space.
     fn full(gfa: &flatgfa::FlatGFA) -> Self {
-        Toc {
+        Self {
             magic: MAGIC_NUMBER,
             header: Size::of_slice(gfa.header),
             segs: Size::of_slice(gfa.segs),
@@ -80,6 +84,24 @@ impl Toc {
             name_data: Size::of_slice(gfa.name_data),
             optional_data: Size::of_slice(gfa.optional_data),
             line_order: Size::of_slice(gfa.line_order),
+        }
+    }
+
+    /// Guess a reasonable set of capacities for a fresh file.
+    fn guess(factor: usize) -> Self {
+        Self {
+            magic: MAGIC_NUMBER,
+            header: Size::empty(128),
+            segs: Size::empty(512 * factor),
+            paths: Size::empty(16 * factor),
+            links: Size::empty(1024 * factor),
+            steps: Size::empty(512 * factor),
+            seq_data: Size::empty(4096 * factor),
+            overlaps: Size::empty(512 * factor),
+            alignment: Size::empty(1024 * factor),
+            name_data: Size::empty(64 * factor),
+            optional_data: Size::empty(64 * factor),
+            line_order: Size::empty(2048 * factor),
         }
     }
 }
