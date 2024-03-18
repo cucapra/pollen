@@ -2,10 +2,9 @@ use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
 use std::collections::HashMap;
 
-#[derive(Default)]
-pub struct Parser {
+pub struct Parser<B: flatgfa::GFABuilder> {
     /// The flat representation we're building.
-    flat: flatgfa::HeapStore,
+    flat: B,
 
     /// All segment IDs, indexed by their names, which we need to refer to segments in paths.
     seg_ids: NameMap,
@@ -17,19 +16,25 @@ struct Deferred {
     paths: Vec<Vec<u8>>,
 }
 
-impl Parser {
+impl<B: flatgfa::GFABuilder> Parser<B> {
+    pub fn new(builder: B) -> Self {
+        Self {
+            flat: builder,
+            seg_ids: NameMap::default(),
+        }
+    }
+
     /// Parse a GFA text file.
-    pub fn parse<R: std::io::BufRead>(stream: R) -> flatgfa::HeapStore {
-        let mut parser = Self::default();
+    pub fn parse<R: std::io::BufRead>(mut self, stream: R) -> B {
         let mut deferred = Deferred {
             links: Vec::new(),
             paths: Vec::new(),
         };
         for line in stream.split(b'\n') {
             let line = line.unwrap();
-            parser.parse_line(line, &mut deferred);
+            self.parse_line(line, &mut deferred);
         }
-        parser.finish(deferred)
+        self.finish(deferred)
     }
 
     /// Parse a single GFA line.
@@ -105,7 +110,7 @@ impl Parser {
     ///
     /// We "unwind" the buffers of links and paths, now that we have all
     /// the segments.
-    fn finish(mut self, deferred: Deferred) -> flatgfa::HeapStore {
+    fn finish(mut self, deferred: Deferred) -> B {
         for link in deferred.links {
             self.add_link(link);
         }
