@@ -7,7 +7,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 const MAGIC_NUMBER: u64 = 0xB101_1054;
 
 /// A table of contents for the FlatGFA file.
-#[derive(FromBytes, FromZeroes, AsBytes)]
+#[derive(FromBytes, FromZeroes, AsBytes, Debug)]
 #[repr(packed)]
 pub struct Toc {
     magic: u64,
@@ -25,7 +25,7 @@ pub struct Toc {
 }
 
 /// A table-of-contents entry for a pool in the FlatGFA file.
-#[derive(FromBytes, FromZeroes, AsBytes, Clone, Copy)]
+#[derive(FromBytes, FromZeroes, AsBytes, Clone, Copy, Debug)]
 #[repr(packed)]
 struct Size {
     /// The number of actual elements in the pool.
@@ -40,6 +40,13 @@ impl Size {
         Size {
             len: slice.len(),
             capacity: slice.len(),
+        }
+    }
+
+    fn of_slice_vec<T>(slice_vec: &SliceVec<'_, T>) -> Self {
+        Size {
+            len: slice_vec.len(),
+            capacity: slice_vec.capacity(),
         }
     }
 
@@ -84,6 +91,23 @@ impl Toc {
             name_data: Size::of_slice(gfa.name_data),
             optional_data: Size::of_slice(gfa.optional_data),
             line_order: Size::of_slice(gfa.line_order),
+        }
+    }
+
+    pub fn for_slice_store(store: &flatgfa::SliceStore) -> Self {
+        Self {
+            magic: MAGIC_NUMBER,
+            header: Size::of_slice_vec(&store.header),
+            segs: Size::of_slice_vec(&store.segs),
+            paths: Size::of_slice_vec(&store.paths),
+            links: Size::of_slice_vec(&store.links),
+            steps: Size::of_slice_vec(&store.steps),
+            seq_data: Size::of_slice_vec(&store.seq_data),
+            overlaps: Size::of_slice_vec(&store.overlaps),
+            alignment: Size::of_slice_vec(&store.alignment),
+            name_data: Size::of_slice_vec(&store.name_data),
+            optional_data: Size::of_slice_vec(&store.optional_data),
+            line_order: Size::of_slice_vec(&store.line_order),
         }
     }
 
@@ -208,14 +232,17 @@ pub fn view_store(data: &mut [u8]) -> flatgfa::SliceStore {
 }
 
 /// Initialize a buffer with an empty FlatGFA store.
-pub fn init(data: &mut [u8], toc: Toc) -> flatgfa::SliceStore {
+pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::SliceStore) {
     // Write the table of contents.
     assert!(data.len() == toc.size());
     toc.write_to_prefix(data).unwrap();
-    let rest = &mut data[size_of::<Toc>()..];
+
+    // Get a mutable reference to the embedded TOC.
+    let (toc_bytes, rest) = data.split_at_mut(size_of::<Toc>());
+    let toc_mut = Toc::mut_from(toc_bytes).unwrap();
 
     // Extract a store from the remaining bytes.
-    slice_store(rest, &toc)
+    (toc_mut, slice_store(rest, &toc))
 }
 
 fn write_bump<'a, T: AsBytes + ?Sized>(buf: &'a mut [u8], data: &T) -> Option<&'a mut [u8]> {
