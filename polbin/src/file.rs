@@ -9,7 +9,7 @@ const MAGIC_NUMBER: u64 = 0xB101_1054;
 /// A table of contents for the FlatGFA file.
 #[derive(FromBytes, FromZeroes, AsBytes)]
 #[repr(packed)]
-struct Toc {
+pub struct Toc {
     magic: u64,
     header: Size,
     segs: Size,
@@ -150,12 +150,9 @@ fn slice_vec_prefix<T: FromBytes + AsBytes>(
     (vec, rest)
 }
 
-/// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
-pub fn view_store(data: &mut [u8]) -> flatgfa::SliceStore {
-    let (toc, rest) = read_toc_mut(data);
-
-    // Get slices for each chunk.
-    let (header, rest) = slice_vec_prefix(rest, toc.header);
+/// Get a FlatGFA `SliceStore` from the suffix of a file just following the table of contents.
+fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::SliceStore<'a> {
+    let (header, rest) = slice_vec_prefix(data, toc.header);
     let (segs, rest) = slice_vec_prefix(rest, toc.segs);
     let (paths, rest) = slice_vec_prefix(rest, toc.paths);
     let (links, rest) = slice_vec_prefix(rest, toc.links);
@@ -180,6 +177,23 @@ pub fn view_store(data: &mut [u8]) -> flatgfa::SliceStore {
         optional_data,
         line_order,
     }
+}
+
+/// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
+pub fn view_store(data: &mut [u8]) -> flatgfa::SliceStore {
+    let (toc, rest) = read_toc_mut(data);
+    slice_store(rest, toc)
+}
+
+/// Initialize a buffer with an empty FlatGFA store.
+pub fn init(data: &mut [u8], toc: Toc) -> flatgfa::SliceStore {
+    // Write the table of contents.
+    assert!(data.len() == toc.size());
+    toc.write_to_prefix(data).unwrap();
+    let rest = &mut data[size_of::<Toc>()..];
+
+    // Extract a store from the remaining bytes.
+    slice_store(rest, &toc)
 }
 
 fn write_bump<'a, T: AsBytes + ?Sized>(buf: &'a mut [u8], data: &T) -> Option<&'a mut [u8]> {
