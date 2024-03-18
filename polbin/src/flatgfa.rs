@@ -1,5 +1,7 @@
-use bstr::{BStr, BString};
+use crate::pool::{Index, Pool, Span};
+use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 /// An efficient flattened representation of a GFA file.
@@ -11,7 +13,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 pub struct FlatGFA<'a> {
     /// A GFA may optionally have a single header line, with a version number.
     /// If this is empty, there is no header line.
-    pub header: &'a BStr,
+    pub header: &'a [u8],
 
     /// The segment (S) lines in the GFA file.
     pub segs: &'a [Segment],
@@ -45,37 +47,17 @@ pub struct FlatGFA<'a> {
 
     /// The string names: currenly, just of paths. (We assume segments have integer
     /// names, so they don't need to be stored separately.)
-    pub name_data: &'a BStr,
+    pub name_data: &'a [u8],
 
     /// Segments can come with optional extra fields, which we store in a flat pool
     /// as raw characters because we don't currently care about them.
-    pub optional_data: &'a BStr,
+    pub optional_data: &'a [u8],
 
     /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
     /// fidelity: we record the order of lines as we saw them when parsing a GFA file
     /// so we can emit them again in that order. Elements should be `LineKind` values
     /// (but they are checked before we use them).
     pub line_order: &'a [u8],
-}
-
-/// A mutable, in-memory data store for `FlatGFA`.
-///
-/// This struct contains a bunch of `Vec`s: one per array required to implement a
-/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
-/// useful for creating new ones from scratch.
-#[derive(Default)]
-pub struct FlatGFAStore {
-    pub header: BString,
-    pub segs: Vec<Segment>,
-    pub paths: Vec<Path>,
-    pub links: Vec<Link>,
-    pub steps: Vec<Handle>,
-    pub seq_data: Vec<u8>,
-    pub overlaps: Vec<Span>,
-    pub alignment: Vec<AlignOp>,
-    pub name_data: BString,
-    pub optional_data: BString,
-    pub line_order: Vec<u8>,
 }
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
@@ -162,7 +144,7 @@ impl Handle {
 }
 
 /// The kind of each operation in a CIGAR alignment.
-#[derive(Debug, IntoPrimitive, TryFromPrimitive)]
+#[derive(Debug, IntoPrimitive, TryFromPrimitive, Clone, Copy)]
 #[repr(u8)]
 pub enum AlignOpcode {
     Match,     // M
@@ -175,7 +157,7 @@ pub enum AlignOpcode {
 ///
 /// Logically, this is a pair of a number and an `AlignOpcode`. We pack the two
 /// into a single u32.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
 pub struct AlignOp(u32);
 
@@ -215,38 +197,6 @@ pub enum LineKind {
     Segment,
     Path,
     Link,
-}
-
-/// An index into a pool.
-///
-/// TODO: Consider using newtypes for each distinct type.
-type Index = u32;
-
-/// A range of indices into a pool.
-///
-/// TODO: Consider smaller indices for this, and possibly base/offset instead
-/// of start/end.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
-#[repr(packed)]
-pub struct Span {
-    pub start: Index,
-    pub end: Index,
-}
-
-impl From<Span> for std::ops::Range<usize> {
-    fn from(span: Span) -> std::ops::Range<usize> {
-        (span.start as usize)..(span.end as usize)
-    }
-}
-
-impl Span {
-    pub fn is_empty(&self) -> bool {
-        self.start == self.end
-    }
-
-    pub fn range(&self) -> std::ops::Range<usize> {
-        (*self).into()
-    }
 }
 
 impl<'a> FlatGFA<'a> {
@@ -293,23 +243,36 @@ impl<'a> FlatGFA<'a> {
     }
 }
 
-impl FlatGFAStore {
+/// The data storage pools for a `FlatGFA`.
+#[derive(Default)]
+pub struct Store<'a, P: PoolFamily<'a>> {
+    pub header: P::Pool<u8>,
+    pub segs: P::Pool<Segment>,
+    pub paths: P::Pool<Path>,
+    pub links: P::Pool<Link>,
+    pub steps: P::Pool<Handle>,
+    pub seq_data: P::Pool<u8>,
+    pub overlaps: P::Pool<Span>,
+    pub alignment: P::Pool<AlignOp>,
+    pub name_data: P::Pool<u8>,
+    pub optional_data: P::Pool<u8>,
+    pub line_order: P::Pool<u8>,
+}
+
+impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
-        assert!(self.header.is_empty());
-        self.header = version.into();
+        assert!(self.header.count() == 0);
+        self.header.add_slice(version);
     }
 
     /// Add a new segment to the GFA file.
     pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index {
-        pool_push(
-            &mut self.segs,
-            Segment {
-                name,
-                seq: pool_extend_from_slice(&mut self.seq_data, seq),
-                optional: pool_extend_from_slice(&mut self.optional_data, optional),
-            },
-        )
+        self.segs.add(Segment {
+            name,
+            seq: self.seq_data.add_slice(seq),
+            optional: self.optional_data.add_slice(optional),
+        })
     }
 
     /// Add a new path.
@@ -319,88 +282,83 @@ impl FlatGFAStore {
         steps: Span,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
     ) -> Index {
-        let overlaps = pool_extend(
-            &mut self.overlaps,
+        let overlaps = self.overlaps.add_iter(
             overlaps
                 .into_iter()
-                .map(|align| pool_extend(&mut self.alignment, align)),
+                .map(|align| self.alignment.add_iter(align)),
         );
-
-        let name = pool_extend_from_slice(&mut self.name_data, name);
-        pool_push(
-            &mut self.paths,
-            Path {
-                name,
-                steps,
-                overlaps,
-            },
-        )
+        let name = self.name_data.add_slice(name);
+        self.paths.add(Path {
+            name,
+            steps,
+            overlaps,
+        })
     }
 
     /// Add a sequence of steps.
     pub fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
-        pool_extend(&mut self.steps, steps)
+        self.steps.add_iter(steps)
     }
 
     /// Add a link between two (oriented) segments.
     pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
-        pool_push(
-            &mut self.links,
-            Link {
-                from,
-                to,
-                overlap: pool_extend(&mut self.alignment, overlap),
-            },
-        )
+        self.links.add(Link {
+            from,
+            to,
+            overlap: self.alignment.add_iter(overlap),
+        })
     }
 
     /// Record a line type to preserve the line order.
     pub fn record_line(&mut self, kind: LineKind) {
-        self.line_order.push(kind.into());
+        self.line_order.add(kind.into());
     }
 
     /// Borrow a FlatGFA view of this data store.
     pub fn view(&self) -> FlatGFA {
         FlatGFA {
-            header: self.header.as_ref(),
-            segs: &self.segs,
-            paths: &self.paths,
-            links: &self.links,
-            name_data: self.name_data.as_ref(),
-            seq_data: &self.seq_data,
-            steps: &self.steps,
-            overlaps: &self.overlaps,
-            alignment: &self.alignment,
-            optional_data: self.optional_data.as_ref(),
-            line_order: &self.line_order,
+            header: self.header.all(),
+            segs: self.segs.all(),
+            paths: self.paths.all(),
+            links: self.links.all(),
+            name_data: self.name_data.all(),
+            seq_data: self.seq_data.all(),
+            steps: self.steps.all(),
+            overlaps: self.overlaps.all(),
+            alignment: self.alignment.all(),
+            optional_data: self.optional_data.all(),
+            line_order: self.line_order.all(),
         }
     }
 }
 
-/// Add an item to a "pool" vector and get the new index (ID).
-fn pool_push<T>(vec: &mut Vec<T>, item: T) -> Index {
-    let len: u32 = vec.len().try_into().expect("size too large");
-    vec.push(item);
-    len
+pub trait PoolFamily<'a> {
+    type Pool<T: Clone + 'a>: crate::pool::Pool<T>;
 }
 
-/// Add an entire sequence of items to a "pool" vector and return the
-/// range of new indices (IDs).
-fn pool_extend<T>(vec: &mut Vec<T>, iter: impl IntoIterator<Item = T>) -> Span {
-    let old_len: u32 = vec.len().try_into().expect("old size too large");
-    vec.extend(iter);
-    Span {
-        start: old_len,
-        end: vec.len().try_into().expect("new size too large"),
-    }
+#[derive(Default)]
+pub struct VecPoolFamily;
+impl<'a> PoolFamily<'a> for VecPoolFamily {
+    type Pool<T: Clone + 'a> = Vec<T>;
 }
 
-/// Like `pool_extend`, but for slices.
-fn pool_extend_from_slice(vec: &mut Vec<u8>, slice: &[u8]) -> Span {
-    let old_len: u32 = vec.len().try_into().expect("old size too large");
-    vec.extend_from_slice(slice);
-    Span {
-        start: old_len,
-        end: vec.len().try_into().expect("new size too large"),
-    }
+/// A mutable, in-memory data store for `FlatGFA`.
+///
+/// This store contains a bunch of `Vec`s: one per array required to implement a
+/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
+/// useful for creating new ones from scratch.
+pub type HeapStore = Store<'static, VecPoolFamily>;
+
+pub struct SliceVecPoolFamily {
+    // phantom: std::marker::PhantomData<&'a ()>,
 }
+impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
+    type Pool<T: Clone + 'a> = SliceVec<'a, T>;
+}
+
+/// A store for `FlatGFA` data backed by fixed-size slices.
+///
+/// This store contains `SliceVec`s, which act like `Vec`s but are allocated within
+/// a fixed region. This means they have a maximum size, but they can directly map
+/// onto the contents of a file.
+pub type SliceStore<'a> = Store<'a, SliceVecPoolFamily>;

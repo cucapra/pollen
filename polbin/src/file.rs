@@ -1,55 +1,91 @@
 use crate::flatgfa;
 use std::mem::{size_of, size_of_val};
+use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 const MAGIC_NUMBER: u64 = 0xB101_1054;
 
+/// A table of contents for the FlatGFA file.
 #[derive(FromBytes, FromZeroes, AsBytes)]
 #[repr(packed)]
 struct Toc {
     magic: u64,
-    header_len: usize,
-    segs_count: usize,
-    paths_count: usize,
-    links_count: usize,
-    steps_count: usize,
-    seq_data_len: usize,
-    overlaps_count: usize,
-    alignment_count: usize,
-    name_data_len: usize,
-    optional_data_len: usize,
-    line_order_len: usize,
+    header: Size,
+    segs: Size,
+    paths: Size,
+    links: Size,
+    steps: Size,
+    seq_data: Size,
+    overlaps: Size,
+    alignment: Size,
+    name_data: Size,
+    optional_data: Size,
+    line_order: Size,
 }
 
-/// Get the first `len` bytes in a byte slice, and return the rest of the slice.
-fn get_prefix(data: &[u8], len: usize) -> (&[u8], &[u8]) {
-    assert!(data.len() >= len);
-    (&data[0..len], &data[len..])
+/// A table-of-contents entry for a pool in the FlatGFA file.
+#[derive(FromBytes, FromZeroes, AsBytes, Clone, Copy)]
+#[repr(packed)]
+struct Size {
+    /// The number of actual elements in the pool.
+    len: usize,
+
+    // The allocated space for the pool. `capacity - len` slots are "empty."
+    capacity: usize,
 }
 
-/// Get a FlatGFA backed by the data in a byte buffer.
-pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
-    // Table of contents.
+impl Size {
+    fn of_slice<T>(slice: &[T]) -> Self {
+        Size {
+            len: slice.len(),
+            capacity: slice.len(),
+        }
+    }
+}
+
+/// Consume `size.len` items from a byte slice, skip the remainder of `size.capacity`
+/// elements, and return the items and the rest of the slice.
+fn slice_prefix<T: FromBytes>(data: &[u8], size: Size) -> (&[T], &[u8]) {
+    let (prefix, rest) = T::slice_from_prefix(data, size.len).unwrap();
+    let pad = size_of::<T>() * (size.capacity - size.len);
+    (prefix, &rest[pad..])
+}
+
+/// Read the table of contents from a prefix of the byte buffer.
+fn read_toc(data: &[u8]) -> (&Toc, &[u8]) {
     let toc = Toc::ref_from_prefix(data).unwrap();
     let rest = &data[size_of::<Toc>()..];
     let magic = toc.magic;
     assert_eq!(magic, MAGIC_NUMBER);
+    (toc, rest)
+}
 
-    // Get slices for each chunk.
-    let (header, rest) = get_prefix(rest, toc.header_len);
-    let (segs, rest) = flatgfa::Segment::slice_from_prefix(rest, toc.segs_count).unwrap();
-    let (paths, rest) = flatgfa::Path::slice_from_prefix(rest, toc.paths_count).unwrap();
-    let (links, rest) = flatgfa::Link::slice_from_prefix(rest, toc.links_count).unwrap();
-    let (steps, rest) = flatgfa::Handle::slice_from_prefix(rest, toc.steps_count).unwrap();
-    let (seq_data, rest) = get_prefix(rest, toc.seq_data_len);
-    let (overlaps, rest) = flatgfa::Span::slice_from_prefix(rest, toc.overlaps_count).unwrap();
-    let (alignment, rest) = flatgfa::AlignOp::slice_from_prefix(rest, toc.alignment_count).unwrap();
-    let (name_data, rest) = get_prefix(rest, toc.name_data_len);
-    let (optional_data, rest) = get_prefix(rest, toc.optional_data_len);
-    let (line_order, _) = get_prefix(rest, toc.line_order_len);
+fn read_toc_mut(data: &mut [u8]) -> (&mut Toc, &mut [u8]) {
+    let (toc_slice, rest) = Toc::mut_slice_from_prefix(data, 1).unwrap();
+    let toc = &mut toc_slice[0];
+    let magic = toc.magic;
+    assert_eq!(magic, MAGIC_NUMBER);
+    (toc, rest)
+}
+
+/// Get a FlatGFA backed by the data in a byte buffer.
+pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
+    let (toc, rest) = read_toc(data);
+
+    let (header, rest) = slice_prefix(rest, toc.header);
+    let (segs, rest) = slice_prefix(rest, toc.segs);
+    let (paths, rest) = slice_prefix(rest, toc.paths);
+    let (links, rest) = slice_prefix(rest, toc.links);
+    let (steps, rest) = slice_prefix(rest, toc.steps);
+    let (seq_data, rest) = slice_prefix(rest, toc.seq_data);
+    let (overlaps, rest) = slice_prefix(rest, toc.overlaps);
+    let (alignment, rest) = slice_prefix(rest, toc.alignment);
+    let (name_data, rest) = slice_prefix(rest, toc.name_data);
+    let (optional_data, rest) = slice_prefix(rest, toc.optional_data);
+    let (line_order, _) = slice_prefix(rest, toc.line_order);
 
     flatgfa::FlatGFA {
-        header: header.into(),
+        header,
         segs,
         paths,
         links,
@@ -57,8 +93,50 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
         seq_data,
         overlaps,
         alignment,
-        name_data: name_data.into(),
-        optional_data: optional_data.into(),
+        name_data,
+        optional_data,
+        line_order,
+    }
+}
+
+/// Like `slice_prefix`, but produce a `SliceVec`.
+fn slice_vec_prefix<T: FromBytes + AsBytes>(
+    data: &mut [u8],
+    size: Size,
+) -> (SliceVec<T>, &mut [u8]) {
+    let (prefix, rest) = T::mut_slice_from_prefix(data, size.capacity).unwrap();
+    let vec = SliceVec::from_slice_len(prefix, size.len);
+    (vec, rest)
+}
+
+/// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
+pub fn view_store(data: &mut [u8]) -> flatgfa::SliceStore {
+    let (toc, rest) = read_toc_mut(data);
+
+    // Get slices for each chunk.
+    let (header, rest) = slice_vec_prefix(rest, toc.header);
+    let (segs, rest) = slice_vec_prefix(rest, toc.segs);
+    let (paths, rest) = slice_vec_prefix(rest, toc.paths);
+    let (links, rest) = slice_vec_prefix(rest, toc.links);
+    let (steps, rest) = slice_vec_prefix(rest, toc.steps);
+    let (seq_data, rest) = slice_vec_prefix(rest, toc.seq_data);
+    let (overlaps, rest) = slice_vec_prefix(rest, toc.overlaps);
+    let (alignment, rest) = slice_vec_prefix(rest, toc.alignment);
+    let (name_data, rest) = slice_vec_prefix(rest, toc.name_data);
+    let (optional_data, rest) = slice_vec_prefix(rest, toc.optional_data);
+    let (line_order, _) = slice_vec_prefix(rest, toc.line_order);
+
+    flatgfa::SliceStore {
+        header,
+        segs,
+        paths,
+        links,
+        steps,
+        seq_data,
+        overlaps,
+        alignment,
+        name_data,
+        optional_data,
         line_order,
     }
 }
@@ -80,17 +158,17 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
     // Table of contents.
     let toc = Toc {
         magic: MAGIC_NUMBER,
-        header_len: gfa.header.len(),
-        segs_count: gfa.segs.len(),
-        paths_count: gfa.paths.len(),
-        links_count: gfa.links.len(),
-        steps_count: gfa.steps.len(),
-        seq_data_len: gfa.seq_data.len(),
-        overlaps_count: gfa.overlaps.len(),
-        alignment_count: gfa.alignment.len(),
-        name_data_len: gfa.name_data.len(),
-        optional_data_len: gfa.optional_data.len(),
-        line_order_len: gfa.line_order.len(),
+        header: Size::of_slice(gfa.header),
+        segs: Size::of_slice(gfa.segs),
+        paths: Size::of_slice(gfa.paths),
+        links: Size::of_slice(gfa.links),
+        steps: Size::of_slice(gfa.steps),
+        seq_data: Size::of_slice(gfa.seq_data),
+        overlaps: Size::of_slice(gfa.overlaps),
+        alignment: Size::of_slice(gfa.alignment),
+        name_data: Size::of_slice(gfa.name_data),
+        optional_data: Size::of_slice(gfa.optional_data),
+        line_order: Size::of_slice(gfa.line_order),
     };
     let rest = write_bump(buf, &toc).unwrap();
 
