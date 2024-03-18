@@ -52,6 +52,20 @@ struct PolBin {
 fn main() {
     let args: PolBin = argh::from_env();
 
+    // A special case for converting from GFA text to an in-place FlatGFA binary.
+    if args.mutate {
+        if let (None, Some(out_name)) = (&args.input, &args.output) {
+            let stdin = std::io::stdin();
+            let toc = file::Toc::guess(5);
+            let mut mmap = map_new_file(out_name, toc.size() as u64);
+            let store = file::init(&mut mmap, toc);
+            let parser = parse::Parser::new(store);
+            parser.parse(stdin.lock());
+            mmap.flush().unwrap();
+            return;
+        }
+    }
+
     // Load the input from a file (binary) or stdin (text).
     let mmap;
     let mut mmap_mut;
