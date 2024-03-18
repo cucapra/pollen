@@ -1,4 +1,5 @@
 use crate::flatgfa;
+use crate::pool::Span;
 use std::mem::{size_of, size_of_val};
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -39,6 +40,46 @@ impl Size {
         Size {
             len: slice.len(),
             capacity: slice.len(),
+        }
+    }
+
+    fn bytes<T>(&self) -> usize {
+        self.capacity * size_of::<T>()
+    }
+}
+
+impl Toc {
+    /// Get the total size in bytes of the file described.
+    fn size(&self) -> usize {
+        size_of::<Self>()
+            + self.header.bytes::<u8>()
+            + self.segs.bytes::<flatgfa::Segment>()
+            + self.paths.bytes::<flatgfa::Path>()
+            + self.links.bytes::<flatgfa::Link>()
+            + self.steps.bytes::<flatgfa::Handle>()
+            + self.seq_data.bytes::<u8>()
+            + self.overlaps.bytes::<Span>()
+            + self.alignment.bytes::<flatgfa::AlignOp>()
+            + self.name_data.bytes::<u8>()
+            + self.optional_data.bytes::<u8>()
+            + self.line_order.bytes::<u8>()
+    }
+
+    /// Get a table of contents that fits a FlatGFA with no spare space.
+    fn full(gfa: &flatgfa::FlatGFA) -> Self {
+        Toc {
+            magic: MAGIC_NUMBER,
+            header: Size::of_slice(gfa.header),
+            segs: Size::of_slice(gfa.segs),
+            paths: Size::of_slice(gfa.paths),
+            links: Size::of_slice(gfa.links),
+            steps: Size::of_slice(gfa.steps),
+            seq_data: Size::of_slice(gfa.seq_data),
+            overlaps: Size::of_slice(gfa.overlaps),
+            alignment: Size::of_slice(gfa.alignment),
+            name_data: Size::of_slice(gfa.name_data),
+            optional_data: Size::of_slice(gfa.optional_data),
+            line_order: Size::of_slice(gfa.line_order),
         }
     }
 }
@@ -156,20 +197,7 @@ fn write_bytes<'a>(buf: &'a mut [u8], data: &[u8]) -> Option<&'a mut [u8]> {
 /// Copy a FlatGFA into a byte buffer.
 pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
     // Table of contents.
-    let toc = Toc {
-        magic: MAGIC_NUMBER,
-        header: Size::of_slice(gfa.header),
-        segs: Size::of_slice(gfa.segs),
-        paths: Size::of_slice(gfa.paths),
-        links: Size::of_slice(gfa.links),
-        steps: Size::of_slice(gfa.steps),
-        seq_data: Size::of_slice(gfa.seq_data),
-        overlaps: Size::of_slice(gfa.overlaps),
-        alignment: Size::of_slice(gfa.alignment),
-        name_data: Size::of_slice(gfa.name_data),
-        optional_data: Size::of_slice(gfa.optional_data),
-        line_order: Size::of_slice(gfa.line_order),
-    };
+    let toc = Toc::full(gfa);
     let rest = write_bump(buf, &toc).unwrap();
 
     // All the slices.
@@ -189,16 +217,5 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
 /// Get the total size in bytes of a FlatGFA structure. This should result in a big
 /// enough buffer to write the entire FlatGFA into with `dump`.
 pub fn size(gfa: &flatgfa::FlatGFA) -> usize {
-    size_of::<Toc>()
-        + gfa.header.len()
-        + size_of_val(gfa.segs)
-        + size_of_val(gfa.paths)
-        + size_of_val(gfa.links)
-        + size_of_val(gfa.steps)
-        + size_of_val(gfa.seq_data)
-        + size_of_val(gfa.overlaps)
-        + size_of_val(gfa.alignment)
-        + gfa.name_data.len()
-        + gfa.optional_data.len()
-        + gfa.line_order.len()
+    Toc::full(gfa).size()
 }
