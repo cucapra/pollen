@@ -5,6 +5,7 @@ mod parse;
 mod pool;
 mod print;
 use argh::FromArgs;
+use flatgfa::GFABuilder;
 use memmap::{Mmap, MmapMut};
 
 fn map_file(name: &str) -> Mmap {
@@ -69,7 +70,8 @@ fn main() {
         }
         None => {
             let stdin = std::io::stdin();
-            store = parse::Parser::parse(stdin.lock());
+            let parser = parse::Parser::new(flatgfa::HeapStore::default());
+            store = parser.parse(stdin.lock());
             store.view()
         }
     };
