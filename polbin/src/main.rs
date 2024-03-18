@@ -70,7 +70,7 @@ fn main() {
         }
         None => {
             let stdin = std::io::stdin();
-            let parser = parse::Parser::new(flatgfa::HeapStore::default());
+            let parser = parse::heap_parser();
             store = parser.parse(stdin.lock());
             store.view()
         }

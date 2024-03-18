@@ -16,6 +16,10 @@ struct Deferred {
     paths: Vec<Vec<u8>>,
 }
 
+pub fn heap_parser() -> Parser<flatgfa::HeapStore> {
+    Parser::<flatgfa::HeapStore>::new(flatgfa::HeapStore::default())
+}
+
 impl<B: flatgfa::GFABuilder> Parser<B> {
     pub fn new(builder: B) -> Self {
         Self {
