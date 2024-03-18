@@ -1,3 +1,4 @@
+use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 /// An index into a pool.
@@ -52,32 +53,79 @@ pub trait Pool<T: Clone> {
     /// Get the number of items in the pool.
     fn count(&self) -> usize;
 
+    /// Get the next available ID.
+    fn next_id(&self) -> Index {
+        self.count().try_into().expect("size too large")
+    }
+
     /// Get all items in the pool.
     fn all(&self) -> &[T];
 }
 
 impl<T: Clone> Pool<T> for Vec<T> {
     fn add(&mut self, item: T) -> Index {
-        let len: u32 = self.len().try_into().expect("size too large");
+        let id = self.next_id();
         self.push(item);
-        len
+        id
     }
 
     fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span {
-        let old_len: u32 = self.len().try_into().expect("old size too large");
+        let start = self.next_id();
         self.extend(iter);
         Span {
-            start: old_len,
-            end: self.len().try_into().expect("new size too large"),
+            start,
+            end: self.next_id(),
         }
     }
 
     fn add_slice(&mut self, slice: &[T]) -> Span {
-        let old_len: u32 = self.len().try_into().expect("old size too large");
+        let start = self.next_id();
         self.extend_from_slice(slice);
         Span {
-            start: old_len,
-            end: self.len().try_into().expect("new size too large"),
+            start,
+            end: self.next_id(),
+        }
+    }
+
+    fn get(&self, index: Index) -> &T {
+        &self[index as usize]
+    }
+
+    fn get_span(&self, span: Span) -> &[T] {
+        &self[span.range()]
+    }
+
+    fn count(&self) -> usize {
+        self.len()
+    }
+
+    fn all(&self) -> &[T] {
+        self
+    }
+}
+
+impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
+    fn add(&mut self, item: T) -> Index {
+        let id = self.next_id();
+        self.push(item);
+        id
+    }
+
+    fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span {
+        let start = self.next_id();
+        self.extend(iter);
+        Span {
+            start,
+            end: self.next_id(),
+        }
+    }
+
+    fn add_slice(&mut self, slice: &[T]) -> Span {
+        let start = self.next_id();
+        self.extend_from_slice(slice);
+        Span {
+            start,
+            end: self.next_id(),
         }
     }
 
