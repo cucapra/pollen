@@ -1,6 +1,7 @@
 use crate::pool::{Index, Pool, Span};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 /// An efficient flattened representation of a GFA file.
@@ -242,13 +243,9 @@ impl<'a> FlatGFA<'a> {
     }
 }
 
-pub trait PoolFamily {
-    type Pool<T: Clone>: crate::pool::Pool<T>;
-}
-
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
-pub struct Store<P: PoolFamily> {
+pub struct Store<'a, P: PoolFamily<'a>> {
     pub header: P::Pool<u8>,
     pub segs: P::Pool<Segment>,
     pub paths: P::Pool<Path>,
@@ -262,7 +259,7 @@ pub struct Store<P: PoolFamily> {
     pub line_order: P::Pool<u8>,
 }
 
-impl<P: PoolFamily> Store<P> {
+impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
         assert!(self.header.count() == 0);
@@ -335,15 +332,33 @@ impl<P: PoolFamily> Store<P> {
     }
 }
 
+pub trait PoolFamily<'a> {
+    type Pool<T: Clone + 'a>: crate::pool::Pool<T>;
+}
+
 #[derive(Default)]
 pub struct VecPoolFamily;
-impl PoolFamily for VecPoolFamily {
-    type Pool<T: Clone> = Vec<T>;
+impl<'a> PoolFamily<'a> for VecPoolFamily {
+    type Pool<T: Clone + 'a> = Vec<T>;
 }
 
 /// A mutable, in-memory data store for `FlatGFA`.
 ///
-/// This struct contains a bunch of `Vec`s: one per array required to implement a
+/// This store contains a bunch of `Vec`s: one per array required to implement a
 /// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
 /// useful for creating new ones from scratch.
-pub type HeapStore = Store<VecPoolFamily>;
+pub type HeapStore = Store<'static, VecPoolFamily>;
+
+pub struct SliceVecPoolFamily {
+    // phantom: std::marker::PhantomData<&'a ()>,
+}
+impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
+    type Pool<T: Clone + 'a> = SliceVec<'a, T>;
+}
+
+/// A store for `FlatGFA` data backed by fixed-size slices.
+///
+/// This store contains `SliceVec`s, which act like `Vec`s but are allocated within
+/// a fixed region. This means they have a maximum size, but they can directly map
+/// onto the contents of a file.
+pub type SliceStore<'a> = Store<'a, SliceVecPoolFamily>;
