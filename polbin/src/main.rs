@@ -2,6 +2,7 @@ mod file;
 mod flatgfa;
 mod gfaline;
 mod parse;
+mod pool;
 mod print;
 use argh::FromArgs;
 use memmap::{Mmap, MmapMut};
@@ -11,7 +12,7 @@ fn map_file(name: &str) -> Mmap {
     unsafe { Mmap::map(&file) }.unwrap()
 }
 
-fn map_file_mut(name: &str, size: u64) -> MmapMut {
+fn map_new_file(name: &str, size: u64) -> MmapMut {
     let file = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
@@ -19,6 +20,15 @@ fn map_file_mut(name: &str, size: u64) -> MmapMut {
         .open(name)
         .unwrap();
     file.set_len(size).unwrap();
+    unsafe { MmapMut::map_mut(&file) }.unwrap()
+}
+
+fn map_file_mut(name: &str) -> MmapMut {
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(name)
+        .unwrap();
     unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
 
@@ -32,6 +42,10 @@ struct PolBin {
     /// write to a binary FlatGFA file
     #[argh(option, short = 'o')]
     output: Option<String>,
+
+    /// mutate the input file in place
+    #[argh(switch, short = 'm')]
+    mutate: bool,
 }
 
 fn main() {
@@ -39,11 +53,19 @@ fn main() {
 
     // Load the input from a file (binary) or stdin (text).
     let mmap;
+    let mut mmap_mut;
     let store;
+    let slice_store;
     let gfa = match args.input {
         Some(name) => {
-            mmap = map_file(&name);
-            file::view(&mmap)
+            if args.mutate {
+                mmap_mut = map_file_mut(&name);
+                slice_store = file::view_store(&mut mmap_mut);
+                slice_store.view()
+            } else {
+                mmap = map_file(&name);
+                file::view(&mmap)
+            }
         }
         None => {
             let stdin = std::io::stdin();
@@ -55,7 +77,7 @@ fn main() {
     // Write the output to a file (binary) or stdout (text).
     match args.output {
         Some(name) => {
-            let mut mmap = map_file_mut(&name, file::size(&gfa) as u64);
+            let mut mmap = map_new_file(&name, file::size(&gfa) as u64);
             file::dump(&gfa, &mut mmap);
             mmap.flush().unwrap();
         }

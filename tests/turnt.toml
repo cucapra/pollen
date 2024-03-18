@@ -166,3 +166,7 @@ output.gfa = "-"
 [envs.polbin_file]
 command = "../polbin/target/debug/polbin < {filename} -o {base}.flatgfa ; ../polbin/target/debug/polbin -i {base}.flatgfa"
 output.gfa = "-"
+
+[envs.polbin_file_inplace]
+command = "../polbin/target/debug/polbin < {filename} -o {base}.flatgfa ; ../polbin/target/debug/polbin -m -i {base}.flatgfa"
+output.gfa = "-"
