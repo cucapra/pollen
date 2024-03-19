@@ -11,13 +11,6 @@ pub struct Parser<B: flatgfa::GFABuilder> {
     seg_ids: NameMap,
 }
 
-/// Holds data structures that we haven't added to the flat representation yet.
-#[derive(Default)]
-struct Deferred {
-    links: Vec<gfaline::Link>,
-    paths: Vec<Vec<u8>>,
-}
-
 impl<B: flatgfa::GFABuilder> Parser<B> {
     pub fn new(builder: B) -> Self {
         Self {
@@ -28,56 +21,116 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
 
     /// Parse a GFA text file from an I/O stream.
     pub fn parse_stream<R: BufRead>(mut self, stream: R) -> B {
-        let mut deferred = Deferred::default();
+        // We can parse sements immediately, but we need to defer links and paths until we have all
+        // the segment names that they might refer to.
+        let mut deferred_links = Vec::new();
+        let mut deferred_paths = Vec::new();
+
+        // Parse or defer each line.
         for line in stream.split(b'\n') {
             let line = line.unwrap();
-            self.parse_line(line, &mut deferred);
+
+            // Avoid parsing paths entirely for now; just preserve the entire line for later.
+            if line[0] == b'P' {
+                self.flat.record_line(LineKind::Path);
+                deferred_paths.push(line);
+                continue;
+            }
+
+            // Parse other kinds of lines.
+            let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
+            self.record_line(&gfa_line);
+
+            match gfa_line {
+                gfaline::Line::Header(data) => {
+                    self.flat.add_header(data);
+                }
+                gfaline::Line::Segment(seg) => {
+                    self.add_seg(seg);
+                }
+                gfaline::Line::Link(link) => {
+                    deferred_links.push(link);
+                }
+                gfaline::Line::Path(_) => {
+                    unreachable!("paths handled separately")
+                }
+            }
         }
-        self.finish(deferred)
+
+        // "Unwind" the deferred links and paths.
+        for link in deferred_links {
+            self.add_link(link);
+        }
+        for line in deferred_paths {
+            self.add_path(&line);
+        }
+
+        self.flat
     }
 
     /// Parse a GFA text file from an in-memory buffer.
     pub fn parse_mem(mut self, buf: &[u8]) -> B {
-        let mut deferred = Deferred::default();
+        let mut deferred_lines = Vec::new();
+
         for line in MemchrSplit::new(b'\n', buf) {
-            // TODO: Some trickery is required here to avoid copying the line...
-            self.parse_line(line.to_vec(), &mut deferred);
+            // When parsing from memory, it's easy to entirely defer parsing of any line: we just keep
+            // pointers to them. So we defer both paths and links.
+            if line[0] == b'P' || line[0] == b'L' {
+                self.flat.record_line(if line[0] == b'P' {
+                    LineKind::Path
+                } else {
+                    LineKind::Link
+                });
+                deferred_lines.push(line);
+                continue;
+            }
+
+            // Actually parse other lines.
+            let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
+            self.record_line(&gfa_line);
+            match gfa_line {
+                gfaline::Line::Header(data) => {
+                    self.flat.add_header(data);
+                }
+                gfaline::Line::Segment(seg) => {
+                    self.add_seg(seg);
+                }
+                gfaline::Line::Link(_) | gfaline::Line::Path(_) => {
+                    unreachable!("paths and links handled separately")
+                }
+            }
         }
-        self.finish(deferred)
+
+        // "Unwind" the deferred lines.
+        for line in deferred_lines {
+            if line[0] == b'P' {
+                self.add_path(line);
+            } else {
+                let gfa_line = gfaline::parse_line(line).unwrap();
+                if let gfaline::Line::Link(link) = gfa_line {
+                    self.add_link(link);
+                } else {
+                    unreachable!("unexpected deferred line")
+                }
+            }
+        }
+
+        self.flat
     }
 
-    /// Parse a single GFA line.
-    ///
-    /// We add *segments* to the flat representation immediately. We buffer *links* and *paths*
-    /// in our internal vectors, because we must see all the segments first before we can
-    /// resolve their segment name references.
-    fn parse_line(&mut self, line: Vec<u8>, deferred: &mut Deferred) {
-        // Avoid parsing paths entirely for now; just preserve the entire line for later.
-        if line[0] == b'P' {
-            self.flat.record_line(LineKind::Path);
-            deferred.paths.push(line);
-            return;
+    /// Record a marker that captures the original GFA line ordering.
+    fn record_line(&mut self, line: &gfaline::Line) {
+        match line {
+            gfaline::Line::Header(_) => self.flat.record_line(LineKind::Header),
+            gfaline::Line::Segment(_) => self.flat.record_line(LineKind::Segment),
+            gfaline::Line::Link(_) => self.flat.record_line(LineKind::Link),
+            gfaline::Line::Path(_) => self.flat.record_line(LineKind::Path),
         }
+    }
 
-        let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
-        match gfa_line {
-            gfaline::Line::Header(data) => {
-                self.flat.record_line(LineKind::Header);
-                self.flat.add_header(data);
-            }
-            gfaline::Line::Segment(seg) => {
-                self.flat.record_line(LineKind::Segment);
-                let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
-                self.seg_ids.insert(seg.name, seg_id);
-            }
-            gfaline::Line::Link(link) => {
-                self.flat.record_line(LineKind::Link);
-                deferred.links.push(link);
-            }
-            gfaline::Line::Path(_) => {
-                unreachable!("paths handled separately")
-            }
-        }
+    fn add_seg(&mut self, seg: gfaline::Segment) {
+        let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
+        self.seg_ids.insert(seg.name, seg_id);
     }
 
     fn add_link(&mut self, link: gfaline::Link) {
@@ -86,7 +139,7 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
         self.flat.add_link(from, to, link.overlap);
     }
 
-    fn add_path(&mut self, line: Vec<u8>) {
+    fn add_path(&mut self, line: &[u8]) {
         // This must be a path line.
         assert_eq!(&line[..2], b"P\t");
         let line = &line[2..];
@@ -113,20 +166,6 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
 
         assert!(rest.is_empty());
         self.flat.add_path(name, steps, overlaps.into_iter());
-    }
-
-    /// Finish parsing and return the flat representation.
-    ///
-    /// We "unwind" the buffers of links and paths, now that we have all
-    /// the segments.
-    fn finish(mut self, deferred: Deferred) -> B {
-        for link in deferred.links {
-            self.add_link(link);
-        }
-        for line in deferred.paths {
-            self.add_path(line);
-        }
-        self.flat
     }
 }
 
