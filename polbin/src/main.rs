@@ -65,6 +65,10 @@ struct PolBin {
     /// print statistics about the graph
     #[argh(switch, short = 's')]
     stats: bool,
+
+    /// preallocation size factor
+    #[argh(option, short = 'p', default = "32")]
+    prealloc_factor: usize,
 }
 
 fn main() {
@@ -74,7 +78,7 @@ fn main() {
     if args.mutate {
         if let (None, Some(out_name)) = (&args.input, &args.output) {
             // Create a file with an empty table of contents.
-            let empty_toc = file::Toc::guess(5);
+            let empty_toc = file::Toc::guess(args.prealloc_factor);
             let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
             let (toc, store) = file::init(&mut mmap, empty_toc);
 
