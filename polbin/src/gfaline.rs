@@ -1,4 +1,6 @@
 use crate::flatgfa::{AlignOp, Orientation};
+use atoi::FromRadix10;
+use memchr;
 
 type ParseResult<T> = Result<T, &'static str>;
 type LineResult<'a> = ParseResult<Line<'a>>;
@@ -126,7 +128,7 @@ fn parse_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>>> {
 
 /// Consume a chunk of a string up to a given marker byte.
 fn parse_until(line: &[u8], marker: u8) -> PartialParseResult<&[u8]> {
-    let end = line.iter().position(|&b| b == marker).unwrap_or(line.len());
+    let end = memchr::memchr(marker, line).unwrap_or(line.len());
     let rest = if end == line.len() {
         &[]
     } else {
@@ -149,23 +151,11 @@ fn parse_byte(s: &[u8], byte: u8) -> ParseResult<&[u8]> {
 }
 
 /// Parse a single integer.
-fn parse_num(line: &[u8]) -> PartialParseResult<usize> {
-    // Scan for digits.
-    let mut index = 0;
-    while index < line.len() && line[index].is_ascii_digit() {
-        index += 1;
+fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<T> {
+    match T::from_radix_10(s) {
+        (_, 0) => Err("expected number"),
+        (num, used) => Ok((num, &s[used..])),
     }
-    if index == 0 {
-        return Err("expected number");
-    }
-
-    // Convert the digits to a number. This is safe because we know the bytes are ASCII.
-    let s = &line[0..index];
-    let num = unsafe { std::str::from_utf8_unchecked(s) }
-        .parse()
-        .map_err(|_| "number too large")?;
-
-    Ok((num, &line[index..]))
 }
 
 /// Parse a segment orientation (+ or -).
@@ -183,8 +173,7 @@ fn parse_orient(line: &[u8]) -> PartialParseResult<Orientation> {
 
 /// Parse a single CIGAR alignment operation (like `4D`).
 fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
-    // TODO just parse a u32
-    let (len, rest) = parse_num(s)?;
+    let (len, rest) = parse_num::<u32>(s)?;
     let op = match rest[0] {
         b'M' => crate::flatgfa::AlignOpcode::Match,
         b'N' => crate::flatgfa::AlignOpcode::Gap,
@@ -192,7 +181,7 @@ fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
         b'I' => crate::flatgfa::AlignOpcode::Insertion,
         _ => return Err("expected align op"),
     };
-    Ok((AlignOp::new(op, len.try_into().unwrap()), &rest[1..]))
+    Ok((AlignOp::new(op, len), &rest[1..]))
 }
 
 /// Parse a complete CIGAR alignment string (like `3M2I`).
