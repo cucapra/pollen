@@ -33,6 +33,20 @@ fn map_file_mut(name: &str) -> MmapMut {
     unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
 
+fn print_stats(gfa: &flatgfa::FlatGFA) {
+    eprintln!("header: {}", gfa.header.len());
+    eprintln!("segs: {}", gfa.segs.len());
+    eprintln!("paths: {}", gfa.paths.len());
+    eprintln!("links: {}", gfa.links.len());
+    eprintln!("steps: {}", gfa.steps.len());
+    eprintln!("seq_data: {}", gfa.seq_data.len());
+    eprintln!("overlaps: {}", gfa.overlaps.len());
+    eprintln!("alignment: {}", gfa.alignment.len());
+    eprintln!("name_data: {}", gfa.name_data.len());
+    eprintln!("optional_data: {}", gfa.optional_data.len());
+    eprintln!("line_order: {}", gfa.line_order.len());
+}
+
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
 struct PolBin {
@@ -47,6 +61,10 @@ struct PolBin {
     /// mutate the input file in place
     #[argh(switch, short = 'm')]
     mutate: bool,
+
+    /// print statistics about the graph
+    #[argh(switch, short = 's')]
+    stats: bool,
 }
 
 fn main() {
@@ -62,7 +80,10 @@ fn main() {
 
             // Parse the input into the file.
             let stdin = std::io::stdin();
-            parse::buf_parse(store, toc, stdin.lock());
+            let store = parse::buf_parse(store, toc, stdin.lock());
+            if args.stats {
+                print_stats(&store.view());
+            }
             mmap.flush().unwrap();
             return;
         }
@@ -90,6 +111,11 @@ fn main() {
             store.view()
         }
     };
+
+    // Perhaps print some statistics.
+    if args.stats {
+        print_stats(&gfa);
+    }
 
     // Write the output to a file (binary) or stdout (text).
     match args.output {
