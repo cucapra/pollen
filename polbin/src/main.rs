@@ -7,6 +7,7 @@ mod print;
 use argh::FromArgs;
 use flatgfa::GFABuilder;
 use memmap::{Mmap, MmapMut};
+use std::io::BufReader;
 
 fn map_file(name: &str) -> Mmap {
     let file = std::fs::File::open(name).unwrap();
@@ -54,6 +55,10 @@ struct PolBin {
     #[argh(option, short = 'i')]
     input: Option<String>,
 
+    /// read from a text GFA file
+    #[argh(option, short = 'I')]
+    input_gfa: Option<String>,
+
     /// write to a binary FlatGFA file
     #[argh(option, short = 'o')]
     output: Option<String>,
@@ -83,8 +88,16 @@ fn main() {
             let (toc, store) = file::init(&mut mmap, empty_toc);
 
             // Parse the input into the file.
-            let stdin = std::io::stdin();
-            let store = parse::buf_parse(store, toc, stdin.lock());
+            let store = match args.input_gfa {
+                Some(name) => {
+                    let file = std::fs::File::open(name).unwrap();
+                    parse::buf_parse(store, toc, BufReader::new(file))
+                }
+                None => {
+                    let stdin = std::io::stdin();
+                    parse::buf_parse(store, toc, stdin.lock())
+                }
+            };
             if args.stats {
                 print_stats(&store.view());
             }
@@ -110,8 +123,17 @@ fn main() {
             }
         }
         None => {
-            let stdin = std::io::stdin();
-            store = parse::heap_parse(stdin.lock());
+            // Parse from stdin or a file.
+            store = match args.input_gfa {
+                Some(name) => {
+                    let file = std::fs::File::open(name).unwrap();
+                    parse::heap_parse(BufReader::new(file))
+                }
+                None => {
+                    let stdin = std::io::stdin();
+                    parse::heap_parse(stdin.lock())
+                }
+            };
             store.view()
         }
     };
