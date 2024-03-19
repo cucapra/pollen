@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 argh = "0.1.12"
+atoi = "2.0.0"
 bstr = "1.9.1"
 memchr = "2.7.1"
 memmap = "0.7.0"

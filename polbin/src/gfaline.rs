@@ -1,4 +1,5 @@
 use crate::flatgfa::{AlignOp, Orientation};
+use atoi::FromRadix10;
 use memchr;
 
 type ParseResult<T> = Result<T, &'static str>;
@@ -150,23 +151,11 @@ fn parse_byte(s: &[u8], byte: u8) -> ParseResult<&[u8]> {
 }
 
 /// Parse a single integer.
-fn parse_num(line: &[u8]) -> PartialParseResult<usize> {
-    // Scan for digits.
-    let mut index = 0;
-    while index < line.len() && line[index].is_ascii_digit() {
-        index += 1;
+fn parse_num(s: &[u8]) -> PartialParseResult<usize> {
+    match usize::from_radix_10(s) {
+        (_, 0) => Err("expected number"),
+        (num, used) => Ok((num, &s[used..])),
     }
-    if index == 0 {
-        return Err("expected number");
-    }
-
-    // Convert the digits to a number. This is safe because we know the bytes are ASCII.
-    let s = &line[0..index];
-    let num = unsafe { std::str::from_utf8_unchecked(s) }
-        .parse()
-        .map_err(|_| "number too large")?;
-
-    Ok((num, &line[index..]))
 }
 
 /// Parse a segment orientation (+ or -).
