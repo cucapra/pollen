@@ -151,8 +151,8 @@ fn parse_byte(s: &[u8], byte: u8) -> ParseResult<&[u8]> {
 }
 
 /// Parse a single integer.
-fn parse_num(s: &[u8]) -> PartialParseResult<usize> {
-    match usize::from_radix_10(s) {
+fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<T> {
+    match T::from_radix_10(s) {
         (_, 0) => Err("expected number"),
         (num, used) => Ok((num, &s[used..])),
     }
@@ -173,8 +173,7 @@ fn parse_orient(line: &[u8]) -> PartialParseResult<Orientation> {
 
 /// Parse a single CIGAR alignment operation (like `4D`).
 fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
-    // TODO just parse a u32
-    let (len, rest) = parse_num(s)?;
+    let (len, rest) = parse_num::<u32>(s)?;
     let op = match rest[0] {
         b'M' => crate::flatgfa::AlignOpcode::Match,
         b'N' => crate::flatgfa::AlignOpcode::Gap,
@@ -182,7 +181,7 @@ fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
         b'I' => crate::flatgfa::AlignOpcode::Insertion,
         _ => return Err("expected align op"),
     };
-    Ok((AlignOp::new(op, len.try_into().unwrap()), &rest[1..]))
+    Ok((AlignOp::new(op, len), &rest[1..]))
 }
 
 /// Parse a complete CIGAR alignment string (like `3M2I`).
