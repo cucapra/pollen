@@ -7,6 +7,7 @@ mod print;
 use argh::FromArgs;
 use flatgfa::GFABuilder;
 use memmap::{Mmap, MmapMut};
+use parse::Parser;
 
 fn map_file(name: &str) -> Mmap {
     let file = std::fs::File::open(name).unwrap();
@@ -90,11 +91,15 @@ fn main() {
             let store = match args.input_gfa {
                 Some(name) => {
                     let file = map_file(&name);
-                    parse::buf_parse(store, toc, file.as_ref())
+                    let store = Parser::for_slice(store).parse_mem(file.as_ref());
+                    *toc = file::Toc::for_slice_store(&store);
+                    store
                 }
                 None => {
                     let stdin = std::io::stdin();
-                    parse::buf_parse(store, toc, stdin.lock())
+                    let store = Parser::for_slice(store).parse_stream(stdin.lock());
+                    *toc = file::Toc::for_slice_store(&store);
+                    store
                 }
             };
             if args.stats {
@@ -126,11 +131,11 @@ fn main() {
             store = match args.input_gfa {
                 Some(name) => {
                     let file = map_file(&name);
-                    parse::heap_parse(file.as_ref())
+                    Parser::for_heap().parse_mem(file.as_ref())
                 }
                 None => {
                     let stdin = std::io::stdin();
-                    parse::heap_parse(stdin.lock())
+                    Parser::for_heap().parse_stream(stdin.lock())
                 }
             };
             store.view()

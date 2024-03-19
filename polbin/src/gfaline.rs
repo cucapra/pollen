@@ -1,6 +1,5 @@
 use crate::flatgfa::{AlignOp, Orientation};
 use atoi::FromRadix10;
-use memchr;
 
 type ParseResult<T> = Result<T, &'static str>;
 type LineResult<'a> = ParseResult<Line<'a>>;

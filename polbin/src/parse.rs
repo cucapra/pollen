@@ -1,4 +1,3 @@
-use crate::file;
 use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
 use std::collections::HashMap;
@@ -13,25 +12,10 @@ pub struct Parser<B: flatgfa::GFABuilder> {
 }
 
 /// Holds data structures that we haven't added to the flat representation yet.
+#[derive(Default)]
 struct Deferred {
     links: Vec<gfaline::Link>,
     paths: Vec<Vec<u8>>,
-}
-
-pub fn heap_parse<R: BufRead>(stream: R) -> flatgfa::HeapStore {
-    let parser = Parser::<flatgfa::HeapStore>::new(flatgfa::HeapStore::default());
-    parser.parse(stream)
-}
-
-pub fn buf_parse<'a, R: BufRead>(
-    store: flatgfa::SliceStore<'a>,
-    toc: &mut file::Toc,
-    stream: R,
-) -> flatgfa::SliceStore<'a> {
-    let parser = Parser::<flatgfa::SliceStore>::new(store);
-    let store = parser.parse(stream);
-    *toc = file::Toc::for_slice_store(&store);
-    store
 }
 
 impl<B: flatgfa::GFABuilder> Parser<B> {
@@ -42,15 +26,22 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
         }
     }
 
-    /// Parse a GFA text file.
-    pub fn parse<R: BufRead>(mut self, stream: R) -> B {
-        let mut deferred = Deferred {
-            links: Vec::new(),
-            paths: Vec::new(),
-        };
+    /// Parse a GFA text file from an I/O stream.
+    pub fn parse_stream<R: BufRead>(mut self, stream: R) -> B {
+        let mut deferred = Deferred::default();
         for line in stream.split(b'\n') {
             let line = line.unwrap();
             self.parse_line(line, &mut deferred);
+        }
+        self.finish(deferred)
+    }
+
+    /// Parse a GFA text file from an in-memory buffer.
+    pub fn parse_mem(mut self, buf: &[u8]) -> B {
+        let mut deferred = Deferred::default();
+        for line in MemchrSplit::new(b'\n', buf) {
+            // TODO: Some trickery is required here to avoid copying the line...
+            self.parse_line(line.to_vec(), &mut deferred);
         }
         self.finish(deferred)
     }
@@ -139,6 +130,18 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
     }
 }
 
+impl Parser<flatgfa::HeapStore> {
+    pub fn for_heap() -> Self {
+        Self::new(flatgfa::HeapStore::default())
+    }
+}
+
+impl<'a> Parser<flatgfa::SliceStore<'a>> {
+    pub fn for_slice(store: flatgfa::SliceStore<'a>) -> Self {
+        Self::new(store)
+    }
+}
+
 #[derive(Default)]
 struct NameMap {
     /// Names at most this are assigned *sequential* IDs, i.e., the ID is just the name
@@ -165,6 +168,33 @@ impl NameMap {
             (name - 1) as u32
         } else {
             self.others[&name]
+        }
+    }
+}
+
+struct MemchrSplit<'a> {
+    haystack: &'a [u8],
+    memchr: memchr::Memchr<'a>,
+    pos: usize,
+}
+
+impl<'a> Iterator for MemchrSplit<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let start = self.pos;
+        let end = self.memchr.next()?;
+        self.pos = end + 1;
+        Some(&self.haystack[start..end])
+    }
+}
+
+impl MemchrSplit<'_> {
+    fn new(needle: u8, haystack: &[u8]) -> MemchrSplit {
+        MemchrSplit {
+            haystack,
+            memchr: memchr::memchr_iter(needle, haystack),
+            pos: 0,
         }
     }
 }
