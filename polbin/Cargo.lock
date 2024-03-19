@@ -121,6 +121,7 @@ version = "0.1.0"
 dependencies = [
  "argh",
  "bstr",
+ "memchr",
  "memmap",
  "num_enum",
  "tinyvec",

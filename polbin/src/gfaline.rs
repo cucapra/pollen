@@ -1,4 +1,5 @@
 use crate::flatgfa::{AlignOp, Orientation};
+use memchr;
 
 type ParseResult<T> = Result<T, &'static str>;
 type LineResult<'a> = ParseResult<Line<'a>>;
@@ -126,7 +127,7 @@ fn parse_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>>> {
 
 /// Consume a chunk of a string up to a given marker byte.
 fn parse_until(line: &[u8], marker: u8) -> PartialParseResult<&[u8]> {
-    let end = line.iter().position(|&b| b == marker).unwrap_or(line.len());
+    let end = memchr::memchr(marker, line).unwrap_or(line.len());
     let rest = if end == line.len() {
         &[]
     } else {
