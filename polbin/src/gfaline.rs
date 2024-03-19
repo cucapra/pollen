@@ -241,15 +241,11 @@ impl<'a> Iterator for StepsParser<'a> {
                     if byte == b'+' || byte == b'-' {
                         self.state = StepsParseState::Comma;
                         return Some((self.seg, byte == b'+'));
+                    } else if byte.is_ascii_digit() {
+                        self.seg *= 10;
+                        self.seg += (byte - b'0') as usize;
                     } else {
-                        let rest = &self.str[self.index - 1..];
-                        match usize::from_radix_10(rest) {
-                            (_, 0) => return None,
-                            (num, used) => {
-                                self.seg = num;
-                                self.index += used - 1;
-                            }
-                        }
+                        return None;
                     }
                 }
                 StepsParseState::Comma => {
