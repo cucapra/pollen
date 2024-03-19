@@ -1,6 +1,8 @@
+use crate::file;
 use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
 use std::collections::HashMap;
+use std::io::BufRead;
 
 pub struct Parser<B: flatgfa::GFABuilder> {
     /// The flat representation we're building.
@@ -16,8 +18,20 @@ struct Deferred {
     paths: Vec<Vec<u8>>,
 }
 
-pub fn heap_parser() -> Parser<flatgfa::HeapStore> {
-    Parser::<flatgfa::HeapStore>::new(flatgfa::HeapStore::default())
+pub fn heap_parse<R: BufRead>(stream: R) -> flatgfa::HeapStore {
+    let parser = Parser::<flatgfa::HeapStore>::new(flatgfa::HeapStore::default());
+    parser.parse(stream)
+}
+
+pub fn buf_parse<'a, R: BufRead>(
+    store: flatgfa::SliceStore<'a>,
+    toc: &mut file::Toc,
+    stream: R,
+) -> flatgfa::SliceStore<'a> {
+    let parser = Parser::<flatgfa::SliceStore>::new(store);
+    let store = parser.parse(stream);
+    *toc = file::Toc::for_slice_store(&store);
+    store
 }
 
 impl<B: flatgfa::GFABuilder> Parser<B> {
@@ -29,7 +43,7 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
     }
 
     /// Parse a GFA text file.
-    pub fn parse<R: std::io::BufRead>(mut self, stream: R) -> B {
+    pub fn parse<R: BufRead>(mut self, stream: R) -> B {
         let mut deferred = Deferred {
             links: Vec::new(),
             paths: Vec::new(),

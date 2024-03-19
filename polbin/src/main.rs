@@ -55,22 +55,14 @@ fn main() {
     // A special case for converting from GFA text to an in-place FlatGFA binary.
     if args.mutate {
         if let (None, Some(out_name)) = (&args.input, &args.output) {
-            let stdin = std::io::stdin();
-
             // Create a file with an empty table of contents.
             let empty_toc = file::Toc::guess(5);
             let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
             let (toc, store) = file::init(&mut mmap, empty_toc);
 
-            // Parse the input.
-            let store = {
-                let parser = parse::Parser::new(store);
-                parser.parse(stdin.lock())
-            };
-
-            // Update the table of contents.
-            *toc = file::Toc::for_slice_store(&store);
-
+            // Parse the input into the file.
+            let stdin = std::io::stdin();
+            parse::buf_parse(store, toc, stdin.lock());
             mmap.flush().unwrap();
             return;
         }
@@ -94,8 +86,7 @@ fn main() {
         }
         None => {
             let stdin = std::io::stdin();
-            let parser = parse::heap_parser();
-            store = parser.parse(stdin.lock());
+            store = parse::heap_parse(stdin.lock());
             store.view()
         }
     };
