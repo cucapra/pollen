@@ -168,5 +168,5 @@ command = "../polbin/target/debug/polbin -o {base}.flatgfa < {filename} ; ../pol
 output.gfa = "-"
 
 [envs.polbin_file_inplace]
-command = "../polbin/target/debug/polbin -o {base}.flatgfa < {filename} ; ../polbin/target/debug/polbin -m -i {base}.flatgfa"
+command = "../polbin/target/debug/polbin -m -p 128 -o {base}.inplace.flatgfa < {filename} ; ../polbin/target/debug/polbin -m -i {base}.inplace.flatgfa"
 output.gfa = "-"
