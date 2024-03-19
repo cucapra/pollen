@@ -116,16 +116,16 @@ impl Toc {
         Self {
             magic: MAGIC_NUMBER,
             header: Size::empty(128),
-            segs: Size::empty(512 * factor),
-            paths: Size::empty(16 * factor),
-            links: Size::empty(1024 * factor),
-            steps: Size::empty(512 * factor),
-            seq_data: Size::empty(4096 * factor),
-            overlaps: Size::empty(512 * factor),
-            alignment: Size::empty(1024 * factor),
+            segs: Size::empty(32 * factor * factor),
+            paths: Size::empty(factor),
+            links: Size::empty(32 * factor * factor),
+            steps: Size::empty(1024 * factor * factor),
+            seq_data: Size::empty(512 * factor * factor),
+            overlaps: Size::empty(256 * factor),
+            alignment: Size::empty(64 * factor * factor),
             name_data: Size::empty(64 * factor),
-            optional_data: Size::empty(64 * factor),
-            line_order: Size::empty(2048 * factor),
+            optional_data: Size::empty(512 * factor * factor),
+            line_order: Size::empty(64 * factor * factor),
         }
     }
 }
