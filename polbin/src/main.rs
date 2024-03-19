@@ -7,6 +7,7 @@ mod print;
 use argh::FromArgs;
 use flatgfa::GFABuilder;
 use memmap::{Mmap, MmapMut};
+use parse::Parser;
 
 fn map_file(name: &str) -> Mmap {
     let file = std::fs::File::open(name).unwrap();
@@ -54,6 +55,10 @@ struct PolBin {
     #[argh(option, short = 'i')]
     input: Option<String>,
 
+    /// read from a text GFA file
+    #[argh(option, short = 'I')]
+    input_gfa: Option<String>,
+
     /// write to a binary FlatGFA file
     #[argh(option, short = 'o')]
     output: Option<String>,
@@ -83,8 +88,20 @@ fn main() {
             let (toc, store) = file::init(&mut mmap, empty_toc);
 
             // Parse the input into the file.
-            let stdin = std::io::stdin();
-            let store = parse::buf_parse(store, toc, stdin.lock());
+            let store = match args.input_gfa {
+                Some(name) => {
+                    let file = map_file(&name);
+                    let store = Parser::for_slice(store).parse_mem(file.as_ref());
+                    *toc = file::Toc::for_slice_store(&store);
+                    store
+                }
+                None => {
+                    let stdin = std::io::stdin();
+                    let store = Parser::for_slice(store).parse_stream(stdin.lock());
+                    *toc = file::Toc::for_slice_store(&store);
+                    store
+                }
+            };
             if args.stats {
                 print_stats(&store.view());
             }
@@ -110,8 +127,17 @@ fn main() {
             }
         }
         None => {
-            let stdin = std::io::stdin();
-            store = parse::heap_parse(stdin.lock());
+            // Parse from stdin or a file.
+            store = match args.input_gfa {
+                Some(name) => {
+                    let file = map_file(&name);
+                    Parser::for_heap().parse_mem(file.as_ref())
+                }
+                None => {
+                    let stdin = std::io::stdin();
+                    Parser::for_heap().parse_stream(stdin.lock())
+                }
+            };
             store.view()
         }
     };
