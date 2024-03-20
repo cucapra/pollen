@@ -128,6 +128,32 @@ impl Toc {
             line_order: Size::empty(64 * factor * factor),
         }
     }
+
+    /// Estimate a reasonable set of capacities for a fresh file based on some
+    /// measurements of the GFA text.
+    pub fn estimate(
+        segs: usize,
+        links: usize,
+        paths: usize,
+        header_bytes: usize,
+        seg_bytes: usize,
+        path_bytes: usize,
+    ) -> Self {
+        Self {
+            magic: MAGIC_NUMBER,
+            header: Size::empty(header_bytes),
+            segs: Size::empty(segs),
+            paths: Size::empty(paths),
+            links: Size::empty(links),
+            steps: Size::empty(path_bytes / 2),
+            seq_data: Size::empty(seg_bytes),
+            overlaps: Size::empty((links + paths) * 4),
+            alignment: Size::empty((links + paths) * 8),
+            name_data: Size::empty(paths * 512),
+            optional_data: Size::empty(links * 16),
+            line_order: Size::empty(segs + links + paths + 8),
+        }
+    }
 }
 
 /// Consume `size.len` items from a byte slice, skip the remainder of `size.capacity`

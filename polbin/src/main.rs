@@ -82,16 +82,27 @@ fn main() {
     // A special case for converting from GFA text to an in-place FlatGFA binary.
     if args.mutate {
         if let (None, Some(out_name)) = (&args.input, &args.output) {
+            let file;
+            let (input_buf, empty_toc) = match args.input_gfa {
+                // If we have an input GFA file, we can estimate its sizes for the TOC.
+                Some(name) => {
+                    file = map_file(&name);
+                    let toc = parse::estimate_toc(file.as_ref());
+                    (Some(file.as_ref()), toc)
+                }
+
+                // Otherwise, we ened to guess.
+                None => (None, file::Toc::guess(args.prealloc_factor)),
+            };
+
             // Create a file with an empty table of contents.
-            let empty_toc = file::Toc::guess(args.prealloc_factor);
             let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
             let (toc, store) = file::init(&mut mmap, empty_toc);
 
             // Parse the input into the file.
-            let store = match args.input_gfa {
-                Some(name) => {
-                    let file = map_file(&name);
-                    let store = Parser::for_slice(store).parse_mem(file.as_ref());
+            let store = match input_buf {
+                Some(buf) => {
+                    let store = Parser::for_slice(store).parse_mem(buf);
                     *toc = file::Toc::for_slice_store(&store);
                     store
                 }
