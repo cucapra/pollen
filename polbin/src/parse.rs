@@ -86,7 +86,7 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
             }
 
             // Actually parse other lines.
-            let gfa_line = gfaline::parse_line(line).unwrap();
+            let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
             self.record_line(&gfa_line);
             match gfa_line {
                 gfaline::Line::Header(data) => {
@@ -209,6 +209,50 @@ impl NameMap {
             self.others[&name]
         }
     }
+}
+
+/// Scan a GFA text file to count the number of each type of line and measure some sizes
+/// that are useful in estimating the final size of the FlatGFA file.
+pub fn estimate_toc(buf: &[u8]) -> crate::file::Toc {
+    let mut segs = 0;
+    let mut links = 0;
+    let mut paths = 0;
+    let mut header_bytes = 0;
+    let mut seg_bytes = 0;
+    let mut path_bytes = 0;
+
+    let mut rest = buf;
+    while !rest.is_empty() {
+        let marker = rest[0];
+        let next = memchr::memchr(b'\n', rest).unwrap_or(rest.len() + 1);
+
+        match marker {
+            b'H' => {
+                header_bytes += next;
+            }
+            b'S' => {
+                segs += 1;
+                seg_bytes += next;
+            }
+            b'L' => {
+                links += 1;
+            }
+            b'P' => {
+                paths += 1;
+                path_bytes += next;
+            }
+            _ => {
+                panic!("unknown line type")
+            }
+        }
+
+        if next >= rest.len() {
+            break;
+        }
+        rest = &rest[next + 1..];
+    }
+
+    crate::file::Toc::estimate(segs, links, paths, header_bytes, seg_bytes, path_bytes)
 }
 
 struct MemchrSplit<'a> {
