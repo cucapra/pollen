@@ -160,10 +160,10 @@ fn main() {
 fn dump(gfa: &flatgfa::FlatGFA, output: &Option<String>) {
     match output {
         Some(name) => {
-            let mut mmap = map_new_file(&name, file::size(&gfa) as u64);
-            file::dump(&gfa, &mut mmap);
+            let mut mmap = map_new_file(name, file::size(gfa) as u64);
+            file::dump(gfa, &mut mmap);
             mmap.flush().unwrap();
         }
-        None => print::print(&gfa),
+        None => print::print(gfa),
     }
 }

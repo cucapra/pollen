@@ -86,7 +86,7 @@ impl<B: flatgfa::GFABuilder> Parser<B> {
             }
 
             // Actually parse other lines.
-            let gfa_line = gfaline::parse_line(line.as_ref()).unwrap();
+            let gfa_line = gfaline::parse_line(line).unwrap();
             self.record_line(&gfa_line);
             match gfa_line {
                 gfaline::Line::Header(data) => {
