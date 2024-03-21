@@ -1,8 +1,8 @@
 use crate::flatgfa;
 use argh::FromArgs;
 
+/// print some statistics about the graph
 #[derive(FromArgs, PartialEq, Debug)]
-/// Print some statistics about the graph.
 #[argh(subcommand, name = "stats")]
 pub struct Stats {}
 
@@ -18,4 +18,15 @@ pub fn stats(gfa: &flatgfa::FlatGFA) {
     eprintln!("name_data: {}", gfa.name_data.len());
     eprintln!("optional_data: {}", gfa.optional_data.len());
     eprintln!("line_order: {}", gfa.line_order.len());
+}
+
+/// list the paths
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "paths")]
+pub struct Paths {}
+
+pub fn paths(gfa: &flatgfa::FlatGFA) {
+    for path in gfa.paths.iter() {
+        println!("{}", gfa.get_path_name(path));
+    }
 }

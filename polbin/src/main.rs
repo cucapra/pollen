@@ -66,6 +66,7 @@ struct PolBin {
 #[argh(subcommand)]
 enum Command {
     Stats(cmds::Stats),
+    Paths(cmds::Paths),
 }
 
 fn main() {
@@ -143,6 +144,9 @@ fn main() {
     match args.command {
         Some(Command::Stats(_)) => {
             cmds::stats(&gfa);
+        }
+        Some(Command::Paths(_)) => {
+            cmds::paths(&gfa);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
