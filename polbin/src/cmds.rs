@@ -1,12 +1,12 @@
 use crate::flatgfa;
 use argh::FromArgs;
 
-/// print some statistics about the graph
+/// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "stats")]
-pub struct Stats {}
+#[argh(subcommand, name = "toc")]
+pub struct Toc {}
 
-pub fn stats(gfa: &flatgfa::FlatGFA) {
+pub fn toc(gfa: &flatgfa::FlatGFA) {
     eprintln!("header: {}", gfa.header.len());
     eprintln!("segs: {}", gfa.segs.len());
     eprintln!("paths: {}", gfa.paths.len());

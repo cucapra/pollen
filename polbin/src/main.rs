@@ -65,7 +65,7 @@ struct PolBin {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum Command {
-    Stats(cmds::Stats),
+    Toc(cmds::Toc),
     Paths(cmds::Paths),
 }
 
@@ -113,8 +113,8 @@ fn main() {
     };
 
     match args.command {
-        Some(Command::Stats(_)) => {
-            cmds::stats(&gfa);
+        Some(Command::Toc(_)) => {
+            cmds::toc(&gfa);
         }
         Some(Command::Paths(_)) => {
             cmds::paths(&gfa);
