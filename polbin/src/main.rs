@@ -1,3 +1,4 @@
+mod cmds;
 mod file;
 mod flatgfa;
 mod gfaline;
@@ -34,20 +35,6 @@ fn map_file_mut(name: &str) -> MmapMut {
     unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
 
-fn print_stats(gfa: &flatgfa::FlatGFA) {
-    eprintln!("header: {}", gfa.header.len());
-    eprintln!("segs: {}", gfa.segs.len());
-    eprintln!("paths: {}", gfa.paths.len());
-    eprintln!("links: {}", gfa.links.len());
-    eprintln!("steps: {}", gfa.steps.len());
-    eprintln!("seq_data: {}", gfa.seq_data.len());
-    eprintln!("overlaps: {}", gfa.overlaps.len());
-    eprintln!("alignment: {}", gfa.alignment.len());
-    eprintln!("name_data: {}", gfa.name_data.len());
-    eprintln!("optional_data: {}", gfa.optional_data.len());
-    eprintln!("line_order: {}", gfa.line_order.len());
-}
-
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
 struct PolBin {
@@ -67,13 +54,18 @@ struct PolBin {
     #[argh(switch, short = 'm')]
     mutate: bool,
 
-    /// print statistics about the graph
-    #[argh(switch, short = 's')]
-    stats: bool,
-
     /// preallocation size factor
     #[argh(option, short = 'p', default = "32")]
     prealloc_factor: usize,
+
+    #[argh(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand)]
+enum Command {
+    Stats(cmds::Stats),
 }
 
 fn main() {
@@ -100,22 +92,17 @@ fn main() {
             let (toc, store) = file::init(&mut mmap, empty_toc);
 
             // Parse the input into the file.
-            let store = match input_buf {
+            match input_buf {
                 Some(buf) => {
                     let store = Parser::for_slice(store).parse_mem(buf);
-                    *toc = file::Toc::for_slice_store(&store);
-                    store
+                    *toc = file::Toc::for_slice_store(&store)
                 }
                 None => {
                     let stdin = std::io::stdin();
                     let store = Parser::for_slice(store).parse_stream(stdin.lock());
-                    *toc = file::Toc::for_slice_store(&store);
-                    store
+                    *toc = file::Toc::for_slice_store(&store)
                 }
             };
-            if args.stats {
-                print_stats(&store.view());
-            }
             mmap.flush().unwrap();
             return;
         }
@@ -153,13 +140,21 @@ fn main() {
         }
     };
 
-    // Perhaps print some statistics.
-    if args.stats {
-        print_stats(&gfa);
+    match args.command {
+        Some(Command::Stats(_)) => {
+            cmds::stats(&gfa);
+        }
+        None => {
+            // Just emit the GFA or FlatGFA file.
+            dump(&gfa, &args.output);
+        }
     }
+}
 
-    // Write the output to a file (binary) or stdout (text).
-    match args.output {
+/// Write a FlatGFA either to a GFA text file to stdout or a binary FlatGFA file given
+/// with a name.
+fn dump(gfa: &flatgfa::FlatGFA, output: &Option<String>) {
+    match output {
         Some(name) => {
             let mut mmap = map_new_file(&name, file::size(&gfa) as u64);
             file::dump(&gfa, &mut mmap);
