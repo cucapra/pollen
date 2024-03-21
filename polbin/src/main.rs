@@ -1,3 +1,4 @@
+mod cmds;
 mod file;
 mod flatgfa;
 mod gfaline;
@@ -34,20 +35,6 @@ fn map_file_mut(name: &str) -> MmapMut {
     unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
 
-fn print_stats(gfa: &flatgfa::FlatGFA) {
-    eprintln!("header: {}", gfa.header.len());
-    eprintln!("segs: {}", gfa.segs.len());
-    eprintln!("paths: {}", gfa.paths.len());
-    eprintln!("links: {}", gfa.links.len());
-    eprintln!("steps: {}", gfa.steps.len());
-    eprintln!("seq_data: {}", gfa.seq_data.len());
-    eprintln!("overlaps: {}", gfa.overlaps.len());
-    eprintln!("alignment: {}", gfa.alignment.len());
-    eprintln!("name_data: {}", gfa.name_data.len());
-    eprintln!("optional_data: {}", gfa.optional_data.len());
-    eprintln!("line_order: {}", gfa.line_order.len());
-}
-
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
 struct PolBin {
@@ -67,13 +54,20 @@ struct PolBin {
     #[argh(switch, short = 'm')]
     mutate: bool,
 
-    /// print statistics about the graph
-    #[argh(switch, short = 's')]
-    stats: bool,
-
     /// preallocation size factor
     #[argh(option, short = 'p', default = "32")]
     prealloc_factor: usize,
+
+    #[argh(subcommand)]
+    command: Option<Command>,
+}
+
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand)]
+enum Command {
+    Toc(cmds::Toc),
+    Paths(cmds::Paths),
+    Stats(cmds::Stats),
 }
 
 fn main() {
@@ -81,42 +75,8 @@ fn main() {
 
     // A special case for converting from GFA text to an in-place FlatGFA binary.
     if args.mutate {
-        if let (None, Some(out_name)) = (&args.input, &args.output) {
-            let file;
-            let (input_buf, empty_toc) = match args.input_gfa {
-                // If we have an input GFA file, we can estimate its sizes for the TOC.
-                Some(name) => {
-                    file = map_file(&name);
-                    let toc = parse::estimate_toc(file.as_ref());
-                    (Some(file.as_ref()), toc)
-                }
-
-                // Otherwise, we ened to guess.
-                None => (None, file::Toc::guess(args.prealloc_factor)),
-            };
-
-            // Create a file with an empty table of contents.
-            let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
-            let (toc, store) = file::init(&mut mmap, empty_toc);
-
-            // Parse the input into the file.
-            let store = match input_buf {
-                Some(buf) => {
-                    let store = Parser::for_slice(store).parse_mem(buf);
-                    *toc = file::Toc::for_slice_store(&store);
-                    store
-                }
-                None => {
-                    let stdin = std::io::stdin();
-                    let store = Parser::for_slice(store).parse_stream(stdin.lock());
-                    *toc = file::Toc::for_slice_store(&store);
-                    store
-                }
-            };
-            if args.stats {
-                print_stats(&store.view());
-            }
-            mmap.flush().unwrap();
+        if let (None, None, Some(out_name)) = (&args.command, &args.input, &args.output) {
+            prealloc_translate(args.input_gfa.as_deref(), out_name, args.prealloc_factor);
             return;
         }
     }
@@ -153,18 +113,68 @@ fn main() {
         }
     };
 
-    // Perhaps print some statistics.
-    if args.stats {
-        print_stats(&gfa);
+    match args.command {
+        Some(Command::Toc(_)) => {
+            cmds::toc(&gfa);
+        }
+        Some(Command::Paths(_)) => {
+            cmds::paths(&gfa);
+        }
+        Some(Command::Stats(args)) => {
+            cmds::stats(&gfa, args);
+        }
+        None => {
+            // Just emit the GFA or FlatGFA file.
+            dump(&gfa, &args.output);
+        }
     }
+}
 
-    // Write the output to a file (binary) or stdout (text).
-    match args.output {
+/// Write a FlatGFA either to a GFA text file to stdout or a binary FlatGFA file given
+/// with a name.
+fn dump(gfa: &flatgfa::FlatGFA, output: &Option<String>) {
+    match output {
         Some(name) => {
-            let mut mmap = map_new_file(&name, file::size(&gfa) as u64);
-            file::dump(&gfa, &mut mmap);
+            let mut mmap = map_new_file(name, file::size(gfa) as u64);
+            file::dump(gfa, &mut mmap);
             mmap.flush().unwrap();
         }
-        None => print::print(&gfa),
+        None => print::print(gfa),
     }
+}
+
+/// A special-case fast-path transformation from a GFA text file to a *preallocated*
+/// FlatGFA, with sizes based on estimates of the input counts.
+fn prealloc_translate(in_name: Option<&str>, out_name: &str, prealloc_factor: usize) {
+    let file;
+    let (input_buf, empty_toc) = match in_name {
+        // If we have an input GFA file, we can estimate its sizes for the TOC.
+        Some(name) => {
+            file = map_file(name);
+            let toc = parse::estimate_toc(file.as_ref());
+            (Some(file.as_ref()), toc)
+        }
+
+        // Otherwise, we need to guess.
+        None => (None, file::Toc::guess(prealloc_factor)),
+    };
+
+    // Create a file with an empty table of contents.
+    let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
+    let (toc, store) = file::init(&mut mmap, empty_toc);
+
+    // Parse the input into the file.
+    match input_buf {
+        Some(buf) => {
+            let store = Parser::for_slice(store).parse_mem(buf);
+            *toc = file::Toc::for_slice_store(&store)
+        }
+        None => {
+            let stdin = std::io::stdin();
+            let store = Parser::for_slice(store).parse_stream(stdin.lock());
+            *toc = file::Toc::for_slice_store(&store)
+        }
+    };
+
+    mmap.flush().unwrap();
 }
