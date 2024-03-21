@@ -30,3 +30,26 @@ pub fn paths(gfa: &flatgfa::FlatGFA) {
         println!("{}", gfa.get_path_name(path));
     }
 }
+
+/// calculate graph statistics
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "stats")]
+pub struct Stats {
+    /// show basic metrics
+    #[argh(switch, short = 'S')]
+    summarize: bool,
+}
+
+pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
+    if args.summarize {
+        println!("#length\tnodes\tedges\tpaths\tsteps");
+        println!(
+            "{}\t{}\t{}\t{}\t{}",
+            gfa.seq_data.len(),
+            gfa.segs.len(),
+            gfa.links.len(),
+            gfa.paths.len(),
+            gfa.steps.len()
+        );
+    }
+}
