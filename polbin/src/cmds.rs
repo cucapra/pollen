@@ -1,5 +1,7 @@
 use crate::flatgfa;
+use crate::pool::Index;
 use argh::FromArgs;
+use std::collections::HashMap;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -38,6 +40,10 @@ pub struct Stats {
     /// show basic metrics
     #[argh(switch, short = 'S')]
     summarize: bool,
+
+    /// number of segments with at least one self-loop link
+    #[argh(switch, short = 'L')]
+    self_loops: bool,
 }
 
 pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
@@ -51,5 +57,18 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
             gfa.paths.len(),
             gfa.steps.len()
         );
+    } else if args.self_loops {
+        let mut counts: HashMap<Index, usize> = HashMap::new();
+        let mut total: usize = 0;
+        for link in gfa.links.iter() {
+            if link.from.segment() == link.to.segment() {
+                let count = counts.entry(link.from.segment()).or_insert(0);
+                *count += 1;
+                total += 1;
+            }
+        }
+        println!("#type\tnum");
+        println!("total\t{}", total);
+        println!("unique\t{}", counts.len());
     }
 }
