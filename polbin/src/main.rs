@@ -74,37 +74,8 @@ fn main() {
 
     // A special case for converting from GFA text to an in-place FlatGFA binary.
     if args.mutate {
-        if let (None, Some(out_name)) = (&args.input, &args.output) {
-            let file;
-            let (input_buf, empty_toc) = match args.input_gfa {
-                // If we have an input GFA file, we can estimate its sizes for the TOC.
-                Some(name) => {
-                    file = map_file(&name);
-                    let toc = parse::estimate_toc(file.as_ref());
-                    (Some(file.as_ref()), toc)
-                }
-
-                // Otherwise, we ened to guess.
-                None => (None, file::Toc::guess(args.prealloc_factor)),
-            };
-
-            // Create a file with an empty table of contents.
-            let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
-            let (toc, store) = file::init(&mut mmap, empty_toc);
-
-            // Parse the input into the file.
-            match input_buf {
-                Some(buf) => {
-                    let store = Parser::for_slice(store).parse_mem(buf);
-                    *toc = file::Toc::for_slice_store(&store)
-                }
-                None => {
-                    let stdin = std::io::stdin();
-                    let store = Parser::for_slice(store).parse_stream(stdin.lock());
-                    *toc = file::Toc::for_slice_store(&store)
-                }
-            };
-            mmap.flush().unwrap();
+        if let (None, None, Some(out_name)) = (&args.command, &args.input, &args.output) {
+            prealloc_translate(args.input_gfa.as_deref(), out_name, args.prealloc_factor);
             return;
         }
     }
@@ -166,4 +137,40 @@ fn dump(gfa: &flatgfa::FlatGFA, output: &Option<String>) {
         }
         None => print::print(gfa),
     }
+}
+
+/// A special-case fast-path transformation from a GFA text file to a *preallocated*
+/// FlatGFA, with sizes based on estimates of the input counts.
+fn prealloc_translate(in_name: Option<&str>, out_name: &str, prealloc_factor: usize) {
+    let file;
+    let (input_buf, empty_toc) = match in_name {
+        // If we have an input GFA file, we can estimate its sizes for the TOC.
+        Some(name) => {
+            file = map_file(name);
+            let toc = parse::estimate_toc(file.as_ref());
+            (Some(file.as_ref()), toc)
+        }
+
+        // Otherwise, we need to guess.
+        None => (None, file::Toc::guess(prealloc_factor)),
+    };
+
+    // Create a file with an empty table of contents.
+    let mut mmap = map_new_file(out_name, empty_toc.size() as u64);
+    let (toc, store) = file::init(&mut mmap, empty_toc);
+
+    // Parse the input into the file.
+    match input_buf {
+        Some(buf) => {
+            let store = Parser::for_slice(store).parse_mem(buf);
+            *toc = file::Toc::for_slice_store(&store)
+        }
+        None => {
+            let stdin = std::io::stdin();
+            let store = Parser::for_slice(store).parse_stream(stdin.lock());
+            *toc = file::Toc::for_slice_store(&store)
+        }
+    };
+
+    mmap.flush().unwrap();
 }
