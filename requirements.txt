@@ -2,3 +2,4 @@
 -e ./slow_odgi
 -e ./pollen_py
 -e ./pollen_data_gen
+turnt

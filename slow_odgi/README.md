@@ -1,8 +1,10 @@
 # `slow_odgi`
 
-`slow_odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
+`slow_odgi` is a reference implementation of [odgi][]. It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
 While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
 Think of it as a code-forward spec for `odgi` commands.
+
+[odgi]: https://github.com/pangenome/odgi
 
 ## Installation
 
@@ -25,9 +27,10 @@ One easy way to install everything in the Pollen repo is to use [uv][]:
 
 To test `slow_odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of pangenome graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
 
-To run these tests, you will need
-1. `odgi`; see [here](https://github.com/pangenome/odgi). Our tests were run against a built-from-source copy of `odgi` (commit `34f006f`).
-2. `turnt`; see [here](https://github.com/cucapra/turnt).
+To run these tests, you will need:
+
+1. [Odgi][]. Our tests were run against a built-from-source copy of odgi (commit `34f006f`).
+2. [Turnt][]. This is installed automatically if you use `requirements.txt` as above.
 
 With these in place, run `make test-slow-odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not ok` signals there are actually of interest.
 
@@ -36,6 +39,8 @@ The reasons are subtly related, but are documented independently:
 
 1. We disagree against graph note5.gfa; see [Pollen PR #52](https://github.com/cucapra/pollen/pull/52#issuecomment-1513958802).
 2. We disagree against the handmade graph flip4.gfa; see [odgi issue #496](https://github.com/pangenome/odgi/issues/496).
+
+[turnt]: https://github.com/cucapra/turnt
 
 ## Explanation of Commands
 
