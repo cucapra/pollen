@@ -1,4 +1,4 @@
-from mygfa import mygfa, preprocess
+import mygfa
 
 
 def paths_logically_le(g1: mygfa.Graph, g2: mygfa.Graph) -> bool:
@@ -6,8 +6,8 @@ def paths_logically_le(g1: mygfa.Graph, g2: mygfa.Graph) -> bool:
     That is, for all paths p in g1, does the sequence charted by
     p in g1 match the sequence charted by p in g2?
     """
-    pathseqs_g1 = preprocess.pathseq(g1)
-    pathseqs_g2 = preprocess.pathseq(g2)
+    pathseqs_g1 = mygfa.preprocess.pathseq(g1)
+    pathseqs_g2 = mygfa.preprocess.pathseq(g2)
     for p in g1.paths.keys():
         if p not in g2.paths.keys() or pathseqs_g1[p] != pathseqs_g2[p]:
             return False

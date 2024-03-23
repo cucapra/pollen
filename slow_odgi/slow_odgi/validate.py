@@ -1,9 +1,9 @@
-from mygfa import mygfa, preprocess
+import mygfa
 
 
 def validate(graph: mygfa.Graph) -> mygfa.Graph:
     """Does the underlying set of Links support the paths that the graph has?"""
-    _, outs = preprocess.adjlist(graph)
+    _, outs = mygfa.preprocess.adjlist(graph)
 
     for path in graph.paths.values():
         length = len(path.segments)

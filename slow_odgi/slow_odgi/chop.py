@@ -1,5 +1,5 @@
 from typing import Dict, Tuple
-from mygfa import mygfa
+import mygfa
 
 
 def chop_segs(

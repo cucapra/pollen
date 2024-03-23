@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from mygfa import mygfa
+import mygfa
 from . import chop
 
 
