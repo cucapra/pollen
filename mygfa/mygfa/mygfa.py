@@ -153,7 +153,7 @@ class Handle:
 
 @dataclass(eq=True, order=True)
 class Link:
-    """A GFA link is an edge connecting two sequences."""
+    """A GFA link is an edge connecting two segments."""
 
     from_: Handle
     to_: Handle
@@ -197,7 +197,7 @@ class Link:
 
 @dataclass
 class Path:
-    """A GFA path is an ordered series of links."""
+    """A GFA path is a walk through the graph."""
 
     name: str
     segments: List[Handle]  # Segment names and orientations.
