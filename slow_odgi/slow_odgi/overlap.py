@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import List
 import mygfa
+import mygfa.preprocess
 
 
 def touches(path1: str, path2: str, graph: mygfa.Graph) -> bool:
