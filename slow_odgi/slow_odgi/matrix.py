@@ -1,4 +1,5 @@
 import mygfa
+import mygfa.preprocess
 
 
 def matrix(graph: mygfa.Graph) -> mygfa.Graph:

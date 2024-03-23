@@ -1,6 +1,7 @@
 import sys
 import random
 import mygfa
+import mygfa.preprocess
 
 
 def print_bed(graph: mygfa.Graph) -> None:

@@ -1,4 +1,5 @@
 import mygfa
+import mygfa.preprocess
 
 
 def paths_logically_le(g1: mygfa.Graph, g2: mygfa.Graph) -> bool:
