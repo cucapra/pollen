@@ -10,9 +10,9 @@ def print_depth(graph):
             seg_depths[step.name] += 1
 
     # Print the counts.
-    print('seg\tdepth')
+    print("seg\tdepth")
     for name, depth in seg_depths.items():
-        print(f'{name}\t{depth}')
+        print(f"{name}\t{depth}")
 
 
 if __name__ == "__main__":

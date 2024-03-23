@@ -24,6 +24,8 @@ def overlap(graph: mygfa.Graph, inputpaths: List[str]) -> mygfa.Graph:
                     print("\t".join(["#path", "start", "end", "path.touched"]))
                     header_printed = True
                 print(
-                    "\t".join([ip, "0", str(len(mygfa.preprocess.pathseq(graph)[ip])), path])
+                    "\t".join(
+                        [ip, "0", str(len(mygfa.preprocess.pathseq(graph)[ip])), path]
+                    )
                 )
     return graph
