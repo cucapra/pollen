@@ -1,9 +1,8 @@
-# import sys
 import json
 from typing import Dict, Union, Optional, Any, List, Sequence, TextIO
 from io import TextIOWrapper
 from json import JSONEncoder
-from mygfa import mygfa
+import mygfa
 from . import depth
 
 
