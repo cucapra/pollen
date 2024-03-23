@@ -1,7 +1,6 @@
 TEST_FILES := t k note5 overlap q.chop LPA DRB1-3123 chr6.C4
 BASIC_TESTS := ex1 ex2
 GFA_URL := https://raw.githubusercontent.com/pangenome/odgi/ebc493f2622f49f1e67c63c1935d68967cd16d85/test
-GFA_ZIP_URL := https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/scratch/2021_05_06_pggb/gfas/chr8.pan.gfa.gz
 
 # A smaller set of test inputs for faster runs.
 ifdef SMALL
@@ -41,7 +40,7 @@ test-slow-odgi: slow-odgi-setup slow-odgi-oracles slow-odgi-tests
 # Produce some input files that are necessary for the slow_odgi tests.
 slow-odgi-setup: og
 	-turnt -j --save --env depth_setup --env inject_setup \
-		--env overlap_setup --env validate_setup tests/*.gfa
+		--env overlap_setup --env validate_setup $(TEST_FILES:%=tests/%.og)
 
 # Produce the oracle output (from "real" odgi) for each test input. Run this
 # once, noisily, to obtain the expected outputs. Then run `slow-odgi-tests` to
@@ -52,7 +51,7 @@ ORACLES := chop_oracle crush_oracle degree_oracle depth_oracle \
 	flip_oracle flatten_oracle inject_oracle matrix_oracle overlap_oracle \
 	paths_oracle validate_oracle
 slow-odgi-oracles: og
-	-turnt -j --save $(ORACLES:%=--env %) tests/*.og
+	-turnt -j --save $(ORACLES:%=--env %) $(TEST_FILES:%=tests/%.og)
 	-turnt -j --save --env validate_oracle_err tests/invalid/*.gfa
 	-turnt -j --save --env crush_oracle tests/handmade/crush*.gfa
 	-turnt -j --save --env flip_oracle tests/handmade/flip*.gfa
@@ -63,7 +62,7 @@ slow-odgi-oracles: og
 TEST_ENVS := chop_test crush_test degree_test depth_test flip_test \
 	 flatten_test inject_test matrix_test overlap_test paths_test validate_test
 slow-odgi-tests:
-	-turnt -j $(TEST_ENVS:%=--env %) tests/*.gfa
+	-turnt -j $(TEST_ENVS:%=--env %) $(TEST_FILES:%=tests/%.gfa)
 	-turnt -j --env validate_test tests/invalid/*.gfa
 	-turnt -j --env crush_test tests/handmade/crush*.gfa
 	-turnt -j --env flip_test tests/handmade/flip*.gfa
@@ -80,10 +79,6 @@ clean:
 	rm -rf tests/handmade/*.crush
 	rm -rf tests/handmade/*.flip
 	rm -rf tests/invalid/*.*
-
-tests/chr8.pan.gfa:
-	curl -Lo ./tests/chr8.pan.gfa.gz $(GFA_ZIP_URL)
-	gunzip ./tests/chr8.pan.gfa.gz
 
 tests/%.gfa:
 	curl -Lo ./$@ $(GFA_URL)/$*.gfa

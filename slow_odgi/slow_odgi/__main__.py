@@ -3,7 +3,7 @@ import sys
 import io
 from typing import Dict, Tuple, List, Optional
 from collections.abc import Callable
-from mygfa import mygfa
+import mygfa
 
 from . import (
     chop,

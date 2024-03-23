@@ -1,5 +1,5 @@
 from typing import List, Tuple, Dict
-from . import mygfa
+from . import gfa as mygfa
 
 
 def node_steps(graph: mygfa.Graph) -> Dict[str, List[Tuple[str, int, bool]]]:
