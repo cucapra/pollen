@@ -3,35 +3,52 @@
 <img src="https://github.com/cucapra/pollen/blob/main/pollen_icon_transparent.png">
 </h1>
 
-Pangenome Graph Queries in Calyx
-================================
+Accelerated Pangenome Graph Queries
+===================================
 
 Pollen is a nascent project to accelerate queries on pangenomic graphs.
 We are designing a graph-manipulating DSL that exposes functionality that pangenomicists care about.
 Our DSL will support graph queries in the vein of the [odgi][] project.
-We will compile programs written in this DSL into the [Calyx][] IR and then leverage Calyx to generate hardware accelerators.
+We will compile programs written in this DSL into fast query code.
+Eventually, we aim to generate custom hardware accelerators for these queries via the [Calyx][] compiler.
+
+There are several things in this repository:
+
+* `mygfa`, a simple Python library for parsing, processing, and emitting [GFA][] files.
+* `slow_odgi`, a reference implementation of several GFA queries from the [odgi][] tool using `mygfa`.
+* A proof-of-concept Calyx-based hardware accelerator generator for a single GFA query (`odgi depth`) and a data generator for this hardware.
+* FlatGFA, an experimental fast binary format for representing and analyzing GFA files.
 
 
-Running using Docker
---------------------
-Running Pollen is easy if you use our Docker [package][]:
-```
-docker run -it --rm ghcr.io/cucapra/pollen:latest
-```
-If you prefer to install locally, we point you to the somewhat more involved instructions [below](#installing-pollen-locally).
+`mygfa` and `slow_odgi`
+-----------------------
+
+The `mygfa` library is an extremely simple Python library for representing (and parsing and emitting) GFA files. It emphasizes clarify over efficiency. Similarly, `slow_odgi` is a set of GFA analyses based on `mygfa`; it's meant to act as a *reference implementation* of the much faster functionality in [odgi][]. Check out [the slow_odgi README](slow_odgi/) for more details.
+
+To use them, try using [uv][]:
+
+    $ uv venv
+    $ uv pip install -r requirements.txt
+    $ source .venv/bin/activate
+
+Now type `slow_odgi --help` to see if everything's working.
+
+[uv]: https://github.com/astral-sh/uv
 
 
-Aside: Slow Odgi
-----------------
 
-`slow_odgi` is a reference implementation of a subset of odgi commands.
-It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
-While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
-See [here](slow_odgi/) for more!
+Proof-of-Concept Hardware Generator
+-----------------------------------
 
+This repository contains a proof-of-concept hardware accelerator generator for a simple GFA query. This section contains some guides for trying out this generator.
 
-Getting Started with Pollen
----------------------------
+### The Docker Image
+
+Running the hardware generator is easy if you use our [Docker image][package]:
+
+    docker run -it --rm ghcr.io/cucapra/pollen:latest
+
+If you prefer to install locally, we point you to the somewhat more involved instructions [below](#installing-locally).
 
 ### Generating an Accelerator: Quick
 
@@ -47,7 +64,6 @@ To save the files generated from the previous command in `<path>`, use the `--tm
 exine depth -a -r <filename.og> --tmpdir <path>
 ```
 The node depth accelerator will be saved at `<path>/<filename.futil>` and the input data will be saved at `<path>/<filename.data>`.
-
 
 ### Generating an Accelerator: Full Walkthrough
 
@@ -94,20 +110,12 @@ Fifth, we run our hardware accelerator. The following code simulates the Calyx c
 exine depth -r depth.data -x depth.futil
 ```
 
-Testing
--------
-
-Navigative to the root directory of the pollen repository and run `make test`.
-Warning: the tests take approximately 2 hours to complete.
-
-
-Installing Pollen locally
--------------------------
+### Installing Locally
 
 You will need  [Flit][] version 3.7.1 and [Turnt][] version 1.11.0.
 We will guide you through the installation of our major dependencies, [Calyx][] and [odgi][], and then show you how to install Pollen itself.
 
-### Calyx
+#### Calyx
 
 Below we show you how to build Calyx from source and set it up for our use.
 If you are curious, this tracks the "[installing from source][calyx-install-src]" and "[installing the command-line driver][calyx-install-fud]" sections of the Calyx documentation.
@@ -125,8 +133,7 @@ If you are curious, this tracks the "[installing from source][calyx-install-src]
 
 You will be warned that `synth-verilog` and `vivado-hls` were not installed correctly; this is fine for our purposes.
 
-
-### Odgi
+#### Odgi
 
 We recommend that you build odgi from source, as described [here][odgi-from-source].
 To check that this worked, run `odgi` from the command line.
@@ -137,15 +144,17 @@ To verify that this worked, open up a Python shell and try `import odgi`.
 If it succeeds quietly, great!
 If it segfaults, try the preload step explained [here][odgi-preload].
 
+#### Pollen
 
-### Pollen
+Clone this repository:
 
-Clone this repository using
-```
-git clone https://github.com/cucapra/pollen.git
-```
-and run `cd pollen_py && flit install -s --user`.
+    git clone https://github.com/cucapra/pollen.git
 
+And then install the Python tools using [uv][]:
+
+    $ uv venv
+    $ uv pip install -r requirements.txt
+    $ source .venv/bin/activate
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
