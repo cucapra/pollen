@@ -2,7 +2,7 @@ import sys
 import mygfa
 
 
-def print_depth(graph):
+def print_depth(graph: mygfa.Graph) -> None:
     # Count the number of times that any path passes through a segment.
     seg_depths = {name: 0 for name in graph.segments}
     for path in graph.paths.values():
