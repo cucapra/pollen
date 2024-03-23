@@ -1,34 +1,27 @@
 # `slow_odgi`
 
-### Overview
-
 `slow_odgi` is a reference implementation of [`odgi`](https://github.com/pangenome/odgi). It is written purely in Python, with correctness and clarity as goals and speed as a non-goal.
 While independent of Pollen proper, it has been an aid to us during the process of designing the DSL and understanding the domain.
 Think of it as a code-forward spec for `odgi` commands.
 
-### Installation
+## Installation
 
-*These instructions assume that you are in this directory, i.e. `path/to/pollen/slow_odgi/`.*
+One easy way to install everything in the Pollen repo is to use [uv][]:
 
-If you don't care for an executable, it is possible to skip installation and just run `PYTHONPATH=../mygfa python3 -m slow_odgi`.
-You can use this phrase (adjusting relative paths as necessary) wherever we use the `slow_odgi` executable in the sections that follow.
+    $ uv venv
+    $ uv pip install -r requirements.txt
+    $ source .venv/bin/activate
 
-To install the `slow_odgi` executable:
-1. Ensure you have [`setuptools`](https://packaging.python.org/en/latest/tutorials/installing-packages/#ensure-pip-setuptools-and-wheel-are-up-to-date).
-2. Run `python3 -m pip install --user -e ../mygfa .`.
+[uv]: https://github.com/astral-sh/uv
 
-Alternately,
-1. Ensure you have [`flit`](https://flit.pypa.io/en/latest/#install).
-1. Change directories to `../mygfa` and run `flit install --user --symlink`.
-2. Change directories back to `slow_odgi` (this directory) and run `flit install --user --symlink`.
+## Try it!
 
-### Try it!
 1. Change to the root directory `pollen/`.
 2. Run `make fetch`; this downloads a set of pangenome graphs for us to play with.
 3. Try `slow_odgi chop test/note5.gfa -n 3`; this runs `chop` on the graph `note5.gfa` with parameter `3`.
 4. Play with the other commands that we support! See below for a full listing.
 
-### Testing
+## Testing
 
 To test `slow_odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of pangenome graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
 
@@ -43,8 +36,7 @@ The reasons are subtly related, but are documented independently:
 1. We disagree against graph note5.gfa; see https://github.com/cucapra/pollen/pull/52#issuecomment-1513958802
 2. We disagree against the handmade graph flip4.gfa; see https://github.com/pangenome/odgi/issues/496.
 
-
-### Explanation of Commands
+## Explanation of Commands
 
 The remainder of this document will explain, in some detail, the eleven commands that we have implemented. Below we sometimes elide graph information that is inconsequential to the explanation. Unless specified, this is meant to be read as "don't care" and not as absence.
 
