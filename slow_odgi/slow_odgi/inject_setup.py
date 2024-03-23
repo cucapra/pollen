@@ -1,6 +1,6 @@
 import sys
 import random
-from mygfa import mygfa, preprocess
+import mygfa
 
 
 def print_bed(graph: mygfa.Graph) -> None:
@@ -12,7 +12,7 @@ def print_bed(graph: mygfa.Graph) -> None:
     """
     random.seed(4)
     for path in graph.paths.values():
-        length = len(preprocess.pathseq(graph)[path.name])
+        length = len(mygfa.preprocess.pathseq(graph)[path.name])
         for i in range(random.randint(0, 5)):
             low = random.randint(0, length - 1)
             high = random.randint(low + 1, length)

@@ -1,5 +1,5 @@
 from typing import List, Optional
-from mygfa import mygfa, preprocess
+import mygfa
 
 
 def touches(path1: str, path2: str, graph: mygfa.Graph) -> bool:
@@ -24,6 +24,6 @@ def overlap(graph: mygfa.Graph, inputpaths: List[str]) -> mygfa.Graph:
                     print("\t".join(["#path", "start", "end", "path.touched"]))
                     header_printed = True
                 print(
-                    "\t".join([ip, "0", str(len(preprocess.pathseq(graph)[ip])), path])
+                    "\t".join([ip, "0", str(len(mygfa.preprocess.pathseq(graph)[ip])), path])
                 )
     return graph

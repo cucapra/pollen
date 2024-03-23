@@ -1,6 +1,6 @@
 from typing import List, Tuple, Dict
 from collections.abc import Callable
-from mygfa import mygfa
+import mygfa
 
 
 def path_is_rev(path: mygfa.Path, graph: mygfa.Graph) -> bool:

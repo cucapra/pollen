@@ -1,5 +1,5 @@
 import sys
-from mygfa import mygfa
+import mygfa
 
 
 def norm(graph: mygfa.Graph) -> mygfa.Graph:

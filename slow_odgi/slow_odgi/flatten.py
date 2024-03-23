@@ -1,5 +1,5 @@
 from typing import Tuple
-from mygfa import mygfa
+import mygfa
 
 
 def get_fasta_legend(graph: mygfa.Graph) -> Tuple[str, mygfa.LegendType]:
