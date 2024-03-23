@@ -1,6 +1,6 @@
 import sys
 import random
-from mygfa import mygfa
+import mygfa
 
 
 def paths(graph: mygfa.Graph, droprate: int = 0) -> mygfa.Graph:

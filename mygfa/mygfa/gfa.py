@@ -1,6 +1,4 @@
 import re
-import sys
-
 from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
@@ -153,7 +151,7 @@ class Handle:
 
 @dataclass(eq=True, order=True)
 class Link:
-    """A GFA link is an edge connecting two sequences."""
+    """A GFA link is an edge connecting two segments."""
 
     from_: Handle
     to_: Handle
@@ -197,7 +195,7 @@ class Link:
 
 @dataclass
 class Path:
-    """A GFA path is an ordered series of links."""
+    """A GFA path is a walk through the graph."""
 
     name: str
     segments: List[Handle]  # Segment names and orientations.
@@ -306,11 +304,3 @@ class Graph:
         if showlinks:
             for link in sorted(self.links):
                 print(str(link), file=outfile)
-
-
-if __name__ == "__main__":
-    mygraph = Graph.parse(sys.stdin)
-    if len(sys.argv) > 1 and sys.argv[1] == "--nl":
-        mygraph.emit(sys.stdout, False)
-    else:
-        mygraph.emit(sys.stdout)

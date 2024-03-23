@@ -1,8 +1,9 @@
 import sys
-from typing import Any, Collection, Dict, OrderedDict, Union, Optional, List
+from typing import Any, Collection, Dict, Union, Optional, List
 import json
 from json import JSONEncoder
-from mygfa import mygfa, preprocess
+import mygfa
+import mygfa.preprocess
 
 
 FormatType = Dict[str, Union[bool, str, int]]
@@ -24,7 +25,7 @@ def paths_viewed_from_nodes(
     output = {}
     json_format = format_gen(max_p.bit_length())
     # segment name, (path name, index on path, direction) list
-    for seg, crossings in preprocess.node_steps(graph).items():
+    for seg, crossings in mygfa.preprocess.node_steps(graph).items():
         data = list(path2id[c[0]] for c in crossings)
         data = data + [0] * (max_e - len(data))
         output[f"path_ids{seg}"] = {"data": data, "format": json_format}
@@ -115,7 +116,7 @@ def depth_json(
     """Returns a JSON representation of `graph`
     that is specific to the exine command `depth`.
     """
-    n_tight, e_tight, p_tight = preprocess.get_maxes(graph)
+    n_tight, e_tight, p_tight = mygfa.preprocess.get_maxes(graph)
     # These values have been calculated automatically, and are likely optimal.
     # However, they are only to be used when the user-does not supply them via CLI.
     if not max_n:

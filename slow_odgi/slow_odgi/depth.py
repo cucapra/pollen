@@ -1,11 +1,12 @@
 from typing import List, Optional
-from mygfa import mygfa, preprocess
+import mygfa
+import mygfa.preprocess
 
 
 def depth(graph: mygfa.Graph, inputpaths: Optional[List[str]]) -> mygfa.Graph:
     """The depth of a node is the cardinality of node_step for that node."""
     print("\t".join(["#node.id", "depth", "depth.uniq"]))
-    for seg, crossings in preprocess.node_steps(graph).items():
+    for seg, crossings in mygfa.preprocess.node_steps(graph).items():
         # Each crossing is a (path name, index on path, direction) tuple.
         # We only want to count crossings that are on input paths.
         crossings = [c for c in crossings if inputpaths is None or c[0] in inputpaths]

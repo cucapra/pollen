@@ -1,4 +1,5 @@
-from mygfa import mygfa, preprocess
+import mygfa
+import mygfa.preprocess
 
 
 def crush_seg(seg: mygfa.Segment) -> mygfa.Segment:
@@ -23,6 +24,6 @@ def crush(graph: mygfa.Graph) -> mygfa.Graph:
         graph.headers,
         crushed_segs,
         graph.links,
-        preprocess.drop_all_overlaps(graph.paths),
+        mygfa.preprocess.drop_all_overlaps(graph.paths),
         # odgi drops overlaps, so we do too.
     )

@@ -1,4 +1,5 @@
-from mygfa import mygfa, preprocess
+import mygfa
+import mygfa.preprocess
 
 
 def matrix(graph: mygfa.Graph) -> mygfa.Graph:
@@ -8,7 +9,7 @@ def matrix(graph: mygfa.Graph) -> mygfa.Graph:
     topseg = max([int(i) for i in graph.segments.keys()])
     print(" ".join(str(i) for i in [topseg, topseg, 2 * len(graph.links)]))
 
-    _, outs = preprocess.adjlist(graph)
+    _, outs = mygfa.preprocess.adjlist(graph)
     for seg, neighbors in outs.items():
         for neighbor in neighbors:
             print(" ".join([seg.name, neighbor.name, "1"]))

@@ -1,6 +1,6 @@
 import sys
 import argparse
-from mygfa import mygfa
+import mygfa
 from typing import List
 
 from . import depth, simple
