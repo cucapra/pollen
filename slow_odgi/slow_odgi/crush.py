@@ -1,4 +1,5 @@
 import mygfa
+import mygfa.preprocess
 
 
 def crush_seg(seg: mygfa.Segment) -> mygfa.Segment:

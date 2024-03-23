@@ -3,6 +3,7 @@ from typing import Any, Collection, Dict, Union, Optional, List
 import json
 from json import JSONEncoder
 import mygfa
+import mygfa.preprocess
 
 
 FormatType = Dict[str, Union[bool, str, int]]

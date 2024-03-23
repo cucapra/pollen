@@ -1,5 +1,6 @@
 from typing import List, Optional
 import mygfa
+import mygfa.preprocess
 
 
 def depth(graph: mygfa.Graph, inputpaths: Optional[List[str]]) -> mygfa.Graph:

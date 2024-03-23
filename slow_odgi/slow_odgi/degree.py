@@ -1,4 +1,5 @@
 import mygfa
+import mygfa.preprocess
 
 
 def degree(graph: mygfa.Graph) -> mygfa.Graph:
