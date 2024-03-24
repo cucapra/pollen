@@ -27,9 +27,11 @@ There are several things in this repository:
 `mygfa` and `slow_odgi`
 -----------------------
 
-The `mygfa` library is an extremely simple Python library for representing (and parsing and emitting) GFA files. It emphasizes clarify over efficiency. Similarly, `slow_odgi` is a set of GFA analyses based on `mygfa`; it's meant to act as a *reference implementation* of the much faster functionality in [odgi][]. Check out [the slow_odgi README](slow_odgi/) for more details.
+The `mygfa` library is an extremely simple Python library for representing (and parsing and emitting) GFA files. It emphasizes clarify over efficiency. Use `pip install mygfa` to get started, and read the [API documentation][mygfa-docs] for details.
 
-To use them, try using [uv][]:
+Similarly, `slow_odgi` is a set of GFA analyses based on `mygfa`; it's meant to act as a *reference implementation* of the much faster functionality in [odgi][]. Check out [the slow_odgi README](slow_odgi/) for more details.
+
+To set up both of them from this repository, try using [uv][]:
 
     $ uv venv
     $ uv pip install -r requirements.txt
@@ -38,6 +40,7 @@ To use them, try using [uv][]:
 Now type `slow_odgi --help` to see if everything's working.
 
 [uv]: https://github.com/astral-sh/uv
+[mygfa-docs]: http://cucapra.github.io/pollen/mygfa/
 
 
 Credits
