@@ -16,7 +16,10 @@ The :class:`mygfa.Graph` class represents an entire GFA file.
 You can work down the object hierarchy from there to see everything that the
 file contains.
 
+mygfa is `on PyPI`_, so you can install it with `pip install mygfa`.
+
 .. _GFA: https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md
+.. _on PyPI: https://pypi.org/project/mygfa/
 
 API Reference
 -------------

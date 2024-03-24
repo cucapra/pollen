@@ -1,0 +1,39 @@
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Permissions for GitHub pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build mygfa docs
+        uses: ammaraskar/sphinx-action@master
+        with:
+          docs-folder: "mygfa/docs/"
+      - name: Assemble site directory
+        run: |
+          mkdir -p site
+          mv mygfa/docs/_build/html site/mygfa
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "site"
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{github.event_name=='push' && github.ref=='refs/heads/main' && github.repository_owner=='cucapra'}}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
