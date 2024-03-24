@@ -38,3 +38,13 @@ To use them, try using [uv][]:
 Now type `slow_odgi --help` to see if everything's working.
 
 [uv]: https://github.com/astral-sh/uv
+
+
+Credits
+-------
+
+This is a project of the [Capra][] lab at Cornell.
+The license is [MIT][].
+
+[capra]: https://capra.cs.cornell.edu
+[mit]: https://choosealicense.com/licenses/mit/
