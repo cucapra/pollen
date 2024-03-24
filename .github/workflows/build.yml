@@ -53,9 +53,9 @@ jobs:
 
       # Test slow_odgi.
       - name: Set up for slow_odgi tests
-        run: make slow-odgi-setup SMALL=1
+        run: make -C slow_odgi setup oracles SMALL=1
       - name: Test slow_odgi
-        run: make test-slow-odgi SMALL=1
+        run: make -C slow_odgi test SMALL=1
 
   test-parser:
     name: test DSL parser
