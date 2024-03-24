@@ -7,6 +7,7 @@ It prioritizes simplicity and clarity over performance and functionality.
 As demonstrated in [`example.py`](./example.py), this is what it looks like to compute the node depth for a GFA file:
 
     import mygfa
+    import sys
     graph = mygfa.Graph.parse(sys.stdin)
     seg_depths = {name: 0 for name in graph.segments}
     for path in graph.paths.values():
