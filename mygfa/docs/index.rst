@@ -24,26 +24,28 @@ mygfa is `on PyPI`_, so you can install it with `pip install mygfa`.
 API Reference
 -------------
 
-.. autoclass:: mygfa.Graph
-   :members:
+.. automodule:: mygfa
 
-.. autoclass:: mygfa.Segment
-   :members:
+    .. autoclass:: Graph
+       :members:
 
-.. autoclass:: mygfa.Link
-   :members:
+    .. autoclass:: Segment
+       :members:
 
-.. autoclass:: mygfa.Path
-   :members:
+    .. autoclass:: Link
+       :members:
 
-.. autoclass:: mygfa.Handle
-   :members:
+    .. autoclass:: Path
+       :members:
 
-.. autoclass:: mygfa.Strand
-   :members:
+    .. autoclass:: Handle
+       :members:
 
-.. autoclass:: mygfa.Alignment
-   :members:
+    .. autoclass:: Strand
+       :members:
+
+    .. autoclass:: Alignment
+       :members:
 
 .. toctree::
    :maxdepth: 2
