@@ -1,7 +1,7 @@
-use crate::flatgfa;
+use crate::flatgfa::{self, GFABuilder};
 use crate::pool::Index;
 use argh::FromArgs;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -89,20 +89,42 @@ pub struct Extract {
 pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // Find the segment.
     // TODO: Maybe we should maintain an index? Or at least provide a helper for this?
-    let seg_id = gfa.segs.iter().position(|seg| seg.name == args.seg_name);
-    let seg_id = seg_id.expect("segment not found") as Index; // TODO Nicer error reporting.
+    let origin_seg = gfa.segs.iter().position(|seg| seg.name == args.seg_name);
+    let origin_seg = origin_seg.expect("segment not found") as Index; // TODO Nicer error reporting.
 
-    assert_eq!(args.link_distance, 1, "only `-c 1` is implemented");
+    assert_eq!(args.link_distance, 1, "only `-c 1` is implemented so far");
 
     // Find the set of all segments that are 1 link away.
-    let mut neighbors = std::collections::HashSet::new();
+    let mut neighborhood = HashSet::new();
+    neighborhood.insert(origin_seg);
     for link in gfa.links.iter() {
-        if link.from.segment() == seg_id {
-            neighbors.insert(link.to.segment());
-        }
-        if link.to.segment() == seg_id {
-            neighbors.insert(link.from.segment());
+        if let Some(other_seg) = link.incident_seg(origin_seg) {
+            neighborhood.insert(other_seg);
         }
     }
-    dbg!(neighbors);
+
+    // Create a new graph with only segments, paths, and indices that "touch"
+    // the neighborhood.
+    let mut store = flatgfa::HeapStore::default();
+
+    let mut seg_id_map = HashMap::new();
+    for seg_id in neighborhood.iter() {
+        let seg = &gfa.segs[*seg_id as usize];
+        let new_seg_id = store.add_seg(seg.name, gfa.get_seq(seg), gfa.get_optional_data(seg));
+        seg_id_map.insert(*seg_id, new_seg_id);
+    }
+
+    for link in gfa.links.iter() {
+        if neighborhood.contains(&link.from.segment()) && neighborhood.contains(&link.to.segment())
+        {
+            // TODO Lots of repetition to be reduced here. It would be great if we could make
+            // the ID translation kinda transparent, somehow...
+            let from = flatgfa::Handle::new(seg_id_map[&link.from.segment()], link.from.orient());
+            let to = flatgfa::Handle::new(seg_id_map[&link.to.segment()], link.to.orient());
+            let overlap = gfa.get_alignment(&link.overlap);
+            store.add_link(from, to, overlap.ops.into());
+        }
+    }
+
+    dbg!(store.segs);
 }

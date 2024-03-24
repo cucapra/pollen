@@ -106,6 +106,19 @@ pub struct Link {
     pub overlap: Span,
 }
 
+impl Link {
+    /// Is either end of the link the given segment? If so, return the other end.
+    pub fn incident_seg(&self, seg_id: Index) -> Option<Index> {
+        if self.from.segment() == seg_id {
+            Some(self.to.segment())
+        } else if self.to.segment() == seg_id {
+            Some(self.from.segment())
+        } else {
+            None
+        }
+    }
+}
+
 /// A forward or backward direction.
 #[derive(Debug, PartialEq, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
