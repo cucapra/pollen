@@ -22,7 +22,7 @@ jobs:
       - name: Assemble site directory
         run: |
           mkdir -p site
-          mv mygfa/docs/_build/html site/mygfa
+          cp -r mygfa/docs/_build/html site/mygfa
       - uses: actions/upload-pages-artifact@v3
         with:
           path: "site"
