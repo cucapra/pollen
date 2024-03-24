@@ -68,6 +68,7 @@ enum Command {
     Toc(cmds::Toc),
     Paths(cmds::Paths),
     Stats(cmds::Stats),
+    Extract(cmds::Extract),
 }
 
 fn main() {
@@ -122,6 +123,9 @@ fn main() {
         }
         Some(Command::Stats(args)) => {
             cmds::stats(&gfa, args);
+        }
+        Some(Command::Extract(args)) => {
+            cmds::extract(&gfa, args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.

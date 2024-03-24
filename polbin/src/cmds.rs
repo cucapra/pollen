@@ -72,3 +72,37 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
         println!("unique\t{}", counts.len());
     }
 }
+
+/// create a subset graph
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "extract")]
+pub struct Extract {
+    /// segment to extract around
+    #[argh(option, short = 'n')]
+    seg_name: usize,
+
+    /// number of edges "away" from the node to include
+    #[argh(option, short = 'c')]
+    link_distance: usize,
+}
+
+pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
+    // Find the segment.
+    // TODO: Maybe we should maintain an index? Or at least provide a helper for this?
+    let seg_id = gfa.segs.iter().position(|seg| seg.name == args.seg_name);
+    let seg_id = seg_id.expect("segment not found") as Index; // TODO Nicer error reporting.
+
+    assert_eq!(args.link_distance, 1, "only `-c 1` is implemented");
+
+    // Find the set of all segments that are 1 link away.
+    let mut neighbors = std::collections::HashSet::new();
+    for link in gfa.links.iter() {
+        if link.from.segment() == seg_id {
+            neighbors.insert(link.to.segment());
+        }
+        if link.to.segment() == seg_id {
+            neighbors.insert(link.from.segment());
+        }
+    }
+    dbg!(neighbors);
+}
