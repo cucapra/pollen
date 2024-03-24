@@ -21,7 +21,7 @@ There are several things in this repository:
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
-[gfa]: https://github.com/lh3/gfatools/blob/master/doc/rGFA.md#the-reference-gfa-rgfa-format
+[gfa]: https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md
 
 
 `mygfa` and `slow_odgi`

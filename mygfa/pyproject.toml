@@ -5,9 +5,9 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "mygfa"
 authors = [{name = "Anshuman Mohan", email = "amohan@cs.cornell.edu"}]
-license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
+readme = "README.md"
 
 [project.urls]
 Home = "https://github.com/cucapra/pollen/tree/main/mygfa"
