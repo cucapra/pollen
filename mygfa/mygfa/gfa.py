@@ -68,7 +68,10 @@ class Segment:
     """A GFA segment is nucleotide sequence."""
 
     name: str
+    """The segment's name as declared in the GFA file."""
+
     seq: Strand
+    """The nucleotide sequence for this segment."""
 
     @classmethod
     def parse_inner(cls, name: str, seq: str) -> "Segment":
@@ -129,7 +132,10 @@ class Handle:
     """A specific orientation for a segment, referenced by name."""
 
     name: str
+    """A segment's name."""
+
     ori: bool
+    """The orientation: True for forward (+), False for backward (-)."""
 
     @classmethod
     def parse(cls, seg: str, ori: str) -> "Handle":
@@ -151,11 +157,16 @@ class Handle:
 
 @dataclass(eq=True, order=True)
 class Link:
-    """A GFA link is an edge connecting two segments."""
+    """A GFA link is an edge connecting two handles."""
 
     from_: Handle
+    """The edge's source vertex."""
+
     to_: Handle
+    """The edge's sink vertex."""
+
     overlap: Alignment
+    """The CIGAR overlap between the two vertices."""
 
     @classmethod
     def parse_inner(
@@ -198,14 +209,19 @@ class Path:
     """A GFA path is a walk through the graph."""
 
     name: str
+    """"The path's name as declared in the GFA file."""
+
     segments: List[Handle]  # Segment names and orientations.
+    """The sequence of steps that make up the path."""
+
     olaps: Optional[List[Alignment]]
+    """The overlaps between steps in the path."""
 
     @classmethod
     def parse_inner(cls, name: str, seq: str, overlaps: str) -> "Path":
-        """Parse a GFA path, assuming that
-        the name, sequence and overlaps have already been extracted."""
-
+        """Parse a GFA path, assuming that the name, sequence and overlaps
+        have already been extracted.
+        """
         seq_lst = [Handle.parse(s[:-1], s[-1]) for s in seq.split(",")]
         olaps_lst = (
             None
@@ -226,7 +242,10 @@ class Path:
     @classmethod
     def parse(cls, fields: List[str]) -> "Path":
         """Parse a GFA path.
-        Extract the name, seq, and overlaps, and dispatch to the helper above."""
+
+        Extract the name, seq, and overlaps, and dispatch to
+        the `parse_inner` helper.
+        """
         _, name, seq, overlaps = fields[:4]
         return cls.parse_inner(name, seq, overlaps)
 
@@ -267,9 +286,16 @@ class Graph:
     """An entire GFA file."""
 
     headers: List[Header]
+    """Header (H) lines in the GFA file."""
+
     segments: Dict[str, Segment]
+    """The sequence fragments that make up the graph."""
+
     links: List[Link]
+    """The edges between (oriented) segments."""
+
     paths: Dict[str, Path]
+    """Named walks through the graph's edges."""
 
     @classmethod
     def parse(cls, infile: TextIO) -> "Graph":
