@@ -25,7 +25,7 @@ One easy way to install everything in the Pollen repo is to use [uv][]:
 
 ## Testing
 
-To test `slow_odgi`, we treat `odgi` as an oracle and compare our outputs against theirs. We mostly test against a set of pangenome graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
+To test `slow_odgi`, we treat odgi as an oracle and compare our outputs against theirs. We mostly test against a set of pangenome graphs available in the `odgi` repository, and, in a few cases, supplement these with short hand-rolled GFA files of our own.
 
 To run these tests, you will need:
 
