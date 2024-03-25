@@ -126,5 +126,39 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
-    dbg!(store.segs);
+    let mut neighb_paths = HashSet::new();
+    // TODO: We should offer Pool-like iteration abstractions for all the sets... this
+    // would make it less error-prone to get the id and path together, for example.
+    for (id, path) in gfa.paths.iter().enumerate() {
+        for step in gfa.get_steps(path) {
+            if neighborhood.contains(&step.segment()) {
+                neighb_paths.insert(id as Index);
+                break;
+            }
+        }
+    }
+    for path_id in neighb_paths {
+        let path = gfa.paths[path_id as usize];
+        let steps = store.add_steps(gfa.get_steps(&path).iter().filter_map(|step| {
+            if neighborhood.contains(&step.segment()) {
+                let seg = seg_id_map[&step.segment()];
+                Some(flatgfa::Handle::new(seg, step.orient()))
+            } else {
+                // TODO We could just stop iterating here? Since the path is guaranteed
+                // not to cross a second time...
+                None
+            }
+        }));
+        // TODO: Copying all of this is incredibly inefficient; we could do more direct
+        // copying of the ranges of overlaps & alignments.
+        // TODO: This is also incorrect! We should only copy the alignments from the steps
+        // we actually kept.
+        let overlaps = gfa
+            .get_overlaps(&path)
+            .iter()
+            .map(|s| gfa.get_alignment(s).ops.to_owned());
+        store.add_path(&gfa.get_path_name(&path), steps, overlaps);
+    }
+
+    crate::print::print(&store.view());
 }
