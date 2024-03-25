@@ -94,7 +94,8 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
 
     assert_eq!(args.link_distance, 1, "only `-c 1` is implemented so far");
 
-    // Find the set of all segments that are 1 link away.
+    // Find the set of all segments that are 1 link away, and insert them into a new
+    // subgraph.
     let mut neighborhood = HashSet::new();
     neighborhood.insert(origin_seg);
     for link in gfa.links.iter() {
@@ -107,20 +108,21 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // the neighborhood.
     let mut store = flatgfa::HeapStore::default();
 
-    let mut seg_id_map = HashMap::new();
-    for seg_id in neighborhood.iter() {
-        let seg = &gfa.segs[*seg_id as usize];
-        let new_seg_id = store.add_seg(seg.name, gfa.get_seq(seg), gfa.get_optional_data(seg));
-        seg_id_map.insert(*seg_id, new_seg_id);
-    }
+    let seg_map: HashMap<_, _> = neighborhood
+        .into_iter()
+        .map(|seg_id| {
+            let seg = &gfa.segs[seg_id as usize];
+            let new_seg_id = store.add_seg(seg.name, gfa.get_seq(seg), gfa.get_optional_data(seg));
+            (seg_id, new_seg_id)
+        })
+        .collect();
 
     for link in gfa.links.iter() {
-        if neighborhood.contains(&link.from.segment()) && neighborhood.contains(&link.to.segment())
-        {
+        if seg_map.contains_key(&link.from.segment()) && seg_map.contains_key(&link.to.segment()) {
             // TODO Lots of repetition to be reduced here. It would be great if we could make
             // the ID translation kinda transparent, somehow...
-            let from = flatgfa::Handle::new(seg_id_map[&link.from.segment()], link.from.orient());
-            let to = flatgfa::Handle::new(seg_id_map[&link.to.segment()], link.to.orient());
+            let from = flatgfa::Handle::new(seg_map[&link.from.segment()], link.from.orient());
+            let to = flatgfa::Handle::new(seg_map[&link.to.segment()], link.to.orient());
             let overlap = gfa.get_alignment(&link.overlap);
             store.add_link(from, to, overlap.ops.into());
         }
@@ -132,7 +134,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // would make it less error-prone to get the id and path together, for example.
     for (id, path) in gfa.paths.iter().enumerate() {
         for step in gfa.get_steps(path) {
-            if neighborhood.contains(&step.segment()) {
+            if seg_map.contains_key(&step.segment()) {
                 neighb_paths.insert(id as Index);
                 break;
             }
@@ -141,8 +143,8 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     for path_id in neighb_paths {
         let path = gfa.paths[path_id as usize];
         let steps = store.add_steps(gfa.get_steps(&path).iter().filter_map(|step| {
-            if neighborhood.contains(&step.segment()) {
-                let seg = seg_id_map[&step.segment()];
+            if seg_map.contains_key(&step.segment()) {
+                let seg = seg_map[&step.segment()];
                 Some(flatgfa::Handle::new(seg, step.orient()))
             } else {
                 // TODO Need to chop up the paths into subpaths when we cross out of
