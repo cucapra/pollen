@@ -81,8 +81,8 @@ fn print_seg(gfa: &flatgfa::FlatGFA, seg: &flatgfa::Segment) {
     println!();
 }
 
-/// Print our flat representation as a GFA text file to stdout.
-pub fn print(gfa: &flatgfa::FlatGFA) {
+/// Print a graph in the order preserved from an original GFA file.
+fn print_preserved(gfa: &flatgfa::FlatGFA) {
     let mut seg_iter = gfa.segs.iter();
     let mut path_iter = gfa.paths.iter();
     let mut link_iter = gfa.links.iter();
@@ -103,5 +103,30 @@ pub fn print(gfa: &flatgfa::FlatGFA) {
                 print_link(gfa, link_iter.next().expect("too few links"));
             }
         }
+    }
+}
+
+/// Print a graph in a normalized order, ignoring the original GFA line order.
+pub fn print_normalized(gfa: &flatgfa::FlatGFA) {
+    if !gfa.header.is_empty() {
+        println!("H\t{}", bstr::BStr::new(gfa.header));
+    }
+    for seg in gfa.segs.iter() {
+        print_seg(gfa, seg);
+    }
+    for path in gfa.paths.iter() {
+        print_path(gfa, path);
+    }
+    for link in gfa.links.iter() {
+        print_link(gfa, link);
+    }
+}
+
+/// Print our flat representation as a GFA text file to stdout.
+pub fn print(gfa: &flatgfa::FlatGFA) {
+    if gfa.line_order.is_empty() {
+        print_normalized(gfa);
+    } else {
+        print_preserved(gfa);
     }
 }
