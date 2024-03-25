@@ -145,13 +145,16 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
                 let seg = seg_id_map[&step.segment()];
                 Some(flatgfa::Handle::new(seg, step.orient()))
             } else {
-                // TODO We could just stop iterating here? Since the path is guaranteed
-                // not to cross a second time...
+                // TODO Need to chop up the paths into subpaths when we cross out of
+                // the neighborhood!
                 None
             }
         }));
+        // TODO Invent a new path name, using the start and end base-pair positions.
+        // Like `old_name:0-5` for a new subpath of length 5bp.
         store.add_path(&gfa.get_path_name(&path), steps, std::iter::empty());
     }
 
+    // TODO: It would be great to be able to emit FlatGFA files instead too.
     crate::print::print(&store.view());
 }
