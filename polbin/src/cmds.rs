@@ -126,6 +126,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
+    // TODO: We probably don't need the set, or two loops. One will do.
     let mut neighb_paths = HashSet::new();
     // TODO: We should offer Pool-like iteration abstractions for all the sets... this
     // would make it less error-prone to get the id and path together, for example.
@@ -149,15 +150,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
                 None
             }
         }));
-        // TODO: Copying all of this is incredibly inefficient; we could do more direct
-        // copying of the ranges of overlaps & alignments.
-        // TODO: This is also incorrect! We should only copy the alignments from the steps
-        // we actually kept.
-        let overlaps = gfa
-            .get_overlaps(&path)
-            .iter()
-            .map(|s| gfa.get_alignment(s).ops.to_owned());
-        store.add_path(&gfa.get_path_name(&path), steps, overlaps);
+        store.add_path(&gfa.get_path_name(&path), steps, std::iter::empty());
     }
 
     crate::print::print(&store.view());
