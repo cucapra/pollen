@@ -290,6 +290,9 @@ pub trait GFABuilder {
     /// Add a sequence of steps.
     fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span;
 
+    /// Add a single step.
+    fn add_step(&mut self, step: Handle) -> Index;
+
     /// Add a link between two (oriented) segments.
     fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index;
 
@@ -335,6 +338,10 @@ impl<'a, P: PoolFamily<'a>> GFABuilder for Store<'a, P> {
 
     fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
         self.steps.add_iter(steps)
+    }
+
+    fn add_step(&mut self, step: Handle) -> Index {
+        self.steps.add(step)
     }
 
     fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
