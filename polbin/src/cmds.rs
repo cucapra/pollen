@@ -1,5 +1,5 @@
 use crate::flatgfa::{self, GFABuilder};
-use crate::pool::Index;
+use crate::pool::{self, Index, Pool};
 use argh::FromArgs;
 use std::collections::{HashMap, HashSet};
 
@@ -128,33 +128,36 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
-    // TODO: We probably don't need the set, or two loops. One will do.
-    let mut neighb_paths = HashSet::new();
     // TODO: We should offer Pool-like iteration abstractions for all the sets... this
     // would make it less error-prone to get the id and path together, for example.
-    for (id, path) in gfa.paths.iter().enumerate() {
+    for path in gfa.paths.iter() {
+        let mut cur_subpath_start = None;
         for step in gfa.get_steps(path) {
-            if seg_map.contains_key(&step.segment()) {
-                neighb_paths.insert(id as Index);
-                break;
+            let in_neighb = seg_map.contains_key(&step.segment());
+            match (cur_subpath_start, in_neighb) {
+                (Some(_), true) => {} // continue
+                (Some(start), false) => {
+                    // End the current subpath.
+                    let steps = pool::Span {
+                        start,
+                        end: store.steps.next_id(),
+                    };
+                    // TODO Append a range to the name...
+                    store.add_path(&gfa.get_path_name(&path), steps, std::iter::empty());
+                }
+                (None, true) => {
+                    // Starting a new subpath.
+                    cur_subpath_start = Some(store.steps.next_id());
+                }
+                (None, false) => {} // not in the ballpark
+            }
+
+            // Add the (translated) step to the new graph.
+            if in_neighb {
+                let handle = flatgfa::Handle::new(seg_map[&step.segment()], step.orient());
+                store.add_step(handle);
             }
         }
-    }
-    for path_id in neighb_paths {
-        let path = gfa.paths[path_id as usize];
-        let steps = store.add_steps(gfa.get_steps(&path).iter().filter_map(|step| {
-            if seg_map.contains_key(&step.segment()) {
-                let seg = seg_map[&step.segment()];
-                Some(flatgfa::Handle::new(seg, step.orient()))
-            } else {
-                // TODO Need to chop up the paths into subpaths when we cross out of
-                // the neighborhood!
-                None
-            }
-        }));
-        // TODO Invent a new path name, using the start and end base-pair positions.
-        // Like `old_name:0-5` for a new subpath of length 5bp.
-        store.add_path(&gfa.get_path_name(&path), steps, std::iter::empty());
     }
 
     // TODO: It would be great to be able to emit FlatGFA files instead too.
