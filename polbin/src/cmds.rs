@@ -88,9 +88,8 @@ pub struct Extract {
 
 pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // Find the segment.
-    // TODO: Maybe we should maintain an index? Or at least provide a helper for this?
-    let origin_seg = gfa.segs.iter().position(|seg| seg.name == args.seg_name);
-    let origin_seg = origin_seg.expect("segment not found") as Index; // TODO Nicer error reporting.
+    // TODO: Nicer error handling.
+    let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found");
 
     assert_eq!(args.link_distance, 1, "only `-c 1` is implemented so far");
 

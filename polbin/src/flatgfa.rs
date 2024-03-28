@@ -224,6 +224,16 @@ impl<'a> FlatGFA<'a> {
         self.seq_data[seg.seq.range()].as_ref()
     }
 
+    /// Look up a segment by its name.
+    pub fn find_seg(&self, name: usize) -> Option<Index> {
+        // TODO Make this more efficient by maintaining the name index? This would not be
+        // too hard; we already have the machinery in `parse.rs`...
+        self.segs
+            .iter()
+            .position(|seg| seg.name == name)
+            .map(|i| i as Index)
+    }
+
     /// Get all the steps for a path.
     pub fn get_steps(&self, path: &Path) -> &[Handle] {
         &self.steps[path.steps.range()]
