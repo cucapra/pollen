@@ -128,34 +128,37 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
+    struct SubpathStart {
+        step: Index, // The id of the first step in the subpath.
+        pos: usize,  // The bp position at the start of the subpath.
+    }
+
     // TODO: We should offer Pool-like iteration abstractions for all the sets... this
     // would make it less error-prone to get the id and path together, for example.
     for path in gfa.paths.iter() {
-        let mut cur_subpath_step_start = None;
-        let mut cur_subpath_pos_start = None;
+        let mut cur_subpath_start: Option<SubpathStart> = None;
         let mut path_pos = 0;
+
         for step in gfa.get_steps(path) {
             let in_neighb = seg_map.contains_key(&step.segment());
-            match (cur_subpath_step_start, in_neighb) {
+            match (&cur_subpath_start, in_neighb) {
                 (Some(_), true) => {} // continue
                 (Some(start), false) => {
                     // End the current subpath.
                     let steps = pool::Span {
-                        start,
+                        start: start.step,
                         end: store.steps.next_id(),
                     };
-                    let name = format!(
-                        "{}:{}-{}",
-                        gfa.get_path_name(&path),
-                        cur_subpath_pos_start.unwrap(),
-                        path_pos,
-                    );
+                    let name = format!("{}:{}-{}", gfa.get_path_name(&path), start.pos, path_pos);
                     store.add_path(name.as_bytes(), steps, std::iter::empty());
+                    cur_subpath_start = None;
                 }
                 (None, true) => {
                     // Starting a new subpath.
-                    cur_subpath_step_start = Some(store.steps.next_id());
-                    cur_subpath_pos_start = Some(path_pos);
+                    cur_subpath_start = Some(SubpathStart {
+                        step: store.steps.next_id(),
+                        pos: path_pos,
+                    });
                 }
                 (None, false) => {} // not in the ballpark
             }
@@ -168,6 +171,17 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
 
             // Track the current bp position in the path.
             path_pos += gfa.get_handle_seg(*step).len();
+        }
+
+        // Did we reach the end of the path while still in the neighborhood?
+        if let Some(start) = cur_subpath_start {
+            // TODO Reduce duplication!
+            let steps = pool::Span {
+                start: start.step,
+                end: store.steps.next_id(),
+            };
+            let name = format!("{}:{}-{}", gfa.get_path_name(&path), start.pos, path_pos);
+            store.add_path(name.as_bytes(), steps, std::iter::empty());
         }
     }
 
