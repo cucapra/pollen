@@ -131,10 +131,12 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // TODO: We should offer Pool-like iteration abstractions for all the sets... this
     // would make it less error-prone to get the id and path together, for example.
     for path in gfa.paths.iter() {
-        let mut cur_subpath_start = None;
+        let mut cur_subpath_step_start = None;
+        let mut cur_subpath_pos_start = None;
+        let mut path_pos = 0;
         for step in gfa.get_steps(path) {
             let in_neighb = seg_map.contains_key(&step.segment());
-            match (cur_subpath_start, in_neighb) {
+            match (cur_subpath_step_start, in_neighb) {
                 (Some(_), true) => {} // continue
                 (Some(start), false) => {
                     // End the current subpath.
@@ -142,12 +144,18 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
                         start,
                         end: store.steps.next_id(),
                     };
-                    // TODO Append a range to the name...
-                    store.add_path(&gfa.get_path_name(&path), steps, std::iter::empty());
+                    let name = format!(
+                        "{}:{}-{}",
+                        gfa.get_path_name(&path),
+                        cur_subpath_pos_start.unwrap(),
+                        path_pos,
+                    );
+                    store.add_path(name.as_bytes(), steps, std::iter::empty());
                 }
                 (None, true) => {
                     // Starting a new subpath.
-                    cur_subpath_start = Some(store.steps.next_id());
+                    cur_subpath_step_start = Some(store.steps.next_id());
+                    cur_subpath_pos_start = Some(path_pos);
                 }
                 (None, false) => {} // not in the ballpark
             }
@@ -157,6 +165,9 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
                 let handle = flatgfa::Handle::new(seg_map[&step.segment()], step.orient());
                 store.add_step(handle);
             }
+
+            // Track the current bp position in the path.
+            path_pos += gfa.get_handle_seg(*step).len();
         }
     }
 

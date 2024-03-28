@@ -75,6 +75,12 @@ pub struct Segment {
     pub optional: Span,
 }
 
+impl Segment {
+    pub fn len(&self) -> usize {
+        self.seq.len()
+    }
+}
+
 /// A path is a sequence of oriented references to segments.
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
