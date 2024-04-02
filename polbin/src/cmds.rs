@@ -1,7 +1,7 @@
 use crate::flatgfa::{self, GFABuilder};
 use crate::pool::{self, Index, Pool};
 use argh::FromArgs;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -86,44 +86,66 @@ pub struct Extract {
     link_distance: usize,
 }
 
+/// A helper to construct a new graph that includes part of an old graph.
+struct SubgraphBuilder<'a> {
+    old: &'a flatgfa::FlatGFA<'a>,
+    store: flatgfa::HeapStore,
+    seg_map: HashMap<Index, Index>,
+}
+
+impl<'a> SubgraphBuilder<'a> {
+    fn new(old: &'a flatgfa::FlatGFA) -> Self {
+        Self {
+            old,
+            store: flatgfa::HeapStore::default(),
+            seg_map: HashMap::new(),
+        }
+    }
+
+    /// Add a segment from the source graph to this subgraph.
+    fn include_seg(&mut self, seg_id: Index) {
+        let seg = &self.old.segs[seg_id as usize];
+        let new_seg_id = self.store.add_seg(
+            seg.name,
+            self.old.get_seq(seg),
+            self.old.get_optional_data(seg),
+        );
+        self.seg_map.insert(seg_id, new_seg_id);
+    }
+}
+
 pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // Find the segment.
     // TODO: Nicer error handling.
     let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found");
 
-    assert_eq!(args.link_distance, 1, "only `-c 1` is implemented so far");
+    let mut subgraph = SubgraphBuilder::new(gfa);
 
     // Find the set of all segments that are 1 link away, and insert them into a new
     // subgraph.
-    let mut neighborhood = HashSet::new();
-    neighborhood.insert(origin_seg);
+    assert_eq!(args.link_distance, 1, "only `-c 1` is implemented so far");
     for link in gfa.links.iter() {
         if let Some(other_seg) = link.incident_seg(origin_seg) {
-            neighborhood.insert(other_seg);
+            if !subgraph.seg_map.contains_key(&other_seg) {
+                subgraph.include_seg(other_seg);
+            }
         }
     }
 
     // Create a new graph with only segments, paths, and indices that "touch"
     // the neighborhood.
-    let mut store = flatgfa::HeapStore::default();
-
-    let seg_map: HashMap<_, _> = neighborhood
-        .into_iter()
-        .map(|seg_id| {
-            let seg = &gfa.segs[seg_id as usize];
-            let new_seg_id = store.add_seg(seg.name, gfa.get_seq(seg), gfa.get_optional_data(seg));
-            (seg_id, new_seg_id)
-        })
-        .collect();
 
     for link in gfa.links.iter() {
-        if seg_map.contains_key(&link.from.segment()) && seg_map.contains_key(&link.to.segment()) {
+        if subgraph.seg_map.contains_key(&link.from.segment())
+            && subgraph.seg_map.contains_key(&link.to.segment())
+        {
             // TODO Lots of repetition to be reduced here. It would be great if we could make
             // the ID translation kinda transparent, somehow...
-            let from = flatgfa::Handle::new(seg_map[&link.from.segment()], link.from.orient());
-            let to = flatgfa::Handle::new(seg_map[&link.to.segment()], link.to.orient());
+            let from =
+                flatgfa::Handle::new(subgraph.seg_map[&link.from.segment()], link.from.orient());
+            let to = flatgfa::Handle::new(subgraph.seg_map[&link.to.segment()], link.to.orient());
             let overlap = gfa.get_alignment(&link.overlap);
-            store.add_link(from, to, overlap.ops.into());
+            subgraph.store.add_link(from, to, overlap.ops.into());
         }
     }
 
@@ -139,23 +161,25 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         let mut path_pos = 0;
 
         for step in gfa.get_steps(path) {
-            let in_neighb = seg_map.contains_key(&step.segment());
+            let in_neighb = subgraph.seg_map.contains_key(&step.segment());
             match (&cur_subpath_start, in_neighb) {
                 (Some(_), true) => {} // continue
                 (Some(start), false) => {
                     // End the current subpath.
                     let steps = pool::Span {
                         start: start.step,
-                        end: store.steps.next_id(),
+                        end: subgraph.store.steps.next_id(),
                     };
                     let name = format!("{}:{}-{}", gfa.get_path_name(&path), start.pos, path_pos);
-                    store.add_path(name.as_bytes(), steps, std::iter::empty());
+                    subgraph
+                        .store
+                        .add_path(name.as_bytes(), steps, std::iter::empty());
                     cur_subpath_start = None;
                 }
                 (None, true) => {
                     // Starting a new subpath.
                     cur_subpath_start = Some(SubpathStart {
-                        step: store.steps.next_id(),
+                        step: subgraph.store.steps.next_id(),
                         pos: path_pos,
                     });
                 }
@@ -164,8 +188,8 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
 
             // Add the (translated) step to the new graph.
             if in_neighb {
-                let handle = flatgfa::Handle::new(seg_map[&step.segment()], step.orient());
-                store.add_step(handle);
+                let handle = flatgfa::Handle::new(subgraph.seg_map[&step.segment()], step.orient());
+                subgraph.store.add_step(handle);
             }
 
             // Track the current bp position in the path.
@@ -177,13 +201,15 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
             // TODO Reduce duplication!
             let steps = pool::Span {
                 start: start.step,
-                end: store.steps.next_id(),
+                end: subgraph.store.steps.next_id(),
             };
             let name = format!("{}:{}-{}", gfa.get_path_name(&path), start.pos, path_pos);
-            store.add_path(name.as_bytes(), steps, std::iter::empty());
+            subgraph
+                .store
+                .add_path(name.as_bytes(), steps, std::iter::empty());
         }
     }
 
     // TODO: It would be great to be able to emit FlatGFA files instead too.
-    crate::print::print(&store.view());
+    crate::print::print(&subgraph.store.view());
 }
