@@ -112,6 +112,11 @@ impl<'a> SubgraphBuilder<'a> {
         );
         self.seg_map.insert(seg_id, new_seg_id);
     }
+
+    /// Translate a handle from the source graph to this subgraph.
+    fn tr_handle(&self, old_handle: flatgfa::Handle) -> flatgfa::Handle {
+        flatgfa::Handle::new(self.seg_map[&old_handle.segment()], old_handle.orient())
+    }
 }
 
 pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
@@ -139,11 +144,8 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         if subgraph.seg_map.contains_key(&link.from.segment())
             && subgraph.seg_map.contains_key(&link.to.segment())
         {
-            // TODO Lots of repetition to be reduced here. It would be great if we could make
-            // the ID translation kinda transparent, somehow...
-            let from =
-                flatgfa::Handle::new(subgraph.seg_map[&link.from.segment()], link.from.orient());
-            let to = flatgfa::Handle::new(subgraph.seg_map[&link.to.segment()], link.to.orient());
+            let from = subgraph.tr_handle(link.from);
+            let to = subgraph.tr_handle(link.to);
             let overlap = gfa.get_alignment(&link.overlap);
             subgraph.store.add_link(from, to, overlap.ops.into());
         }
