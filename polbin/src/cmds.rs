@@ -86,6 +86,14 @@ pub struct Extract {
     link_distance: usize,
 }
 
+pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapStore, &'static str> {
+    let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
+
+    let mut subgraph = SubgraphBuilder::new(gfa);
+    subgraph.extract(origin_seg, args.link_distance);
+    Ok(subgraph.store)
+}
+
 /// A helper to construct a new graph that includes part of an old graph.
 struct SubgraphBuilder<'a> {
     old: &'a flatgfa::FlatGFA<'a>,
@@ -219,12 +227,4 @@ impl<'a> SubgraphBuilder<'a> {
             self.find_subpaths(path);
         }
     }
-}
-
-pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapStore, &'static str> {
-    let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
-
-    let mut subgraph = SubgraphBuilder::new(gfa);
-    subgraph.extract(origin_seg, args.link_distance);
-    Ok(subgraph.store)
 }
