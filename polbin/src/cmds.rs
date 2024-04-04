@@ -93,6 +93,11 @@ struct SubgraphBuilder<'a> {
     seg_map: HashMap<Index, Index>,
 }
 
+struct SubpathStart {
+    step: Index, // The id of the first step in the subpath.
+    pos: usize,  // The bp position at the start of the subpath.
+}
+
 impl<'a> SubgraphBuilder<'a> {
     fn new(old: &'a flatgfa::FlatGFA) -> Self {
         Self {
@@ -119,6 +124,22 @@ impl<'a> SubgraphBuilder<'a> {
         let to = self.tr_handle(link.to);
         let overlap = self.old.get_alignment(&link.overlap);
         self.store.add_link(from, to, overlap.ops.into());
+    }
+
+    /// Add a single subpath from the given path to the subgraph.
+    fn include_subpath(&mut self, path: &flatgfa::Path, start: &SubpathStart, end_pos: usize) {
+        let steps = pool::Span {
+            start: start.step,
+            end: self.store.steps.next_id(),
+        };
+        let name = format!(
+            "{}:{}-{}",
+            self.old.get_path_name(&path),
+            start.pos,
+            end_pos
+        );
+        self.store
+            .add_path(name.as_bytes(), steps, std::iter::empty());
     }
 
     /// Translate a handle from the source graph to this subgraph.
@@ -160,11 +181,6 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
-    struct SubpathStart {
-        step: Index, // The id of the first step in the subpath.
-        pos: usize,  // The bp position at the start of the subpath.
-    }
-
     // TODO: We should offer Pool-like iteration abstractions for all the sets... this
     // would make it less error-prone to get the id and path together, for example.
     for path in gfa.paths.iter() {
@@ -177,14 +193,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
                 (Some(_), true) => {} // continue
                 (Some(start), false) => {
                     // End the current subpath.
-                    let steps = pool::Span {
-                        start: start.step,
-                        end: subgraph.store.steps.next_id(),
-                    };
-                    let name = format!("{}:{}-{}", gfa.get_path_name(&path), start.pos, path_pos);
-                    subgraph
-                        .store
-                        .add_path(name.as_bytes(), steps, std::iter::empty());
+                    subgraph.include_subpath(path, start, path_pos);
                     cur_subpath_start = None;
                 }
                 (None, true) => {
@@ -209,15 +218,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
 
         // Did we reach the end of the path while still in the neighborhood?
         if let Some(start) = cur_subpath_start {
-            // TODO Reduce duplication!
-            let steps = pool::Span {
-                start: start.step,
-                end: subgraph.store.steps.next_id(),
-            };
-            let name = format!("{}:{}-{}", gfa.get_path_name(&path), start.pos, path_pos);
-            subgraph
-                .store
-                .add_path(name.as_bytes(), steps, std::iter::empty());
+            subgraph.include_subpath(path, &start, path_pos);
         }
     }
 
