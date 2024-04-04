@@ -169,8 +169,7 @@ impl<'a> SubgraphBuilder<'a> {
 
             // Add the (translated) step to the new graph.
             if in_neighb {
-                let handle = flatgfa::Handle::new(self.seg_map[&step.segment()], step.orient());
-                self.store.add_step(handle);
+                self.store.add_step(self.tr_handle(*step));
             }
 
             // Track the current bp position in the path.
