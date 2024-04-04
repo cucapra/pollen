@@ -150,21 +150,17 @@ impl<'a> SubgraphBuilder<'a> {
 
         for step in self.old.get_steps(path) {
             let in_neighb = self.seg_map.contains_key(&step.segment());
-            match (&cur_subpath_start, in_neighb) {
-                (Some(_), true) => {} // continue
-                (Some(start), false) => {
-                    // End the current subpath.
-                    self.include_subpath(path, start, path_pos);
-                    cur_subpath_start = None;
-                }
-                (None, true) => {
-                    // Starting a new subpath.
-                    cur_subpath_start = Some(SubpathStart {
-                        step: self.store.steps.next_id(),
-                        pos: path_pos,
-                    });
-                }
-                (None, false) => {} // not in the ballpark
+
+            if let (Some(start), false) = (&cur_subpath_start, in_neighb) {
+                // End the current subpath.
+                self.include_subpath(path, start, path_pos);
+                cur_subpath_start = None;
+            } else if let (None, true) = (&cur_subpath_start, in_neighb) {
+                // Start a new subpath.
+                cur_subpath_start = Some(SubpathStart {
+                    step: self.store.steps.next_id(),
+                    pos: path_pos,
+                });
             }
 
             // Add the (translated) step to the new graph.
