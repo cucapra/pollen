@@ -121,11 +121,12 @@ fn main() {
         Some(Command::Paths(_)) => {
             cmds::paths(&gfa);
         }
-        Some(Command::Stats(args)) => {
-            cmds::stats(&gfa, args);
+        Some(Command::Stats(sub_args)) => {
+            cmds::stats(&gfa, sub_args);
         }
-        Some(Command::Extract(args)) => {
-            cmds::extract(&gfa, args);
+        Some(Command::Extract(sub_args)) => {
+            let store = cmds::extract(&gfa, sub_args);
+            dump(&store.view(), &args.output);
         }
         None => {
             // Just emit the GFA or FlatGFA file.

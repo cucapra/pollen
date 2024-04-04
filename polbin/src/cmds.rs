@@ -189,7 +189,7 @@ impl<'a> SubgraphBuilder<'a> {
     }
 }
 
-pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
+pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> flatgfa::HeapStore {
     let mut subgraph = SubgraphBuilder::new(gfa);
     let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found"); // TODO: Nicer errors.
     subgraph.include_seg(origin_seg);
@@ -217,6 +217,5 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         subgraph.find_subpaths(path);
     }
 
-    // TODO: It would be great to be able to emit FlatGFA files instead too.
-    crate::print::print(&subgraph.store.view());
+    subgraph.store
 }
