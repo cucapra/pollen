@@ -221,9 +221,10 @@ impl<'a> SubgraphBuilder<'a> {
     }
 }
 
-pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> flatgfa::HeapStore {
+pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapStore, &'static str> {
+    let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
+
     let mut subgraph = SubgraphBuilder::new(gfa);
-    let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found"); // TODO: Nicer errors.
     subgraph.extract(origin_seg, args.link_distance);
-    subgraph.store
+    Ok(subgraph.store)
 }

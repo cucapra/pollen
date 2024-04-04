@@ -71,14 +71,14 @@ enum Command {
     Extract(cmds::Extract),
 }
 
-fn main() {
+fn main() -> Result<(), &'static str> {
     let args: PolBin = argh::from_env();
 
     // A special case for converting from GFA text to an in-place FlatGFA binary.
     if args.mutate {
         if let (None, None, Some(out_name)) = (&args.command, &args.input, &args.output) {
             prealloc_translate(args.input_gfa.as_deref(), out_name, args.prealloc_factor);
-            return;
+            return Ok(());
         }
     }
 
@@ -125,7 +125,7 @@ fn main() {
             cmds::stats(&gfa, sub_args);
         }
         Some(Command::Extract(sub_args)) => {
-            let store = cmds::extract(&gfa, sub_args);
+            let store = cmds::extract(&gfa, sub_args)?;
             dump(&store.view(), &args.output);
         }
         None => {
@@ -133,6 +133,8 @@ fn main() {
             dump(&gfa, &args.output);
         }
     }
+
+    Ok(())
 }
 
 /// Write a FlatGFA either to a GFA text file to stdout or a binary FlatGFA file given
