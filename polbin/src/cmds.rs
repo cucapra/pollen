@@ -113,9 +113,22 @@ impl<'a> SubgraphBuilder<'a> {
         self.seg_map.insert(seg_id, new_seg_id);
     }
 
+    /// Add a link from the source graph to the subgraph.
+    fn include_link(&mut self, link: &flatgfa::Link) {
+        let from = self.tr_handle(link.from);
+        let to = self.tr_handle(link.to);
+        let overlap = self.old.get_alignment(&link.overlap);
+        self.store.add_link(from, to, overlap.ops.into());
+    }
+
     /// Translate a handle from the source graph to this subgraph.
     fn tr_handle(&self, old_handle: flatgfa::Handle) -> flatgfa::Handle {
         flatgfa::Handle::new(self.seg_map[&old_handle.segment()], old_handle.orient())
+    }
+
+    /// Check whether a segment from the old graph is in the subgraph.
+    fn contains(&self, old_seg_id: Index) -> bool {
+        self.seg_map.contains_key(&old_seg_id)
     }
 }
 
@@ -142,13 +155,8 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     // the neighborhood.
 
     for link in gfa.links.iter() {
-        if subgraph.seg_map.contains_key(&link.from.segment())
-            && subgraph.seg_map.contains_key(&link.to.segment())
-        {
-            let from = subgraph.tr_handle(link.from);
-            let to = subgraph.tr_handle(link.to);
-            let overlap = gfa.get_alignment(&link.overlap);
-            subgraph.store.add_link(from, to, overlap.ops.into());
+        if subgraph.contains(link.from.segment()) && subgraph.contains(link.to.segment()) {
+            subgraph.include_link(link);
         }
     }
 
