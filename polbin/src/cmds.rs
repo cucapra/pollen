@@ -140,12 +140,7 @@ impl<'a> SubgraphBuilder<'a> {
             start: start.step,
             end: self.store.steps.next_id(),
         };
-        let name = format!(
-            "{}:{}-{}",
-            self.old.get_path_name(&path),
-            start.pos,
-            end_pos
-        );
+        let name = format!("{}:{}-{}", self.old.get_path_name(path), start.pos, end_pos);
         self.store
             .add_path(name.as_bytes(), steps, std::iter::empty());
     }
