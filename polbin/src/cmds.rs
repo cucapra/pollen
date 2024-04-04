@@ -199,8 +199,7 @@ impl<'a> SubgraphBuilder<'a> {
     fn extract(&mut self, origin: Index, dist: usize) {
         self.include_seg(origin);
 
-        // Find the set of all segments that are 1 link away, and insert them into a new
-        // subgraph.
+        // Find the set of all segments that are 1 link away.
         assert_eq!(dist, 1, "only `-c 1` is implemented so far");
         for link in self.old.links.iter() {
             if let Some(other_seg) = link.incident_seg(origin) {
