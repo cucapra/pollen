@@ -125,6 +125,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
     let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found");
 
     let mut subgraph = SubgraphBuilder::new(gfa);
+    subgraph.include_seg(origin_seg);
 
     // Find the set of all segments that are 1 link away, and insert them into a new
     // subgraph.
