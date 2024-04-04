@@ -187,35 +187,43 @@ impl<'a> SubgraphBuilder<'a> {
     fn contains(&self, old_seg_id: Index) -> bool {
         self.seg_map.contains_key(&old_seg_id)
     }
+
+    /// Extract a subgraph consisting of a neighborhood of segments up to `dist` links away
+    /// from the given segment in the original graph.
+    ///
+    /// Include any links between the segments in the neighborhood and subpaths crossing
+    /// through the neighborhood.
+    fn extract(&mut self, origin: Index, dist: usize) {
+        self.include_seg(origin);
+
+        // Find the set of all segments that are 1 link away, and insert them into a new
+        // subgraph.
+        assert_eq!(dist, 1, "only `-c 1` is implemented so far");
+        for link in self.old.links.iter() {
+            if let Some(other_seg) = link.incident_seg(origin) {
+                if !self.seg_map.contains_key(&other_seg) {
+                    self.include_seg(other_seg);
+                }
+            }
+        }
+
+        // Include all links within the subgraph.
+        for link in self.old.links.iter() {
+            if self.contains(link.from.segment()) && self.contains(link.to.segment()) {
+                self.include_link(link);
+            }
+        }
+
+        // Find subpaths within the subgraph.
+        for path in self.old.paths.iter() {
+            self.find_subpaths(path);
+        }
+    }
 }
 
 pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> flatgfa::HeapStore {
     let mut subgraph = SubgraphBuilder::new(gfa);
     let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found"); // TODO: Nicer errors.
-    subgraph.include_seg(origin_seg);
-
-    // Find the set of all segments that are 1 link away, and insert them into a new
-    // subgraph.
-    assert_eq!(args.link_distance, 1, "only `-c 1` is implemented so far");
-    for link in gfa.links.iter() {
-        if let Some(other_seg) = link.incident_seg(origin_seg) {
-            if !subgraph.seg_map.contains_key(&other_seg) {
-                subgraph.include_seg(other_seg);
-            }
-        }
-    }
-
-    // Include all links within the subgraph.
-    for link in gfa.links.iter() {
-        if subgraph.contains(link.from.segment()) && subgraph.contains(link.to.segment()) {
-            subgraph.include_link(link);
-        }
-    }
-
-    // Find subpaths within the subgraph.
-    for path in gfa.paths.iter() {
-        subgraph.find_subpaths(path);
-    }
-
+    subgraph.extract(origin_seg, args.link_distance);
     subgraph.store
 }
