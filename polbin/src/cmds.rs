@@ -190,11 +190,8 @@ impl<'a> SubgraphBuilder<'a> {
 }
 
 pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
-    // Find the segment.
-    // TODO: Nicer error handling.
-    let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found");
-
     let mut subgraph = SubgraphBuilder::new(gfa);
+    let origin_seg = gfa.find_seg(args.seg_name).expect("segment not found"); // TODO: Nicer errors.
     subgraph.include_seg(origin_seg);
 
     // Find the set of all segments that are 1 link away, and insert them into a new
@@ -208,15 +205,14 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
-    // Create a new graph with only segments, paths, and indices that "touch"
-    // the neighborhood.
-
+    // Include all links within the subgraph.
     for link in gfa.links.iter() {
         if subgraph.contains(link.from.segment()) && subgraph.contains(link.to.segment()) {
             subgraph.include_link(link);
         }
     }
 
+    // Find subpaths within the subgraph.
     for path in gfa.paths.iter() {
         subgraph.find_subpaths(path);
     }
