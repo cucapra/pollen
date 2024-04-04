@@ -142,6 +142,47 @@ impl<'a> SubgraphBuilder<'a> {
             .add_path(name.as_bytes(), steps, std::iter::empty());
     }
 
+    /// Identify all the subpaths in a path from the original graph that cross through
+    /// segments in this subgraph and add them.
+    fn find_subpaths(&mut self, path: &flatgfa::Path) {
+        let mut cur_subpath_start: Option<SubpathStart> = None;
+        let mut path_pos = 0;
+
+        for step in self.old.get_steps(path) {
+            let in_neighb = self.seg_map.contains_key(&step.segment());
+            match (&cur_subpath_start, in_neighb) {
+                (Some(_), true) => {} // continue
+                (Some(start), false) => {
+                    // End the current subpath.
+                    self.include_subpath(path, start, path_pos);
+                    cur_subpath_start = None;
+                }
+                (None, true) => {
+                    // Starting a new subpath.
+                    cur_subpath_start = Some(SubpathStart {
+                        step: self.store.steps.next_id(),
+                        pos: path_pos,
+                    });
+                }
+                (None, false) => {} // not in the ballpark
+            }
+
+            // Add the (translated) step to the new graph.
+            if in_neighb {
+                let handle = flatgfa::Handle::new(self.seg_map[&step.segment()], step.orient());
+                self.store.add_step(handle);
+            }
+
+            // Track the current bp position in the path.
+            path_pos += self.old.get_handle_seg(*step).len();
+        }
+
+        // Did we reach the end of the path while still in the neighborhood?
+        if let Some(start) = cur_subpath_start {
+            self.include_subpath(path, &start, path_pos);
+        }
+    }
+
     /// Translate a handle from the source graph to this subgraph.
     fn tr_handle(&self, old_handle: flatgfa::Handle) -> flatgfa::Handle {
         flatgfa::Handle::new(self.seg_map[&old_handle.segment()], old_handle.orient())
@@ -181,45 +222,8 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) {
         }
     }
 
-    // TODO: We should offer Pool-like iteration abstractions for all the sets... this
-    // would make it less error-prone to get the id and path together, for example.
     for path in gfa.paths.iter() {
-        let mut cur_subpath_start: Option<SubpathStart> = None;
-        let mut path_pos = 0;
-
-        for step in gfa.get_steps(path) {
-            let in_neighb = subgraph.seg_map.contains_key(&step.segment());
-            match (&cur_subpath_start, in_neighb) {
-                (Some(_), true) => {} // continue
-                (Some(start), false) => {
-                    // End the current subpath.
-                    subgraph.include_subpath(path, start, path_pos);
-                    cur_subpath_start = None;
-                }
-                (None, true) => {
-                    // Starting a new subpath.
-                    cur_subpath_start = Some(SubpathStart {
-                        step: subgraph.store.steps.next_id(),
-                        pos: path_pos,
-                    });
-                }
-                (None, false) => {} // not in the ballpark
-            }
-
-            // Add the (translated) step to the new graph.
-            if in_neighb {
-                let handle = flatgfa::Handle::new(subgraph.seg_map[&step.segment()], step.orient());
-                subgraph.store.add_step(handle);
-            }
-
-            // Track the current bp position in the path.
-            path_pos += gfa.get_handle_seg(*step).len();
-        }
-
-        // Did we reach the end of the path while still in the neighborhood?
-        if let Some(start) = cur_subpath_start {
-            subgraph.include_subpath(path, &start, path_pos);
-        }
+        subgraph.find_subpaths(path);
     }
 
     // TODO: It would be great to be able to emit FlatGFA files instead too.
