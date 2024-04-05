@@ -31,6 +31,10 @@ impl Span {
     pub fn range(&self) -> std::ops::Range<usize> {
         (*self).into()
     }
+
+    pub fn len(&self) -> usize {
+        (self.end - self.start) as usize
+    }
 }
 
 pub trait Pool<T: Clone> {

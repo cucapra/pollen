@@ -75,6 +75,12 @@ pub struct Segment {
     pub optional: Span,
 }
 
+impl Segment {
+    pub fn len(&self) -> usize {
+        self.seq.len()
+    }
+}
+
 /// A path is a sequence of oriented references to segments.
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
@@ -104,6 +110,19 @@ pub struct Link {
     /// The CIGAR overlap between the segments. This is a range in the
     /// `overlaps` pool.
     pub overlap: Span,
+}
+
+impl Link {
+    /// Is either end of the link the given segment? If so, return the other end.
+    pub fn incident_seg(&self, seg_id: Index) -> Option<Index> {
+        if self.from.segment() == seg_id {
+            Some(self.to.segment())
+        } else if self.to.segment() == seg_id {
+            Some(self.from.segment())
+        } else {
+            None
+        }
+    }
 }
 
 /// A forward or backward direction.
@@ -205,6 +224,16 @@ impl<'a> FlatGFA<'a> {
         self.seq_data[seg.seq.range()].as_ref()
     }
 
+    /// Look up a segment by its name.
+    pub fn find_seg(&self, name: usize) -> Option<Index> {
+        // TODO Make this more efficient by maintaining the name index? This would not be
+        // too hard; we already have the machinery in `parse.rs`...
+        self.segs
+            .iter()
+            .position(|seg| seg.name == name)
+            .map(|i| i as Index)
+    }
+
     /// Get all the steps for a path.
     pub fn get_steps(&self, path: &Path) -> &[Handle] {
         &self.steps[path.steps.range()]
@@ -277,6 +306,9 @@ pub trait GFABuilder {
     /// Add a sequence of steps.
     fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span;
 
+    /// Add a single step.
+    fn add_step(&mut self, step: Handle) -> Index;
+
     /// Add a link between two (oriented) segments.
     fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index;
 
@@ -322,6 +354,10 @@ impl<'a, P: PoolFamily<'a>> GFABuilder for Store<'a, P> {
 
     fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
         self.steps.add_iter(steps)
+    }
+
+    fn add_step(&mut self, step: Handle) -> Index {
+        self.steps.add(step)
     }
 
     fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
