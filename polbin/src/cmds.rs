@@ -1,5 +1,5 @@
-use crate::flatgfa;
-use crate::pool::Index;
+use crate::flatgfa::{self, GFABuilder};
+use crate::pool::{self, Index, Pool};
 use argh::FromArgs;
 use std::collections::HashMap;
 
@@ -70,5 +70,155 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
         println!("#type\tnum");
         println!("total\t{}", total);
         println!("unique\t{}", counts.len());
+    }
+}
+
+/// create a subset graph
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "extract")]
+pub struct Extract {
+    /// segment to extract around
+    #[argh(option, short = 'n')]
+    seg_name: usize,
+
+    /// number of edges "away" from the node to include
+    #[argh(option, short = 'c')]
+    link_distance: usize,
+}
+
+pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapStore, &'static str> {
+    let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
+
+    let mut subgraph = SubgraphBuilder::new(gfa);
+    subgraph.extract(origin_seg, args.link_distance);
+    Ok(subgraph.store)
+}
+
+/// A helper to construct a new graph that includes part of an old graph.
+struct SubgraphBuilder<'a> {
+    old: &'a flatgfa::FlatGFA<'a>,
+    store: flatgfa::HeapStore,
+    seg_map: HashMap<Index, Index>,
+}
+
+struct SubpathStart {
+    step: Index, // The id of the first step in the subpath.
+    pos: usize,  // The bp position at the start of the subpath.
+}
+
+impl<'a> SubgraphBuilder<'a> {
+    fn new(old: &'a flatgfa::FlatGFA) -> Self {
+        Self {
+            old,
+            store: flatgfa::HeapStore::default(),
+            seg_map: HashMap::new(),
+        }
+    }
+
+    /// Add a segment from the source graph to this subgraph.
+    fn include_seg(&mut self, seg_id: Index) {
+        let seg = &self.old.segs[seg_id as usize];
+        let new_seg_id = self.store.add_seg(
+            seg.name,
+            self.old.get_seq(seg),
+            self.old.get_optional_data(seg),
+        );
+        self.seg_map.insert(seg_id, new_seg_id);
+    }
+
+    /// Add a link from the source graph to the subgraph.
+    fn include_link(&mut self, link: &flatgfa::Link) {
+        let from = self.tr_handle(link.from);
+        let to = self.tr_handle(link.to);
+        let overlap = self.old.get_alignment(&link.overlap);
+        self.store.add_link(from, to, overlap.ops.into());
+    }
+
+    /// Add a single subpath from the given path to the subgraph.
+    fn include_subpath(&mut self, path: &flatgfa::Path, start: &SubpathStart, end_pos: usize) {
+        let steps = pool::Span {
+            start: start.step,
+            end: self.store.steps.next_id(),
+        };
+        let name = format!("{}:{}-{}", self.old.get_path_name(path), start.pos, end_pos);
+        self.store
+            .add_path(name.as_bytes(), steps, std::iter::empty());
+    }
+
+    /// Identify all the subpaths in a path from the original graph that cross through
+    /// segments in this subgraph and add them.
+    fn find_subpaths(&mut self, path: &flatgfa::Path) {
+        let mut cur_subpath_start: Option<SubpathStart> = None;
+        let mut path_pos = 0;
+
+        for step in self.old.get_steps(path) {
+            let in_neighb = self.seg_map.contains_key(&step.segment());
+
+            if let (Some(start), false) = (&cur_subpath_start, in_neighb) {
+                // End the current subpath.
+                self.include_subpath(path, start, path_pos);
+                cur_subpath_start = None;
+            } else if let (None, true) = (&cur_subpath_start, in_neighb) {
+                // Start a new subpath.
+                cur_subpath_start = Some(SubpathStart {
+                    step: self.store.steps.next_id(),
+                    pos: path_pos,
+                });
+            }
+
+            // Add the (translated) step to the new graph.
+            if in_neighb {
+                self.store.add_step(self.tr_handle(*step));
+            }
+
+            // Track the current bp position in the path.
+            path_pos += self.old.get_handle_seg(*step).len();
+        }
+
+        // Did we reach the end of the path while still in the neighborhood?
+        if let Some(start) = cur_subpath_start {
+            self.include_subpath(path, &start, path_pos);
+        }
+    }
+
+    /// Translate a handle from the source graph to this subgraph.
+    fn tr_handle(&self, old_handle: flatgfa::Handle) -> flatgfa::Handle {
+        flatgfa::Handle::new(self.seg_map[&old_handle.segment()], old_handle.orient())
+    }
+
+    /// Check whether a segment from the old graph is in the subgraph.
+    fn contains(&self, old_seg_id: Index) -> bool {
+        self.seg_map.contains_key(&old_seg_id)
+    }
+
+    /// Extract a subgraph consisting of a neighborhood of segments up to `dist` links away
+    /// from the given segment in the original graph.
+    ///
+    /// Include any links between the segments in the neighborhood and subpaths crossing
+    /// through the neighborhood.
+    fn extract(&mut self, origin: Index, dist: usize) {
+        self.include_seg(origin);
+
+        // Find the set of all segments that are 1 link away.
+        assert_eq!(dist, 1, "only `-c 1` is implemented so far");
+        for link in self.old.links.iter() {
+            if let Some(other_seg) = link.incident_seg(origin) {
+                if !self.seg_map.contains_key(&other_seg) {
+                    self.include_seg(other_seg);
+                }
+            }
+        }
+
+        // Include all links within the subgraph.
+        for link in self.old.links.iter() {
+            if self.contains(link.from.segment()) && self.contains(link.to.segment()) {
+                self.include_link(link);
+            }
+        }
+
+        // Find subpaths within the subgraph.
+        for path in self.old.paths.iter() {
+            self.find_subpaths(path);
+        }
     }
 }
