@@ -107,7 +107,6 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
     let mut found = None;
     for step in gfa.get_steps(path) {
         let seg = gfa.get_handle_seg(*step);
-        // TODO Handle backwards segments!
         let end_pos = cur_pos + seg.len();
         if offset < end_pos {
             // Found it!
