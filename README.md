@@ -16,7 +16,7 @@ There are several things in this repository:
 
 * [mygfa](./mygfa), a simple Python library for parsing, processing, and emitting [GFA][] files.
 * [slow_odgi](./slow_odgi), a reference implementation of several GFA queries from the [odgi][] tool using `mygfa`.
-* [FlatGFA](./polbin), an experimental fast binary format for representing and analyzing GFA files.
+* [FlatGFA](./flatgfa), an experimental fast binary format for representing and analyzing GFA files.
 * A proof-of-concept Calyx-based [hardware accelerator generator](./pollen_py) for a single GFA query (`odgi depth`) and a data generator for this hardware.
 
 [calyx]: https://calyxir.org
