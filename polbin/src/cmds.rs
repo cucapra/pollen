@@ -101,7 +101,6 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
         flatgfa::Orientation::Forward,
         "only + is implemented so far"
     );
-    dbg!(path_id, offset, &orientation);
 
     // Traverse the path until we reach the position.
     let mut cur_pos = 0;
@@ -122,7 +121,16 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
     if let Some((handle, seg_off)) = found {
         let seg = gfa.get_handle_seg(handle);
         let seg_name = seg.name;
-        println!("{},{},{}", seg_name, seg_off, handle.orient());
+        println!("#source.path.pos\ttarget.graph.pos");
+        println!(
+            "{},{},{}\t{},{},{}",
+            path_name,
+            offset,
+            orientation,
+            seg_name,
+            seg_off,
+            handle.orient()
+        );
     }
 
     Ok(())
