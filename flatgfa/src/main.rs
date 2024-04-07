@@ -1,14 +1,8 @@
-mod cmds;
-mod file;
-mod flatgfa;
-mod gfaline;
-mod parse;
-mod pool;
-mod print;
 use argh::FromArgs;
-use flatgfa::GFABuilder;
+use flatgfa::flatgfa::{FlatGFA, GFABuilder};
+use flatgfa::parse::Parser;
+use flatgfa::{cmds, file, parse, print};
 use memmap::{Mmap, MmapMut};
-use parse::Parser;
 
 fn map_file(name: &str) -> Mmap {
     let file = std::fs::File::open(name).unwrap();
@@ -143,7 +137,7 @@ fn main() -> Result<(), &'static str> {
 
 /// Write a FlatGFA either to a GFA text file to stdout or a binary FlatGFA file given
 /// with a name.
-fn dump(gfa: &flatgfa::FlatGFA, output: &Option<String>) {
+fn dump(gfa: &FlatGFA, output: &Option<String>) {
     match output {
         Some(name) => {
             let mut mmap = map_new_file(name, file::size(gfa) as u64);
