@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::pool::{Index, Pool, Span};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -133,6 +135,20 @@ pub enum Orientation {
     Backward, // -
 }
 
+impl FromStr for Orientation {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "+" {
+            Ok(Orientation::Forward)
+        } else if s == "-" {
+            Ok(Orientation::Backward)
+        } else {
+            Err(())
+        }
+    }
+}
+
 /// An oriented reference to a segment.
 ///
 /// A Handle refers to the forward (+) or backward (-) orientation for a given segment.
@@ -231,6 +247,14 @@ impl<'a> FlatGFA<'a> {
         self.segs
             .iter()
             .position(|seg| seg.name == name)
+            .map(|i| i as Index)
+    }
+
+    /// Look up a path by its name.
+    pub fn find_path(&self, name: &BStr) -> Option<Index> {
+        self.paths
+            .iter()
+            .position(|path| self.get_path_name(path) == name)
             .map(|i| i as Index)
     }
 
