@@ -95,7 +95,36 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
     };
 
     let path_id = gfa.find_path(path_name.into()).ok_or("path not found")?;
-    dbg!(path_id, offset, orientation);
+    let path = &gfa.paths[path_id as usize];
+    assert_eq!(
+        orientation,
+        flatgfa::Orientation::Forward,
+        "only + is implemented so far"
+    );
+    dbg!(path_id, offset, &orientation);
+
+    // Traverse the path until we reach the position.
+    let mut cur_pos = 0;
+    let mut found = None;
+    for step in gfa.get_steps(path) {
+        let seg = gfa.get_handle_seg(*step);
+        // TODO Handle backwards segments!
+        let end_pos = cur_pos + seg.len();
+        if offset < end_pos {
+            // Found it!
+            found = Some((*step, offset - cur_pos));
+            break;
+        }
+        cur_pos = end_pos;
+    }
+
+    // Print the match.
+    if let Some((handle, seg_off)) = found {
+        let seg = gfa.get_handle_seg(handle);
+        let seg_name = seg.name;
+        println!("{},{},{}", seg_name, seg_off, handle.orient());
+    }
+
     Ok(())
 }
 
