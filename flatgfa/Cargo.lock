@@ -72,6 +72,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
+name = "flatgfa"
+version = "0.1.0"
+dependencies = [
+ "argh",
+ "atoi",
+ "bstr",
+ "memchr",
+ "memmap",
+ "num_enum",
+ "tinyvec",
+ "zerocopy",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -137,20 +151,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "polbin"
-version = "0.1.0"
-dependencies = [
- "argh",
- "atoi",
- "bstr",
- "memchr",
- "memmap",
- "num_enum",
- "tinyvec",
- "zerocopy",
 ]
 
 [[package]]
