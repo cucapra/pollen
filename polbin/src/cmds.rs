@@ -73,6 +73,32 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
     }
 }
 
+/// find a nucleotide position within a path
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "position")]
+pub struct Position {
+    /// path_name,offset,orientation
+    #[argh(option, short = 'p')]
+    path_pos: String,
+}
+
+pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static str> {
+    // Parse the position triple, which looks like `path,42,+`.
+    let (path_name, offset, orientation) = {
+        let parts: Vec<_> = args.path_pos.split(",").collect();
+        if parts.len() != 3 {
+            return Err("position must be path_name,offset,orientation");
+        }
+        let off: usize = parts[1].parse().or(Err("offset must be a number"))?;
+        let ori: flatgfa::Orientation = parts[2].parse().or(Err("orientation must be + or -"))?;
+        (parts[0], off, ori)
+    };
+
+    let path_id = gfa.find_path(path_name.into()).ok_or("path not found")?;
+    dbg!(path_id, offset, orientation);
+    Ok(())
+}
+
 /// create a subset graph
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "extract")]
