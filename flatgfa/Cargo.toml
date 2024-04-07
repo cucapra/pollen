@@ -3,6 +3,10 @@ name = "flatgfa"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "fgfa"
+path = "src/main.rs"
+
 [dependencies]
 argh = "0.1.12"
 atoi = "2.0.0"
