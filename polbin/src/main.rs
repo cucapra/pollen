@@ -68,6 +68,7 @@ enum Command {
     Toc(cmds::Toc),
     Paths(cmds::Paths),
     Stats(cmds::Stats),
+    Position(cmds::Position),
     Extract(cmds::Extract),
 }
 
@@ -123,6 +124,9 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Stats(sub_args)) => {
             cmds::stats(&gfa, sub_args);
+        }
+        Some(Command::Position(sub_args)) => {
+            cmds::position(&gfa, sub_args)?;
         }
         Some(Command::Extract(sub_args)) => {
             let store = cmds::extract(&gfa, sub_args)?;
