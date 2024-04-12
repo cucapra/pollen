@@ -1,6 +1,7 @@
 import tomllib
 import os
 import subprocess
+from shlex import quote
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -46,7 +47,7 @@ def fetch_graphs(graphs, names):
         fetch_file(graph_name, url)
 
 
-def convert_og(name):
+def odgi_convert(name):
     """Convert a GFA to odgi's `.og` format."""
     og = graph_path(name, 'og')
     if os.path.exists(og):
@@ -56,7 +57,7 @@ def convert_og(name):
     subprocess.run([ODGI, 'build', '-g', gfa, '-o', og])
 
 
-def convert_flatgfa(name):
+def flatgfa_convert(name):
     """Convert a GFA to the FlatGFA format."""
     flatgfa = graph_path(name, 'flatgfa')
     if os.path.exists(flatgfa):
@@ -65,14 +66,29 @@ def convert_flatgfa(name):
     gfa = graph_path(name, 'gfa')
     subprocess.run([FGFA, '-I', gfa, '-o', flatgfa])
 
+
+def compare_paths(name):
+    """Compare odgi and FlatGFA implementations of path-name extraction.
+    """
+    og = graph_path(name, 'og')
+    flatgfa = graph_path(name, 'flatgfa')
+    odgi_cmd = f'odgi paths -i {quote(og)} -L'
+    fgfa_cmd = f'fgfa -i {quote(flatgfa)} paths'
+
+    print(odgi_cmd)
+    print(fgfa_cmd)
+    subprocess.run(['hyperfine', '-N', odgi_cmd, fgfa_cmd], check=True)
+
+
 def bench_main():
     with open(GRAPHS_TOML, 'rb') as f:
         graphs = tomllib.load(f)
     fetch_graphs(graphs, SOME_GRAPHS)
 
     for graph in SOME_GRAPHS:
-        convert_og(graph)
-        convert_flatgfa(graph)
+        odgi_convert(graph)
+        flatgfa_convert(graph)
+        compare_paths(graph)
 
 
 if __name__ == "__main__":
