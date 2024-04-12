@@ -7,6 +7,8 @@ GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 
 SOME_GRAPHS = ['test.lpa', 'test.chr6c4', 'hprc.chrM']
+ODGI = 'odgi'
+FGFA = 'fgfa'
 
 
 def check_wait(popen):
@@ -15,9 +17,12 @@ def check_wait(popen):
         raise subprocess.CalledProcessError(err, popen.args)
 
 
+def graph_path(name, ext):
+    return os.path.join(GRAPHS_DIR, f'{name}.{ext}')
+
 def fetch_file(name, url):
     os.makedirs(GRAPHS_DIR, exist_ok=True)
-    dest = os.path.join(GRAPHS_DIR, f'{name}.gfa')
+    dest = graph_path(name, 'gfa')
     # If the file exists, don't re-download.
     if os.path.exists(dest):
         return
@@ -41,10 +46,33 @@ def fetch_graphs(graphs, names):
         fetch_file(graph_name, url)
 
 
+def convert_og(name):
+    """Convert a GFA to odgi's `.og` format."""
+    og = graph_path(name, 'og')
+    if os.path.exists(og):
+        return
+
+    gfa = graph_path(name, 'gfa')
+    subprocess.run([ODGI, 'build', '-g', gfa, '-o', og])
+
+
+def convert_flatgfa(name):
+    """Convert a GFA to the FlatGFA format."""
+    flatgfa = graph_path(name, 'flatgfa')
+    if os.path.exists(flatgfa):
+        return
+
+    gfa = graph_path(name, 'gfa')
+    subprocess.run([FGFA, '-I', gfa, '-o', flatgfa])
+
 def bench_main():
     with open(GRAPHS_TOML, 'rb') as f:
         graphs = tomllib.load(f)
     fetch_graphs(graphs, SOME_GRAPHS)
+
+    for graph in SOME_GRAPHS:
+        convert_og(graph)
+        convert_flatgfa(graph)
 
 
 if __name__ == "__main__":
