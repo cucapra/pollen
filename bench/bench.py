@@ -6,7 +6,13 @@ BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 
-SOME_GRAPHS = ['test.lpa', 'test.chr6c4']
+SOME_GRAPHS = ['test.lpa', 'test.chr6c4', 'hprc.chrM']
+
+
+def check_wait(popen):
+    err = popen.wait()
+    if err:
+        raise subprocess.CalledProcessError(err, popen.args)
 
 
 def fetch_file(name, url):
@@ -15,7 +21,17 @@ def fetch_file(name, url):
     # If the file exists, don't re-download.
     if os.path.exists(dest):
         return
-    subprocess.run(['curl', '-L', '-o', dest, url], check=True)
+
+    if url.endswith('.gz'):
+        # Decompress the file while downloading.
+        with open(dest, 'wb') as f:
+            curl = subprocess.Popen(['curl', '-L', url], stdout=subprocess.PIPE)
+            gunzip = subprocess.Popen(['gunzip'], stdin=curl.stdout, stdout=f)
+            curl.stdout.close()
+            check_wait(gunzip)
+    else:
+        # Just fetch the raw file.
+        subprocess.run(['curl', '-L', '-o', dest, url], check=True)
 
 
 def fetch_graphs(graphs, names):
