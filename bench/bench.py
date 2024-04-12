@@ -2,6 +2,8 @@ import tomllib
 import os
 import subprocess
 from shlex import quote
+import json
+import tempfile
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -18,8 +20,20 @@ def check_wait(popen):
         raise subprocess.CalledProcessError(err, popen.args)
 
 
+def hyperfine(cmds):
+    with tempfile.NamedTemporaryFile(delete_on_close=False) as tmp:
+        tmp.close()
+        subprocess.run(
+            ['hyperfine', '-N', '--export-json', tmp.name] + cmds,
+            check=True,
+        )
+        with open(tmp.name, 'rb') as f:
+            return json.load(f)
+
+
 def graph_path(name, ext):
     return os.path.join(GRAPHS_DIR, f'{name}.{ext}')
+
 
 def fetch_file(name, url):
     os.makedirs(GRAPHS_DIR, exist_ok=True)
@@ -75,9 +89,8 @@ def compare_paths(name):
     odgi_cmd = f'odgi paths -i {quote(og)} -L'
     fgfa_cmd = f'fgfa -i {quote(flatgfa)} paths'
 
-    print(odgi_cmd)
-    print(fgfa_cmd)
-    subprocess.run(['hyperfine', '-N', odgi_cmd, fgfa_cmd], check=True)
+    res = hyperfine([odgi_cmd, fgfa_cmd])
+    print([r['mean'] for r in res['results']])
 
 
 def bench_main():
