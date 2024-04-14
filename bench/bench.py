@@ -8,9 +8,11 @@ import tempfile
 from dataclasses import dataclass
 import csv
 import argparse
+import datetime
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
+CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 
 SOME_GRAPHS = ['test.lpa', 'test.chr6c4', 'hprc.chrM']
@@ -126,26 +128,44 @@ def compare_paths(name):
         }
 
 
-def run_bench(out_csv):
+def run_bench(graph_set, mode, out_csv):
     with open(GRAPHS_TOML, 'rb') as f:
         graphs = tomllib.load(f)
-    fetch_graphs(graphs, SOME_GRAPHS)
+    with open(CONFIG_TOML, 'rb') as f:
+        config = tomllib.load(f)
+
+    assert mode == 'paths'
+    graph_names = config['graph_sets'][graph_set]
+    fetch_graphs(graphs, graph_names)
 
     with open(out_csv, 'w') as f:
         writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev'])
         writer.writeheader()
-        for graph in SOME_GRAPHS:
+        for graph in graph_names:
             odgi_convert(graph)
             flatgfa_convert(graph)
             for row in compare_paths(graph):
                 writer.writerow(row)
 
 
+def gen_csv_name(graph_set, mode):
+    ts = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S.%f')
+    return f'{mode}-{graph_set}-{ts}.csv'
+
+
 def bench_main():
     parser = argparse.ArgumentParser(description='benchmarks for GFA stuff')
-    parser.add_argument('--output', '-o', help='output CSV', required=True)
+    parser.add_argument('--graph-set', '-g', help='name of input graph set',
+                        required=True)
+    parser.add_argument('--mode', '-m', help='thing to benchmark',
+                        required=True)
+    parser.add_argument('--output', '-o', help='output CSV')
     args = parser.parse_args()
-    run_bench(out_csv=args.output)
+    run_bench(
+        graph_set=args.graph_set,
+        mode=args.mode,
+        out_csv=args.output or gen_csv_name(args.graph_set, args.mode),
+    )
 
 
 if __name__ == "__main__":
