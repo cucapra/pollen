@@ -7,7 +7,7 @@ import json
 import tempfile
 from dataclasses import dataclass
 import csv
-import sys
+import argparse
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -125,18 +125,26 @@ def compare_paths(name):
         }
 
 
-def bench_main():
+def run_bench(out_csv):
     with open(GRAPHS_TOML, 'rb') as f:
         graphs = tomllib.load(f)
     fetch_graphs(graphs, SOME_GRAPHS)
 
-    writer = csv.DictWriter(sys.stdout, ['cmd', 'mean', 'stddev'])
-    writer.writeheader()
-    for graph in SOME_GRAPHS:
-        odgi_convert(graph)
-        flatgfa_convert(graph)
-        for row in compare_paths(graph):
-            writer.writerow(row)
+    with open(out_csv, 'w') as f:
+        writer = csv.DictWriter(f, ['cmd', 'mean', 'stddev'])
+        writer.writeheader()
+        for graph in SOME_GRAPHS:
+            odgi_convert(graph)
+            flatgfa_convert(graph)
+            for row in compare_paths(graph):
+                writer.writerow(row)
+
+
+def bench_main():
+    parser = argparse.ArgumentParser(description='benchmarks for GFA stuff')
+    parser.add_argument('--output', '-o', help='output CSV', required=True)
+    args = parser.parse_args()
+    run_bench(out_csv=args.output)
 
 
 if __name__ == "__main__":
