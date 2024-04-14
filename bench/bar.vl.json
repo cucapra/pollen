@@ -1,6 +1,6 @@
 {
   "data": {
-    "url": "res.csv",
+    "url": "FILE.csv",
     "format": {
       "type": "csv",
       "parse": {"mean": "number", "stddev": "number"}
