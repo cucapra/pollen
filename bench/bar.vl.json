@@ -1,0 +1,17 @@
+{
+  "width": 800,
+  "data": {"url": "res.csv"},
+  "mark": "bar",
+  "encoding": {
+    "x": {
+      "field": "graph",
+      "type": "nominal"
+    },
+    "y": {
+      "field": "mean",
+      "type": "quantitative"
+    },
+    "xOffset": { "field": "cmd" },
+    "color": { "field": "cmd" }
+  }
+}

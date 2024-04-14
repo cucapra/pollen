@@ -117,11 +117,12 @@ def compare_paths(name):
     fgfa_cmd = f'fgfa -i {quote(flatgfa)} paths'
 
     results = hyperfine([odgi_cmd, fgfa_cmd])
-    for name, res in zip(['odgi paths', 'fgfa paths'], results):
+    for cmd, res in zip(['odgi paths', 'fgfa paths'], results):
         yield {
-            'cmd': name,
+            'cmd': cmd,
             'mean': res.mean,
             'stddev': res.stddev,
+            'graph': name,
         }
 
 
@@ -131,7 +132,7 @@ def run_bench(out_csv):
     fetch_graphs(graphs, SOME_GRAPHS)
 
     with open(out_csv, 'w') as f:
-        writer = csv.DictWriter(f, ['cmd', 'mean', 'stddev'])
+        writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev'])
         writer.writeheader()
         for graph in SOME_GRAPHS:
             odgi_convert(graph)
