@@ -1,17 +1,31 @@
 {
-  "width": 800,
-  "data": {"url": "res.csv"},
-  "mark": "bar",
-  "encoding": {
-    "x": {
-      "field": "graph",
-      "type": "nominal"
+  "data": {
+    "url": "res.csv",
+    "format": {
+      "type": "csv",
+      "parse": {"mean": "number", "stddev": "number"}
+    }
+  },
+  "layer": [
+    {
+      "mark": "bar",
+      "encoding": {
+        "x": { "field": "graph", "type": "nominal", "title": null },
+        "xOffset": { "field": "cmd" },
+        "y": { "field": "mean", "type": "quantitative",
+               "title": "running time (seconds)" },
+        "color": { "field": "cmd", "title": null }
+      }
     },
-    "y": {
-      "field": "mean",
-      "type": "quantitative"
-    },
-    "xOffset": { "field": "cmd" },
-    "color": { "field": "cmd" }
-  }
+    {
+      "mark": {"type": "errorbar", "ticks": {"color": "black"}},
+      "encoding": {
+        "x": { "field": "graph", "type": "nominal" },
+        "xOffset": { "field": "cmd" },
+        "y": { "field": "mean", "type": "quantitative",
+               "title": "running time (seconds)" },
+        "yError": { "field": "stddev" }
+      }
+    }
+  ]
 }
