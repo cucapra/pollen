@@ -56,6 +56,7 @@ chrX = "https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/f
 # Small tests from odgi:
 # https://github.com/pangenome/odgi/tree/master/test
 [test]
+k = "https://raw.githubusercontent.com/pangenome/odgi/master/test/k.gfa"
 lpa = "https://raw.githubusercontent.com/pangenome/odgi/master/test/LPA.gfa"
 chr6c4 = "https://raw.githubusercontent.com/pangenome/odgi/master/test/chr6.C4.gfa"
 drb1 = "https://raw.githubusercontent.com/pangenome/odgi/master/test/DRB1-3123.gfa"

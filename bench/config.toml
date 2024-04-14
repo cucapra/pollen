@@ -1,0 +1,5 @@
+odgi = "/Users/cflampson/cu/materials/odgi/bin_x86/odgi"
+
+[graph_sets]
+smoke = ["test.k"]
+mini = ["test.lpa", "test.chr6c4", "hprc.chrM"]
