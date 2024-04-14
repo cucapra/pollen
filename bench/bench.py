@@ -6,6 +6,8 @@ from shlex import quote
 import json
 import tempfile
 from dataclasses import dataclass
+import csv
+import sys
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -114,8 +116,13 @@ def compare_paths(name):
     odgi_cmd = f'odgi paths -i {quote(og)} -L'
     fgfa_cmd = f'fgfa -i {quote(flatgfa)} paths'
 
-    res = hyperfine([odgi_cmd, fgfa_cmd])
-    print(res)
+    results = hyperfine([odgi_cmd, fgfa_cmd])
+    for name, res in zip(['odgi paths', 'fgfa paths'], results):
+        yield {
+            'cmd': name,
+            'mean': res.mean,
+            'stddev': res.stddev,
+        }
 
 
 def bench_main():
@@ -123,10 +130,13 @@ def bench_main():
         graphs = tomllib.load(f)
     fetch_graphs(graphs, SOME_GRAPHS)
 
+    writer = csv.DictWriter(sys.stdout, ['cmd', 'mean', 'stddev'])
+    writer.writeheader()
     for graph in SOME_GRAPHS:
         odgi_convert(graph)
         flatgfa_convert(graph)
-        compare_paths(graph)
+        for row in compare_paths(graph):
+            writer.writerow(row)
 
 
 if __name__ == "__main__":
