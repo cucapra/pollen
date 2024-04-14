@@ -1,6 +1,7 @@
 import tomllib
 import os
 import subprocess
+from subprocess import PIPE
 from shlex import quote
 import json
 import tempfile
@@ -45,7 +46,7 @@ def fetch_file(name, url):
     if url.endswith('.gz'):
         # Decompress the file while downloading.
         with open(dest, 'wb') as f:
-            curl = subprocess.Popen(['curl', '-L', url], stdout=subprocess.PIPE)
+            curl = subprocess.Popen(['curl', '-L', url], stdout=PIPE)
             gunzip = subprocess.Popen(['gunzip'], stdin=curl.stdout, stdout=f)
             curl.stdout.close()
             check_wait(gunzip)
