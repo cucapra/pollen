@@ -136,14 +136,17 @@ def run_bench(graph_set, mode, out_csv):
 
     assert mode == 'paths'
     graph_names = config['graph_sets'][graph_set]
+
+    # Fetch all the graphs and convert them to both odgi and FlatGFA.
     fetch_graphs(graphs, graph_names)
+    for graph in graph_names:
+        odgi_convert(graph)
+        flatgfa_convert(graph)
 
     with open(out_csv, 'w') as f:
         writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev'])
         writer.writeheader()
         for graph in graph_names:
-            odgi_convert(graph)
-            flatgfa_convert(graph)
             for row in compare_paths(graph):
                 writer.writerow(row)
 
