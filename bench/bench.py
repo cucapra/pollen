@@ -5,6 +5,7 @@ from subprocess import PIPE
 from shlex import quote
 import json
 import tempfile
+from dataclasses import dataclass
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -21,7 +22,29 @@ def check_wait(popen):
         raise subprocess.CalledProcessError(err, popen.args)
 
 
+@dataclass(frozen=True)
+class HyperfineResult:
+    command: str
+    mean: float
+    stddev: float
+    median: float
+    min: float
+    max: float
+
+    @classmethod
+    def from_json(cls, obj):
+        return cls(
+            command=obj['command'],
+            mean=obj['mean'],
+            stddev=obj['stddev'],
+            median=obj['median'],
+            min=obj['min'],
+            max=obj['max'],
+        )
+
+
 def hyperfine(cmds):
+    """Run Hyperfine to compare the commands."""
     with tempfile.NamedTemporaryFile(delete_on_close=False) as tmp:
         tmp.close()
         subprocess.run(
@@ -29,7 +52,8 @@ def hyperfine(cmds):
             check=True,
         )
         with open(tmp.name, 'rb') as f:
-            return json.load(f)
+            data = json.load(f)
+            return [HyperfineResult.from_json(r) for r in data['results']]
 
 
 def graph_path(name, ext):
@@ -91,7 +115,7 @@ def compare_paths(name):
     fgfa_cmd = f'fgfa -i {quote(flatgfa)} paths'
 
     res = hyperfine([odgi_cmd, fgfa_cmd])
-    print([r['mean'] for r in res['results']])
+    print(res)
 
 
 def bench_main():
