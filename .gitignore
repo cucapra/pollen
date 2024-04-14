@@ -14,7 +14,6 @@ __pycache__/
 **/*.og
 **/*.out
 **/*.flatgfa
-*.json
 og_to_gfa.py
 compute_maxes.py
 
