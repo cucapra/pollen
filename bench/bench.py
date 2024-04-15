@@ -15,10 +15,6 @@ GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 
-SOME_GRAPHS = ['test.lpa', 'test.chr6c4', 'hprc.chrM']
-ODGI = 'odgi'
-FGFA = 'fgfa'
-
 
 def check_wait(popen):
     err = popen.wait()
@@ -92,32 +88,32 @@ def fetch_graphs(graphs, names):
         fetch_file(graph_name, url)
 
 
-def odgi_convert(name):
+def odgi_convert(tools, name):
     """Convert a GFA to odgi's `.og` format."""
     og = graph_path(name, 'og')
     if os.path.exists(og):
         return
 
     gfa = graph_path(name, 'gfa')
-    subprocess.run([ODGI, 'build', '-g', gfa, '-o', og])
+    subprocess.run([tools['odgi'], 'build', '-g', gfa, '-o', og])
 
 
-def flatgfa_convert(name):
+def flatgfa_convert(tools, name):
     """Convert a GFA to the FlatGFA format."""
     flatgfa = graph_path(name, 'flatgfa')
     if os.path.exists(flatgfa):
         return
 
     gfa = graph_path(name, 'gfa')
-    subprocess.run([FGFA, '-I', gfa, '-o', flatgfa])
+    subprocess.run([tools['fgfa'], '-I', gfa, '-o', flatgfa])
 
 
-def compare_paths(name):
+def compare_paths(tools, name):
     """Compare odgi and FlatGFA implementations of path-name extraction.
     """
-    odgi_cmd = f'odgi paths -i {quote(graph_path(name, "og"))} -L'
-    fgfa_cmd = f'fgfa -i {quote(graph_path(name, "flatgfa"))} paths'
-    slow_cmd = f'slow_odgi paths {quote(graph_path(name, "gfa"))}'
+    odgi_cmd = f'{tools["odgi"]} paths -i {quote(graph_path(name, "og"))} -L'
+    fgfa_cmd = f'{tools["fgfa"]} -i {quote(graph_path(name, "flatgfa"))} paths'
+    slow_cmd = f'{tools["slow_odgi"]} paths {quote(graph_path(name, "gfa"))}'
 
     results = hyperfine([slow_cmd, odgi_cmd, fgfa_cmd])
     names = ['slow_odgi paths', 'odgi paths', 'fgfa paths']
@@ -143,14 +139,14 @@ def run_bench(graph_set, mode, out_csv):
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     fetch_graphs(graphs, graph_names)
     for graph in graph_names:
-        odgi_convert(graph)
-        flatgfa_convert(graph)
+        odgi_convert(config['tools'], graph)
+        flatgfa_convert(config['tools'], graph)
 
     with open(out_csv, 'w') as f:
         writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev', 'n'])
         writer.writeheader()
         for graph in graph_names:
-            for row in compare_paths(graph):
+            for row in compare_paths(config['tools'], graph):
                 writer.writerow(row)
 
 

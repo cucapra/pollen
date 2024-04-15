@@ -1,6 +1,6 @@
-[exe]
+[tools]
 odgi = "odgi"
-fgfa = "fgfa"
+fgfa = "../flatgfa/target/release/fgfa"
 slow_odgi = "../.venv/bin/slow_odgi"
 
 [graph_sets]
