@@ -1,4 +1,7 @@
-odgi = "/Users/cflampson/cu/materials/odgi/bin_x86/odgi"
+[exe]
+odgi = "odgi"
+fgfa = "fgfa"
+slow_odgi = "../.venv/bin/slow_odgi"
 
 [graph_sets]
 smoke = ["test.k"]
