@@ -34,6 +34,7 @@ class HyperfineResult:
     median: float
     min: float
     max: float
+    count: float
 
     @classmethod
     def from_json(cls, obj):
@@ -44,6 +45,7 @@ class HyperfineResult:
             median=obj['median'],
             min=obj['min'],
             max=obj['max'],
+            count=len(obj['times']),
         )
 
 
@@ -113,18 +115,19 @@ def flatgfa_convert(name):
 def compare_paths(name):
     """Compare odgi and FlatGFA implementations of path-name extraction.
     """
-    og = graph_path(name, 'og')
-    flatgfa = graph_path(name, 'flatgfa')
-    odgi_cmd = f'odgi paths -i {quote(og)} -L'
-    fgfa_cmd = f'fgfa -i {quote(flatgfa)} paths'
+    odgi_cmd = f'odgi paths -i {quote(graph_path(name, "og"))} -L'
+    fgfa_cmd = f'fgfa -i {quote(graph_path(name, "flatgfa"))} paths'
+    slow_cmd = f'slow_odgi paths {quote(graph_path(name, "gfa"))}'
 
-    results = hyperfine([odgi_cmd, fgfa_cmd])
-    for cmd, res in zip(['odgi paths', 'fgfa paths'], results):
+    results = hyperfine([slow_cmd, odgi_cmd, fgfa_cmd])
+    names = ['slow_odgi paths', 'odgi paths', 'fgfa paths']
+    for cmd, res in zip(names, results):
         yield {
             'cmd': cmd,
             'mean': res.mean,
             'stddev': res.stddev,
             'graph': name,
+            'n': res.count,
         }
 
 
@@ -144,7 +147,7 @@ def run_bench(graph_set, mode, out_csv):
         flatgfa_convert(graph)
 
     with open(out_csv, 'w') as f:
-        writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev'])
+        writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev', 'n'])
         writer.writeheader()
         for graph in graph_names:
             for row in compare_paths(graph):
