@@ -14,6 +14,7 @@ BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
+ALL_TOOLS = ['slow_odgi', 'odgi', 'flatgfa']
 
 
 def check_wait(popen):
@@ -123,16 +124,18 @@ class Runner:
         gfa = graph_path(name, 'gfa')
         subprocess.run([self.fgfa, '-I', gfa, '-o', flatgfa])
 
-    def compare_paths(self, name):
+    def compare_paths(self, name, tools):
         """Compare odgi and FlatGFA implementations of path-name extraction.
         """
-        odgi_cmd = f'{self.odgi} paths -i {quote(graph_path(name, "og"))} -L'
-        fgfa_cmd = f'{self.fgfa} -i {quote(graph_path(name, "flatgfa"))} paths'
-        slow_cmd = f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}'
+        commands = {
+            'odgi': f'{self.odgi} paths -i {quote(graph_path(name, "og"))} -L',
+            'flatgfa': f'{self.fgfa} -i {quote(graph_path(name, "flatgfa"))} paths',
+            'slow_odgi': f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}',
+        }
+        commands = {k: commands[k] for k in tools}
 
-        results = hyperfine([slow_cmd, odgi_cmd, fgfa_cmd])
-        names = ['slow_odgi paths', 'odgi paths', 'fgfa paths']
-        for cmd, res in zip(names, results):
+        results = hyperfine(list(commands.values()))
+        for cmd, res in zip(commands.keys(), results):
             yield {
                 'cmd': cmd,
                 'mean': res.mean,
@@ -142,7 +145,7 @@ class Runner:
             }
 
 
-def run_bench(graph_set, mode, out_csv):
+def run_bench(graph_set, mode, tools, out_csv):
     runner = Runner.default()
 
     assert mode == 'paths'
@@ -158,7 +161,7 @@ def run_bench(graph_set, mode, out_csv):
         writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev', 'n'])
         writer.writeheader()
         for graph in graph_names:
-            for row in runner.compare_paths(graph):
+            for row in runner.compare_paths(graph, tools):
                 writer.writerow(row)
 
 
@@ -173,11 +176,18 @@ def bench_main():
                         required=True)
     parser.add_argument('--mode', '-m', help='thing to benchmark',
                         required=True)
+    parser.add_argument('--tool', '-t', help='test this tool', action='append')
     parser.add_argument('--output', '-o', help='output CSV')
+
     args = parser.parse_args()
+    tools = args.tool or ALL_TOOLS
+    for tool in tools:
+        assert tool in ALL_TOOLS, 'unknown tool name'
+
     run_bench(
         graph_set=args.graph_set,
         mode=args.mode,
+        tools=tools,
         out_csv=args.output or gen_csv_name(args.graph_set, args.mode),
     )
 
