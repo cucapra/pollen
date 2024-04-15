@@ -81,19 +81,29 @@ def fetch_file(name, url):
         subprocess.run(['curl', '-L', '-o', dest, url], check=True)
 
 
-def fetch_graphs(graphs, names):
-    for graph_name in names:
-        suite, key = graph_name.split('.')
-        url = graphs[suite][key]
-        fetch_file(graph_name, url)
-
-
 class Runner:
-    def __init__(self, config):
+    def __init__(self, graphs, config):
+        self.graphs = graphs
+        self.config = config
+
         # Some shorthands for tool paths.
         self.odgi = config['tools']['odgi']
         self.fgfa = config['tools']['fgfa']
         self.slow_odgi = config['tools']['slow_odgi']
+
+    @classmethod
+    def default(cls):
+        with open(GRAPHS_TOML, 'rb') as f:
+            graphs = tomllib.load(f)
+        with open(CONFIG_TOML, 'rb') as f:
+            config = tomllib.load(f)
+        return cls(graphs, config)
+
+    def fetch_graph(self, name):
+        """Fetch a single graph, given by its <suite>.<graph> name."""
+        suite, key = name.split('.')
+        url = self.graphs[suite][key]
+        fetch_file(name, url)
 
     def odgi_convert(self, name):
         """Convert a GFA to odgi's `.og` format."""
@@ -133,18 +143,14 @@ class Runner:
 
 
 def run_bench(graph_set, mode, out_csv):
-    with open(GRAPHS_TOML, 'rb') as f:
-        graphs = tomllib.load(f)
-    with open(CONFIG_TOML, 'rb') as f:
-        config = tomllib.load(f)
-    runner = Runner(config)
+    runner = Runner.default()
 
     assert mode == 'paths'
-    graph_names = config['graph_sets'][graph_set]
+    graph_names = runner.config['graph_sets'][graph_set]
 
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
-    fetch_graphs(graphs, graph_names)
     for graph in graph_names:
+        runner.fetch_graph(graph)
         runner.odgi_convert(graph)
         runner.flatgfa_convert(graph)
 
