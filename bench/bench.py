@@ -88,43 +88,48 @@ def fetch_graphs(graphs, names):
         fetch_file(graph_name, url)
 
 
-def odgi_convert(tools, name):
-    """Convert a GFA to odgi's `.og` format."""
-    og = graph_path(name, 'og')
-    if os.path.exists(og):
-        return
+class Runner:
+    def __init__(self, config):
+        # Some shorthands for tool paths.
+        self.odgi = config['tools']['odgi']
+        self.fgfa = config['tools']['fgfa']
+        self.slow_odgi = config['tools']['slow_odgi']
 
-    gfa = graph_path(name, 'gfa')
-    subprocess.run([tools['odgi'], 'build', '-g', gfa, '-o', og])
+    def odgi_convert(self, name):
+        """Convert a GFA to odgi's `.og` format."""
+        og = graph_path(name, 'og')
+        if os.path.exists(og):
+            return
 
+        gfa = graph_path(name, 'gfa')
+        subprocess.run([self.odgi, 'build', '-g', gfa, '-o', og])
 
-def flatgfa_convert(tools, name):
-    """Convert a GFA to the FlatGFA format."""
-    flatgfa = graph_path(name, 'flatgfa')
-    if os.path.exists(flatgfa):
-        return
+    def flatgfa_convert(self, name):
+        """Convert a GFA to the FlatGFA format."""
+        flatgfa = graph_path(name, 'flatgfa')
+        if os.path.exists(flatgfa):
+            return
 
-    gfa = graph_path(name, 'gfa')
-    subprocess.run([tools['fgfa'], '-I', gfa, '-o', flatgfa])
+        gfa = graph_path(name, 'gfa')
+        subprocess.run([self.fgfa, '-I', gfa, '-o', flatgfa])
 
+    def compare_paths(self, name):
+        """Compare odgi and FlatGFA implementations of path-name extraction.
+        """
+        odgi_cmd = f'{self.odgi} paths -i {quote(graph_path(name, "og"))} -L'
+        fgfa_cmd = f'{self.fgfa} -i {quote(graph_path(name, "flatgfa"))} paths'
+        slow_cmd = f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}'
 
-def compare_paths(tools, name):
-    """Compare odgi and FlatGFA implementations of path-name extraction.
-    """
-    odgi_cmd = f'{tools["odgi"]} paths -i {quote(graph_path(name, "og"))} -L'
-    fgfa_cmd = f'{tools["fgfa"]} -i {quote(graph_path(name, "flatgfa"))} paths'
-    slow_cmd = f'{tools["slow_odgi"]} paths {quote(graph_path(name, "gfa"))}'
-
-    results = hyperfine([slow_cmd, odgi_cmd, fgfa_cmd])
-    names = ['slow_odgi paths', 'odgi paths', 'fgfa paths']
-    for cmd, res in zip(names, results):
-        yield {
-            'cmd': cmd,
-            'mean': res.mean,
-            'stddev': res.stddev,
-            'graph': name,
-            'n': res.count,
-        }
+        results = hyperfine([slow_cmd, odgi_cmd, fgfa_cmd])
+        names = ['slow_odgi paths', 'odgi paths', 'fgfa paths']
+        for cmd, res in zip(names, results):
+            yield {
+                'cmd': cmd,
+                'mean': res.mean,
+                'stddev': res.stddev,
+                'graph': name,
+                'n': res.count,
+            }
 
 
 def run_bench(graph_set, mode, out_csv):
@@ -132,6 +137,7 @@ def run_bench(graph_set, mode, out_csv):
         graphs = tomllib.load(f)
     with open(CONFIG_TOML, 'rb') as f:
         config = tomllib.load(f)
+    runner = Runner(config)
 
     assert mode == 'paths'
     graph_names = config['graph_sets'][graph_set]
@@ -139,14 +145,14 @@ def run_bench(graph_set, mode, out_csv):
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     fetch_graphs(graphs, graph_names)
     for graph in graph_names:
-        odgi_convert(config['tools'], graph)
-        flatgfa_convert(config['tools'], graph)
+        runner.odgi_convert(graph)
+        runner.flatgfa_convert(graph)
 
     with open(out_csv, 'w') as f:
         writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev', 'n'])
         writer.writeheader()
         for graph in graph_names:
-            for row in compare_paths(config['tools'], graph):
+            for row in runner.compare_paths(graph):
                 writer.writerow(row)
 
 
