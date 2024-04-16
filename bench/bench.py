@@ -1,4 +1,7 @@
-import tomllib
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
 import os
 import subprocess
 from subprocess import PIPE
