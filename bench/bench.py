@@ -20,6 +20,7 @@ BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
+RESULTS_DIR = os.path.join(BASE, "results")
 ALL_TOOLS = ['slow_odgi', 'odgi', 'flatgfa']
 DECOMPRESS = {
     '.gz': ['gunzip'],
@@ -193,6 +194,8 @@ def run_bench(graph_set, mode, tools, out_csv):
         runner.odgi_convert(graph)
         runner.flatgfa_convert(graph)
 
+    runner.log.debug('writing results to %s', out_csv)
+    os.makedirs(os.path.dirname(out_csv), exist_ok=True)
     with open(out_csv, 'w') as f:
         writer = csv.DictWriter(f, ['graph', 'cmd', 'mean', 'stddev', 'n'])
         writer.writeheader()
@@ -203,7 +206,7 @@ def run_bench(graph_set, mode, tools, out_csv):
 
 def gen_csv_name(graph_set, mode):
     ts = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S.%f')
-    return f'{mode}-{graph_set}-{ts}.csv'
+    return os.path.join(RESULTS_DIR, f'{mode}-{graph_set}-{ts}.csv')
 
 
 def bench_main():
