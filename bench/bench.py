@@ -12,6 +12,9 @@ from dataclasses import dataclass
 import csv
 import argparse
 import datetime
+import logging
+from contextlib import contextmanager
+import time
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -24,6 +27,14 @@ def check_wait(popen):
     err = popen.wait()
     if err:
         raise subprocess.CalledProcessError(err, popen.args)
+
+
+@contextmanager
+def logtime(log):
+    start = time.time()
+    yield
+    dur = time.time() - start
+    log.info('done in %.1f seconds', dur)
 
 
 @dataclass(frozen=True)
@@ -69,10 +80,6 @@ def graph_path(name, ext):
 
 def fetch_file(name, url):
     os.makedirs(GRAPHS_DIR, exist_ok=True)
-    dest = graph_path(name, 'gfa')
-    # If the file exists, don't re-download.
-    if os.path.exists(dest):
-        return
 
     if url.endswith('.gz'):
         # Decompress the file while downloading.
@@ -96,6 +103,10 @@ class Runner:
         self.fgfa = config['tools']['fgfa']
         self.slow_odgi = config['tools']['slow_odgi']
 
+        self.log = logging.getLogger('pollen-bench')
+        self.log.addHandler(logging.StreamHandler())
+        self.log.setLevel(logging.DEBUG)
+
     @classmethod
     def default(cls):
         with open(GRAPHS_TOML, 'rb') as f:
@@ -108,25 +119,39 @@ class Runner:
         """Fetch a single graph, given by its <suite>.<graph> name."""
         suite, key = name.split('.')
         url = self.graphs[suite][key]
+        dest = graph_path(name, 'gfa')
+
+        # If the file exists, don't re-download.
+        if os.path.exists(dest):
+            self.log.info('gfa already fetched for %s', name)
+            return
+
+        self.log.info('fetching graph %s', name)
         fetch_file(name, url)
 
     def odgi_convert(self, name):
         """Convert a GFA to odgi's `.og` format."""
         og = graph_path(name, 'og')
         if os.path.exists(og):
+            self.log.info('og exists for %s', name)
             return
 
         gfa = graph_path(name, 'gfa')
-        subprocess.run([self.odgi, 'build', '-g', gfa, '-o', og])
+        self.log.info('converting %s to og', name)
+        with logtime(self.log):
+            subprocess.run([self.odgi, 'build', '-g', gfa, '-o', og])
 
     def flatgfa_convert(self, name):
         """Convert a GFA to the FlatGFA format."""
         flatgfa = graph_path(name, 'flatgfa')
         if os.path.exists(flatgfa):
+            self.log.info('flatgfa exists for %s', name)
             return
 
         gfa = graph_path(name, 'gfa')
-        subprocess.run([self.fgfa, '-I', gfa, '-o', flatgfa])
+        self.log.info('converting %s to flatgfa', name)
+        with logtime(self.log):
+            subprocess.run([self.fgfa, '-I', gfa, '-o', flatgfa])
 
     def compare_paths(self, name, tools):
         """Compare odgi and FlatGFA implementations of path-name extraction.
@@ -138,7 +163,9 @@ class Runner:
         }
         commands = {k: commands[k] for k in tools}
 
-        results = hyperfine(list(commands.values()))
+        self.log.info('comparing paths for %s', ' '.join(tools))
+        with logtime(self.log):
+            results = hyperfine(list(commands.values()))
         for cmd, res in zip(commands.keys(), results):
             yield {
                 'cmd': cmd,
