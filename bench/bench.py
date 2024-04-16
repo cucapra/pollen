@@ -21,6 +21,10 @@ GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 ALL_TOOLS = ['slow_odgi', 'odgi', 'flatgfa']
+DECOMPRESS = {
+    '.gz': ['gunzip'],
+    '.zst': ['zstd', '-d'],
+}
 
 
 def check_wait(popen):
@@ -78,16 +82,17 @@ def graph_path(name, ext):
     return os.path.join(GRAPHS_DIR, f'{name}.{ext}')
 
 
-def fetch_file(name, url):
+def fetch_file(dest, url):
     os.makedirs(GRAPHS_DIR, exist_ok=True)
 
-    if url.endswith('.gz'):
+    _, ext = os.path.splitext(url)
+    if ext in DECOMPRESS:
         # Decompress the file while downloading.
         with open(dest, 'wb') as f:
             curl = subprocess.Popen(['curl', '-L', url], stdout=PIPE)
-            gunzip = subprocess.Popen(['gunzip'], stdin=curl.stdout, stdout=f)
+            decomp = subprocess.Popen(DECOMPRESS[ext], stdin=curl.stdout, stdout=f)
             curl.stdout.close()
-            check_wait(gunzip)
+            check_wait(decomp)
     else:
         # Just fetch the raw file.
         subprocess.run(['curl', '-L', '-o', dest, url], check=True)
@@ -127,7 +132,7 @@ class Runner:
             return
 
         self.log.info('fetching graph %s', name)
-        fetch_file(name, url)
+        fetch_file(dest, url)
 
     def odgi_convert(self, name):
         """Convert a GFA to odgi's `.og` format."""
