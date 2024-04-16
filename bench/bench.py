@@ -51,7 +51,7 @@ class HyperfineResult:
 
 def hyperfine(cmds):
     """Run Hyperfine to compare the commands."""
-    with tempfile.NamedTemporaryFile(delete_on_close=False) as tmp:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.close()
         subprocess.run(
             ['hyperfine', '-N', '-w', '1', '--export-json', tmp.name] + cmds,
@@ -60,6 +60,7 @@ def hyperfine(cmds):
         with open(tmp.name, 'rb') as f:
             data = json.load(f)
             return [HyperfineResult.from_json(r) for r in data['results']]
+        os.unlink(tmp.name)
 
 
 def graph_path(name, ext):
