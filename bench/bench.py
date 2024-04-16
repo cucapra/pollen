@@ -51,7 +51,7 @@ def hyperfine(cmds):
     with tempfile.NamedTemporaryFile(delete_on_close=False) as tmp:
         tmp.close()
         subprocess.run(
-            ['hyperfine', '-N', '--export-json', tmp.name] + cmds,
+            ['hyperfine', '-N', '-w', '1', '--export-json', tmp.name] + cmds,
             check=True,
         )
         with open(tmp.name, 'rb') as f:
