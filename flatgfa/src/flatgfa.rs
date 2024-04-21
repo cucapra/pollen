@@ -91,7 +91,7 @@ pub struct Path {
     /// `name_data` pool.
     pub name: Span,
 
-    /// The squence of path steps. This is a range in the `steps` pool.
+    /// The sequence of path steps. This is a range in the `steps` pool.
     pub steps: Span,
 
     /// The CIGAR overlaps for each step on the path. This is a range in the
