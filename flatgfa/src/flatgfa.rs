@@ -87,7 +87,7 @@ impl Segment {
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
 pub struct Path {
-    /// The path's name. This can be an arbitrary string. It is a renge in the
+    /// The path's name. This can be an arbitrary string. It is a range in the
     /// `name_data` pool.
     pub name: Span,
 
