@@ -284,3 +284,30 @@ impl<'a> SubgraphBuilder<'a> {
         }
     }
 }
+
+/// compute node depth, the number of times paths cross a node
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "depth")]
+pub struct Depth {}
+
+pub fn depth(gfa: &flatgfa::FlatGFA) {
+    println!("#node.id\tdepth");
+    let mut depths = HashMap::new(); // do not assume that node ids are contiguous
+    // do not assume that each handle in `gfa.steps()` is unique
+    for path in gfa.paths {
+        for step in gfa.get_steps(path) {
+            let seg_id = step.segment();
+            match depths.get(&seg_id) {
+                Some(depth) => depths.insert(seg_id, depth + 1),
+                None => depths.insert(seg_id, 1)
+            };
+        }
+    }
+    for seg in gfa.segs {
+        let seg_id: u32 = seg.name as u32;
+        match depths.get(&seg_id) {
+            Some(depth) => println!("{}\t{}", seg_id, depth),
+            None => println!("{}\t{}", seg_id, 0)
+        };
+    }
+}
