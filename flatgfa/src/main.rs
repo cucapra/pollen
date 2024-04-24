@@ -64,6 +64,7 @@ enum Command {
     Stats(cmds::Stats),
     Position(cmds::Position),
     Extract(cmds::Extract),
+    Depth(cmds::Depth),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -125,6 +126,9 @@ fn main() -> Result<(), &'static str> {
         Some(Command::Extract(sub_args)) => {
             let store = cmds::extract(&gfa, sub_args)?;
             dump(&store.view(), &args.output);
+        }
+        Some(Command::Depth(_)) => {
+            cmds::depth(&gfa);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
