@@ -303,11 +303,11 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
             };
         }
     }
-    for seg in gfa.segs {
-        let seg_id: u32 = seg.name as u32;
-        match depths.get(&seg_id) {
-            Some(depth) => println!("{}\t{}", seg_id, depth),
-            None => println!("{}\t{}", seg_id, 0)
+    for (id, seg) in gfa.segs.iter().enumerate() {
+        let name: u32 = seg.name as u32;
+        match depths.get(&(id as u32)) {
+            Some(depth) => println!("{}\t{}", name, depth),
+            None => println!("{}\t{}", name, 0)
         };
     }
 }
