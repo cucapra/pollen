@@ -110,7 +110,7 @@ pub struct Link {
     pub to: Handle,
 
     /// The CIGAR overlap between the segments. This is a range in the
-    /// `overlaps` pool.
+    /// `alignment` pool.
     pub overlap: Span,
 }
 
@@ -298,7 +298,7 @@ impl<'a> FlatGFA<'a> {
 
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
-pub struct Store<'a, P: PoolFamily<'a>> {
+pub ore<'a, P: PoolFamily<'a>> {
     pub header: P::Pool<u8>,
     pub segs: P::Pool<Segment>,
     pub paths: P::Pool<Path>,
