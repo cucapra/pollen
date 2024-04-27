@@ -4,9 +4,8 @@ import mygfa
 
 def paths(graph: mygfa.Graph) -> mygfa.Graph:
     """Print the names of the paths found in `graph`."""
-    pathnames = list(graph.paths.keys())
-    for name in pathnames:
-        print(name)
+    pathnames = graph.paths.keys()
+    print("\n".join(pathnames))
     return graph
 
 
