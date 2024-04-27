@@ -1,0 +1,9 @@
+[tools]
+odgi = "odgi"
+fgfa = "../flatgfa/target/release/fgfa"
+slow_odgi = "../.venv/bin/slow_odgi"
+
+[graph_sets]
+smoke = ["test.k"]
+mini = ["test.lpa", "test.chr6c4", "hprc.chrM"]
+med = ["hprc.chr20", "hprc.chrX", "1000gont.chr16"]
