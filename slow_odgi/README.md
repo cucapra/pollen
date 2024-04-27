@@ -20,7 +20,7 @@ One easy way to install everything in the Pollen repo is to use [uv][]:
 
 1. Change to the root directory `pollen/`.
 2. Run `make fetch`; this downloads a set of pangenome graphs for us to play with.
-3. Try `slow_odgi chop test/note5.gfa -n 3`; this runs `chop` on the graph `note5.gfa` with parameter `3`.
+3. Try `slow_odgi chop tests/note5.gfa -n 3`; this runs `chop` on the graph `note5.gfa` with parameter `3`.
 4. Play with the other commands that we support! See below for a full listing.
 
 ## Testing
