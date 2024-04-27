@@ -20,6 +20,7 @@ from . import (
     validate,
     norm,
     inject_setup,
+    somepaths,
     validate_setup,
 )
 
@@ -95,8 +96,13 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
     )
 
-    paths_parser = subparsers.add_parser("paths", help="Lists the paths in the graph.")
-    paths_parser.add_argument(
+    subparsers.add_parser("paths", help="Lists the paths in the graph.")
+
+    somepaths_parser = subparsers.add_parser(
+        "somepaths",
+        help="Lists the paths in the graph, with the option of dropping some.",
+    )
+    somepaths_parser.add_argument(
         "--drop",
         type=int,
         default=0,
@@ -172,7 +178,8 @@ def dispatch(args: argparse.Namespace) -> None:
         "flatten": lambda g: flatten.flatten(g, f"{args.graph[:-4]}.og"),
         "matrix": matrix.matrix,
         "overlap": lambda g: overlap.overlap(g, parse_paths(args.paths)),
-        "paths": lambda g: paths.paths(g, args.drop),
+        "paths": paths.paths,
+        "somepaths": lambda g: somepaths.somepaths(g, args.drop),
         "validate": validate.validate,
         "inject_setup": inject_setup.print_bed,
     }
