@@ -15,14 +15,18 @@ def summary():
             mean = float(row["mean"])
             stddev = float(row["stddev"])
 
-            if mean < 0.2:
-                mean *= 1000
-                stddev *= 1000
-                unit = "ms"
+            if mean > 80:
+                mins = int(mean / 60)
+                secs = int(mean % 60)
+                print(f"  {cmd}: {mins}m{secs}s ± {stddev:.1f}")
             else:
-                unit = "s"
-
-            print(f"  {cmd}: {mean:.1f} ± {stddev:.1f} {unit}")
+                if mean < 0.2:
+                    mean *= 1000
+                    stddev *= 1000
+                    unit = "ms"
+                else:
+                    unit = "s"
+                print(f"  {cmd}: {mean:.1f} ± {stddev:.1f} {unit}")
 
 
 if __name__ == "__main__":
