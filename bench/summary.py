@@ -7,7 +7,7 @@ def summary():
     reader = csv.DictReader(sys.stdin)
     by_graph = defaultdict(dict)
     for row in reader:
-        by_graph[row['graph']][row['cmd']] = row
+        by_graph[row["graph"]][row["cmd"]] = row
 
     for graph, cmds in by_graph.items():
         print(graph)
@@ -18,11 +18,11 @@ def summary():
             if mean < 0.2:
                 mean *= 1000
                 stddev *= 1000
-                unit = 'ms'
+                unit = "ms"
             else:
-                unit = 's'
+                unit = "s"
 
-            print(f'  {cmd}: {mean:.1f} ± {stddev:.1f} {unit}')
+            print(f"  {cmd}: {mean:.1f} ± {stddev:.1f} {unit}")
 
 
 if __name__ == "__main__":
