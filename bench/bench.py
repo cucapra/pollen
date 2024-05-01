@@ -243,10 +243,13 @@ def bench_main():
     args = parser.parse_args()
 
     # Which tools are we comparing?
-    tools = args.tool or {
-        "paths": ALL_TOOLS,
-        "convert": ["odgi", "flatgfa"],
-    }[args.mode]
+    tools = (
+        args.tool
+        or {
+            "paths": ALL_TOOLS,
+            "convert": ["odgi", "flatgfa"],
+        }[args.mode]
+    )
     for tool in tools:
         assert tool in ALL_TOOLS, "unknown tool name"
 
