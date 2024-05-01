@@ -159,6 +159,23 @@ class Runner:
         with logtime(self.log):
             subprocess.run([self.fgfa, "-I", gfa, "-o", flatgfa])
 
+    def compare(self, mode, graph, commands):
+        """Run a Hyperfine comparison and produce CSV lines for the results.
+
+        `commands` is a dict mapping tool names to command strings.
+        """
+        self.log.info("comparing %s for %s", mode, " ".join(commands.keys()))
+        with logtime(self.log):
+            results = hyperfine(list(commands.values()))
+        for cmd, res in zip(commands.keys(), results):
+            yield {
+                "cmd": cmd,
+                "mean": res.mean,
+                "stddev": res.stddev,
+                "graph": graph,
+                "n": res.count,
+            }
+
     def compare_paths(self, name, tools):
         """Compare odgi and FlatGFA implementations of path-name extraction."""
         commands = {
@@ -167,31 +184,30 @@ class Runner:
             "slow_odgi": f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}',
         }
         commands = {k: commands[k] for k in tools}
+        yield from self.compare("paths", name, commands)
 
-        self.log.info("comparing paths for %s", " ".join(tools))
-        with logtime(self.log):
-            results = hyperfine(list(commands.values()))
-        for cmd, res in zip(commands.keys(), results):
-            yield {
-                "cmd": cmd,
-                "mean": res.mean,
-                "stddev": res.stddev,
-                "graph": name,
-                "n": res.count,
-            }
+    def compare_convert(self, name, tools):
+        """Compare conversion time from GFA to specialized file formats."""
+        commands = {
+            "odgi": f'{self.odgi} build -g {quote(graph_path(name, "gfa"))} -o {quote(graph_path(name, "og"))}',
+            "flatgfa": f'{self.fgfa} -I {quote(graph_path(name, "gfa"))} -o {quote(graph_path(name, "flatgfa"))}',
+        }
+        commands = {k: commands[k] for k in tools}
+        yield from self.compare("convert", name, commands)
 
 
 def run_bench(graph_set, mode, tools, out_csv):
     runner = Runner.default()
 
-    assert mode == "paths"
+    # The input graphs we'll be using to do the comparison.
     graph_names = runner.config["graph_sets"][graph_set]
 
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     for graph in graph_names:
         runner.fetch_graph(graph)
-        runner.odgi_convert(graph)
-        runner.flatgfa_convert(graph)
+        if mode != "convert":
+            runner.odgi_convert(graph)
+            runner.flatgfa_convert(graph)
 
     runner.log.debug("writing results to %s", out_csv)
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
@@ -199,7 +215,14 @@ def run_bench(graph_set, mode, tools, out_csv):
         writer = csv.DictWriter(f, ["graph", "cmd", "mean", "stddev", "n"])
         writer.writeheader()
         for graph in graph_names:
-            for row in runner.compare_paths(graph, tools):
+            match mode:
+                case "paths":
+                    res = runner.compare_paths(graph, tools)
+                case "convert":
+                    res = runner.compare_convert(graph, tools)
+                case _:
+                    assert False, "unknown mode"
+            for row in res:
                 writer.writerow(row)
 
 
@@ -218,7 +241,15 @@ def bench_main():
     parser.add_argument("--output", "-o", help="output CSV")
 
     args = parser.parse_args()
-    tools = args.tool or ALL_TOOLS
+
+    # Which tools are we comparing?
+    tools = (
+        args.tool
+        or {
+            "paths": ALL_TOOLS,
+            "convert": ["odgi", "flatgfa"],
+        }[args.mode]
+    )
     for tool in tools:
         assert tool in ALL_TOOLS, "unknown tool name"
 
