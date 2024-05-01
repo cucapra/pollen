@@ -1,0 +1,11 @@
+[package]
+name = "flatgfa-py"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "flatgfa"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21.2", features = ["abi3-py38"] }
