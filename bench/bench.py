@@ -159,6 +159,23 @@ class Runner:
         with logtime(self.log):
             subprocess.run([self.fgfa, "-I", gfa, "-o", flatgfa])
 
+    def compare(self, mode, graph, commands):
+        """Run a Hyperfine comparison and produce CSV lines for the results.
+
+        `commands` is a dict mapping tool names to command strings.
+        """
+        self.log.info("comparing %s for %s", mode, " ".join(commands.keys()))
+        with logtime(self.log):
+            results = hyperfine(list(commands.values()))
+        for cmd, res in zip(commands.keys(), results):
+            yield {
+                "cmd": cmd,
+                "mean": res.mean,
+                "stddev": res.stddev,
+                "graph": graph,
+                "n": res.count,
+            }
+
     def compare_paths(self, name, tools):
         """Compare odgi and FlatGFA implementations of path-name extraction."""
         commands = {
@@ -167,18 +184,16 @@ class Runner:
             "slow_odgi": f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}',
         }
         commands = {k: commands[k] for k in tools}
+        yield from self.compare("paths", name, commands)
 
-        self.log.info("comparing paths for %s", " ".join(tools))
-        with logtime(self.log):
-            results = hyperfine(list(commands.values()))
-        for cmd, res in zip(commands.keys(), results):
-            yield {
-                "cmd": cmd,
-                "mean": res.mean,
-                "stddev": res.stddev,
-                "graph": name,
-                "n": res.count,
-            }
+    def compare_convert(self, name, tools):
+        """Compare conversion time from GFA to specialized file formats."""
+        commands = {
+            "odgi": f'{self.odgi} build -g {quote(graph_path(name, "gfa"))} -o /dev/null',
+            "flatgfa": f'{self.fgfa} -I {quote(graph_path(name, "gfa"))} -o /dev/null',
+        }
+        commands = {k: commands[k] for k in tools}
+        yield from self.compare("convert", name, commands)
 
 
 def run_bench(graph_set, mode, tools, out_csv):
