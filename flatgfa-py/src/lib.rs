@@ -102,6 +102,10 @@ impl PySegment {
         let seg = view.segs[self.id as usize];
         seg.name
     }
+
+    fn __repr__(&self) -> String {
+        format!("<Segment {}>", self.id)
+    }
 }
 
 #[pymodule]
