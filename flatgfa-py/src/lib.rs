@@ -1,4 +1,4 @@
-use flatgfa::flatgfa::{GFABuilder, HeapStore, Segment};
+use flatgfa::flatgfa::{GFABuilder, HeapStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
@@ -16,8 +16,7 @@ struct PyFlatGFA(HeapStore);
 #[pymethods]
 impl PyFlatGFA {
     fn get_a_seg(self_: Py<Self>) -> PySegment {
-        let s = self_.get().0.segs[0];
-        PySegment { gfa: self_, seg: s }
+        PySegment { gfa: self_, seg: 0 }
     }
 }
 
@@ -25,14 +24,15 @@ impl PyFlatGFA {
 #[pyo3(name = "Segment")]
 struct PySegment {
     gfa: Py<PyFlatGFA>,
-    seg: Segment,
+    seg: u32,
 }
 
 #[pymethods]
 impl PySegment {
     fn get_seq<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let view = self.gfa.get().0.view();
-        let seq = view.get_seq(&self.seg);
+        let seg = view.segs[self.seg as usize];
+        let seq = view.get_seq(&seg);
         PyBytes::new_bound(py, seq) // TK Can we avoid this copy?
     }
 }
