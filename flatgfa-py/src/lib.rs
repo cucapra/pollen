@@ -6,12 +6,23 @@ use pyo3::types::PyBytes;
 fn parse(filename: &str) -> PyFlatGFA {
     let file = flatgfa::file::map_file(filename);
     let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
-    PyFlatGFA(store)
+    PyFlatGFA(InternalStore::Heap(store))
+}
+
+#[pyfunction]
+fn load(filename: &str) -> PyFlatGFA {
+    let mmap = flatgfa::file::map_file(filename);
+    PyFlatGFA(InternalStore::File(mmap))
+}
+
+enum InternalStore {
+    Heap(HeapStore),
+    File(memmap::Mmap),
 }
 
 #[pyclass(frozen)]
 #[pyo3(name = "FlatGFA")]
-struct PyFlatGFA(HeapStore);
+struct PyFlatGFA(InternalStore);
 
 #[pymethods]
 impl PyFlatGFA {
@@ -26,7 +37,14 @@ struct GFARef(Py<PyFlatGFA>);
 
 impl GFARef {
     fn view(&self) -> FlatGFA {
-        self.0.get().0.view()
+        // TK It seems wasteful to check the type of store every time... and to construct
+        // the view every time. It would be great if we could somehow construct the view
+        // once up front and hand it out to the various ancillary objects, but they need
+        // to be assured that the store will survive long enough.
+        match self.0.get().0 {
+            InternalStore::Heap(ref store) => store.view(),
+            InternalStore::File(ref mmap) => flatgfa::file::view(mmap),
+        }
     }
 }
 
@@ -112,5 +130,6 @@ impl PySegment {
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
+    m.add_function(wrap_pyfunction!(load, m)?)?;
     Ok(())
 }
