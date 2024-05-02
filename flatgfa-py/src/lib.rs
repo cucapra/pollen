@@ -15,6 +15,7 @@ struct PyFlatGFA(HeapStore);
 
 #[pymethods]
 impl PyFlatGFA {
+    #[getter]
     fn segments(self_: Py<Self>) -> SegmentIter {
         SegmentIter { gfa: self_, idx: 0 }
     }
@@ -57,14 +58,15 @@ struct PySegment {
 
 #[pymethods]
 impl PySegment {
-    fn get_seq<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+    fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let view = self.gfa.get().0.view();
         let seg = view.segs[self.seg as usize];
         let seq = view.get_seq(&seg);
         PyBytes::new_bound(py, seq) // TK Can we avoid this copy?
     }
 
-    fn get_name<'py>(&self) -> usize {
+    #[getter]
+    fn name<'py>(&self) -> usize {
         let view = self.gfa.get().0.view();
         let seg = view.segs[self.seg as usize];
         seg.name
