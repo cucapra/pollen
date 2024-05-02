@@ -6,4 +6,4 @@ for seg in g.segments:
     print(seg.name, seg.id, seg.sequence())
 
 g = flatgfa.load("../bench/graphs/test.k.flatgfa")
-print(g.segments[2].sequence())
+print(len(g.segments))

@@ -68,6 +68,10 @@ impl SegmentList {
             idx: 0,
         }
     }
+
+    fn __len__(&self) -> usize {
+        self.gfa.view().segs.len()
+    }
 }
 
 #[pyclass]
