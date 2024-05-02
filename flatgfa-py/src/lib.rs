@@ -1,4 +1,4 @@
-use flatgfa::flatgfa::{GFABuilder, HeapStore};
+use flatgfa::flatgfa::{FlatGFA, GFABuilder, HeapStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
@@ -17,13 +17,25 @@ struct PyFlatGFA(HeapStore);
 impl PyFlatGFA {
     #[getter]
     fn segments(self_: Py<Self>) -> SegmentIter {
-        SegmentIter { gfa: self_, idx: 0 }
+        SegmentIter {
+            gfa: GFARef(self_),
+            idx: 0,
+        }
+    }
+}
+
+#[derive(Clone)]
+struct GFARef(Py<PyFlatGFA>);
+
+impl GFARef {
+    fn view(&self) -> FlatGFA {
+        self.0.get().0.view()
     }
 }
 
 #[pyclass]
 struct SegmentIter {
-    gfa: Py<PyFlatGFA>,
+    gfa: GFARef,
     idx: u32,
 }
 
@@ -33,15 +45,14 @@ impl SegmentIter {
         self_
     }
 
-    fn __next__<'py>(self_: Bound<'py, Self>) -> Option<PySegment> {
-        let mut s = self_.borrow_mut();
-        let view = s.gfa.get().0.view();
-        if s.idx < view.segs.len() as u32 {
+    fn __next__<'py>(&mut self) -> Option<PySegment> {
+        let view = self.gfa.view();
+        if self.idx < view.segs.len() as u32 {
             let seg = PySegment {
-                gfa: s.gfa.clone(),
-                seg: s.idx,
+                gfa: self.gfa.clone(),
+                seg: self.idx,
             };
-            s.idx += 1;
+            self.idx += 1;
             Some(seg)
         } else {
             None
@@ -52,14 +63,14 @@ impl SegmentIter {
 #[pyclass(frozen)]
 #[pyo3(name = "Segment")]
 struct PySegment {
-    gfa: Py<PyFlatGFA>,
+    gfa: GFARef,
     seg: u32,
 }
 
 #[pymethods]
 impl PySegment {
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
-        let view = self.gfa.get().0.view();
+        let view = self.gfa.view();
         let seg = view.segs[self.seg as usize];
         let seq = view.get_seq(&seg);
         PyBytes::new_bound(py, seq) // TK Can we avoid this copy?
@@ -67,7 +78,7 @@ impl PySegment {
 
     #[getter]
     fn name<'py>(&self) -> usize {
-        let view = self.gfa.get().0.view();
+        let view = self.gfa.view();
         let seg = view.segs[self.seg as usize];
         seg.name
     }
