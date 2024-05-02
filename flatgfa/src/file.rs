@@ -1,5 +1,6 @@
 use crate::flatgfa;
 use crate::pool::Span;
+use memmap::{Mmap, MmapMut};
 use std::mem::{size_of, size_of_val};
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -307,4 +308,29 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
 /// enough buffer to write the entire FlatGFA into with `dump`.
 pub fn size(gfa: &flatgfa::FlatGFA) -> usize {
     Toc::full(gfa).size()
+}
+
+pub fn map_file(name: &str) -> Mmap {
+    let file = std::fs::File::open(name).unwrap();
+    unsafe { Mmap::map(&file) }.unwrap()
+}
+
+pub fn map_new_file(name: &str, size: u64) -> MmapMut {
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(name)
+        .unwrap();
+    file.set_len(size).unwrap();
+    unsafe { MmapMut::map_mut(&file) }.unwrap()
+}
+
+pub fn map_file_mut(name: &str) -> MmapMut {
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(name)
+        .unwrap();
+    unsafe { MmapMut::map_mut(&file) }.unwrap()
 }
