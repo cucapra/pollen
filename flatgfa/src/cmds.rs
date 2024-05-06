@@ -1,7 +1,8 @@
 use crate::flatgfa::{self, GFABuilder};
 use crate::pool::{self, Index, Pool};
+use bstr::BStr;
 use argh::FromArgs;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -291,23 +292,27 @@ impl<'a> SubgraphBuilder<'a> {
 pub struct Depth {}
 
 pub fn depth(gfa: &flatgfa::FlatGFA) {
-    println!("#node.id\tdepth");
-    let mut depths = HashMap::new(); // do not assume that node ids are contiguous
+    // Initialize node depth
+    let mut depths = Vec::new();
+    depths.resize(gfa.segs.len(), 0);
+    // Initialize uniq_paths
+    let mut uniq_paths = Vec::<HashSet::<&BStr>>::new();
+    uniq_paths.resize(gfa.segs.len(), HashSet::new());
     // do not assume that each handle in `gfa.steps()` is unique
     for path in gfa.paths {
+        let path_name = gfa.get_path_name(path);
         for step in gfa.get_steps(path) {
-            let seg_id = step.segment();
-            match depths.get(&seg_id) {
-                Some(depth) => depths.insert(seg_id, depth + 1),
-                None => depths.insert(seg_id, 1)
-            };
+            let seg_id = step.segment() as usize;
+            // Increment depths
+            depths[seg_id] = depths[seg_id] + 1;
+            // Update uniq_paths
+            uniq_paths[seg_id].insert(path_name);
         }
     }
+    // print out depth and depth.uniq
+    println!("#node.id\tdepth\tdepth.uniq");
     for (id, seg) in gfa.segs.iter().enumerate() {
         let name: u32 = seg.name as u32;
-        match depths.get(&(id as u32)) {
-            Some(depth) => println!("{}\t{}", name, depth),
-            None => println!("{}\t{}", name, 0)
-        };
+        println!("{}\t{}\t{}", name, depths[id], uniq_paths[id].len());
     }
 }
