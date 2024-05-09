@@ -312,44 +312,15 @@ pub struct Store<'a, P: PoolFamily<'a>> {
     pub line_order: P::Pool<u8>,
 }
 
-pub trait GFABuilder {
+impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
-    fn add_header(&mut self, version: &[u8]);
-
-    /// Add a new segment to the GFA file.
-    fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index;
-
-    /// Add a new path.
-    fn add_path(
-        &mut self,
-        name: &[u8],
-        steps: Span,
-        overlaps: impl Iterator<Item = Vec<AlignOp>>,
-    ) -> Index;
-
-    /// Add a sequence of steps.
-    fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span;
-
-    /// Add a single step.
-    fn add_step(&mut self, step: Handle) -> Index;
-
-    /// Add a link between two (oriented) segments.
-    fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index;
-
-    /// Record a line type to preserve the line order.
-    fn record_line(&mut self, kind: LineKind);
-
-    /// Borrow a FlatGFA view of this data store.
-    fn view(&self) -> FlatGFA;
-}
-
-impl<'a, P: PoolFamily<'a>> GFABuilder for Store<'a, P> {
-    fn add_header(&mut self, version: &[u8]) {
+    pub fn add_header(&mut self, version: &[u8]) {
         assert!(self.header.count() == 0);
         self.header.add_slice(version);
     }
 
-    fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index {
+    /// Add a new segment to the GFA file.
+    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index {
         self.segs.add(Segment {
             name,
             seq: self.seq_data.add_slice(seq),
@@ -357,7 +328,8 @@ impl<'a, P: PoolFamily<'a>> GFABuilder for Store<'a, P> {
         })
     }
 
-    fn add_path(
+    /// Add a new path.
+    pub fn add_path(
         &mut self,
         name: &[u8],
         steps: Span,
@@ -376,15 +348,18 @@ impl<'a, P: PoolFamily<'a>> GFABuilder for Store<'a, P> {
         })
     }
 
-    fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
+    /// Add a sequence of steps.
+    pub fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
         self.steps.add_iter(steps)
     }
 
-    fn add_step(&mut self, step: Handle) -> Index {
+    /// Add a single step.
+    pub fn add_step(&mut self, step: Handle) -> Index {
         self.steps.add(step)
     }
 
-    fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
+    /// Add a link between two (oriented) segments.
+    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
         self.links.add(Link {
             from,
             to,
@@ -392,11 +367,13 @@ impl<'a, P: PoolFamily<'a>> GFABuilder for Store<'a, P> {
         })
     }
 
-    fn record_line(&mut self, kind: LineKind) {
+    /// Record a line type to preserve the line order.
+    pub fn record_line(&mut self, kind: LineKind) {
         self.line_order.add(kind.into());
     }
 
-    fn view(&self) -> FlatGFA {
+    /// Borrow a FlatGFA view of this data store.
+    pub fn view(&self) -> FlatGFA {
         FlatGFA {
             header: self.header.all(),
             segs: self.segs.all(),
@@ -430,9 +407,7 @@ impl<'a> PoolFamily<'a> for VecPoolFamily {
 /// useful for creating new ones from scratch.
 pub type HeapStore = Store<'static, VecPoolFamily>;
 
-pub struct SliceVecPoolFamily {
-    // phantom: std::marker::PhantomData<&'a ()>,
-}
+pub struct SliceVecPoolFamily;
 impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
     type Pool<T: Clone + 'a> = SliceVec<'a, T>;
 }
