@@ -81,7 +81,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Turnt
-        run: uv pip install turnt
+        run: pip install turnt
       - name: Problem matcher
         run: echo '::add-matcher::.github/tap-matcher.json'
 
