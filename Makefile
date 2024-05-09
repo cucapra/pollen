@@ -15,3 +15,8 @@ fetch: $(TEST_FILES:%=tests/%.gfa)
 .PHONY: test-slow-odgi
 test-slow-odgi: fetch
 	make -C slow_odgi test
+
+.PHONY: test-flatgfa
+test-flatgfa:
+	cd flatgfa ; cargo build
+	turnt -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa

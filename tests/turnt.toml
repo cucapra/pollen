@@ -159,14 +159,14 @@ binary = true
 command = "pollen_data_gen simple {filename} | jq .depth"
 output.json = "-"
 
-[envs.polbin_mem]
-command = "../polbin/target/debug/polbin < {filename}"
+[envs.flatgfa_mem]
+command = "../flatgfa/target/debug/fgfa < {filename}"
 output.gfa = "-"
 
-[envs.polbin_file]
-command = "../polbin/target/debug/polbin -o {base}.flatgfa < {filename} ; ../polbin/target/debug/polbin -i {base}.flatgfa"
+[envs.flatgfa_file]
+command = "../flatgfa/target/debug/fgfa -o {base}.flatgfa < {filename} ; ../flatgfa/target/debug/fgfa -i {base}.flatgfa"
 output.gfa = "-"
 
-[envs.polbin_file_inplace]
-command = "../polbin/target/debug/polbin -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../polbin/target/debug/polbin -m -i {base}.inplace.flatgfa"
+[envs.flatgfa_file_inplace]
+command = "../flatgfa/target/debug/fgfa -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../flatgfa/target/debug/fgfa -m -i {base}.inplace.flatgfa"
 output.gfa = "-"
