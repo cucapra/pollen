@@ -1,4 +1,4 @@
-use flatgfa::flatgfa::{FlatGFA, GFABuilder, HeapStore};
+use flatgfa::flatgfa::{FlatGFA, HeapStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 

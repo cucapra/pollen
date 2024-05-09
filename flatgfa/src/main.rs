@@ -1,5 +1,5 @@
 use argh::FromArgs;
-use flatgfa::flatgfa::{FlatGFA, GFABuilder};
+use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
 use flatgfa::{cmds, file, parse, print};
 
