@@ -1,5 +1,5 @@
 use crate::flatgfa;
-use crate::pool::{self, Index, Pool};
+use crate::pool::{self, Index, PoolTK};
 use argh::FromArgs;
 use bstr::BStr;
 use std::collections::{HashMap, HashSet};

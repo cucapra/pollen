@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::pool::{Index, Pool, Span};
+use crate::pool::{Index, Pool, PoolTK, Span};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use tinyvec::SliceVec;
@@ -375,17 +375,17 @@ impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     /// Borrow a FlatGFA view of this data store.
     pub fn view(&self) -> FlatGFA {
         FlatGFA {
-            header: self.header.all(),
-            segs: self.segs.all(),
-            paths: self.paths.all(),
-            links: self.links.all(),
-            name_data: self.name_data.all(),
-            seq_data: self.seq_data.all(),
-            steps: self.steps.all(),
-            overlaps: self.overlaps.all(),
-            alignment: self.alignment.all(),
-            optional_data: self.optional_data.all(),
-            line_order: self.line_order.all(),
+            header: &self.header,
+            segs: &self.segs,
+            paths: &self.paths,
+            links: &self.links,
+            name_data: &self.name_data,
+            seq_data: &self.seq_data,
+            steps: &self.steps,
+            overlaps: &self.overlaps,
+            alignment: &self.alignment,
+            optional_data: &self.optional_data,
+            line_order: &self.line_order,
         }
     }
 }
