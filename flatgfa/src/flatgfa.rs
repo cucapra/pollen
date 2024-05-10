@@ -400,13 +400,6 @@ impl<'a> PoolFamily<'a> for VecPoolFamily {
     type Pool<T: Clone + 'a> = Vec<T>;
 }
 
-/// A mutable, in-memory data store for `FlatGFA`.
-///
-/// This store contains a bunch of `Vec`s: one per array required to implement a
-/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
-/// useful for creating new ones from scratch.
-pub type HeapStore = Store<'static, VecPoolFamily>;
-
 pub struct SliceVecPoolFamily;
 impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
     type Pool<T: Clone + 'a> = SliceVec<'a, T>;
@@ -418,3 +411,10 @@ impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
 /// a fixed region. This means they have a maximum size, but they can directly map
 /// onto the contents of a file.
 pub type SliceStore<'a> = Store<'a, SliceVecPoolFamily>;
+
+/// A mutable, in-memory data store for `FlatGFA`.
+///
+/// This store contains a bunch of `Vec`s: one per array required to implement a
+/// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
+/// useful for creating new ones from scratch.
+pub type HeapStore = Store<'static, VecPoolFamily>;
