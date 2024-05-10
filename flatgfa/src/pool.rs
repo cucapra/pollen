@@ -48,29 +48,10 @@ pub trait Pool<T: Clone>: Deref<Target = [T]> {
 
     /// Like `add_iter`, but for slices.
     fn add_slice(&mut self, slice: &[T]) -> Span;
-
-    /// Get the number of items in the pool.
-    fn count(&self) -> usize {
-        self.len()
-    }
-
-    /// Get the next available ID.
-    fn next_id(&self) -> Index {
-        self.count().try_into().expect("size too large")
-    }
-
-    /// Get all items in the pool.
-    fn all(&self) -> &[T] {
-        &self.deref()
-    }
 }
 
 impl<T: Clone> Pool<T> for Vec<T> {
     fn add(&mut self, item: T) -> Index {
-        let x: &[T] = self;
-        x.blargle();
-        self.deref().deref().blargle();
-
         let id = self.next_id();
         self.push(item);
         id
@@ -121,26 +102,37 @@ impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
     }
 }
 
-pub trait PoolRef<T> {
+/// TK: A too-be-named thing that is just a fixed-size chunk from a pool.
+pub trait PoolTK<T> {
     /// Get a single element from the pool by its ID.
     fn get(&self, index: Index) -> &T;
 
     /// Get a range of elements from the pool using their IDs.
     fn get_span(&self, span: Span) -> &[T];
 
-    fn blargle(&self) {
-        println!("blargle");
-    }
+    /// Get the number of items in the pool.
+    fn count(&self) -> usize;
+
+    /// Get the next available ID.
+    fn next_id(&self) -> Index;
 
     // TODO proper subscripting
 }
 
-impl<T> PoolRef<T> for &[T] {
+impl<T> PoolTK<T> for [T] {
     fn get(&self, index: Index) -> &T {
         &self[index as usize]
     }
 
     fn get_span(&self, span: Span) -> &[T] {
         &self[span.range()]
+    }
+
+    fn count(&self) -> usize {
+        self.len()
+    }
+
+    fn next_id(&self) -> Index {
+        self.count().try_into().expect("size too large")
     }
 }
