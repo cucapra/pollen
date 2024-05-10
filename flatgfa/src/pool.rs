@@ -49,16 +49,6 @@ pub trait Pool<T: Clone>: Deref<Target = [T]> {
     /// Like `add_iter`, but for slices.
     fn add_slice(&mut self, slice: &[T]) -> Span;
 
-    /// Get a single element from the pool by its ID.
-    fn get(&self, index: Index) -> &T {
-        &self[index as usize]
-    }
-
-    /// Get a range of elements from the pool using their IDs.
-    fn get_span(&self, span: Span) -> &[T] {
-        &self[span.range()]
-    }
-
     /// Get the number of items in the pool.
     fn count(&self) -> usize {
         self.len()
@@ -77,6 +67,10 @@ pub trait Pool<T: Clone>: Deref<Target = [T]> {
 
 impl<T: Clone> Pool<T> for Vec<T> {
     fn add(&mut self, item: T) -> Index {
+        let x: &[T] = self;
+        x.blargle();
+        self.deref().deref().blargle();
+
         let id = self.next_id();
         self.push(item);
         id
@@ -124,5 +118,29 @@ impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
             start,
             end: self.next_id(),
         }
+    }
+}
+
+pub trait PoolRef<T> {
+    /// Get a single element from the pool by its ID.
+    fn get(&self, index: Index) -> &T;
+
+    /// Get a range of elements from the pool using their IDs.
+    fn get_span(&self, span: Span) -> &[T];
+
+    fn blargle(&self) {
+        println!("blargle");
+    }
+
+    // TODO proper subscripting
+}
+
+impl<T> PoolRef<T> for &[T] {
+    fn get(&self, index: Index) -> &T {
+        &self[index as usize]
+    }
+
+    fn get_span(&self, span: Span) -> &[T] {
+        &self[span.range()]
     }
 }
