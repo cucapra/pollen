@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
@@ -37,7 +38,7 @@ impl Span {
     }
 }
 
-pub trait Pool<T: Clone> {
+pub trait Pool<T: Clone>: Deref<Target = [T]> {
     /// Add an item to the pool and get the new index (ID).
     fn add(&mut self, item: T) -> Index;
 
@@ -49,13 +50,19 @@ pub trait Pool<T: Clone> {
     fn add_slice(&mut self, slice: &[T]) -> Span;
 
     /// Get a single element from the pool by its ID.
-    fn get(&self, index: Index) -> &T;
+    fn get(&self, index: Index) -> &T {
+        &self[index as usize]
+    }
 
     /// Get a range of elements from the pool using their IDs.
-    fn get_span(&self, span: Span) -> &[T];
+    fn get_span(&self, span: Span) -> &[T] {
+        &self[span.range()]
+    }
 
     /// Get the number of items in the pool.
-    fn count(&self) -> usize;
+    fn count(&self) -> usize {
+        self.len()
+    }
 
     /// Get the next available ID.
     fn next_id(&self) -> Index {
@@ -63,7 +70,9 @@ pub trait Pool<T: Clone> {
     }
 
     /// Get all items in the pool.
-    fn all(&self) -> &[T];
+    fn all(&self) -> &[T] {
+        &self.deref()
+    }
 }
 
 impl<T: Clone> Pool<T> for Vec<T> {
@@ -90,22 +99,6 @@ impl<T: Clone> Pool<T> for Vec<T> {
             end: self.next_id(),
         }
     }
-
-    fn get(&self, index: Index) -> &T {
-        &self[index as usize]
-    }
-
-    fn get_span(&self, span: Span) -> &[T] {
-        &self[span.range()]
-    }
-
-    fn count(&self) -> usize {
-        self.len()
-    }
-
-    fn all(&self) -> &[T] {
-        self
-    }
 }
 
 impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
@@ -131,21 +124,5 @@ impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
             start,
             end: self.next_id(),
         }
-    }
-
-    fn get(&self, index: Index) -> &T {
-        &self[index as usize]
-    }
-
-    fn get_span(&self, span: Span) -> &[T] {
-        &self[span.range()]
-    }
-
-    fn count(&self) -> usize {
-        self.len()
-    }
-
-    fn all(&self) -> &[T] {
-        self
     }
 }
