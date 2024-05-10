@@ -12,7 +12,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 /// `FlatGFAStore` struct contains `Vec`s as backing stores for each of the slices
 /// in this struct. `FlatGFA` itself provides immutable access to the GFA data
 /// structure that is agnostic to the location of the underlying bytes.
-pub struct OldDeprecatedFlatGFA<'a> {
+pub struct FlatGFA<'a> {
     /// A GFA may optionally have a single header line, with a version number.
     /// If this is empty, there is no header line.
     pub header: &'a [u8],
@@ -234,23 +234,7 @@ pub enum LineKind {
     Link,
 }
 
-/// The data storage pools for a `FlatGFA`.
-#[derive(Default)]
-pub struct Store<'a, P: PoolFamily<'a>> {
-    pub header: P::Pool<u8>,
-    pub segs: P::Pool<Segment>,
-    pub paths: P::Pool<Path>,
-    pub links: P::Pool<Link>,
-    pub steps: P::Pool<Handle>,
-    pub seq_data: P::Pool<u8>,
-    pub overlaps: P::Pool<Span>,
-    pub alignment: P::Pool<AlignOp>,
-    pub name_data: P::Pool<u8>,
-    pub optional_data: P::Pool<u8>,
-    pub line_order: P::Pool<u8>,
-}
-
-impl<'a, P: PoolFamily<'a>> Store<'a, P> {
+impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
         self.seq_data[seg.seq.range()].as_ref()
@@ -310,7 +294,25 @@ impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     pub fn get_line_order(&self) -> impl Iterator<Item = LineKind> + 'a {
         self.line_order.iter().map(|b| (*b).try_into().unwrap())
     }
+}
 
+/// The data storage pools for a `FlatGFA`.
+#[derive(Default)]
+pub struct Store<'a, P: PoolFamily<'a>> {
+    pub header: P::Pool<u8>,
+    pub segs: P::Pool<Segment>,
+    pub paths: P::Pool<Path>,
+    pub links: P::Pool<Link>,
+    pub steps: P::Pool<Handle>,
+    pub seq_data: P::Pool<u8>,
+    pub overlaps: P::Pool<Span>,
+    pub alignment: P::Pool<AlignOp>,
+    pub name_data: P::Pool<u8>,
+    pub optional_data: P::Pool<u8>,
+    pub line_order: P::Pool<u8>,
+}
+
+impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
         assert!(self.header.count() == 0);
@@ -388,11 +390,7 @@ impl<'a, P: PoolFamily<'a>> Store<'a, P> {
     }
 }
 
-pub trait TKSuperPoolFamily<'a> {
-    type Stuff<T: Clone + 'a>;
-}
-
-pub trait PoolFamily<'a>: TKSuperPoolFamily<'a> {
+pub trait PoolFamily<'a> {
     type Pool<T: Clone + 'a>: crate::pool::Pool<T>;
 }
 
@@ -402,17 +400,17 @@ impl<'a> PoolFamily<'a> for VecPoolFamily {
     type Pool<T: Clone + 'a> = Vec<T>;
 }
 
-pub struct SliceVecPoolFamily;
-impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
-    type Pool<T: Clone + 'a> = SliceVec<'a, T>;
-}
-
 /// A mutable, in-memory data store for `FlatGFA`.
 ///
 /// This store contains a bunch of `Vec`s: one per array required to implement a
 /// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
 /// useful for creating new ones from scratch.
 pub type HeapStore = Store<'static, VecPoolFamily>;
+
+pub struct SliceVecPoolFamily;
+impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
+    type Pool<T: Clone + 'a> = SliceVec<'a, T>;
+}
 
 /// A store for `FlatGFA` data backed by fixed-size slices.
 ///
