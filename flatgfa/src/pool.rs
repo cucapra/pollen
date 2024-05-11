@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -86,7 +85,10 @@ impl<T> Span<T> {
 /// as allocation arenas. This trait supports adding to the pool (i.e., growing the
 /// arena). Pools also `Deref` to slices, which are `&Pool`s and support convenient
 /// access to the current set of objects (but not addition of new objects).
-pub trait Store<T: Clone>: Deref<Target = [T]> {
+pub trait Store<T: Clone> {
+    /// Get a fixed-size view of the arena.
+    fn as_ref<'a>(&'a self) -> Pool<'a, T>;
+
     /// Add an item to the pool and get the new id.
     fn add(&mut self, item: T) -> Id<T>;
 
@@ -96,45 +98,102 @@ pub trait Store<T: Clone>: Deref<Target = [T]> {
 
     /// Like `add_iter`, but for slices.
     fn add_slice(&mut self, slice: &[T]) -> Span<T>;
+
+    /// Get the number of items in the pool.
+    fn count(&self) -> usize;
+
+    /// Get the next available ID.
+    fn next_id(&self) -> Id<T> {
+        Id::new(self.count())
+    }
 }
 
-impl<T: Clone> Store<T> for Vec<T> {
+/// A store that uses a `Vec` to allocate objects on the heap.
+///
+/// This is a "normal" arena that can freely grow to fill available memory.
+#[repr(transparent)]
+pub struct HeapStore<T>(Vec<T>);
+
+impl<T: Clone> Store<T> for HeapStore<T> {
+    fn as_ref<'a>(&'a self) -> Pool<'a, T> {
+        Pool(&self.0)
+    }
+
+    fn add(&mut self, item: T) -> Id<T> {
+        let id = self.as_ref().next_id();
+        self.0.push(item);
+        id
+    }
+
+    fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span<T> {
+        let start = self.as_ref().next_id();
+        self.0.extend(iter);
+        Span::new(start, self.as_ref().next_id())
+    }
+
+    fn add_slice(&mut self, slice: &[T]) -> Span<T> {
+        let start = self.as_ref().next_id();
+        self.0.extend_from_slice(slice);
+        Span::new(start, self.as_ref().next_id())
+    }
+
+    fn count(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<T> Default for HeapStore<T> {
+    fn default() -> Self {
+        Self(Vec::new())
+    }
+}
+
+/// A store that keeps its data in fixed locations in memory.
+///
+/// This is a funkier kind of arena that uses memory that has already been pre-allocated
+/// somewhere else, such as in a memory-mapped file. A consequence is that there is a
+/// fixed maximum size for the arena; it's possible to add objects only until it fills up.
+#[repr(transparent)]
+pub struct FixedStore<'a, T>(SliceVec<'a, T>);
+
+impl<'a, T: Clone> Store<T> for FixedStore<'a, T> {
+    fn as_ref<'b>(&'b self) -> Pool<'b, T> {
+        Pool(&self.0)
+    }
+
     fn add(&mut self, item: T) -> Id<T> {
         let id = self.next_id();
-        self.push(item);
+        self.0.push(item);
         id
     }
 
     fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span<T> {
         let start = self.next_id();
-        self.extend(iter);
+        self.0.extend(iter);
         Span::new(start, self.next_id())
     }
 
     fn add_slice(&mut self, slice: &[T]) -> Span<T> {
         let start = self.next_id();
-        self.extend_from_slice(slice);
+        self.0.extend_from_slice(slice);
         Span::new(start, self.next_id())
+    }
+
+    // TODO: Rename count to len...
+    fn count(&self) -> usize {
+        self.0.len()
     }
 }
 
-impl<'a, T: Clone> Store<T> for SliceVec<'a, T> {
-    fn add(&mut self, item: T) -> Id<T> {
-        let id = self.next_id();
-        self.push(item);
-        id
+impl<'a, T> FixedStore<'a, T> {
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
     }
+}
 
-    fn add_iter(&mut self, iter: impl IntoIterator<Item = T>) -> Span<T> {
-        let start = self.next_id();
-        self.extend(iter);
-        Span::new(start, self.next_id())
-    }
-
-    fn add_slice(&mut self, slice: &[T]) -> Span<T> {
-        let start = self.next_id();
-        self.extend_from_slice(slice);
-        Span::new(start, self.next_id())
+impl<'a, T> From<SliceVec<'a, T>> for FixedStore<'a, T> {
+    fn from(slice: SliceVec<'a, T>) -> Self {
+        Self(slice)
     }
 }
 
@@ -142,34 +201,54 @@ impl<'a, T: Clone> Store<T> for SliceVec<'a, T> {
 ///
 /// This trait allows id-based access to a fixed-size chunk of objects reflecting
 /// a `Store`. Unlike `Store`, it does not support adding new objects.
-pub trait Pool<T> {
+#[repr(transparent)]
+#[derive(Clone, Copy)]
+pub struct Pool<'a, T>(&'a [T]);
+
+impl<'a, T> Pool<'a, T> {
     /// Get a single element from the pool by its ID.
-    fn get_id(&self, id: Id<T>) -> &T;
+    pub fn get_id(&self, id: Id<T>) -> &T {
+        &self.0[id.index()]
+    }
 
     /// Get a range of elements from the pool using their IDs.
-    fn get_span(&self, span: Span<T>) -> &[T];
+    pub fn get_span(&self, span: Span<T>) -> &[T] {
+        &self.0[std::ops::Range::from(span)]
+    }
 
     /// Get the number of items in the pool.
-    fn count(&self) -> usize;
+    pub fn count(&self) -> usize {
+        self.0.len()
+    }
 
     /// Get the next available ID.
-    fn next_id(&self) -> Id<T>;
+    pub fn next_id(&self) -> Id<T> {
+        Id::new(self.count())
+    }
+
+    /// Get the entire pool as a slice.
+    pub fn all(&self) -> &'a [T] {
+        self.0
+    }
+
+    /// Find the first item in the pool that satisfies a predicate.
+    pub fn search(&self, pred: impl Fn(&T) -> bool) -> Option<Id<T>> {
+        self.0.iter().position(pred).map(|i| Id::new(i))
+    }
+
+    /// Iterate over id/item pairs in the pool.
+    pub fn items(&self) -> impl Iterator<Item = (Id<T>, &T)> {
+        self.0
+            .iter()
+            .enumerate()
+            .map(|(i, item)| (Id::new(i), item))
+    }
+
+    // TODO: SUBSCRIPTING!
 }
 
-impl<T> Pool<T> for [T] {
-    fn get_id(&self, id: Id<T>) -> &T {
-        &self[id.index()]
-    }
-
-    fn get_span(&self, span: Span<T>) -> &[T] {
-        &self[std::ops::Range::from(span)]
-    }
-
-    fn count(&self) -> usize {
-        self.len()
-    }
-
-    fn next_id(&self) -> Id<T> {
-        Id::new(self.count())
+impl<'a, T> From<&'a [T]> for Pool<'a, T> {
+    fn from(slice: &'a [T]) -> Self {
+        Self(slice)
     }
 }

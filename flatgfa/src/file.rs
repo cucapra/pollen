@@ -1,5 +1,5 @@
 use crate::flatgfa;
-use crate::pool::Span;
+use crate::pool::{FixedStore, Pool, Span, Store};
 use memmap::{Mmap, MmapMut};
 use std::mem::{size_of, size_of_val};
 use tinyvec::SliceVec;
@@ -37,17 +37,17 @@ struct Size {
 }
 
 impl Size {
-    fn of_slice<T>(slice: &[T]) -> Self {
+    fn of_pool<'a, T>(pool: Pool<'a, T>) -> Self {
         Size {
-            len: slice.len(),
-            capacity: slice.len(),
+            len: pool.count(),
+            capacity: pool.count(),
         }
     }
 
-    fn of_slice_vec<T>(slice_vec: &SliceVec<'_, T>) -> Self {
+    fn of_store<T: Clone>(store: &FixedStore<'_, T>) -> Self {
         Size {
-            len: slice_vec.len(),
-            capacity: slice_vec.capacity(),
+            len: store.count(),
+            capacity: store.capacity(),
         }
     }
 
@@ -81,34 +81,34 @@ impl Toc {
     fn full(gfa: &flatgfa::FlatGFA) -> Self {
         Self {
             magic: MAGIC_NUMBER,
-            header: Size::of_slice(gfa.header),
-            segs: Size::of_slice(gfa.segs),
-            paths: Size::of_slice(gfa.paths),
-            links: Size::of_slice(gfa.links),
-            steps: Size::of_slice(gfa.steps),
-            seq_data: Size::of_slice(gfa.seq_data),
-            overlaps: Size::of_slice(gfa.overlaps),
-            alignment: Size::of_slice(gfa.alignment),
-            name_data: Size::of_slice(gfa.name_data),
-            optional_data: Size::of_slice(gfa.optional_data),
-            line_order: Size::of_slice(gfa.line_order),
+            header: Size::of_pool(gfa.header),
+            segs: Size::of_pool(gfa.segs),
+            paths: Size::of_pool(gfa.paths),
+            links: Size::of_pool(gfa.links),
+            steps: Size::of_pool(gfa.steps),
+            seq_data: Size::of_pool(gfa.seq_data),
+            overlaps: Size::of_pool(gfa.overlaps),
+            alignment: Size::of_pool(gfa.alignment),
+            name_data: Size::of_pool(gfa.name_data),
+            optional_data: Size::of_pool(gfa.optional_data),
+            line_order: Size::of_pool(gfa.line_order),
         }
     }
 
-    pub fn for_slice_store(store: &flatgfa::SliceStore) -> Self {
+    pub fn for_fixed_store(store: &flatgfa::FixedGFAStore) -> Self {
         Self {
             magic: MAGIC_NUMBER,
-            header: Size::of_slice_vec(&store.header),
-            segs: Size::of_slice_vec(&store.segs),
-            paths: Size::of_slice_vec(&store.paths),
-            links: Size::of_slice_vec(&store.links),
-            steps: Size::of_slice_vec(&store.steps),
-            seq_data: Size::of_slice_vec(&store.seq_data),
-            overlaps: Size::of_slice_vec(&store.overlaps),
-            alignment: Size::of_slice_vec(&store.alignment),
-            name_data: Size::of_slice_vec(&store.name_data),
-            optional_data: Size::of_slice_vec(&store.optional_data),
-            line_order: Size::of_slice_vec(&store.line_order),
+            header: Size::of_store(&store.header),
+            segs: Size::of_store(&store.segs),
+            paths: Size::of_store(&store.paths),
+            links: Size::of_store(&store.links),
+            steps: Size::of_store(&store.steps),
+            seq_data: Size::of_store(&store.seq_data),
+            overlaps: Size::of_store(&store.overlaps),
+            alignment: Size::of_store(&store.alignment),
+            name_data: Size::of_store(&store.name_data),
+            optional_data: Size::of_store(&store.optional_data),
+            line_order: Size::of_store(&store.line_order),
         }
     }
 
@@ -199,17 +199,17 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     let (line_order, _) = slice_prefix(rest, toc.line_order);
 
     flatgfa::FlatGFA {
-        header,
-        segs,
-        paths,
-        links,
-        steps,
-        seq_data,
-        overlaps,
-        alignment,
-        name_data,
-        optional_data,
-        line_order,
+        header: header.into(),
+        segs: segs.into(),
+        paths: paths.into(),
+        links: links.into(),
+        steps: steps.into(),
+        seq_data: seq_data.into(),
+        overlaps: overlaps.into(),
+        alignment: alignment.into(),
+        name_data: name_data.into(),
+        optional_data: optional_data.into(),
+        line_order: line_order.into(),
     }
 }
 
@@ -224,7 +224,7 @@ fn slice_vec_prefix<T: FromBytes + AsBytes>(
 }
 
 /// Get a FlatGFA `SliceStore` from the suffix of a file just following the table of contents.
-fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::SliceStore<'a> {
+fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::FixedGFAStore<'a> {
     let (header, rest) = slice_vec_prefix(data, toc.header);
     let (segs, rest) = slice_vec_prefix(rest, toc.segs);
     let (paths, rest) = slice_vec_prefix(rest, toc.paths);
@@ -237,29 +237,29 @@ fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::SliceStore<'a> {
     let (optional_data, rest) = slice_vec_prefix(rest, toc.optional_data);
     let (line_order, _) = slice_vec_prefix(rest, toc.line_order);
 
-    flatgfa::SliceStore {
-        header,
-        segs,
-        paths,
-        links,
-        steps,
-        seq_data,
-        overlaps,
-        alignment,
-        name_data,
-        optional_data,
-        line_order,
+    flatgfa::FixedGFAStore {
+        header: header.into(),
+        segs: segs.into(),
+        paths: paths.into(),
+        links: links.into(),
+        steps: steps.into(),
+        seq_data: seq_data.into(),
+        overlaps: overlaps.into(),
+        alignment: alignment.into(),
+        name_data: name_data.into(),
+        optional_data: optional_data.into(),
+        line_order: line_order.into(),
     }
 }
 
 /// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
-pub fn view_store(data: &mut [u8]) -> flatgfa::SliceStore {
+pub fn view_store(data: &mut [u8]) -> flatgfa::FixedGFAStore {
     let (toc, rest) = read_toc_mut(data);
     slice_store(rest, toc)
 }
 
 /// Initialize a buffer with an empty FlatGFA store.
-pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::SliceStore) {
+pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore) {
     // Write the table of contents.
     assert!(data.len() == toc.size());
     toc.write_to_prefix(data).unwrap();
@@ -291,17 +291,17 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
     let rest = write_bump(buf, &toc).unwrap();
 
     // All the slices.
-    let rest = write_bytes(rest, gfa.header).unwrap();
-    let rest = write_bump(rest, gfa.segs).unwrap();
-    let rest = write_bump(rest, gfa.paths).unwrap();
-    let rest = write_bump(rest, gfa.links).unwrap();
-    let rest = write_bump(rest, gfa.steps).unwrap();
-    let rest = write_bytes(rest, gfa.seq_data).unwrap();
-    let rest = write_bump(rest, gfa.overlaps).unwrap();
-    let rest = write_bump(rest, gfa.alignment).unwrap();
-    let rest = write_bytes(rest, gfa.name_data).unwrap();
-    let rest = write_bytes(rest, gfa.optional_data).unwrap();
-    write_bytes(rest, gfa.line_order).unwrap();
+    let rest = write_bytes(rest, gfa.header.all()).unwrap();
+    let rest = write_bump(rest, gfa.segs.all()).unwrap();
+    let rest = write_bump(rest, gfa.paths.all()).unwrap();
+    let rest = write_bump(rest, gfa.links.all()).unwrap();
+    let rest = write_bump(rest, gfa.steps.all()).unwrap();
+    let rest = write_bytes(rest, gfa.seq_data.all()).unwrap();
+    let rest = write_bump(rest, gfa.overlaps.all()).unwrap();
+    let rest = write_bump(rest, gfa.alignment.all()).unwrap();
+    let rest = write_bytes(rest, gfa.name_data.all()).unwrap();
+    let rest = write_bytes(rest, gfa.optional_data.all()).unwrap();
+    write_bytes(rest, gfa.line_order.all()).unwrap();
 }
 
 /// Get the total size in bytes of a FlatGFA structure. This should result in a big
