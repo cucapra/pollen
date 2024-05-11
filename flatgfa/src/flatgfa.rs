@@ -163,15 +163,16 @@ pub struct Handle(u32);
 impl Handle {
     /// Create a new handle referring to a segment ID and an orientation.
     pub fn new(segment: Id, orient: Orientation) -> Self {
-        assert!(segment & (1 << (u32::BITS - 1)) == 0, "index too large");
+        let seg_num: u32 = segment.into();
+        assert!(seg_num & (1 << (u32::BITS - 1)) == 0, "index too large");
         let orient_bit: u8 = orient.into();
         assert!(orient_bit & !1 == 0, "invalid orientation");
-        Self(segment << 1 | (orient_bit as u32))
+        Self(seg_num << 1 | (orient_bit as u32))
     }
 
     /// Get the segment ID. This is an index in the `segs` pool.
     pub fn segment(&self) -> Id {
-        self.0 >> 1
+        (self.0 >> 1).into()
     }
 
     /// Get the orientation (+ or -) for the handle.
@@ -249,7 +250,7 @@ impl<'a> FlatGFA<'a> {
         self.segs
             .iter()
             .position(|seg| seg.name == name)
-            .map(|i| i as Id)
+            .map(|i| Id::new(i))
     }
 
     /// Look up a path by its name.
@@ -257,7 +258,7 @@ impl<'a> FlatGFA<'a> {
         self.paths
             .iter()
             .position(|path| self.get_path_name(path) == name)
-            .map(|i| i as Id)
+            .map(|i| Id::new(i))
     }
 
     /// Get all the steps for a path.

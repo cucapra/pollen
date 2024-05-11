@@ -5,13 +5,37 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 /// An index into a pool.
 ///
 /// TODO: Consider using newtypes for each distinct type.
-pub type Id = u32;
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct Id(u32);
+
+impl Id {
+    pub fn index(self) -> usize {
+        self.0 as usize
+    }
+
+    pub fn new(index: usize) -> Self {
+        Self(index.try_into().expect("id too large"))
+    }
+}
+
+impl From<u32> for Id {
+    fn from(v: u32) -> Self {
+        Self(v)
+    }
+}
+
+impl From<Id> for u32 {
+    fn from(v: Id) -> Self {
+        v.0
+    }
+}
 
 /// A range of indices into a pool.
 ///
 /// TODO: Consider smaller indices for this, and possibly base/offset instead
 /// of start/end.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
+#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(packed)]
 pub struct Span {
     pub start: Id,
@@ -20,21 +44,17 @@ pub struct Span {
 
 impl From<Span> for std::ops::Range<usize> {
     fn from(span: Span) -> std::ops::Range<usize> {
-        (span.start as usize)..(span.end as usize)
+        (span.start.index())..(span.end.index())
     }
 }
 
 impl Span {
     pub fn is_empty(&self) -> bool {
-        self.start == self.end
-    }
-
-    pub fn range(&self) -> std::ops::Range<usize> {
-        (*self).into()
+        self.start.0 == self.end.0
     }
 
     pub fn len(&self) -> usize {
-        (self.end - self.start) as usize
+        (self.end.0 - self.start.0) as usize
     }
 }
 
@@ -128,11 +148,11 @@ pub trait Pool<T> {
 
 impl<T> Pool<T> for [T] {
     fn get_id(&self, id: Id) -> &T {
-        &self[id as usize]
+        &self[id.index()]
     }
 
     fn get_span(&self, span: Span) -> &[T] {
-        &self[span.range()]
+        &self[std::ops::Range::from(span)]
     }
 
     fn count(&self) -> usize {
@@ -140,6 +160,6 @@ impl<T> Pool<T> for [T] {
     }
 
     fn next_id(&self) -> Id {
-        self.count().try_into().expect("size too large")
+        Id::new(self.count())
     }
 }
