@@ -43,7 +43,7 @@ pub struct FlatGFA<'a> {
     /// Both paths and links can have overlaps, which are CIGAR sequences. They
     /// are all stored together here in a flat pool, elements of which point
     /// to chunks of `alignment`.
-    pub overlaps: &'a [Span],
+    pub overlaps: &'a [Span<AlignOp>],
 
     /// The CIGAR aligment operations that make up the overlaps. `overlaps`
     /// contains range of indices in this pool.
@@ -73,10 +73,10 @@ pub struct Segment {
     pub name: usize,
 
     /// The base-pair sequence for the segment. This is a range in the `seq_data` pool.
-    pub seq: Span,
+    pub seq: Span<u8>,
 
     /// Segments can have optional fields. This is a range in the `optional_data` pool.
-    pub optional: Span,
+    pub optional: Span<u8>,
 }
 
 impl Segment {
@@ -91,14 +91,14 @@ impl Segment {
 pub struct Path {
     /// The path's name. This can be an arbitrary string. It is a range in the
     /// `name_data` pool.
-    pub name: Span,
+    pub name: Span<u8>,
 
     /// The sequence of path steps. This is a range in the `steps` pool.
-    pub steps: Span,
+    pub steps: Span<Handle>,
 
     /// The CIGAR overlaps for each step on the path. This is a range in the
     /// `overlaps` pool.
-    pub overlaps: Span,
+    pub overlaps: Span<Span<AlignOp>>,
 }
 
 /// An allowed edge between two oriented segments.
@@ -113,12 +113,12 @@ pub struct Link {
 
     /// The CIGAR overlap between the segments. This is a range in the
     /// `alignment` pool.
-    pub overlap: Span,
+    pub overlap: Span<AlignOp>,
 }
 
 impl Link {
     /// Is either end of the link the given segment? If so, return the other end.
-    pub fn incident_seg(&self, seg_id: Id) -> Option<Id> {
+    pub fn incident_seg(&self, seg_id: Id<Segment>) -> Option<Id<Segment>> {
         if self.from.segment() == seg_id {
             Some(self.to.segment())
         } else if self.to.segment() == seg_id {
@@ -162,7 +162,7 @@ pub struct Handle(u32);
 
 impl Handle {
     /// Create a new handle referring to a segment ID and an orientation.
-    pub fn new(segment: Id, orient: Orientation) -> Self {
+    pub fn new(segment: Id<Segment>, orient: Orientation) -> Self {
         let seg_num: u32 = segment.into();
         assert!(seg_num & (1 << (u32::BITS - 1)) == 0, "index too large");
         let orient_bit: u8 = orient.into();
@@ -171,7 +171,7 @@ impl Handle {
     }
 
     /// Get the segment ID. This is an index in the `segs` pool.
-    pub fn segment(&self) -> Id {
+    pub fn segment(&self) -> Id<Segment> {
         (self.0 >> 1).into()
     }
 
@@ -244,7 +244,7 @@ impl<'a> FlatGFA<'a> {
     }
 
     /// Look up a segment by its name.
-    pub fn find_seg(&self, name: usize) -> Option<Id> {
+    pub fn find_seg(&self, name: usize) -> Option<Id<Segment>> {
         // TODO Make this more efficient by maintaining the name index? This would not be
         // too hard; we already have the machinery in `parse.rs`...
         self.segs
@@ -254,7 +254,7 @@ impl<'a> FlatGFA<'a> {
     }
 
     /// Look up a path by its name.
-    pub fn find_path(&self, name: &BStr) -> Option<Id> {
+    pub fn find_path(&self, name: &BStr) -> Option<Id<Path>> {
         self.paths
             .iter()
             .position(|path| self.get_path_name(path) == name)
@@ -267,7 +267,7 @@ impl<'a> FlatGFA<'a> {
     }
 
     /// Get all the overlaps for a path. This may be empty (`*` in the GFA file).
-    pub fn get_overlaps(&self, path: &Path) -> &[Span] {
+    pub fn get_overlaps(&self, path: &Path) -> &[Span<AlignOp>] {
         &self.overlaps.get_span(path.overlaps)
     }
 
@@ -287,7 +287,7 @@ impl<'a> FlatGFA<'a> {
     }
 
     /// Look up a CIGAR alignment.
-    pub fn get_alignment(&self, overlap: Span) -> Alignment {
+    pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
         Alignment {
             ops: &self.alignment.get_span(overlap),
         }
@@ -308,7 +308,7 @@ pub struct GFAStore<'a, P: PoolFamily<'a>> {
     pub links: P::Pool<Link>,
     pub steps: P::Pool<Handle>,
     pub seq_data: P::Pool<u8>,
-    pub overlaps: P::Pool<Span>,
+    pub overlaps: P::Pool<Span<AlignOp>>,
     pub alignment: P::Pool<AlignOp>,
     pub name_data: P::Pool<u8>,
     pub optional_data: P::Pool<u8>,
@@ -323,7 +323,7 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id {
+    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
         self.segs.add(Segment {
             name,
             seq: self.seq_data.add_slice(seq),
@@ -335,9 +335,9 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     pub fn add_path(
         &mut self,
         name: &[u8],
-        steps: Span,
+        steps: Span<Handle>,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
-    ) -> Id {
+    ) -> Id<Path> {
         let overlaps = self.overlaps.add_iter(
             overlaps
                 .into_iter()
@@ -352,17 +352,17 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a sequence of steps.
-    pub fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span {
+    pub fn add_steps(&mut self, steps: impl Iterator<Item = Handle>) -> Span<Handle> {
         self.steps.add_iter(steps)
     }
 
     /// Add a single step.
-    pub fn add_step(&mut self, step: Handle) -> Id {
+    pub fn add_step(&mut self, step: Handle) -> Id<Handle> {
         self.steps.add(step)
     }
 
     /// Add a link between two (oriented) segments.
-    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Id {
+    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Id<Link> {
         self.links.add(Link {
             from,
             to,
