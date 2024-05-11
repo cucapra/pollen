@@ -256,12 +256,12 @@ impl<'a> FlatGFA<'a> {
 
     /// Get all the steps for a path.
     pub fn get_steps(&self, path: &Path) -> &[Handle] {
-        &self.steps.get_span(path.steps)
+        self.steps.get_span(path.steps)
     }
 
     /// Get all the overlaps for a path. This may be empty (`*` in the GFA file).
     pub fn get_overlaps(&self, path: &Path) -> &[Span<AlignOp>] {
-        &self.overlaps.get_span(path.overlaps)
+        self.overlaps.get_span(path.overlaps)
     }
 
     /// Get the string name of a path.
@@ -271,7 +271,7 @@ impl<'a> FlatGFA<'a> {
 
     /// Get a handle's associated segment.
     pub fn get_handle_seg(&self, handle: Handle) -> &Segment {
-        &self.segs.get_id(handle.segment())
+        self.segs.get_id(handle.segment())
     }
 
     /// Get the optional data for a segment, as a tab-separated string.
@@ -282,7 +282,7 @@ impl<'a> FlatGFA<'a> {
     /// Look up a CIGAR alignment.
     pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
         Alignment {
-            ops: &self.alignment.get_span(overlap),
+            ops: self.alignment.get_span(overlap),
         }
     }
 

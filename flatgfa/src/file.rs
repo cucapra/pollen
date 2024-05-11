@@ -37,7 +37,7 @@ struct Size {
 }
 
 impl Size {
-    fn of_pool<'a, T>(pool: Pool<'a, T>) -> Self {
+    fn of_pool<T>(pool: Pool<T>) -> Self {
         Size {
             len: pool.len(),
             capacity: pool.len(),
