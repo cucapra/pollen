@@ -108,10 +108,13 @@ impl<'a, T: Clone> Store<T> for SliceVec<'a, T> {
     }
 }
 
-/// TK: A too-be-named thing that is just a fixed-size chunk from a pool.
+/// A fixed-sized arena.
+///
+/// This trait allows index-based access to a fixed-size chunk of objects reflecting
+/// a `Store`. Unlike `Store`, it does not support adding new objects.
 pub trait Pool<T> {
     /// Get a single element from the pool by its ID.
-    fn get(&self, index: Index) -> &T;
+    fn get_id(&self, index: Index) -> &T;
 
     /// Get a range of elements from the pool using their IDs.
     fn get_span(&self, span: Span) -> &[T];
@@ -121,12 +124,10 @@ pub trait Pool<T> {
 
     /// Get the next available ID.
     fn next_id(&self) -> Index;
-
-    // TODO proper subscripting
 }
 
 impl<T> Pool<T> for [T] {
-    fn get(&self, index: Index) -> &T {
+    fn get_id(&self, index: Index) -> &T {
         &self[index as usize]
     }
 

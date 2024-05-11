@@ -49,9 +49,9 @@ fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
     if overlaps.is_empty() {
         print!("*");
     } else {
-        print!("{}", gfa.get_alignment(&overlaps[0]));
+        print!("{}", gfa.get_alignment(overlaps[0]));
         for overlap in overlaps[1..].iter() {
-            print!(",{}", gfa.get_alignment(overlap));
+            print!(",{}", gfa.get_alignment(*overlap));
         }
     }
     println!();
@@ -68,7 +68,7 @@ fn print_link(gfa: &flatgfa::FlatGFA, link: &flatgfa::Link) {
         from.orient(),
         to_name,
         to.orient(),
-        gfa.get_alignment(&link.overlap)
+        gfa.get_alignment(link.overlap)
     );
 }
 

@@ -96,7 +96,7 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
     };
 
     let path_id = gfa.find_path(path_name.into()).ok_or("path not found")?;
-    let path = &gfa.paths[path_id as usize];
+    let path = gfa.paths.get_id(path_id);
     assert_eq!(
         orientation,
         flatgfa::Orientation::Forward,
@@ -180,7 +180,7 @@ impl<'a> SubgraphBuilder<'a> {
 
     /// Add a segment from the source graph to this subgraph.
     fn include_seg(&mut self, seg_id: Index) {
-        let seg = &self.old.segs[seg_id as usize];
+        let seg = self.old.segs.get_id(seg_id);
         let new_seg_id = self.store.add_seg(
             seg.name,
             self.old.get_seq(seg),
@@ -193,7 +193,7 @@ impl<'a> SubgraphBuilder<'a> {
     fn include_link(&mut self, link: &flatgfa::Link) {
         let from = self.tr_handle(link.from);
         let to = self.tr_handle(link.to);
-        let overlap = self.old.get_alignment(&link.overlap);
+        let overlap = self.old.get_alignment(link.overlap);
         self.store.add_link(from, to, overlap.ops.into());
     }
 
