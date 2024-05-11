@@ -1,4 +1,4 @@
-use crate::flatgfa;
+use crate::flatgfa::{self, Handle, Segment};
 use crate::pool::{self, Id, Pool};
 use argh::FromArgs;
 use bstr::BStr;
@@ -59,7 +59,7 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
             gfa.steps.len()
         );
     } else if args.self_loops {
-        let mut counts: HashMap<Id, usize> = HashMap::new();
+        let mut counts: HashMap<Id<Segment>, usize> = HashMap::new();
         let mut total: usize = 0;
         for link in gfa.links.iter() {
             if link.from.segment() == link.to.segment() {
@@ -161,12 +161,12 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapSto
 struct SubgraphBuilder<'a> {
     old: &'a flatgfa::FlatGFA<'a>,
     store: flatgfa::HeapStore,
-    seg_map: HashMap<Id, Id>,
+    seg_map: HashMap<Id<Segment>, Id<Segment>>,
 }
 
 struct SubpathStart {
-    step: Id,   // The id of the first step in the subpath.
-    pos: usize, // The bp position at the start of the subpath.
+    step: Id<Handle>, // The id of the first step in the subpath.
+    pos: usize,       // The bp position at the start of the subpath.
 }
 
 impl<'a> SubgraphBuilder<'a> {
@@ -179,7 +179,7 @@ impl<'a> SubgraphBuilder<'a> {
     }
 
     /// Add a segment from the source graph to this subgraph.
-    fn include_seg(&mut self, seg_id: Id) {
+    fn include_seg(&mut self, seg_id: Id<Segment>) {
         let seg = self.old.segs.get_id(seg_id);
         let new_seg_id = self.store.add_seg(
             seg.name,
@@ -199,10 +199,7 @@ impl<'a> SubgraphBuilder<'a> {
 
     /// Add a single subpath from the given path to the subgraph.
     fn include_subpath(&mut self, path: &flatgfa::Path, start: &SubpathStart, end_pos: usize) {
-        let steps = pool::Span {
-            start: start.step,
-            end: self.store.steps.next_id(),
-        };
+        let steps = pool::Span::new(start.step, self.store.steps.next_id());
         let name = format!("{}:{}-{}", self.old.get_path_name(path), start.pos, end_pos);
         self.store
             .add_path(name.as_bytes(), steps, std::iter::empty());
@@ -250,7 +247,7 @@ impl<'a> SubgraphBuilder<'a> {
     }
 
     /// Check whether a segment from the old graph is in the subgraph.
-    fn contains(&self, old_seg_id: Id) -> bool {
+    fn contains(&self, old_seg_id: Id<Segment>) -> bool {
         self.seg_map.contains_key(&old_seg_id)
     }
 
@@ -259,7 +256,7 @@ impl<'a> SubgraphBuilder<'a> {
     ///
     /// Include any links between the segments in the neighborhood and subpaths crossing
     /// through the neighborhood.
-    fn extract(&mut self, origin: Id, dist: usize) {
+    fn extract(&mut self, origin: Id<Segment>, dist: usize) {
         self.include_seg(origin);
 
         // Find the set of all segments that are 1 link away.
@@ -302,7 +299,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
     for path in gfa.paths {
         let path_name = gfa.get_path_name(path);
         for step in gfa.get_steps(path) {
-            let seg_id = step.segment() as usize;
+            let seg_id = step.segment().index();
             // Increment depths
             depths[seg_id] = depths[seg_id] + 1;
             // Update uniq_paths
