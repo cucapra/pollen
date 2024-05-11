@@ -70,7 +70,7 @@ impl Toc {
             + self.links.bytes::<flatgfa::Link>()
             + self.steps.bytes::<flatgfa::Handle>()
             + self.seq_data.bytes::<u8>()
-            + self.overlaps.bytes::<Span>()
+            + self.overlaps.bytes::<Span<flatgfa::AlignOp>>()
             + self.alignment.bytes::<flatgfa::AlignOp>()
             + self.name_data.bytes::<u8>()
             + self.optional_data.bytes::<u8>()

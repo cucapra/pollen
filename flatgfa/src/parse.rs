@@ -1,6 +1,5 @@
 use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
-use crate::pool::Id;
 use std::collections::HashMap;
 use std::io::BufRead;
 
@@ -131,12 +130,12 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
 
     fn add_seg(&mut self, seg: gfaline::Segment) {
         let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
-        self.seg_ids.insert(seg.name, seg_id);
+        self.seg_ids.insert(seg.name, seg_id.into());
     }
 
     fn add_link(&mut self, link: gfaline::Link) {
-        let from = Handle::new(self.seg_ids.get(link.from_seg), link.from_orient);
-        let to = Handle::new(self.seg_ids.get(link.to_seg), link.to_orient);
+        let from = Handle::new(self.seg_ids.get(link.from_seg).into(), link.from_orient);
+        let to = Handle::new(self.seg_ids.get(link.to_seg).into(), link.to_orient);
         self.flat.add_link(from, to, link.overlap);
     }
 
@@ -152,7 +151,7 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
         let mut step_parser = gfaline::StepsParser::new(rest);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
-                self.seg_ids.get(name),
+                self.seg_ids.get(name).into(),
                 if dir {
                     Orientation::Forward
                 } else {
@@ -189,23 +188,23 @@ struct NameMap {
     sequential_max: usize,
 
     /// Non-sequential names go here.
-    others: HashMap<usize, Id>,
+    others: HashMap<usize, u32>,
 }
 
 impl NameMap {
-    fn insert(&mut self, name: usize, id: Id) {
+    fn insert(&mut self, name: usize, id: u32) {
         // Is this the next sequential name? If so, no need to record it in our hash table;
         // just bump the number of sequential names we've seen.
-        if (name - 1) == self.sequential_max && (name - 1) == id.index() {
+        if (name - 1) == self.sequential_max && (name - 1) == (id as usize) {
             self.sequential_max += 1;
         } else {
             self.others.insert(name, id);
         }
     }
 
-    fn get(&self, name: usize) -> Id {
+    fn get(&self, name: usize) -> u32 {
         if name <= self.sequential_max {
-            Id::new(name - 1)
+            (name - 1) as u32
         } else {
             self.others[&name]
         }
