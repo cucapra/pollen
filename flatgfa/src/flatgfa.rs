@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::pool::{Index, Pool, PoolTK, Span};
+use crate::pool::{Index, Pool, Span, Store};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use tinyvec::SliceVec;
@@ -298,7 +298,7 @@ impl<'a> FlatGFA<'a> {
 
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
-pub struct Store<'a, P: PoolFamily<'a>> {
+pub struct GFAStore<'a, P: PoolFamily<'a>> {
     pub header: P::Pool<u8>,
     pub segs: P::Pool<Segment>,
     pub paths: P::Pool<Path>,
@@ -312,7 +312,7 @@ pub struct Store<'a, P: PoolFamily<'a>> {
     pub line_order: P::Pool<u8>,
 }
 
-impl<'a, P: PoolFamily<'a>> Store<'a, P> {
+impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
         assert!(self.header.count() == 0);
@@ -391,7 +391,7 @@ impl<'a, P: PoolFamily<'a>> Store<'a, P> {
 }
 
 pub trait PoolFamily<'a> {
-    type Pool<T: Clone + 'a>: crate::pool::Pool<T>;
+    type Pool<T: Clone + 'a>: crate::pool::Store<T>;
 }
 
 #[derive(Default)]
@@ -410,11 +410,11 @@ impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
 /// This store contains `SliceVec`s, which act like `Vec`s but are allocated within
 /// a fixed region. This means they have a maximum size, but they can directly map
 /// onto the contents of a file.
-pub type SliceStore<'a> = Store<'a, SliceVecPoolFamily>;
+pub type SliceStore<'a> = GFAStore<'a, SliceVecPoolFamily>;
 
 /// A mutable, in-memory data store for `FlatGFA`.
 ///
 /// This store contains a bunch of `Vec`s: one per array required to implement a
 /// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
 /// useful for creating new ones from scratch.
-pub type HeapStore = Store<'static, VecPoolFamily>;
+pub type HeapStore = GFAStore<'static, VecPoolFamily>;

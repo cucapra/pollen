@@ -38,7 +38,13 @@ impl Span {
     }
 }
 
-pub trait Pool<T: Clone>: Deref<Target = [T]> {
+/// A simple arena for objects of a single type.
+///
+/// This trait provides convenient accessors for treating Vec and Vec-like objects
+/// as allocation arenas. This trait supports adding to the pool (i.e., growing the
+/// arena). Pools also `Deref` to slices, which are `&Pool`s and support convenient
+/// access to the current set of objects (but not addition of new objects).
+pub trait Store<T: Clone>: Deref<Target = [T]> {
     /// Add an item to the pool and get the new index (ID).
     fn add(&mut self, item: T) -> Index;
 
@@ -50,7 +56,7 @@ pub trait Pool<T: Clone>: Deref<Target = [T]> {
     fn add_slice(&mut self, slice: &[T]) -> Span;
 }
 
-impl<T: Clone> Pool<T> for Vec<T> {
+impl<T: Clone> Store<T> for Vec<T> {
     fn add(&mut self, item: T) -> Index {
         let id = self.next_id();
         self.push(item);
@@ -76,7 +82,7 @@ impl<T: Clone> Pool<T> for Vec<T> {
     }
 }
 
-impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
+impl<'a, T: Clone> Store<T> for SliceVec<'a, T> {
     fn add(&mut self, item: T) -> Index {
         let id = self.next_id();
         self.push(item);
@@ -103,7 +109,7 @@ impl<'a, T: Clone> Pool<T> for SliceVec<'a, T> {
 }
 
 /// TK: A too-be-named thing that is just a fixed-size chunk from a pool.
-pub trait PoolTK<T> {
+pub trait Pool<T> {
     /// Get a single element from the pool by its ID.
     fn get(&self, index: Index) -> &T;
 
@@ -119,7 +125,7 @@ pub trait PoolTK<T> {
     // TODO proper subscripting
 }
 
-impl<T> PoolTK<T> for [T] {
+impl<T> Pool<T> for [T] {
     fn get(&self, index: Index) -> &T {
         &self[index as usize]
     }

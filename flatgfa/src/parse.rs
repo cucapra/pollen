@@ -5,14 +5,14 @@ use std::io::BufRead;
 
 pub struct Parser<'a, P: flatgfa::PoolFamily<'a>> {
     /// The flat representation we're building.
-    flat: flatgfa::Store<'a, P>,
+    flat: flatgfa::GFAStore<'a, P>,
 
     /// All segment IDs, indexed by their names, which we need to refer to segments in paths.
     seg_ids: NameMap,
 }
 
 impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
-    pub fn new(builder: flatgfa::Store<'a, P>) -> Self {
+    pub fn new(builder: flatgfa::GFAStore<'a, P>) -> Self {
         Self {
             flat: builder,
             seg_ids: NameMap::default(),
@@ -20,7 +20,7 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
     }
 
     /// Parse a GFA text file from an I/O stream.
-    pub fn parse_stream<R: BufRead>(mut self, stream: R) -> flatgfa::Store<'a, P> {
+    pub fn parse_stream<R: BufRead>(mut self, stream: R) -> flatgfa::GFAStore<'a, P> {
         // We can parse sements immediately, but we need to defer links and paths until we have all
         // the segment names that they might refer to.
         let mut deferred_links = Vec::new();
@@ -69,7 +69,7 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
     }
 
     /// Parse a GFA text file from an in-memory buffer.
-    pub fn parse_mem(mut self, buf: &[u8]) -> flatgfa::Store<'a, P> {
+    pub fn parse_mem(mut self, buf: &[u8]) -> flatgfa::GFAStore<'a, P> {
         let mut deferred_lines = Vec::new();
 
         for line in MemchrSplit::new(b'\n', buf) {
