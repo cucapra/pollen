@@ -9,9 +9,11 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 /// An efficient flattened representation of a GFA file.
 ///
 /// This struct *borrows* the underlying data from some other data store. Namely, the
-/// `FlatGFAStore` struct contains `Vec`s as backing stores for each of the slices
-/// in this struct. `FlatGFA` itself provides immutable access to the GFA data
-/// structure that is agnostic to the location of the underlying bytes.
+/// `GFAStore` structs contain `Vec`s or `Vec`-like arenas as backing stores for each
+/// of the slices in this struct. `FlatGFA` itself provides access to the GFA data
+/// structure that is agnostic to the location of the underlying bytes. However, all
+/// its components have a fixed size; unlike the underlying `GFAStore`, it is not
+/// possible to add new objects.
 pub struct FlatGFA<'a> {
     /// A GFA may optionally have a single header line, with a version number.
     /// If this is empty, there is no header line.
