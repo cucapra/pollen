@@ -1,5 +1,5 @@
 use crate::flatgfa::{self, Handle, Segment};
-use crate::pool::{self, Id, Pool};
+use crate::pool::{self, Id, Store};
 use argh::FromArgs;
 use bstr::BStr;
 use std::collections::{HashMap, HashSet};
@@ -10,17 +10,17 @@ use std::collections::{HashMap, HashSet};
 pub struct Toc {}
 
 pub fn toc(gfa: &flatgfa::FlatGFA) {
-    eprintln!("header: {}", gfa.header.len());
-    eprintln!("segs: {}", gfa.segs.len());
-    eprintln!("paths: {}", gfa.paths.len());
-    eprintln!("links: {}", gfa.links.len());
-    eprintln!("steps: {}", gfa.steps.len());
-    eprintln!("seq_data: {}", gfa.seq_data.len());
-    eprintln!("overlaps: {}", gfa.overlaps.len());
-    eprintln!("alignment: {}", gfa.alignment.len());
-    eprintln!("name_data: {}", gfa.name_data.len());
-    eprintln!("optional_data: {}", gfa.optional_data.len());
-    eprintln!("line_order: {}", gfa.line_order.len());
+    eprintln!("header: {}", gfa.header.count());
+    eprintln!("segs: {}", gfa.segs.count());
+    eprintln!("paths: {}", gfa.paths.count());
+    eprintln!("links: {}", gfa.links.count());
+    eprintln!("steps: {}", gfa.steps.count());
+    eprintln!("seq_data: {}", gfa.seq_data.count());
+    eprintln!("overlaps: {}", gfa.overlaps.count());
+    eprintln!("alignment: {}", gfa.alignment.count());
+    eprintln!("name_data: {}", gfa.name_data.count());
+    eprintln!("optional_data: {}", gfa.optional_data.count());
+    eprintln!("line_order: {}", gfa.line_order.count());
 }
 
 /// list the paths
@@ -29,7 +29,7 @@ pub fn toc(gfa: &flatgfa::FlatGFA) {
 pub struct Paths {}
 
 pub fn paths(gfa: &flatgfa::FlatGFA) {
-    for path in gfa.paths.iter() {
+    for path in gfa.paths.all().iter() {
         println!("{}", gfa.get_path_name(path));
     }
 }
@@ -52,16 +52,16 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
         println!("#length\tnodes\tedges\tpaths\tsteps");
         println!(
             "{}\t{}\t{}\t{}\t{}",
-            gfa.seq_data.len(),
-            gfa.segs.len(),
-            gfa.links.len(),
-            gfa.paths.len(),
-            gfa.steps.len()
+            gfa.seq_data.count(),
+            gfa.segs.count(),
+            gfa.links.count(),
+            gfa.paths.count(),
+            gfa.steps.count()
         );
     } else if args.self_loops {
         let mut counts: HashMap<Id<Segment>, usize> = HashMap::new();
         let mut total: usize = 0;
-        for link in gfa.links.iter() {
+        for link in gfa.links.all().iter() {
             if link.from.segment() == link.to.segment() {
                 let count = counts.entry(link.from.segment()).or_insert(0);
                 *count += 1;
@@ -149,7 +149,10 @@ pub struct Extract {
     link_distance: usize,
 }
 
-pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapStore, &'static str> {
+pub fn extract(
+    gfa: &flatgfa::FlatGFA,
+    args: Extract,
+) -> Result<flatgfa::HeapGFAStore, &'static str> {
     let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
 
     let mut subgraph = SubgraphBuilder::new(gfa);
@@ -160,7 +163,7 @@ pub fn extract(gfa: &flatgfa::FlatGFA, args: Extract) -> Result<flatgfa::HeapSto
 /// A helper to construct a new graph that includes part of an old graph.
 struct SubgraphBuilder<'a> {
     old: &'a flatgfa::FlatGFA<'a>,
-    store: flatgfa::HeapStore,
+    store: flatgfa::HeapGFAStore,
     seg_map: HashMap<Id<Segment>, Id<Segment>>,
 }
 
@@ -173,7 +176,7 @@ impl<'a> SubgraphBuilder<'a> {
     fn new(old: &'a flatgfa::FlatGFA) -> Self {
         Self {
             old,
-            store: flatgfa::HeapStore::default(),
+            store: flatgfa::HeapGFAStore::default(),
             seg_map: HashMap::new(),
         }
     }
@@ -261,7 +264,7 @@ impl<'a> SubgraphBuilder<'a> {
 
         // Find the set of all segments that are 1 link away.
         assert_eq!(dist, 1, "only `-c 1` is implemented so far");
-        for link in self.old.links.iter() {
+        for link in self.old.links.all().iter() {
             if let Some(other_seg) = link.incident_seg(origin) {
                 if !self.seg_map.contains_key(&other_seg) {
                     self.include_seg(other_seg);
@@ -270,14 +273,14 @@ impl<'a> SubgraphBuilder<'a> {
         }
 
         // Include all links within the subgraph.
-        for link in self.old.links.iter() {
+        for link in self.old.links.all().iter() {
             if self.contains(link.from.segment()) && self.contains(link.to.segment()) {
                 self.include_link(link);
             }
         }
 
         // Find subpaths within the subgraph.
-        for path in self.old.paths.iter() {
+        for path in self.old.paths.all().iter() {
             self.find_subpaths(path);
         }
     }
@@ -291,12 +294,12 @@ pub struct Depth {}
 pub fn depth(gfa: &flatgfa::FlatGFA) {
     // Initialize node depth
     let mut depths = Vec::new();
-    depths.resize(gfa.segs.len(), 0);
+    depths.resize(gfa.segs.count(), 0);
     // Initialize uniq_paths
     let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
-    uniq_paths.resize(gfa.segs.len(), HashSet::new());
+    uniq_paths.resize(gfa.segs.count(), HashSet::new());
     // do not assume that each handle in `gfa.steps()` is unique
-    for path in gfa.paths {
+    for path in gfa.paths.all() {
         let path_name = gfa.get_path_name(path);
         for step in gfa.get_steps(path) {
             let seg_id = step.segment().index();
@@ -308,8 +311,13 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
     }
     // print out depth and depth.uniq
     println!("#node.id\tdepth\tdepth.uniq");
-    for (id, seg) in gfa.segs.iter().enumerate() {
+    for (id, seg) in gfa.segs.items() {
         let name: u32 = seg.name as u32;
-        println!("{}\t{}\t{}", name, depths[id], uniq_paths[id].len());
+        println!(
+            "{}\t{}\t{}",
+            name,
+            depths[id.index()],
+            uniq_paths[id.index()].len()
+        );
     }
 }

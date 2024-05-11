@@ -1,4 +1,4 @@
-use flatgfa::flatgfa::{FlatGFA, HeapStore};
+use flatgfa::flatgfa::{FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
@@ -16,7 +16,7 @@ fn load(filename: &str) -> PyFlatGFA {
 }
 
 enum InternalStore {
-    Heap(Box<HeapStore>),
+    Heap(Box<HeapGFAStore>),
     File(memmap::Mmap),
 }
 
@@ -70,7 +70,7 @@ impl SegmentList {
     }
 
     fn __len__(&self) -> usize {
-        self.gfa.view().segs.len()
+        self.gfa.view().segs.count()
     }
 }
 
@@ -88,7 +88,7 @@ impl SegmentIter {
 
     fn __next__(&mut self) -> Option<PySegment> {
         let view = self.gfa.view();
-        if self.idx < view.segs.len() as u32 {
+        if self.idx < view.segs.count() as u32 {
             let seg = PySegment {
                 gfa: self.gfa.clone(),
                 id: self.idx,
@@ -117,7 +117,7 @@ impl PySegment {
     /// so it is slow to use for large sequences.
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let view = self.gfa.view();
-        let seg = view.segs[self.id as usize];
+        let seg = view.segs.get_id(self.id.into());
         let seq = view.get_seq(&seg);
         PyBytes::new_bound(py, seq)
     }
@@ -125,7 +125,7 @@ impl PySegment {
     #[getter]
     fn name(&self) -> usize {
         let view = self.gfa.view();
-        let seg = view.segs[self.id as usize];
+        let seg = view.segs.get_id(self.id.into());
         seg.name
     }
 

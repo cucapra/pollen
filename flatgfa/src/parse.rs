@@ -169,14 +169,14 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
     }
 }
 
-impl Parser<'static, flatgfa::VecFamily> {
+impl Parser<'static, flatgfa::HeapFamily> {
     pub fn for_heap() -> Self {
-        Self::new(flatgfa::HeapStore::default())
+        Self::new(flatgfa::HeapGFAStore::default())
     }
 }
 
-impl<'a> Parser<'a, flatgfa::SliceVecFamily> {
-    pub fn for_slice(store: flatgfa::SliceStore<'a>) -> Self {
+impl<'a> Parser<'a, flatgfa::FixedFamily> {
+    pub fn for_slice(store: flatgfa::FixedGFAStore<'a>) -> Self {
         Self::new(store)
     }
 }
