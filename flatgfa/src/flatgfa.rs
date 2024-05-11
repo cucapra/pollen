@@ -301,21 +301,21 @@ impl<'a> FlatGFA<'a> {
 
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
-pub struct GFAStore<'a, P: PoolFamily<'a>> {
-    pub header: P::Pool<u8>,
-    pub segs: P::Pool<Segment>,
-    pub paths: P::Pool<Path>,
-    pub links: P::Pool<Link>,
-    pub steps: P::Pool<Handle>,
-    pub seq_data: P::Pool<u8>,
-    pub overlaps: P::Pool<Span<AlignOp>>,
-    pub alignment: P::Pool<AlignOp>,
-    pub name_data: P::Pool<u8>,
-    pub optional_data: P::Pool<u8>,
-    pub line_order: P::Pool<u8>,
+pub struct GFAStore<'a, P: StoreFamily<'a>> {
+    pub header: P::Store<u8>,
+    pub segs: P::Store<Segment>,
+    pub paths: P::Store<Path>,
+    pub links: P::Store<Link>,
+    pub steps: P::Store<Handle>,
+    pub seq_data: P::Store<u8>,
+    pub overlaps: P::Store<Span<AlignOp>>,
+    pub alignment: P::Store<AlignOp>,
+    pub name_data: P::Store<u8>,
+    pub optional_data: P::Store<u8>,
+    pub line_order: P::Store<u8>,
 }
 
-impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
+impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
         assert!(self.header.count() == 0);
@@ -393,19 +393,19 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     }
 }
 
-pub trait PoolFamily<'a> {
-    type Pool<T: Clone + 'a>: crate::pool::Store<T>;
+pub trait StoreFamily<'a> {
+    type Store<T: Clone + 'a>: crate::pool::Store<T>;
 }
 
 #[derive(Default)]
-pub struct VecPoolFamily;
-impl<'a> PoolFamily<'a> for VecPoolFamily {
-    type Pool<T: Clone + 'a> = Vec<T>;
+pub struct VecFamily;
+impl<'a> StoreFamily<'a> for VecFamily {
+    type Store<T: Clone + 'a> = Vec<T>;
 }
 
-pub struct SliceVecPoolFamily;
-impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
-    type Pool<T: Clone + 'a> = SliceVec<'a, T>;
+pub struct SliceVecFamily;
+impl<'a> StoreFamily<'a> for SliceVecFamily {
+    type Store<T: Clone + 'a> = SliceVec<'a, T>;
 }
 
 /// A store for `FlatGFA` data backed by fixed-size slices.
@@ -413,11 +413,11 @@ impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
 /// This store contains `SliceVec`s, which act like `Vec`s but are allocated within
 /// a fixed region. This means they have a maximum size, but they can directly map
 /// onto the contents of a file.
-pub type SliceStore<'a> = GFAStore<'a, SliceVecPoolFamily>;
+pub type SliceStore<'a> = GFAStore<'a, SliceVecFamily>;
 
 /// A mutable, in-memory data store for `FlatGFA`.
 ///
 /// This store contains a bunch of `Vec`s: one per array required to implement a
 /// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
 /// useful for creating new ones from scratch.
-pub type HeapStore = GFAStore<'static, VecPoolFamily>;
+pub type HeapStore = GFAStore<'static, VecFamily>;
