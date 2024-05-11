@@ -302,7 +302,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
     for path in gfa.paths {
         let path_name = gfa.get_path_name(path);
         for step in gfa.get_steps(path) {
-            let seg_id = step.segment() as usize;
+            let seg_id = step.segment().index();
             // Increment depths
             depths[seg_id] = depths[seg_id] + 1;
             // Update uniq_paths

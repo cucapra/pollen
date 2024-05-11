@@ -1,5 +1,6 @@
 use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
+use crate::pool::Id;
 use std::collections::HashMap;
 use std::io::BufRead;
 
@@ -188,23 +189,23 @@ struct NameMap {
     sequential_max: usize,
 
     /// Non-sequential names go here.
-    others: HashMap<usize, u32>,
+    others: HashMap<usize, Id>,
 }
 
 impl NameMap {
-    fn insert(&mut self, name: usize, id: u32) {
+    fn insert(&mut self, name: usize, id: Id) {
         // Is this the next sequential name? If so, no need to record it in our hash table;
         // just bump the number of sequential names we've seen.
-        if (name - 1) == self.sequential_max && (name - 1) == (id as usize) {
+        if (name - 1) == self.sequential_max && (name - 1) == id.index() {
             self.sequential_max += 1;
         } else {
             self.others.insert(name, id);
         }
     }
 
-    fn get(&self, name: usize) -> u32 {
+    fn get(&self, name: usize) -> Id {
         if name <= self.sequential_max {
-            (name - 1) as u32
+            Id::new(name - 1)
         } else {
             self.others[&name]
         }
