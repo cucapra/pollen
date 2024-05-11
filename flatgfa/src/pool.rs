@@ -1,3 +1,4 @@
+use std::ops::Index;
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -210,16 +211,6 @@ impl<'a, T> From<SliceVec<'a, T>> for FixedStore<'a, T> {
 pub struct Pool<'a, T>(&'a [T]);
 
 impl<'a, T> Pool<'a, T> {
-    /// Get a single element from the pool by its ID.
-    pub fn get_id(&self, id: Id<T>) -> &T {
-        &self.0[id.index()]
-    }
-
-    /// Get a range of elements from the pool using their IDs.
-    pub fn get_span(&self, span: Span<T>) -> &[T] {
-        &self.0[std::ops::Range::from(span)]
-    }
-
     /// Get the number of items in the pool.
     pub fn len(&self) -> usize {
         self.0.len()
@@ -252,8 +243,22 @@ impl<'a, T> Pool<'a, T> {
             .enumerate()
             .map(|(i, item)| (Id::new(i), item))
     }
+}
 
-    // TODO: SUBSCRIPTING!
+impl<T> Index<Id<T>> for Pool<'_, T> {
+    type Output = T;
+
+    fn index(&self, id: Id<T>) -> &T {
+        &self.0[id.index()]
+    }
+}
+
+impl<T> Index<Span<T>> for Pool<'_, T> {
+    type Output = [T];
+
+    fn index(&self, span: Span<T>) -> &[T] {
+        &self.0[std::ops::Range::from(span)]
+    }
 }
 
 impl<'a, T> From<&'a [T]> for Pool<'a, T> {
