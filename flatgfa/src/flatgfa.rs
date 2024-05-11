@@ -314,7 +314,7 @@ pub struct GFAStore<'a, P: StoreFamily<'a>> {
 impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
-        assert!(self.header.as_ref().count() == 0);
+        assert!(self.header.as_ref().is_empty());
         self.header.add_slice(version);
     }
 

@@ -10,17 +10,17 @@ use std::collections::{HashMap, HashSet};
 pub struct Toc {}
 
 pub fn toc(gfa: &flatgfa::FlatGFA) {
-    eprintln!("header: {}", gfa.header.count());
-    eprintln!("segs: {}", gfa.segs.count());
-    eprintln!("paths: {}", gfa.paths.count());
-    eprintln!("links: {}", gfa.links.count());
-    eprintln!("steps: {}", gfa.steps.count());
-    eprintln!("seq_data: {}", gfa.seq_data.count());
-    eprintln!("overlaps: {}", gfa.overlaps.count());
-    eprintln!("alignment: {}", gfa.alignment.count());
-    eprintln!("name_data: {}", gfa.name_data.count());
-    eprintln!("optional_data: {}", gfa.optional_data.count());
-    eprintln!("line_order: {}", gfa.line_order.count());
+    eprintln!("header: {}", gfa.header.len());
+    eprintln!("segs: {}", gfa.segs.len());
+    eprintln!("paths: {}", gfa.paths.len());
+    eprintln!("links: {}", gfa.links.len());
+    eprintln!("steps: {}", gfa.steps.len());
+    eprintln!("seq_data: {}", gfa.seq_data.len());
+    eprintln!("overlaps: {}", gfa.overlaps.len());
+    eprintln!("alignment: {}", gfa.alignment.len());
+    eprintln!("name_data: {}", gfa.name_data.len());
+    eprintln!("optional_data: {}", gfa.optional_data.len());
+    eprintln!("line_order: {}", gfa.line_order.len());
 }
 
 /// list the paths
@@ -52,11 +52,11 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
         println!("#length\tnodes\tedges\tpaths\tsteps");
         println!(
             "{}\t{}\t{}\t{}\t{}",
-            gfa.seq_data.count(),
-            gfa.segs.count(),
-            gfa.links.count(),
-            gfa.paths.count(),
-            gfa.steps.count()
+            gfa.seq_data.len(),
+            gfa.segs.len(),
+            gfa.links.len(),
+            gfa.paths.len(),
+            gfa.steps.len()
         );
     } else if args.self_loops {
         let mut counts: HashMap<Id<Segment>, usize> = HashMap::new();
@@ -294,10 +294,10 @@ pub struct Depth {}
 pub fn depth(gfa: &flatgfa::FlatGFA) {
     // Initialize node depth
     let mut depths = Vec::new();
-    depths.resize(gfa.segs.count(), 0);
+    depths.resize(gfa.segs.len(), 0);
     // Initialize uniq_paths
     let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
-    uniq_paths.resize(gfa.segs.count(), HashSet::new());
+    uniq_paths.resize(gfa.segs.len(), HashSet::new());
     // do not assume that each handle in `gfa.steps()` is unique
     for path in gfa.paths.all() {
         let path_name = gfa.get_path_name(path);

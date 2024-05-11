@@ -90,7 +90,7 @@ fn print_preserved(gfa: &flatgfa::FlatGFA) {
         match kind {
             flatgfa::LineKind::Header => {
                 let version = gfa.header;
-                assert!(version.count() > 0);
+                assert!(!version.is_empty());
                 println!("H\t{}", bstr::BStr::new(version.all()));
             }
             flatgfa::LineKind::Segment => {
@@ -108,7 +108,7 @@ fn print_preserved(gfa: &flatgfa::FlatGFA) {
 
 /// Print a graph in a normalized order, ignoring the original GFA line order.
 pub fn print_normalized(gfa: &flatgfa::FlatGFA) {
-    if gfa.header.count() > 0 {
+    if !gfa.header.is_empty() {
         println!("H\t{}", bstr::BStr::new(gfa.header.all()));
     }
     for seg in gfa.segs.all().iter() {
@@ -124,7 +124,7 @@ pub fn print_normalized(gfa: &flatgfa::FlatGFA) {
 
 /// Print our flat representation as a GFA text file to stdout.
 pub fn print(gfa: &flatgfa::FlatGFA) {
-    if gfa.line_order.count() == 0 {
+    if gfa.line_order.is_empty() {
         print_normalized(gfa);
     } else {
         print_preserved(gfa);

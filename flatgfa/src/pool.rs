@@ -100,11 +100,16 @@ pub trait Store<T: Clone> {
     fn add_slice(&mut self, slice: &[T]) -> Span<T>;
 
     /// Get the number of items in the pool.
-    fn count(&self) -> usize;
+    fn len(&self) -> usize;
+
+    /// Check whether the pool is empty.
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     /// Get the next available ID.
     fn next_id(&self) -> Id<T> {
-        Id::new(self.count())
+        Id::new(self.len())
     }
 }
 
@@ -137,7 +142,7 @@ impl<T: Clone> Store<T> for HeapStore<T> {
         Span::new(start, self.as_ref().next_id())
     }
 
-    fn count(&self) -> usize {
+    fn len(&self) -> usize {
         self.0.len()
     }
 }
@@ -179,8 +184,7 @@ impl<'a, T: Clone> Store<T> for FixedStore<'a, T> {
         Span::new(start, self.next_id())
     }
 
-    // TODO: Rename count to len...
-    fn count(&self) -> usize {
+    fn len(&self) -> usize {
         self.0.len()
     }
 }
@@ -217,13 +221,18 @@ impl<'a, T> Pool<'a, T> {
     }
 
     /// Get the number of items in the pool.
-    pub fn count(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    /// Check if the pool is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     /// Get the next available ID.
     pub fn next_id(&self) -> Id<T> {
-        Id::new(self.count())
+        Id::new(self.len())
     }
 
     /// Get the entire pool as a slice.

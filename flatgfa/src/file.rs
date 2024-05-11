@@ -39,14 +39,14 @@ struct Size {
 impl Size {
     fn of_pool<'a, T>(pool: Pool<'a, T>) -> Self {
         Size {
-            len: pool.count(),
-            capacity: pool.count(),
+            len: pool.len(),
+            capacity: pool.len(),
         }
     }
 
     fn of_store<T: Clone>(store: &FixedStore<'_, T>) -> Self {
         Size {
-            len: store.count(),
+            len: store.len(),
             capacity: store.capacity(),
         }
     }
