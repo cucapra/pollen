@@ -373,7 +373,7 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Borrow a FlatGFA view of this data store.
-    pub fn view(&self) -> FlatGFA {
+    pub fn as_ref(&self) -> FlatGFA {
         FlatGFA {
             header: &self.header,
             segs: &self.segs,
