@@ -237,7 +237,7 @@ pub enum LineKind {
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
-        self.seq_data[seg.seq.range()].as_ref()
+        self.seq_data.get_span(seg.seq).as_ref()
     }
 
     /// Look up a segment by its name.
@@ -260,33 +260,33 @@ impl<'a> FlatGFA<'a> {
 
     /// Get all the steps for a path.
     pub fn get_steps(&self, path: &Path) -> &[Handle] {
-        &self.steps[path.steps.range()]
+        &self.steps.get_span(path.steps)
     }
 
     /// Get all the overlaps for a path. This may be empty (`*` in the GFA file).
     pub fn get_overlaps(&self, path: &Path) -> &[Span] {
-        &self.overlaps[path.overlaps.range()]
+        &self.overlaps.get_span(path.overlaps)
     }
 
     /// Get the string name of a path.
     pub fn get_path_name(&self, path: &Path) -> &BStr {
-        self.name_data[path.name.range()].as_ref()
+        self.name_data.get_span(path.name).as_ref()
     }
 
     /// Get a handle's associated segment.
     pub fn get_handle_seg(&self, handle: Handle) -> &Segment {
-        &self.segs[handle.segment() as usize]
+        &self.segs.get_id(handle.segment())
     }
 
     /// Get the optional data for a segment, as a tab-separated string.
     pub fn get_optional_data(&self, seg: &Segment) -> &BStr {
-        self.optional_data[seg.optional.range()].as_ref()
+        self.optional_data.get_span(seg.optional).as_ref()
     }
 
     /// Look up a CIGAR alignment.
-    pub fn get_alignment(&self, overlap: &Span) -> Alignment {
+    pub fn get_alignment(&self, overlap: Span) -> Alignment {
         Alignment {
-            ops: &self.alignment[overlap.range()],
+            ops: &self.alignment.get_span(overlap),
         }
     }
 
