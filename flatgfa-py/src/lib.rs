@@ -70,7 +70,7 @@ impl SegmentList {
     }
 
     fn __len__(&self) -> usize {
-        self.gfa.view().segs.count()
+        self.gfa.view().segs.len()
     }
 }
 
@@ -88,7 +88,7 @@ impl SegmentIter {
 
     fn __next__(&mut self) -> Option<PySegment> {
         let view = self.gfa.view();
-        if self.idx < view.segs.count() as u32 {
+        if self.idx < view.segs.len() as u32 {
             let seg = PySegment {
                 gfa: self.gfa.clone(),
                 id: self.idx,
