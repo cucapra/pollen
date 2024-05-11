@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::pool::{Index, Pool, Span, Store};
+use crate::pool::{Id, Pool, Span, Store};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use tinyvec::SliceVec;
@@ -118,7 +118,7 @@ pub struct Link {
 
 impl Link {
     /// Is either end of the link the given segment? If so, return the other end.
-    pub fn incident_seg(&self, seg_id: Index) -> Option<Index> {
+    pub fn incident_seg(&self, seg_id: Id) -> Option<Id> {
         if self.from.segment() == seg_id {
             Some(self.to.segment())
         } else if self.to.segment() == seg_id {
@@ -162,7 +162,7 @@ pub struct Handle(u32);
 
 impl Handle {
     /// Create a new handle referring to a segment ID and an orientation.
-    pub fn new(segment: Index, orient: Orientation) -> Self {
+    pub fn new(segment: Id, orient: Orientation) -> Self {
         assert!(segment & (1 << (u32::BITS - 1)) == 0, "index too large");
         let orient_bit: u8 = orient.into();
         assert!(orient_bit & !1 == 0, "invalid orientation");
@@ -170,7 +170,7 @@ impl Handle {
     }
 
     /// Get the segment ID. This is an index in the `segs` pool.
-    pub fn segment(&self) -> Index {
+    pub fn segment(&self) -> Id {
         self.0 >> 1
     }
 
@@ -243,21 +243,21 @@ impl<'a> FlatGFA<'a> {
     }
 
     /// Look up a segment by its name.
-    pub fn find_seg(&self, name: usize) -> Option<Index> {
+    pub fn find_seg(&self, name: usize) -> Option<Id> {
         // TODO Make this more efficient by maintaining the name index? This would not be
         // too hard; we already have the machinery in `parse.rs`...
         self.segs
             .iter()
             .position(|seg| seg.name == name)
-            .map(|i| i as Index)
+            .map(|i| i as Id)
     }
 
     /// Look up a path by its name.
-    pub fn find_path(&self, name: &BStr) -> Option<Index> {
+    pub fn find_path(&self, name: &BStr) -> Option<Id> {
         self.paths
             .iter()
             .position(|path| self.get_path_name(path) == name)
-            .map(|i| i as Index)
+            .map(|i| i as Id)
     }
 
     /// Get all the steps for a path.
@@ -322,7 +322,7 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Index {
+    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id {
         self.segs.add(Segment {
             name,
             seq: self.seq_data.add_slice(seq),
@@ -336,7 +336,7 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
         name: &[u8],
         steps: Span,
         overlaps: impl Iterator<Item = Vec<AlignOp>>,
-    ) -> Index {
+    ) -> Id {
         let overlaps = self.overlaps.add_iter(
             overlaps
                 .into_iter()
@@ -356,12 +356,12 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a single step.
-    pub fn add_step(&mut self, step: Handle) -> Index {
+    pub fn add_step(&mut self, step: Handle) -> Id {
         self.steps.add(step)
     }
 
     /// Add a link between two (oriented) segments.
-    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Index {
+    pub fn add_link(&mut self, from: Handle, to: Handle, overlap: Vec<AlignOp>) -> Id {
         self.links.add(Link {
             from,
             to,

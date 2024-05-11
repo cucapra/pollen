@@ -5,7 +5,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 /// An index into a pool.
 ///
 /// TODO: Consider using newtypes for each distinct type.
-pub type Index = u32;
+pub type Id = u32;
 
 /// A range of indices into a pool.
 ///
@@ -14,8 +14,8 @@ pub type Index = u32;
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
 pub struct Span {
-    pub start: Index,
-    pub end: Index,
+    pub start: Id,
+    pub end: Id,
 }
 
 impl From<Span> for std::ops::Range<usize> {
@@ -45,8 +45,8 @@ impl Span {
 /// arena). Pools also `Deref` to slices, which are `&Pool`s and support convenient
 /// access to the current set of objects (but not addition of new objects).
 pub trait Store<T: Clone>: Deref<Target = [T]> {
-    /// Add an item to the pool and get the new index (ID).
-    fn add(&mut self, item: T) -> Index;
+    /// Add an item to the pool and get the new id.
+    fn add(&mut self, item: T) -> Id;
 
     /// Add an entire sequence of items to a "pool" vector and return the
     /// range of new indices (IDs).
@@ -57,7 +57,7 @@ pub trait Store<T: Clone>: Deref<Target = [T]> {
 }
 
 impl<T: Clone> Store<T> for Vec<T> {
-    fn add(&mut self, item: T) -> Index {
+    fn add(&mut self, item: T) -> Id {
         let id = self.next_id();
         self.push(item);
         id
@@ -83,7 +83,7 @@ impl<T: Clone> Store<T> for Vec<T> {
 }
 
 impl<'a, T: Clone> Store<T> for SliceVec<'a, T> {
-    fn add(&mut self, item: T) -> Index {
+    fn add(&mut self, item: T) -> Id {
         let id = self.next_id();
         self.push(item);
         id
@@ -110,11 +110,11 @@ impl<'a, T: Clone> Store<T> for SliceVec<'a, T> {
 
 /// A fixed-sized arena.
 ///
-/// This trait allows index-based access to a fixed-size chunk of objects reflecting
+/// This trait allows id-based access to a fixed-size chunk of objects reflecting
 /// a `Store`. Unlike `Store`, it does not support adding new objects.
 pub trait Pool<T> {
     /// Get a single element from the pool by its ID.
-    fn get_id(&self, index: Index) -> &T;
+    fn get_id(&self, id: Id) -> &T;
 
     /// Get a range of elements from the pool using their IDs.
     fn get_span(&self, span: Span) -> &[T];
@@ -123,12 +123,12 @@ pub trait Pool<T> {
     fn count(&self) -> usize;
 
     /// Get the next available ID.
-    fn next_id(&self) -> Index;
+    fn next_id(&self) -> Id;
 }
 
 impl<T> Pool<T> for [T] {
-    fn get_id(&self, index: Index) -> &T {
-        &self[index as usize]
+    fn get_id(&self, id: Id) -> &T {
+        &self[id as usize]
     }
 
     fn get_span(&self, span: Span) -> &[T] {
@@ -139,7 +139,7 @@ impl<T> Pool<T> for [T] {
         self.len()
     }
 
-    fn next_id(&self) -> Index {
+    fn next_id(&self) -> Id {
         self.count().try_into().expect("size too large")
     }
 }
