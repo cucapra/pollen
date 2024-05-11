@@ -62,7 +62,7 @@ fn main() -> Result<(), &'static str> {
             if args.mutate {
                 mmap_mut = file::map_file_mut(&name);
                 slice_store = file::view_store(&mut mmap_mut);
-                slice_store.view()
+                slice_store.as_ref()
             } else {
                 mmap = file::map_file(&name);
                 file::view(&mmap)
@@ -80,7 +80,7 @@ fn main() -> Result<(), &'static str> {
                     Parser::for_heap().parse_stream(stdin.lock())
                 }
             };
-            store.view()
+            store.as_ref()
         }
     };
 
@@ -99,7 +99,7 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Extract(sub_args)) => {
             let store = cmds::extract(&gfa, sub_args)?;
-            dump(&store.view(), &args.output);
+            dump(&store.as_ref(), &args.output);
         }
         Some(Command::Depth(_)) => {
             cmds::depth(&gfa);
