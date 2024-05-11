@@ -38,14 +38,14 @@ fn print_step(gfa: &flatgfa::FlatGFA, handle: flatgfa::Handle) {
 
 fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
     print!("P\t{}\t", gfa.get_path_name(path));
-    let steps = gfa.get_steps(path);
+    let steps = &gfa.steps[path.steps];
     print_step(gfa, steps[0]);
     for step in steps[1..].iter() {
         print!(",");
         print_step(gfa, *step);
     }
     print!("\t");
-    let overlaps = gfa.get_overlaps(path);
+    let overlaps = &gfa.overlaps[path.overlaps];
     if overlaps.is_empty() {
         print!("*");
     } else {

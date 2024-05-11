@@ -106,7 +106,7 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
     // Traverse the path until we reach the position.
     let mut cur_pos = 0;
     let mut found = None;
-    for step in gfa.get_steps(path) {
+    for step in &gfa.steps[path.steps] {
         let seg = gfa.get_handle_seg(*step);
         let end_pos = cur_pos + seg.len();
         if offset < end_pos {
@@ -214,7 +214,7 @@ impl<'a> SubgraphBuilder<'a> {
         let mut cur_subpath_start: Option<SubpathStart> = None;
         let mut path_pos = 0;
 
-        for step in self.old.get_steps(path) {
+        for step in &self.old.steps[path.steps] {
             let in_neighb = self.seg_map.contains_key(&step.segment());
 
             if let (Some(start), false) = (&cur_subpath_start, in_neighb) {
@@ -301,7 +301,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
     // do not assume that each handle in `gfa.steps()` is unique
     for path in gfa.paths.all() {
         let path_name = gfa.get_path_name(path);
-        for step in gfa.get_steps(path) {
+        for step in &gfa.steps[path.steps] {
             let seg_id = step.segment().index();
             // Increment depths
             depths[seg_id] = depths[seg_id] + 1;

@@ -254,18 +254,6 @@ impl<'a> FlatGFA<'a> {
         self.paths.search(|path| self.get_path_name(path) == name)
     }
 
-    /// Get all the steps for a path.
-    pub fn get_steps(&self, path: &Path) -> &[Handle] {
-        // TODO killable
-        &self.steps[path.steps]
-    }
-
-    /// Get all the overlaps for a path. This may be empty (`*` in the GFA file).
-    pub fn get_overlaps(&self, path: &Path) -> &[Span<AlignOp>] {
-        // TODO killable
-        &self.overlaps[path.overlaps]
-    }
-
     /// Get the string name of a path.
     pub fn get_path_name(&self, path: &Path) -> &BStr {
         self.name_data[path.name].as_ref()
