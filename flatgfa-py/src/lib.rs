@@ -1,4 +1,4 @@
-use flatgfa::flatgfa::{FlatGFA, GFABuilder, HeapStore};
+use flatgfa::flatgfa::{FlatGFA, HeapStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
@@ -42,7 +42,7 @@ impl GFARef {
         // once up front and hand it out to the various ancillary objects, but they need
         // to be assured that the store will survive long enough.
         match self.0.get().0 {
-            InternalStore::Heap(ref store) => store.view(),
+            InternalStore::Heap(ref store) => (**store).as_ref(),
             InternalStore::File(ref mmap) => flatgfa::file::view(mmap),
         }
     }
