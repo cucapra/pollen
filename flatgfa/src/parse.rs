@@ -130,12 +130,12 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
 
     fn add_seg(&mut self, seg: gfaline::Segment) {
         let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
-        self.seg_ids.insert(seg.name, seg_id);
+        self.seg_ids.insert(seg.name, seg_id.into());
     }
 
     fn add_link(&mut self, link: gfaline::Link) {
-        let from = Handle::new(self.seg_ids.get(link.from_seg), link.from_orient);
-        let to = Handle::new(self.seg_ids.get(link.to_seg), link.to_orient);
+        let from = Handle::new(self.seg_ids.get(link.from_seg).into(), link.from_orient);
+        let to = Handle::new(self.seg_ids.get(link.to_seg).into(), link.to_orient);
         self.flat.add_link(from, to, link.overlap);
     }
 
@@ -151,7 +151,7 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
         let mut step_parser = gfaline::StepsParser::new(rest);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
-                self.seg_ids.get(name),
+                self.seg_ids.get(name).into(),
                 if dir {
                     Orientation::Forward
                 } else {
