@@ -67,61 +67,68 @@ impl PyFlatGFA {
     }
 }
 
-/// A sequence container for `Segment`s.
-#[pyclass]
-#[pyo3(module = "flatgfa")]
-struct SegmentList {
-    store: Arc<Store>,
-}
-
-#[pymethods]
-impl SegmentList {
-    fn __getitem__(&self, idx: u32) -> PySegment {
-        PySegment {
-            store: self.store.clone(),
-            id: Id::from(idx),
+/// Generate the Python types for an iterable container of GFA objects.
+macro_rules! gen_container {
+    ($type: ident, $field: ident, $pytype: ident, $list: ident, $iter: ident) => {
+        /// A sequence container for `$type`s.
+        #[pyclass]
+        #[pyo3(module = "flatgfa")]
+        struct $list {
+            store: Arc<Store>,
         }
-    }
 
-    fn __iter__(&self) -> SegmentIter {
-        SegmentIter {
-            store: self.store.clone(),
-            idx: 0,
+        #[pymethods]
+        impl $list {
+            fn __getitem__(&self, idx: u32) -> $pytype {
+                $pytype {
+                    store: self.store.clone(),
+                    id: Id::from(idx),
+                }
+            }
+
+            fn __iter__(&self) -> $iter {
+                $iter {
+                    store: self.store.clone(),
+                    idx: 0,
+                }
+            }
+
+            fn __len__(&self) -> usize {
+                self.store.view().$field.len()
+            }
         }
-    }
 
-    fn __len__(&self) -> usize {
-        self.store.view().segs.len()
-    }
-}
-
-#[pyclass]
-#[pyo3(module = "flatgfa")]
-struct SegmentIter {
-    store: Arc<Store>,
-    idx: u32,
-}
-
-#[pymethods]
-impl SegmentIter {
-    fn __iter__(self_: Py<Self>) -> Py<Self> {
-        self_
-    }
-
-    fn __next__(&mut self) -> Option<PySegment> {
-        let gfa = self.store.view();
-        if self.idx < gfa.segs.len() as u32 {
-            let seg = PySegment {
-                store: self.store.clone(),
-                id: Id::from(self.idx),
-            };
-            self.idx += 1;
-            Some(seg)
-        } else {
-            None
+        #[pyclass]
+        #[pyo3(module = "flatgfa")]
+        struct $iter {
+            store: Arc<Store>,
+            idx: u32,
         }
-    }
+
+        #[pymethods]
+        impl $iter {
+            fn __iter__(self_: Py<Self>) -> Py<Self> {
+                self_
+            }
+
+            fn __next__(&mut self) -> Option<$pytype> {
+                let gfa = self.store.view();
+                if self.idx < gfa.segs.len() as u32 {
+                    let seg = $pytype {
+                        store: self.store.clone(),
+                        id: Id::from(self.idx),
+                    };
+                    self.idx += 1;
+                    Some(seg)
+                } else {
+                    None
+                }
+            }
+        }
+    };
 }
+
+gen_container!(Segment, segs, PySegment, SegmentList, SegmentIter);
 
 /// A segment in a GFA graph.
 ///
