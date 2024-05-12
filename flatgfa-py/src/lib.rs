@@ -2,18 +2,19 @@ use flatgfa::flatgfa::{FlatGFA, HeapGFAStore};
 use flatgfa::pool::Id;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
+use std::sync::Arc;
 
 #[pyfunction]
 fn parse(filename: &str) -> PyFlatGFA {
     let file = flatgfa::file::map_file(filename);
     let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
-    PyFlatGFA(InternalStore::Heap(Box::new(store)))
+    PyFlatGFA(Arc::new(InternalStore::Heap(Box::new(store))))
 }
 
 #[pyfunction]
 fn load(filename: &str) -> PyFlatGFA {
     let mmap = flatgfa::file::map_file(filename);
-    PyFlatGFA(InternalStore::File(mmap))
+    PyFlatGFA(Arc::new(InternalStore::File(mmap)))
 }
 
 enum InternalStore {
@@ -21,63 +22,62 @@ enum InternalStore {
     File(memmap::Mmap),
 }
 
-#[pyclass(frozen)]
-#[pyo3(name = "FlatGFA")]
-struct PyFlatGFA(InternalStore);
-
-#[pymethods]
-impl PyFlatGFA {
-    #[getter]
-    fn segments(self_: Py<Self>) -> SegmentList {
-        SegmentList { gfa: GFARef(self_) }
-    }
-}
-
-#[derive(Clone)]
-struct GFARef(Py<PyFlatGFA>);
-
-impl GFARef {
+impl InternalStore {
     fn view(&self) -> FlatGFA {
         // TK It seems wasteful to check the type of store every time... and to construct
         // the view every time. It would be great if we could somehow construct the view
         // once up front and hand it out to the various ancillary objects, but they need
         // to be assured that the store will survive long enough.
-        match self.0.get().0 {
+        match self {
             InternalStore::Heap(ref store) => (**store).as_ref(),
             InternalStore::File(ref mmap) => flatgfa::file::view(mmap),
         }
     }
 }
 
+#[pyclass(frozen)]
+#[pyo3(name = "FlatGFA")]
+struct PyFlatGFA(Arc<InternalStore>);
+
+#[pymethods]
+impl PyFlatGFA {
+    #[getter]
+    fn segments(&self) -> SegmentList {
+        SegmentList {
+            store: self.0.clone(),
+        }
+    }
+}
+
 #[pyclass]
 struct SegmentList {
-    gfa: GFARef,
+    store: Arc<InternalStore>,
 }
 
 #[pymethods]
 impl SegmentList {
     fn __getitem__(&self, idx: u32) -> PySegment {
         PySegment {
-            gfa: self.gfa.clone(),
+            store: self.store.clone(),
             id: idx,
         }
     }
 
     fn __iter__(&self) -> SegmentIter {
         SegmentIter {
-            gfa: self.gfa.clone(),
+            store: self.store.clone(),
             idx: 0,
         }
     }
 
     fn __len__(&self) -> usize {
-        self.gfa.view().segs.len()
+        self.store.view().segs.len()
     }
 }
 
 #[pyclass]
 struct SegmentIter {
-    gfa: GFARef,
+    store: Arc<InternalStore>,
     idx: u32,
 }
 
@@ -88,10 +88,10 @@ impl SegmentIter {
     }
 
     fn __next__(&mut self) -> Option<PySegment> {
-        let view = self.gfa.view();
+        let view = self.store.view();
         if self.idx < view.segs.len() as u32 {
             let seg = PySegment {
-                gfa: self.gfa.clone(),
+                store: self.store.clone(),
                 id: self.idx,
             };
             self.idx += 1;
@@ -105,7 +105,7 @@ impl SegmentIter {
 #[pyclass(frozen)]
 #[pyo3(name = "Segment")]
 struct PySegment {
-    gfa: GFARef,
+    store: Arc<InternalStore>,
     #[pyo3(get)]
     id: u32,
 }
@@ -117,7 +117,7 @@ impl PySegment {
     /// This copies the underlying sequence data to contruct the Python bytes object,
     /// so it is slow to use for large sequences.
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
-        let view = self.gfa.view();
+        let view = self.store.view();
         let seg = &view.segs[Id::from(self.id)];
         let seq = view.get_seq(&seg);
         PyBytes::new_bound(py, seq)
@@ -125,7 +125,7 @@ impl PySegment {
 
     #[getter]
     fn name(&self) -> usize {
-        let view = self.gfa.view();
+        let view = self.store.view();
         let seg = view.segs[Id::from(self.id)];
         seg.name
     }
