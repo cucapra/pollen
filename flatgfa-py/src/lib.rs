@@ -329,6 +329,7 @@ impl PyLink {
         format!("<Link {}>", u32::from(self.id))
     }
 
+    /// The edge's source handle.
     #[getter]
     fn from_(&self) -> PyHandle {
         PyHandle {
@@ -337,6 +338,7 @@ impl PyLink {
         }
     }
 
+    /// The edge's sink handle.
     #[getter]
     fn to(&self) -> PyHandle {
         PyHandle {
