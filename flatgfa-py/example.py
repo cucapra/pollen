@@ -10,13 +10,11 @@ print(len(g.segments))
 for path in g.paths:
     print(path, path.name)
     print(len(path))
-    print(','.join(
-        '{}{}'.format(
-            s.segment.name,
-            '+' if s.is_forward else '-'
+    print(
+        ",".join(
+            "{}{}".format(s.segment.name, "+" if s.is_forward else "-") for s in path
         )
-        for s in path
-    ))
+    )
 for link in g.links:
     print(link, link.from_, link.to)
 
