@@ -65,6 +65,14 @@ impl PyFlatGFA {
             store: self.0.clone(),
         }
     }
+
+    /// The paths in the graph.
+    #[getter]
+    fn paths(&self) -> PathList {
+        PathList {
+            store: self.0.clone(),
+        }
+    }
 }
 
 /// Generate the Python types for an iterable container of GFA objects.
@@ -113,7 +121,7 @@ macro_rules! gen_container {
 
             fn __next__(&mut self) -> Option<$pytype> {
                 let gfa = self.store.view();
-                if self.idx < gfa.segs.len() as u32 {
+                if self.idx < gfa.$field.len() as u32 {
                     let seg = $pytype {
                         store: self.store.clone(),
                         id: Id::from(self.idx),
@@ -129,6 +137,7 @@ macro_rules! gen_container {
 }
 
 gen_container!(Segment, segs, PySegment, SegmentList, SegmentIter);
+gen_container!(Path, paths, PyPath, PathList, PathIter);
 
 /// A segment in a GFA graph.
 ///
@@ -172,6 +181,38 @@ impl PySegment {
     }
 }
 
+/// A path in a GFA graph.
+///
+/// Paths are walks through the GFA graph, where each step is an oriented segment.
+#[pyclass(frozen)]
+#[pyo3(name = "Segment", module = "flatgfa")]
+struct PyPath {
+    store: Arc<Store>,
+    id: Id<flatgfa::Path>,
+}
+
+#[pymethods]
+impl PyPath {
+    /// The unique identifier for the path.
+    #[getter]
+    fn id(&self) -> u32 {
+        self.id.into()
+    }
+
+    /// Get the name of this path as declared in the GFA file.
+    #[getter]
+    fn name<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        let gfa = self.store.view();
+        let path = &gfa.paths[self.id];
+        let name = gfa.get_path_name(path);
+        PyBytes::new_bound(py, name)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<Path {}>", u32::from(self.id))
+    }
+}
+
 #[pymodule]
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -179,5 +220,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(load, m)?)?;
     m.add_class::<PySegment>()?;
+    m.add_class::<PyPath>()?;
     Ok(())
 }
