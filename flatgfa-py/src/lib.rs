@@ -81,6 +81,11 @@ impl PyFlatGFA {
             store: self.0.clone(),
         }
     }
+
+    fn __str__(&self) -> String {
+        let gfa = self.0.view();
+        format!("{}", &gfa)
+    }
 }
 
 /// Generate the Python types for an iterable container of GFA objects.
