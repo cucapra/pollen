@@ -86,7 +86,7 @@ pub struct Position {
 pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static str> {
     // Parse the position triple, which looks like `path,42,+`.
     let (path_name, offset, orientation) = {
-        let parts: Vec<_> = args.path_pos.split(",").collect();
+        let parts: Vec<_> = args.path_pos.split(',').collect();
         if parts.len() != 3 {
             return Err("position must be path_name,offset,orientation");
         }
@@ -293,8 +293,7 @@ pub struct Depth {}
 
 pub fn depth(gfa: &flatgfa::FlatGFA) {
     // Initialize node depth
-    let mut depths = Vec::new();
-    depths.resize(gfa.segs.len(), 0);
+    let mut depths = vec![0; gfa.segs.len()];
     // Initialize uniq_paths
     let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
     uniq_paths.resize(gfa.segs.len(), HashSet::new());
@@ -304,7 +303,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
         for step in &gfa.steps[path.steps] {
             let seg_id = step.segment().index();
             // Increment depths
-            depths[seg_id] = depths[seg_id] + 1;
+            depths[seg_id] += 1;
             // Update uniq_paths
             uniq_paths[seg_id].insert(path_name);
         }
