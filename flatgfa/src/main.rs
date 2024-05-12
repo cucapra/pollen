@@ -1,7 +1,7 @@
 use argh::FromArgs;
 use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
-use flatgfa::{cmds, file, parse, print};
+use flatgfa::{cmds, file, parse};
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
@@ -122,7 +122,9 @@ fn dump(gfa: &FlatGFA, output: &Option<String>) {
             file::dump(gfa, &mut mmap);
             mmap.flush().unwrap();
         }
-        None => print::print(gfa),
+        None => {
+            print!("{}", gfa);
+        }
     }
 }
 
