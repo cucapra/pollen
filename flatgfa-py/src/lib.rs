@@ -73,6 +73,14 @@ impl PyFlatGFA {
             store: self.0.clone(),
         }
     }
+
+    /// The links in the graph.
+    #[getter]
+    fn links(&self) -> LinkList {
+        LinkList {
+            store: self.0.clone(),
+        }
+    }
 }
 
 /// Generate the Python types for an iterable container of GFA objects.
@@ -138,6 +146,7 @@ macro_rules! gen_container {
 
 gen_container!(Segment, segs, PySegment, SegmentList, SegmentIter);
 gen_container!(Path, paths, PyPath, PathList, PathIter);
+gen_container!(Link, links, PyLink, LinkList, LinkIter);
 
 /// A segment in a GFA graph.
 ///
@@ -297,6 +306,46 @@ impl StepIter {
     }
 }
 
+/// A link in a GFA graph.
+///
+/// Links are directed edges between oriented segments. The source and sink are both
+/// `Handle`s, i.e., the "forward" or "backward" direction of a given segment.
+#[pyclass(frozen)]
+#[pyo3(name = "Link", module = "flatgfa")]
+struct PyLink {
+    store: Arc<Store>,
+    id: Id<flatgfa::Link>,
+}
+
+#[pymethods]
+impl PyLink {
+    /// The unique identifier for the link.
+    #[getter]
+    fn id(&self) -> u32 {
+        self.id.into()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<Link {}>", u32::from(self.id))
+    }
+
+    #[getter]
+    fn from_(&self) -> PyHandle {
+        PyHandle {
+            store: self.store.clone(),
+            handle: self.store.view().links[self.id].from,
+        }
+    }
+
+    #[getter]
+    fn to(&self) -> PyHandle {
+        PyHandle {
+            store: self.store.clone(),
+            handle: self.store.view().links[self.id].to,
+        }
+    }
+}
+
 #[pymodule]
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -306,5 +355,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySegment>()?;
     m.add_class::<PyPath>()?;
     m.add_class::<PyHandle>()?;
+    m.add_class::<PyLink>()?;
     Ok(())
 }
