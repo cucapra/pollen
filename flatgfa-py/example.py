@@ -17,3 +17,5 @@ for path in g.paths:
         )
         for s in path
     ))
+for link in g.links:
+    print(link, link.from_, link.to)
