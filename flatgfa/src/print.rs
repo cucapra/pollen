@@ -38,14 +38,14 @@ fn print_step(gfa: &flatgfa::FlatGFA, handle: flatgfa::Handle) {
 
 fn print_path(gfa: &flatgfa::FlatGFA, path: &flatgfa::Path) {
     print!("P\t{}\t", gfa.get_path_name(path));
-    let steps = gfa.get_steps(path);
+    let steps = &gfa.steps[path.steps];
     print_step(gfa, steps[0]);
     for step in steps[1..].iter() {
         print!(",");
         print_step(gfa, *step);
     }
     print!("\t");
-    let overlaps = gfa.get_overlaps(path);
+    let overlaps = &gfa.overlaps[path.overlaps];
     if overlaps.is_empty() {
         print!("*");
     } else {
@@ -83,15 +83,15 @@ fn print_seg(gfa: &flatgfa::FlatGFA, seg: &flatgfa::Segment) {
 
 /// Print a graph in the order preserved from an original GFA file.
 fn print_preserved(gfa: &flatgfa::FlatGFA) {
-    let mut seg_iter = gfa.segs.iter();
-    let mut path_iter = gfa.paths.iter();
-    let mut link_iter = gfa.links.iter();
+    let mut seg_iter = gfa.segs.all().iter();
+    let mut path_iter = gfa.paths.all().iter();
+    let mut link_iter = gfa.links.all().iter();
     for kind in gfa.get_line_order() {
         match kind {
             flatgfa::LineKind::Header => {
                 let version = gfa.header;
                 assert!(!version.is_empty());
-                println!("H\t{}", bstr::BStr::new(version));
+                println!("H\t{}", bstr::BStr::new(version.all()));
             }
             flatgfa::LineKind::Segment => {
                 print_seg(gfa, seg_iter.next().expect("too few segments"));
@@ -109,15 +109,15 @@ fn print_preserved(gfa: &flatgfa::FlatGFA) {
 /// Print a graph in a normalized order, ignoring the original GFA line order.
 pub fn print_normalized(gfa: &flatgfa::FlatGFA) {
     if !gfa.header.is_empty() {
-        println!("H\t{}", bstr::BStr::new(gfa.header));
+        println!("H\t{}", bstr::BStr::new(gfa.header.all()));
     }
-    for seg in gfa.segs.iter() {
+    for seg in gfa.segs.all().iter() {
         print_seg(gfa, seg);
     }
-    for path in gfa.paths.iter() {
+    for path in gfa.paths.all().iter() {
         print_path(gfa, path);
     }
-    for link in gfa.links.iter() {
+    for link in gfa.links.all().iter() {
         print_link(gfa, link);
     }
 }

@@ -3,7 +3,7 @@ use crate::gfaline;
 use std::collections::HashMap;
 use std::io::BufRead;
 
-pub struct Parser<'a, P: flatgfa::PoolFamily<'a>> {
+pub struct Parser<'a, P: flatgfa::StoreFamily<'a>> {
     /// The flat representation we're building.
     flat: flatgfa::GFAStore<'a, P>,
 
@@ -11,7 +11,7 @@ pub struct Parser<'a, P: flatgfa::PoolFamily<'a>> {
     seg_ids: NameMap,
 }
 
-impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
+impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
     pub fn new(builder: flatgfa::GFAStore<'a, P>) -> Self {
         Self {
             flat: builder,
@@ -169,14 +169,14 @@ impl<'a, P: flatgfa::PoolFamily<'a>> Parser<'a, P> {
     }
 }
 
-impl Parser<'static, flatgfa::VecPoolFamily> {
+impl Parser<'static, flatgfa::HeapFamily> {
     pub fn for_heap() -> Self {
-        Self::new(flatgfa::HeapStore::default())
+        Self::new(flatgfa::HeapGFAStore::default())
     }
 }
 
-impl<'a> Parser<'a, flatgfa::SliceVecPoolFamily> {
-    pub fn for_slice(store: flatgfa::SliceStore<'a>) -> Self {
+impl<'a> Parser<'a, flatgfa::FixedFamily> {
+    pub fn for_slice(store: flatgfa::FixedGFAStore<'a>) -> Self {
         Self::new(store)
     }
 }
