@@ -4,43 +4,61 @@ use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use std::sync::Arc;
 
-#[pyfunction]
-fn parse(filename: &str) -> PyFlatGFA {
-    let file = flatgfa::file::map_file(filename);
-    let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
-    PyFlatGFA(Arc::new(InternalStore::Heap(Box::new(store))))
-}
-
-#[pyfunction]
-fn load(filename: &str) -> PyFlatGFA {
-    let mmap = flatgfa::file::map_file(filename);
-    PyFlatGFA(Arc::new(InternalStore::File(mmap)))
-}
-
-enum InternalStore {
+/// Storage for a FlatGFA.
+///
+/// This may be either an in-memory data structure or a memory-mapped file. It exposes a
+/// uniform interface to the FlatGFA data via `view`.
+enum Store {
     Heap(Box<HeapGFAStore>),
     File(memmap::Mmap),
 }
 
-impl InternalStore {
+impl Store {
+    /// Parse a text GFA file.
+    fn parse(filename: &str) -> Self {
+        let file = flatgfa::file::map_file(filename);
+        let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
+        Self::Heap(Box::new(store))
+    }
+
+    /// Load a FlatGFA binary file.
+    fn load(filename: &str) -> Self {
+        let mmap = flatgfa::file::map_file(filename);
+        Self::File(mmap)
+    }
+
+    /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA {
         // TK It seems wasteful to check the type of store every time... and to construct
-        // the view every time. It would be great if we could somehow construct the view
-        // once up front and hand it out to the various ancillary objects, but they need
-        // to be assured that the store will survive long enough.
+        // the view every time. It's probably possible to fix this with a self-reference,
+        // e.g., with the `owning_ref` crate.
         match self {
-            InternalStore::Heap(ref store) => (**store).as_ref(),
-            InternalStore::File(ref mmap) => flatgfa::file::view(mmap),
+            Store::Heap(ref store) => (**store).as_ref(),
+            Store::File(ref mmap) => flatgfa::file::view(mmap),
         }
     }
 }
 
+/// An efficient representation of a Graphical Fragment Assembly (GFA) file.
 #[pyclass(frozen)]
-#[pyo3(name = "FlatGFA")]
-struct PyFlatGFA(Arc<InternalStore>);
+#[pyo3(name = "FlatGFA", module = "flatgfa")]
+struct PyFlatGFA(Arc<Store>);
+
+/// Parse a GFA file into our FlatGFA representation.
+#[pyfunction]
+fn parse(filename: &str) -> PyFlatGFA {
+    PyFlatGFA(Arc::new(Store::parse(filename)))
+}
+
+/// Load a binary FlatGFA file.
+#[pyfunction]
+fn load(filename: &str) -> PyFlatGFA {
+    PyFlatGFA(Arc::new(Store::load(filename)))
+}
 
 #[pymethods]
 impl PyFlatGFA {
+    /// The segments (nodes) in the graph.
     #[getter]
     fn segments(&self) -> SegmentList {
         SegmentList {
@@ -49,9 +67,11 @@ impl PyFlatGFA {
     }
 }
 
+/// A sequence container for `Segment`s.
 #[pyclass]
+#[pyo3(module = "flatgfa")]
 struct SegmentList {
-    store: Arc<InternalStore>,
+    store: Arc<Store>,
 }
 
 #[pymethods]
@@ -76,8 +96,9 @@ impl SegmentList {
 }
 
 #[pyclass]
+#[pyo3(module = "flatgfa")]
 struct SegmentIter {
-    store: Arc<InternalStore>,
+    store: Arc<Store>,
     idx: u32,
 }
 
@@ -102,10 +123,14 @@ impl SegmentIter {
     }
 }
 
+/// A segment in a GFA graph.
+///
+/// Segments are the nodes in the GFA graph. They have a unique ID and an associated
+/// nucleotide sequence.
 #[pyclass(frozen)]
-#[pyo3(name = "Segment")]
+#[pyo3(name = "Segment", module = "flatgfa")]
 struct PySegment {
-    store: Arc<InternalStore>,
+    store: Arc<Store>,
     #[pyo3(get)]
     id: u32,
 }
@@ -123,6 +148,7 @@ impl PySegment {
         PyBytes::new_bound(py, seq)
     }
 
+    /// Get segment's name as declared in the GFA file.
     #[getter]
     fn name(&self) -> usize {
         let view = self.store.view();
@@ -138,7 +164,9 @@ impl PySegment {
 #[pymodule]
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyFlatGFA>()?;
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(load, m)?)?;
+    m.add_class::<PySegment>()?;
     Ok(())
 }
