@@ -71,6 +71,10 @@ impl<T> Span<T> {
         (self.end.0 - self.start.0) as usize
     }
 
+    pub fn contains(&self, id: Id<T>) -> bool {
+        self.start.0 <= id.0 && id.0 < self.end.0
+    }
+
     pub fn new(start: Id<T>, end: Id<T>) -> Self {
         Self {
             start,

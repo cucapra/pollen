@@ -9,3 +9,11 @@ g = flatgfa.load("../bench/graphs/test.k.flatgfa")
 print(len(g.segments))
 for path in g.paths:
     print(path, path.name)
+    print(len(path))
+    print(','.join(
+        '{}{}'.format(
+            s.segment.name,
+            '+' if s.is_forward else '-'
+        )
+        for s in path
+    ))
