@@ -109,8 +109,8 @@ impl SegmentIter {
     }
 
     fn __next__(&mut self) -> Option<PySegment> {
-        let view = self.store.view();
-        if self.idx < view.segs.len() as u32 {
+        let gfa = self.store.view();
+        if self.idx < gfa.segs.len() as u32 {
             let seg = PySegment {
                 store: self.store.clone(),
                 id: Id::from(self.idx),
@@ -141,17 +141,16 @@ impl PySegment {
     /// This copies the underlying sequence data to contruct the Python bytes object,
     /// so it is slow to use for large sequences.
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
-        let view = self.store.view();
-        let seg = &view.segs[self.id];
-        let seq = view.get_seq(seg);
+        let gfa = self.store.view();
+        let seg = &gfa.segs[self.id];
+        let seq = gfa.get_seq(seg);
         PyBytes::new_bound(py, seq)
     }
 
     /// The segment's name as declared in the GFA file.
     #[getter]
     fn name(&self) -> usize {
-        let view = self.store.view();
-        let seg = view.segs[self.id];
+        let seg = self.store.view().segs[self.id];
         seg.name
     }
 
