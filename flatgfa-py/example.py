@@ -24,3 +24,5 @@ print(g.paths.find(b"x"))
 print(g.segments.find(2))
 
 print(g)
+g.write_gfa("temp.gfa")
+g.write_flatgfa("temp.flatgfa")

@@ -1,7 +1,8 @@
 use flatgfa::pool::{Id, Span};
-use flatgfa::{self, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
+use std::io::Write;
 use std::sync::Arc;
 
 /// Storage for a FlatGFA.
@@ -16,14 +17,14 @@ enum Store {
 impl Store {
     /// Parse a text GFA file.
     fn parse(filename: &str) -> Self {
-        let file = flatgfa::file::map_file(filename);
+        let file = file::map_file(filename);
         let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
         Self::Heap(Box::new(store))
     }
 
     /// Load a FlatGFA binary file.
     fn load(filename: &str) -> Self {
-        let mmap = flatgfa::file::map_file(filename);
+        let mmap = file::map_file(filename);
         Self::File(mmap)
     }
 
@@ -34,7 +35,7 @@ impl Store {
         // e.g., with the `owning_ref` crate.
         match self {
             Store::Heap(ref store) => (**store).as_ref(),
-            Store::File(ref mmap) => flatgfa::file::view(mmap),
+            Store::File(ref mmap) => file::view(mmap),
         }
     }
 }
@@ -83,8 +84,23 @@ impl PyFlatGFA {
     }
 
     fn __str__(&self) -> String {
+        format!("{}", &self.0.view())
+    }
+
+    /// Write the graph as a GFA text file.
+    fn write_gfa(&self, filename: &str) -> PyResult<()> {
+        let mut file = std::fs::File::create(filename)?;
+        write!(file, "{}", &self.0.view())?;
+        Ok(())
+    }
+
+    /// Write the graph as a binary FlatGFA file.
+    fn write_flatgfa(&self, filename: &str) -> PyResult<()> {
         let gfa = self.0.view();
-        format!("{}", &gfa)
+        let mut mmap = file::map_new_file(filename, file::size(&gfa) as u64);
+        file::dump(&gfa, &mut mmap);
+        mmap.flush()?;
+        Ok(())
     }
 }
 
