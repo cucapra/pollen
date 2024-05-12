@@ -7,3 +7,5 @@ for seg in g.segments:
 
 g = flatgfa.load("../bench/graphs/test.k.flatgfa")
 print(len(g.segments))
+for path in g.paths:
+    print(path, path.name)

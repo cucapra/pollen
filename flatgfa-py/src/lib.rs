@@ -1,113 +1,153 @@
-use flatgfa::flatgfa::{FlatGFA, HeapGFAStore};
 use flatgfa::pool::Id;
+use flatgfa::{self, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
+use std::sync::Arc;
 
-#[pyfunction]
-fn parse(filename: &str) -> PyFlatGFA {
-    let file = flatgfa::file::map_file(filename);
-    let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
-    PyFlatGFA(InternalStore::Heap(Box::new(store)))
-}
-
-#[pyfunction]
-fn load(filename: &str) -> PyFlatGFA {
-    let mmap = flatgfa::file::map_file(filename);
-    PyFlatGFA(InternalStore::File(mmap))
-}
-
-enum InternalStore {
+/// Storage for a FlatGFA.
+///
+/// This may be either an in-memory data structure or a memory-mapped file. It exposes a
+/// uniform interface to the FlatGFA data via `view`.
+enum Store {
     Heap(Box<HeapGFAStore>),
     File(memmap::Mmap),
 }
 
+impl Store {
+    /// Parse a text GFA file.
+    fn parse(filename: &str) -> Self {
+        let file = flatgfa::file::map_file(filename);
+        let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
+        Self::Heap(Box::new(store))
+    }
+
+    /// Load a FlatGFA binary file.
+    fn load(filename: &str) -> Self {
+        let mmap = flatgfa::file::map_file(filename);
+        Self::File(mmap)
+    }
+
+    /// Get the FlatGFA stored here.
+    fn view(&self) -> FlatGFA {
+        // TK It seems wasteful to check the type of store every time... and to construct
+        // the view every time. It's probably possible to fix this with a self-reference,
+        // e.g., with the `owning_ref` crate.
+        match self {
+            Store::Heap(ref store) => (**store).as_ref(),
+            Store::File(ref mmap) => flatgfa::file::view(mmap),
+        }
+    }
+}
+
+/// An efficient representation of a Graphical Fragment Assembly (GFA) file.
 #[pyclass(frozen)]
-#[pyo3(name = "FlatGFA")]
-struct PyFlatGFA(InternalStore);
+#[pyo3(name = "FlatGFA", module = "flatgfa")]
+struct PyFlatGFA(Arc<Store>);
+
+/// Parse a GFA file into our FlatGFA representation.
+#[pyfunction]
+fn parse(filename: &str) -> PyFlatGFA {
+    PyFlatGFA(Arc::new(Store::parse(filename)))
+}
+
+/// Load a binary FlatGFA file.
+#[pyfunction]
+fn load(filename: &str) -> PyFlatGFA {
+    PyFlatGFA(Arc::new(Store::load(filename)))
+}
 
 #[pymethods]
 impl PyFlatGFA {
+    /// The segments (nodes) in the graph.
     #[getter]
-    fn segments(self_: Py<Self>) -> SegmentList {
-        SegmentList { gfa: GFARef(self_) }
+    fn segments(&self) -> SegmentList {
+        SegmentList {
+            store: self.0.clone(),
+        }
     }
-}
 
-#[derive(Clone)]
-struct GFARef(Py<PyFlatGFA>);
-
-impl GFARef {
-    fn view(&self) -> FlatGFA {
-        // TK It seems wasteful to check the type of store every time... and to construct
-        // the view every time. It would be great if we could somehow construct the view
-        // once up front and hand it out to the various ancillary objects, but they need
-        // to be assured that the store will survive long enough.
-        match self.0.get().0 {
-            InternalStore::Heap(ref store) => (**store).as_ref(),
-            InternalStore::File(ref mmap) => flatgfa::file::view(mmap),
+    /// The paths in the graph.
+    #[getter]
+    fn paths(&self) -> PathList {
+        PathList {
+            store: self.0.clone(),
         }
     }
 }
 
-#[pyclass]
-struct SegmentList {
-    gfa: GFARef,
-}
-
-#[pymethods]
-impl SegmentList {
-    fn __getitem__(&self, idx: u32) -> PySegment {
-        PySegment {
-            gfa: self.gfa.clone(),
-            id: idx,
+/// Generate the Python types for an iterable container of GFA objects.
+macro_rules! gen_container {
+    ($type: ident, $field: ident, $pytype: ident, $list: ident, $iter: ident) => {
+        /// A sequence container for `$type`s.
+        #[pyclass]
+        #[pyo3(module = "flatgfa")]
+        struct $list {
+            store: Arc<Store>,
         }
-    }
 
-    fn __iter__(&self) -> SegmentIter {
-        SegmentIter {
-            gfa: self.gfa.clone(),
-            idx: 0,
+        #[pymethods]
+        impl $list {
+            fn __getitem__(&self, idx: u32) -> $pytype {
+                $pytype {
+                    store: self.store.clone(),
+                    id: Id::from(idx),
+                }
+            }
+
+            fn __iter__(&self) -> $iter {
+                $iter {
+                    store: self.store.clone(),
+                    idx: 0,
+                }
+            }
+
+            fn __len__(&self) -> usize {
+                self.store.view().$field.len()
+            }
         }
-    }
 
-    fn __len__(&self) -> usize {
-        self.gfa.view().segs.len()
-    }
-}
-
-#[pyclass]
-struct SegmentIter {
-    gfa: GFARef,
-    idx: u32,
-}
-
-#[pymethods]
-impl SegmentIter {
-    fn __iter__(self_: Py<Self>) -> Py<Self> {
-        self_
-    }
-
-    fn __next__(&mut self) -> Option<PySegment> {
-        let view = self.gfa.view();
-        if self.idx < view.segs.len() as u32 {
-            let seg = PySegment {
-                gfa: self.gfa.clone(),
-                id: self.idx,
-            };
-            self.idx += 1;
-            Some(seg)
-        } else {
-            None
+        #[pyclass]
+        #[pyo3(module = "flatgfa")]
+        struct $iter {
+            store: Arc<Store>,
+            idx: u32,
         }
-    }
+
+        #[pymethods]
+        impl $iter {
+            fn __iter__(self_: Py<Self>) -> Py<Self> {
+                self_
+            }
+
+            fn __next__(&mut self) -> Option<$pytype> {
+                let gfa = self.store.view();
+                if self.idx < gfa.$field.len() as u32 {
+                    let seg = $pytype {
+                        store: self.store.clone(),
+                        id: Id::from(self.idx),
+                    };
+                    self.idx += 1;
+                    Some(seg)
+                } else {
+                    None
+                }
+            }
+        }
+    };
 }
 
+gen_container!(Segment, segs, PySegment, SegmentList, SegmentIter);
+gen_container!(Path, paths, PyPath, PathList, PathIter);
+
+/// A segment in a GFA graph.
+///
+/// Segments are the nodes in the GFA graph. They have a unique ID and an associated
+/// nucleotide sequence.
 #[pyclass(frozen)]
-#[pyo3(name = "Segment")]
+#[pyo3(name = "Segment", module = "flatgfa")]
 struct PySegment {
-    gfa: GFARef,
-    #[pyo3(get)]
-    id: u32,
+    store: Arc<Store>,
+    id: Id<flatgfa::Segment>,
 }
 
 #[pymethods]
@@ -117,28 +157,69 @@ impl PySegment {
     /// This copies the underlying sequence data to contruct the Python bytes object,
     /// so it is slow to use for large sequences.
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
-        let view = self.gfa.view();
-        let seg = &view.segs[Id::from(self.id)];
-        let seq = view.get_seq(&seg);
+        let gfa = self.store.view();
+        let seg = &gfa.segs[self.id];
+        let seq = gfa.get_seq(seg);
         PyBytes::new_bound(py, seq)
     }
 
+    /// The segment's name as declared in the GFA file.
     #[getter]
     fn name(&self) -> usize {
-        let view = self.gfa.view();
-        let seg = view.segs[Id::from(self.id)];
+        let seg = self.store.view().segs[self.id];
         seg.name
     }
 
+    /// The unique identifier for the segment.
+    #[getter]
+    fn id(&self) -> u32 {
+        self.id.into()
+    }
+
     fn __repr__(&self) -> String {
-        format!("<Segment {}>", self.id)
+        format!("<Segment {}>", u32::from(self.id))
+    }
+}
+
+/// A path in a GFA graph.
+///
+/// Paths are walks through the GFA graph, where each step is an oriented segment.
+#[pyclass(frozen)]
+#[pyo3(name = "Segment", module = "flatgfa")]
+struct PyPath {
+    store: Arc<Store>,
+    id: Id<flatgfa::Path>,
+}
+
+#[pymethods]
+impl PyPath {
+    /// The unique identifier for the path.
+    #[getter]
+    fn id(&self) -> u32 {
+        self.id.into()
+    }
+
+    /// Get the name of this path as declared in the GFA file.
+    #[getter]
+    fn name<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+        let gfa = self.store.view();
+        let path = &gfa.paths[self.id];
+        let name = gfa.get_path_name(path);
+        PyBytes::new_bound(py, name)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<Path {}>", u32::from(self.id))
     }
 }
 
 #[pymodule]
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<PyFlatGFA>()?;
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(load, m)?)?;
+    m.add_class::<PySegment>()?;
+    m.add_class::<PyPath>()?;
     Ok(())
 }

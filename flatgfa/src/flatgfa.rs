@@ -79,6 +79,7 @@ pub struct Segment {
 }
 
 impl Segment {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.seq.len()
     }
@@ -214,6 +215,11 @@ impl AlignOp {
     /// Get the length of the operation.
     pub fn len(&self) -> u32 {
         self.0 >> 8
+    }
+
+    /// Check whether there are zero operations in this alignment.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
