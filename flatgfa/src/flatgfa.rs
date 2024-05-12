@@ -1,9 +1,8 @@
 use std::str::FromStr;
 
-use crate::pool::{Id, Pool, Span, Store};
+use crate::pool::{self, Id, Pool, Span, Store};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 /// An efficient flattened representation of a GFA file.
@@ -17,20 +16,20 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 pub struct FlatGFA<'a> {
     /// A GFA may optionally have a single header line, with a version number.
     /// If this is empty, there is no header line.
-    pub header: &'a [u8],
+    pub header: Pool<'a, u8>,
 
     /// The segment (S) lines in the GFA file.
-    pub segs: &'a [Segment],
+    pub segs: Pool<'a, Segment>,
 
     /// The path (P) lines.
-    pub paths: &'a [Path],
+    pub paths: Pool<'a, Path>,
 
     /// The link (L) lines.
-    pub links: &'a [Link],
+    pub links: Pool<'a, Link>,
 
     /// Paths consist of steps. This is a flat pool of steps, chunks of which are
     /// associated with each path.
-    pub steps: &'a [Handle],
+    pub steps: Pool<'a, Handle>,
 
     /// The actual base-pair sequences for the segments. This is a pool of
     /// base-pair symbols, chunks of which are associated with each segment.
@@ -38,30 +37,30 @@ pub struct FlatGFA<'a> {
     /// TODO: This could certainly use a smaller representation than `u8`
     /// (since we care only about 4 base pairs). If we want to pay the cost
     /// of bit-packing.
-    pub seq_data: &'a [u8],
+    pub seq_data: Pool<'a, u8>,
 
     /// Both paths and links can have overlaps, which are CIGAR sequences. They
     /// are all stored together here in a flat pool, elements of which point
     /// to chunks of `alignment`.
-    pub overlaps: &'a [Span<AlignOp>],
+    pub overlaps: Pool<'a, Span<AlignOp>>,
 
     /// The CIGAR aligment operations that make up the overlaps. `overlaps`
     /// contains range of indices in this pool.
-    pub alignment: &'a [AlignOp],
+    pub alignment: Pool<'a, AlignOp>,
 
     /// The string names: currenly, just of paths. (We assume segments have integer
     /// names, so they don't need to be stored separately.)
-    pub name_data: &'a [u8],
+    pub name_data: Pool<'a, u8>,
 
     /// Segments can come with optional extra fields, which we store in a flat pool
     /// as raw characters because we don't currently care about them.
-    pub optional_data: &'a [u8],
+    pub optional_data: Pool<'a, u8>,
 
     /// An "interleaving" order of GFA lines. This is to preserve perfect round-trip
     /// fidelity: we record the order of lines as we saw them when parsing a GFA file
     /// so we can emit them again in that order. Elements should be `LineKind` values
     /// (but they are checked before we use them).
-    pub line_order: &'a [u8],
+    pub line_order: Pool<'a, u8>,
 }
 
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
@@ -240,85 +239,72 @@ pub enum LineKind {
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
-        self.seq_data.get_span(seg.seq).as_ref()
+        self.seq_data[seg.seq].as_ref()
     }
 
     /// Look up a segment by its name.
     pub fn find_seg(&self, name: usize) -> Option<Id<Segment>> {
         // TODO Make this more efficient by maintaining the name index? This would not be
         // too hard; we already have the machinery in `parse.rs`...
-        self.segs
-            .iter()
-            .position(|seg| seg.name == name)
-            .map(|i| Id::new(i))
+        self.segs.search(|seg| seg.name == name)
     }
 
     /// Look up a path by its name.
     pub fn find_path(&self, name: &BStr) -> Option<Id<Path>> {
-        self.paths
-            .iter()
-            .position(|path| self.get_path_name(path) == name)
-            .map(|i| Id::new(i))
-    }
-
-    /// Get all the steps for a path.
-    pub fn get_steps(&self, path: &Path) -> &[Handle] {
-        &self.steps.get_span(path.steps)
-    }
-
-    /// Get all the overlaps for a path. This may be empty (`*` in the GFA file).
-    pub fn get_overlaps(&self, path: &Path) -> &[Span<AlignOp>] {
-        &self.overlaps.get_span(path.overlaps)
+        self.paths.search(|path| self.get_path_name(path) == name)
     }
 
     /// Get the string name of a path.
     pub fn get_path_name(&self, path: &Path) -> &BStr {
-        self.name_data.get_span(path.name).as_ref()
+        self.name_data[path.name].as_ref()
     }
 
     /// Get a handle's associated segment.
     pub fn get_handle_seg(&self, handle: Handle) -> &Segment {
-        &self.segs.get_id(handle.segment())
+        &self.segs[handle.segment()]
     }
 
     /// Get the optional data for a segment, as a tab-separated string.
     pub fn get_optional_data(&self, seg: &Segment) -> &BStr {
-        self.optional_data.get_span(seg.optional).as_ref()
+        self.optional_data[seg.optional].as_ref()
     }
 
     /// Look up a CIGAR alignment.
     pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
         Alignment {
-            ops: &self.alignment.get_span(overlap),
+            ops: &self.alignment[overlap],
         }
     }
 
     /// Get the recorded order of line kinds.
     pub fn get_line_order(&self) -> impl Iterator<Item = LineKind> + 'a {
-        self.line_order.iter().map(|b| (*b).try_into().unwrap())
+        self.line_order
+            .all()
+            .iter()
+            .map(|b| (*b).try_into().unwrap())
     }
 }
 
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
-pub struct GFAStore<'a, P: PoolFamily<'a>> {
-    pub header: P::Pool<u8>,
-    pub segs: P::Pool<Segment>,
-    pub paths: P::Pool<Path>,
-    pub links: P::Pool<Link>,
-    pub steps: P::Pool<Handle>,
-    pub seq_data: P::Pool<u8>,
-    pub overlaps: P::Pool<Span<AlignOp>>,
-    pub alignment: P::Pool<AlignOp>,
-    pub name_data: P::Pool<u8>,
-    pub optional_data: P::Pool<u8>,
-    pub line_order: P::Pool<u8>,
+pub struct GFAStore<'a, P: StoreFamily<'a>> {
+    pub header: P::Store<u8>,
+    pub segs: P::Store<Segment>,
+    pub paths: P::Store<Path>,
+    pub links: P::Store<Link>,
+    pub steps: P::Store<Handle>,
+    pub seq_data: P::Store<u8>,
+    pub overlaps: P::Store<Span<AlignOp>>,
+    pub alignment: P::Store<AlignOp>,
+    pub name_data: P::Store<u8>,
+    pub optional_data: P::Store<u8>,
+    pub line_order: P::Store<u8>,
 }
 
-impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
+impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     /// Add a header line for the GFA file. This may only be added once.
     pub fn add_header(&mut self, version: &[u8]) {
-        assert!(self.header.count() == 0);
+        assert!(self.header.as_ref().is_empty());
         self.header.add_slice(version);
     }
 
@@ -378,34 +364,34 @@ impl<'a, P: PoolFamily<'a>> GFAStore<'a, P> {
     /// Borrow a FlatGFA view of this data store.
     pub fn as_ref(&self) -> FlatGFA {
         FlatGFA {
-            header: &self.header,
-            segs: &self.segs,
-            paths: &self.paths,
-            links: &self.links,
-            name_data: &self.name_data,
-            seq_data: &self.seq_data,
-            steps: &self.steps,
-            overlaps: &self.overlaps,
-            alignment: &self.alignment,
-            optional_data: &self.optional_data,
-            line_order: &self.line_order,
+            header: self.header.as_ref(),
+            segs: self.segs.as_ref(),
+            paths: self.paths.as_ref(),
+            links: self.links.as_ref(),
+            name_data: self.name_data.as_ref(),
+            seq_data: self.seq_data.as_ref(),
+            steps: self.steps.as_ref(),
+            overlaps: self.overlaps.as_ref(),
+            alignment: self.alignment.as_ref(),
+            optional_data: self.optional_data.as_ref(),
+            line_order: self.line_order.as_ref(),
         }
     }
 }
 
-pub trait PoolFamily<'a> {
-    type Pool<T: Clone + 'a>: crate::pool::Store<T>;
+pub trait StoreFamily<'a> {
+    type Store<T: Clone + 'a>: pool::Store<T>;
 }
 
 #[derive(Default)]
-pub struct VecPoolFamily;
-impl<'a> PoolFamily<'a> for VecPoolFamily {
-    type Pool<T: Clone + 'a> = Vec<T>;
+pub struct HeapFamily;
+impl<'a> StoreFamily<'a> for HeapFamily {
+    type Store<T: Clone + 'a> = pool::HeapStore<T>;
 }
 
-pub struct SliceVecPoolFamily;
-impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
-    type Pool<T: Clone + 'a> = SliceVec<'a, T>;
+pub struct FixedFamily;
+impl<'a> StoreFamily<'a> for FixedFamily {
+    type Store<T: Clone + 'a> = pool::FixedStore<'a, T>;
 }
 
 /// A store for `FlatGFA` data backed by fixed-size slices.
@@ -413,11 +399,11 @@ impl<'a> PoolFamily<'a> for SliceVecPoolFamily {
 /// This store contains `SliceVec`s, which act like `Vec`s but are allocated within
 /// a fixed region. This means they have a maximum size, but they can directly map
 /// onto the contents of a file.
-pub type SliceStore<'a> = GFAStore<'a, SliceVecPoolFamily>;
+pub type FixedGFAStore<'a> = GFAStore<'a, FixedFamily>;
 
 /// A mutable, in-memory data store for `FlatGFA`.
 ///
 /// This store contains a bunch of `Vec`s: one per array required to implement a
 /// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
 /// useful for creating new ones from scratch.
-pub type HeapStore = GFAStore<'static, VecPoolFamily>;
+pub type HeapGFAStore = GFAStore<'static, HeapFamily>;

@@ -150,12 +150,12 @@ fn prealloc_translate(in_name: Option<&str>, out_name: &str, prealloc_factor: us
     match input_buf {
         Some(buf) => {
             let store = Parser::for_slice(store).parse_mem(buf);
-            *toc = file::Toc::for_slice_store(&store)
+            *toc = file::Toc::for_fixed_store(&store)
         }
         None => {
             let stdin = std::io::stdin();
             let store = Parser::for_slice(store).parse_stream(stdin.lock());
-            *toc = file::Toc::for_slice_store(&store)
+            *toc = file::Toc::for_fixed_store(&store)
         }
     };
 
