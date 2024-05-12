@@ -190,6 +190,19 @@ impl PySegment {
     }
 }
 
+#[pymethods]
+impl SegmentList {
+    /// Find a segment by its name, or return None if not found.
+    fn find(&self, name: usize) -> Option<PySegment> {
+        let gfa = self.store.view();
+        let id = gfa.find_seg(name)?;
+        Some(PySegment {
+            store: self.store.clone(),
+            id,
+        })
+    }
+}
+
 /// A path in a GFA graph.
 ///
 /// Paths are walks through the GFA graph, where each step is an oriented segment.
@@ -233,6 +246,19 @@ impl PyPath {
     fn __len__(&self) -> usize {
         let path = self.store.view().paths[self.id];
         path.steps.len()
+    }
+}
+
+#[pymethods]
+impl PathList {
+    /// Find a path by its name, or return None if not found.
+    fn find(&self, name: &[u8]) -> Option<PyPath> {
+        let gfa = self.store.view();
+        let id = gfa.find_path(name.as_ref())?;
+        Some(PyPath {
+            store: self.store.clone(),
+            id,
+        })
     }
 }
 
