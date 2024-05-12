@@ -8,6 +8,6 @@ name = "flatgfa"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.21.2", features = ["abi3-py38"] }
+pyo3 = { version = "0.21.2", features = ["abi3-py38", "multiple-pymethods"] }
 flatgfa = { path = "../flatgfa" }
 memmap = "0.7.0"

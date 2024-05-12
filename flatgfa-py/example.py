@@ -19,3 +19,6 @@ for path in g.paths:
     ))
 for link in g.links:
     print(link, link.from_, link.to)
+
+print(g.paths.find(b"x"))
+print(g.segments.find(2))
