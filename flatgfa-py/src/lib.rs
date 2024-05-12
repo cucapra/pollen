@@ -1,7 +1,8 @@
-use flatgfa::pool::Id;
-use flatgfa::{self, FlatGFA, HeapGFAStore};
+use flatgfa::pool::{Id, Span};
+use flatgfa::{self, file, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
+use std::io::Write;
 use std::sync::Arc;
 
 /// Storage for a FlatGFA.
@@ -16,14 +17,14 @@ enum Store {
 impl Store {
     /// Parse a text GFA file.
     fn parse(filename: &str) -> Self {
-        let file = flatgfa::file::map_file(filename);
+        let file = file::map_file(filename);
         let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
         Self::Heap(Box::new(store))
     }
 
     /// Load a FlatGFA binary file.
     fn load(filename: &str) -> Self {
-        let mmap = flatgfa::file::map_file(filename);
+        let mmap = file::map_file(filename);
         Self::File(mmap)
     }
 
@@ -34,7 +35,7 @@ impl Store {
         // e.g., with the `owning_ref` crate.
         match self {
             Store::Heap(ref store) => (**store).as_ref(),
-            Store::File(ref mmap) => flatgfa::file::view(mmap),
+            Store::File(ref mmap) => file::view(mmap),
         }
     }
 }
@@ -72,6 +73,34 @@ impl PyFlatGFA {
         PathList {
             store: self.0.clone(),
         }
+    }
+
+    /// The links in the graph.
+    #[getter]
+    fn links(&self) -> LinkList {
+        LinkList {
+            store: self.0.clone(),
+        }
+    }
+
+    fn __str__(&self) -> String {
+        format!("{}", &self.0.view())
+    }
+
+    /// Write the graph as a GFA text file.
+    fn write_gfa(&self, filename: &str) -> PyResult<()> {
+        let mut file = std::fs::File::create(filename)?;
+        write!(file, "{}", &self.0.view())?;
+        Ok(())
+    }
+
+    /// Write the graph as a binary FlatGFA file.
+    fn write_flatgfa(&self, filename: &str) -> PyResult<()> {
+        let gfa = self.0.view();
+        let mut mmap = file::map_new_file(filename, file::size(&gfa) as u64);
+        file::dump(&gfa, &mut mmap);
+        mmap.flush()?;
+        Ok(())
     }
 }
 
@@ -122,12 +151,12 @@ macro_rules! gen_container {
             fn __next__(&mut self) -> Option<$pytype> {
                 let gfa = self.store.view();
                 if self.idx < gfa.$field.len() as u32 {
-                    let seg = $pytype {
+                    let obj = $pytype {
                         store: self.store.clone(),
                         id: Id::from(self.idx),
                     };
                     self.idx += 1;
-                    Some(seg)
+                    Some(obj)
                 } else {
                     None
                 }
@@ -138,6 +167,7 @@ macro_rules! gen_container {
 
 gen_container!(Segment, segs, PySegment, SegmentList, SegmentIter);
 gen_container!(Path, paths, PyPath, PathList, PathIter);
+gen_container!(Link, links, PyLink, LinkList, LinkIter);
 
 /// A segment in a GFA graph.
 ///
@@ -181,6 +211,19 @@ impl PySegment {
     }
 }
 
+#[pymethods]
+impl SegmentList {
+    /// Find a segment by its name, or return None if not found.
+    fn find(&self, name: usize) -> Option<PySegment> {
+        let gfa = self.store.view();
+        let id = gfa.find_seg(name)?;
+        Some(PySegment {
+            store: self.store.clone(),
+            id,
+        })
+    }
+}
+
 /// A path in a GFA graph.
 ///
 /// Paths are walks through the GFA graph, where each step is an oriented segment.
@@ -211,6 +254,145 @@ impl PyPath {
     fn __repr__(&self) -> String {
         format!("<Path {}>", u32::from(self.id))
     }
+
+    fn __iter__(&self) -> StepIter {
+        let path = self.store.view().paths[self.id];
+        StepIter {
+            store: self.store.clone(),
+            span: path.steps,
+            cur: path.steps.start,
+        }
+    }
+
+    fn __len__(&self) -> usize {
+        let path = self.store.view().paths[self.id];
+        path.steps.len()
+    }
+}
+
+#[pymethods]
+impl PathList {
+    /// Find a path by its name, or return None if not found.
+    fn find(&self, name: &[u8]) -> Option<PyPath> {
+        let gfa = self.store.view();
+        let id = gfa.find_path(name.as_ref())?;
+        Some(PyPath {
+            store: self.store.clone(),
+            id,
+        })
+    }
+}
+
+/// An oriented segment reference.
+#[pyclass(frozen)]
+#[pyo3(name = "Handle", module = "flatgfa")]
+struct PyHandle {
+    store: Arc<Store>,
+    handle: flatgfa::Handle,
+}
+
+#[pymethods]
+impl PyHandle {
+    /// The segment ID.
+    #[getter]
+    fn seg_id(&self) -> u32 {
+        self.handle.segment().into()
+    }
+
+    /// The orientation.
+    #[getter]
+    fn is_forward(&self) -> bool {
+        self.handle.orient() == flatgfa::Orientation::Forward
+    }
+
+    /// The segment.
+    #[getter]
+    fn segment(&self) -> PySegment {
+        PySegment {
+            store: self.store.clone(),
+            id: self.handle.segment(),
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "<Handle {}{}>",
+            u32::from(self.handle.segment()),
+            self.handle.orient()
+        )
+    }
+}
+
+/// An iterator over the steps in a path.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct StepIter {
+    store: Arc<Store>,
+    span: Span<flatgfa::Handle>,
+    cur: Id<flatgfa::Handle>,
+}
+
+#[pymethods]
+impl StepIter {
+    fn __iter__(self_: Py<Self>) -> Py<Self> {
+        self_
+    }
+
+    fn __next__(&mut self) -> Option<PyHandle> {
+        let gfa = self.store.view();
+        if self.span.contains(self.cur) {
+            let handle = PyHandle {
+                store: self.store.clone(),
+                handle: gfa.steps[self.cur],
+            };
+            self.cur = (u32::from(self.cur) + 1).into();
+            Some(handle)
+        } else {
+            None
+        }
+    }
+}
+
+/// A link in a GFA graph.
+///
+/// Links are directed edges between oriented segments. The source and sink are both
+/// `Handle`s, i.e., the "forward" or "backward" direction of a given segment.
+#[pyclass(frozen)]
+#[pyo3(name = "Link", module = "flatgfa")]
+struct PyLink {
+    store: Arc<Store>,
+    id: Id<flatgfa::Link>,
+}
+
+#[pymethods]
+impl PyLink {
+    /// The unique identifier for the link.
+    #[getter]
+    fn id(&self) -> u32 {
+        self.id.into()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<Link {}>", u32::from(self.id))
+    }
+
+    /// The edge's source handle.
+    #[getter]
+    fn from_(&self) -> PyHandle {
+        PyHandle {
+            store: self.store.clone(),
+            handle: self.store.view().links[self.id].from,
+        }
+    }
+
+    /// The edge's sink handle.
+    #[getter]
+    fn to(&self) -> PyHandle {
+        PyHandle {
+            store: self.store.clone(),
+            handle: self.store.view().links[self.id].to,
+        }
+    }
 }
 
 #[pymodule]
@@ -221,5 +403,7 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(load, m)?)?;
     m.add_class::<PySegment>()?;
     m.add_class::<PyPath>()?;
+    m.add_class::<PyHandle>()?;
+    m.add_class::<PyLink>()?;
     Ok(())
 }
