@@ -22,3 +22,5 @@ for link in g.links:
 
 print(g.paths.find(b"x"))
 print(g.segments.find(2))
+
+print(g)
