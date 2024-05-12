@@ -1,4 +1,4 @@
-use flatgfa::flatgfa::{FlatGFA, HeapGFAStore};
+use flatgfa::flatgfa::{FlatGFA, HeapGFAStore, Segment};
 use flatgfa::pool::Id;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
@@ -79,7 +79,7 @@ impl SegmentList {
     fn __getitem__(&self, idx: u32) -> PySegment {
         PySegment {
             store: self.store.clone(),
-            id: idx,
+            id: Id::from(idx),
         }
     }
 
@@ -113,7 +113,7 @@ impl SegmentIter {
         if self.idx < view.segs.len() as u32 {
             let seg = PySegment {
                 store: self.store.clone(),
-                id: self.idx,
+                id: Id::from(self.idx),
             };
             self.idx += 1;
             Some(seg)
@@ -131,8 +131,7 @@ impl SegmentIter {
 #[pyo3(name = "Segment", module = "flatgfa")]
 struct PySegment {
     store: Arc<Store>,
-    #[pyo3(get)]
-    id: u32,
+    id: Id<Segment>,
 }
 
 #[pymethods]
@@ -143,21 +142,27 @@ impl PySegment {
     /// so it is slow to use for large sequences.
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let view = self.store.view();
-        let seg = &view.segs[Id::from(self.id)];
+        let seg = &view.segs[self.id];
         let seq = view.get_seq(&seg);
         PyBytes::new_bound(py, seq)
     }
 
-    /// Get segment's name as declared in the GFA file.
+    /// The segment's name as declared in the GFA file.
     #[getter]
     fn name(&self) -> usize {
         let view = self.store.view();
-        let seg = view.segs[Id::from(self.id)];
+        let seg = view.segs[self.id];
         seg.name
     }
 
+    /// The unique identifier for the segment.
+    #[getter]
+    fn id(&self) -> u32 {
+        self.id.into()
+    }
+
     fn __repr__(&self) -> String {
-        format!("<Segment {}>", self.id)
+        format!("<Segment {}>", u32::from(self.id))
     }
 }
 
