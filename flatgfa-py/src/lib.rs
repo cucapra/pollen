@@ -1,5 +1,5 @@
-use flatgfa::flatgfa::{FlatGFA, HeapGFAStore, Segment};
 use flatgfa::pool::Id;
+use flatgfa::{self, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use std::sync::Arc;
@@ -131,7 +131,7 @@ impl SegmentIter {
 #[pyo3(name = "Segment", module = "flatgfa")]
 struct PySegment {
     store: Arc<Store>,
-    id: Id<Segment>,
+    id: Id<flatgfa::Segment>,
 }
 
 #[pymethods]
@@ -143,7 +143,7 @@ impl PySegment {
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
         let view = self.store.view();
         let seg = &view.segs[self.id];
-        let seq = view.get_seq(&seg);
+        let seq = view.get_seq(seg);
         PyBytes::new_bound(py, seq)
     }
 
