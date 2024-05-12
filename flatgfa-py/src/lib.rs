@@ -1,4 +1,4 @@
-use flatgfa::pool::Id;
+use flatgfa::pool::{Id, Span};
 use flatgfa::{self, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
@@ -122,12 +122,12 @@ macro_rules! gen_container {
             fn __next__(&mut self) -> Option<$pytype> {
                 let gfa = self.store.view();
                 if self.idx < gfa.$field.len() as u32 {
-                    let seg = $pytype {
+                    let obj = $pytype {
                         store: self.store.clone(),
                         id: Id::from(self.idx),
                     };
                     self.idx += 1;
-                    Some(seg)
+                    Some(obj)
                 } else {
                     None
                 }
@@ -211,6 +211,90 @@ impl PyPath {
     fn __repr__(&self) -> String {
         format!("<Path {}>", u32::from(self.id))
     }
+
+    fn __iter__(&self) -> StepIter {
+        let path = self.store.view().paths[self.id];
+        StepIter {
+            store: self.store.clone(),
+            span: path.steps,
+            cur: path.steps.start,
+        }
+    }
+
+    fn __len__(&self) -> usize {
+        let path = self.store.view().paths[self.id];
+        path.steps.len()
+    }
+}
+
+/// An oriented segment reference.
+#[pyclass(frozen)]
+#[pyo3(name = "Handle", module = "flatgfa")]
+struct PyHandle {
+    store: Arc<Store>,
+    handle: flatgfa::Handle,
+}
+
+#[pymethods]
+impl PyHandle {
+    /// The segment ID.
+    #[getter]
+    fn seg_id(&self) -> u32 {
+        self.handle.segment().into()
+    }
+
+    /// The orientation.
+    #[getter]
+    fn is_forward(&self) -> bool {
+        self.handle.orient() == flatgfa::Orientation::Forward
+    }
+
+    /// The segment.
+    #[getter]
+    fn segment(&self) -> PySegment {
+        PySegment {
+            store: self.store.clone(),
+            id: self.handle.segment(),
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "<Handle {}{}>",
+            u32::from(self.handle.segment()),
+            self.handle.orient()
+        )
+    }
+}
+
+/// An iterator over the steps in a path.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct StepIter {
+    store: Arc<Store>,
+    span: Span<flatgfa::Handle>,
+    cur: Id<flatgfa::Handle>,
+}
+
+#[pymethods]
+impl StepIter {
+    fn __iter__(self_: Py<Self>) -> Py<Self> {
+        self_
+    }
+
+    fn __next__(&mut self) -> Option<PyHandle> {
+        let gfa = self.store.view();
+        if self.span.contains(self.cur) {
+            let handle = PyHandle {
+                store: self.store.clone(),
+                handle: gfa.steps[self.cur],
+            };
+            self.cur = (u32::from(self.cur) + 1).into();
+            Some(handle)
+        } else {
+            None
+        }
+    }
 }
 
 #[pymodule]
@@ -221,5 +305,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(load, m)?)?;
     m.add_class::<PySegment>()?;
     m.add_class::<PyPath>()?;
+    m.add_class::<PyHandle>()?;
     Ok(())
 }
