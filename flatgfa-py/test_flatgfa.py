@@ -14,3 +14,15 @@ def test_segs(gfa):
     seg = gfa.segments[0]
     assert seg.name == 1
     assert seg.sequence() == b"CAAATAAG"
+    seg = list(gfa.segments)[2]
+    assert seg.name == 3
+
+
+def test_paths(gfa):
+    assert len(gfa.paths) == 2
+    path = gfa.paths[0]
+    assert path.name == b"x"
+    assert len(path) == 10
+    step = list(path)[0]
+    assert step.segment.name == 1
+    assert step.is_forward
