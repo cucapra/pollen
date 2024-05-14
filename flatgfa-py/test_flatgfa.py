@@ -20,8 +20,13 @@ def test_segs(gfa):
 
 def test_paths(gfa):
     assert len(gfa.paths) == 2
+    assert len(list(gfa.paths)) == 2
     path = gfa.paths[0]
     assert path.name == b"x"
+
+
+def test_path_steps(gfa):
+    path = gfa.paths[1]
     assert len(path) == 10
     step = list(path)[0]
     assert step.segment.name == 1
