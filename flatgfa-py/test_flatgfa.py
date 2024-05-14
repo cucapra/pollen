@@ -67,3 +67,30 @@ def test_links(gfa):
     assert link.from_.is_forward
     assert link.to.segment.name == 4
     assert not link.to.is_forward
+
+
+def test_gfa_str(gfa):
+    # You can serialize a graph as GFA text.
+    assert str(gfa) == TINY_GFA.decode()
+
+
+def test_read_write_gfa(gfa, tmp_path):
+    # You can write FlatGFA objects as GFA text files.
+    gfa_path = str(tmp_path / "tiny.gfa")
+    gfa.write_gfa(gfa_path)
+    with open(gfa_path, 'rb') as f:
+        assert f.read() == TINY_GFA
+
+    # You can also parse GFA text files from the filesystem.
+    new_gfa = flatgfa.parse(gfa_path)
+    assert len(new_gfa.segments) == len(gfa.segments)
+
+
+def test_read_write_flatgfa(gfa, tmp_path):
+    # You can write FlatGFA graphs in our native binary format too.
+    flatgfa_path = str(tmp_path / "tiny.flatgfa")
+    gfa.write_flatgfa(flatgfa_path)
+
+    # And read them back, which should be very fast indeed.
+    new_gfa = flatgfa.load(flatgfa_path)
+    assert len(new_gfa.segments) == len(gfa.segments)
