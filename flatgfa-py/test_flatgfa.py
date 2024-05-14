@@ -35,6 +35,13 @@ def test_segs(gfa):
     assert seg.name == 3
 
 
+def test_segs_find(gfa):
+    # There is a method to find a segment by its name (with linear search).
+    seg = gfa.segments.find(3)
+    assert seg.id == 2
+    assert seg.sequence() == b"TTG"
+
+
 def test_paths(gfa):
     # `gfa.paths` similarly acts like a list.
     assert len(gfa.paths) == 2
@@ -43,6 +50,13 @@ def test_paths(gfa):
     # Individual paths expose their name (a bytestring).
     path = gfa.paths[0]
     assert path.name == b"one"
+
+
+def test_paths_find(gfa):
+    # There is a method to find a path by its name.
+    path = gfa.paths.find(b"two")
+    assert path.id == 1
+    assert path.name == b"two"
 
 
 def test_path_steps(gfa):
