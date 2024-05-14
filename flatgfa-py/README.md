@@ -21,4 +21,9 @@ Try our example:
 
     python example.py
 
+Or run the tests:
+
+    uv pip install pytest
+    pytest
+
 [maturin]: https://www.maturin.rs
