@@ -16,9 +16,14 @@ enum Store {
 
 impl Store {
     /// Parse a text GFA file.
-    fn parse(filename: &str) -> Self {
+    fn parse_file(filename: &str) -> Self {
         let file = file::map_file(filename);
-        let store = flatgfa::parse::Parser::for_heap().parse_mem(file.as_ref());
+        Self::parse_gfa(file.as_ref())
+    }
+
+    /// Parse a GFA graph from a byte buffer.
+    fn parse_gfa(data: &[u8]) -> Self {
+        let store = flatgfa::parse::Parser::for_heap().parse_mem(data);
         Self::Heap(Box::new(store))
     }
 
@@ -48,7 +53,13 @@ struct PyFlatGFA(Arc<Store>);
 /// Parse a GFA file into our FlatGFA representation.
 #[pyfunction]
 fn parse(filename: &str) -> PyFlatGFA {
-    PyFlatGFA(Arc::new(Store::parse(filename)))
+    PyFlatGFA(Arc::new(Store::parse_file(filename)))
+}
+
+/// Parse a GFA file from a bytestring into our FlatGFA representation.
+#[pyfunction]
+fn parse_bytes(bytes: &[u8]) -> PyFlatGFA {
+    PyFlatGFA(Arc::new(Store::parse_gfa(bytes)))
 }
 
 /// Load a binary FlatGFA file.
@@ -400,6 +411,7 @@ impl PyLink {
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFlatGFA>()?;
     m.add_function(wrap_pyfunction!(parse, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_bytes, m)?)?;
     m.add_function(wrap_pyfunction!(load, m)?)?;
     m.add_class::<PySegment>()?;
     m.add_class::<PyPath>()?;
