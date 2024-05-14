@@ -13,7 +13,7 @@ L	1	+	2	+	0M
 L	2	+	4	-	0M
 L	2	+	3	+	0M
 L	3	+	4	-	0M
-""".strip()
+"""[1:]
 
 
 @pytest.fixture
@@ -54,3 +54,16 @@ def test_path_steps(gfa):
     # A step (handle) is a reference to a segment and an orientation.
     assert step.segment.name == 1
     assert step.is_forward
+
+
+def test_links(gfa):
+    # You guessed it: `gfa.links` behaves as a list too.
+    assert len(gfa.links) == 4
+    assert len(list(gfa.links)) == 4
+    link = gfa.links[1]
+
+    # A link has a "from" handle and a "to" handle.
+    assert link.from_.segment.name == 2
+    assert link.from_.is_forward
+    assert link.to.segment.name == 4
+    assert not link.to.is_forward
