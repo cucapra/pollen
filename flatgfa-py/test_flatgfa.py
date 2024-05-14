@@ -13,7 +13,9 @@ L	1	+	2	+	0M
 L	2	+	4	-	0M
 L	2	+	3	+	0M
 L	3	+	4	-	0M
-"""[1:]
+"""[
+    1:
+]
 
 
 @pytest.fixture
@@ -92,7 +94,7 @@ def test_read_write_gfa(gfa, tmp_path):
     # You can write FlatGFA objects as GFA text files.
     gfa_path = str(tmp_path / "tiny.gfa")
     gfa.write_gfa(gfa_path)
-    with open(gfa_path, 'rb') as f:
+    with open(gfa_path, "rb") as f:
         assert f.read() == TINY_GFA
 
     # You can also parse GFA text files from the filesystem.
