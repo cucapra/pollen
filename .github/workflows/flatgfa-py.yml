@@ -90,7 +90,7 @@ jobs:
         platform:
           - runner: macos-latest
             target: x86_64
-          - runner: macos-14
+          - runner: macos-latest
             target: aarch64
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
       - name: pytest
-        if: ${{ !startsWith(matrix.platform.target, 'aarch64') }}
+        if: ${{ startsWith(matrix.platform.target, 'aarch64') }}
         shell: bash
         run: |
           set -e
