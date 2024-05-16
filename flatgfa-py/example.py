@@ -7,6 +7,6 @@ for path in graph.paths:
     for step in path:
         depths[step.segment.id] += 1
 
-print('#node.id\tdepth')
+print("#node.id\tdepth")
 for seg in graph.segments:
-    print('{}\t{}'.format(seg.name, depths[seg.id]))
+    print("{}\t{}".format(seg.name, depths[seg.id]))
