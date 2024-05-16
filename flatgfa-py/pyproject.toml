@@ -1,6 +1,6 @@
 [project]
 name = "flatgfa"
-version = "0.1.0"
+version = "0.1.1"
 description = "efficient processing of pangenomes in Graphical Fragment Assembly (GFA) format"
 readme = "README.md"
 requires-python = ">=3.8"
