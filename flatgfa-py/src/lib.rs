@@ -1,5 +1,5 @@
 use flatgfa::pool::{Id, Span};
-use flatgfa::{self, file, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use std::io::Write;
@@ -219,6 +219,12 @@ impl PySegment {
     fn __repr__(&self) -> String {
         format!("<Segment {}>", u32::from(self.id))
     }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        let seg = gfa.segs[self.id];
+        format!("{}", print::Display(&gfa, &seg))
+    }
 }
 
 #[pymethods]
@@ -277,6 +283,12 @@ impl PyPath {
 
     fn __repr__(&self) -> String {
         format!("<Path {}>", u32::from(self.id))
+    }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        let path = gfa.paths[self.id];
+        format!("{}", print::Display(&gfa, &path))
     }
 
     fn __iter__(&self) -> StepIter {
@@ -355,6 +367,11 @@ impl PyHandle {
             self.handle.orient()
         )
     }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        format!("{}", print::Display(&gfa, self.handle))
+    }
 }
 
 /// An iterator over the steps in a path.
@@ -408,6 +425,12 @@ impl PyLink {
 
     fn __repr__(&self) -> String {
         format!("<Link {}>", u32::from(self.id))
+    }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        let link = gfa.links[self.id];
+        format!("{}", print::Display(&gfa, &link))
     }
 
     /// The edge's source handle.

@@ -36,6 +36,9 @@ def test_segs(gfa):
     seg = list(gfa.segments)[2]
     assert seg.name == 3
 
+    # Use `str()` to get a GFA representation.
+    assert str(seg) == "S	3	TTG"
+
 
 def test_segs_find(gfa):
     # There is a method to find a segment by its name (with linear search).
@@ -52,6 +55,9 @@ def test_paths(gfa):
     # Individual paths expose their name (a bytestring).
     path = gfa.paths[0]
     assert path.name == b"one"
+
+    # GFA representation.
+    assert str(path) == "P	one	1+,2+,4-	*"
 
 
 def test_paths_find(gfa):
@@ -71,6 +77,9 @@ def test_path_steps(gfa):
     assert step.segment.name == 1
     assert step.is_forward
 
+    # GFA representation.
+    assert str(step) == "1+"
+
 
 def test_links(gfa):
     # You guessed it: `gfa.links` behaves as a list too.
@@ -83,6 +92,9 @@ def test_links(gfa):
     assert link.from_.is_forward
     assert link.to.segment.name == 4
     assert not link.to.is_forward
+
+    # GFA representation.
+    assert str(link) == "L	2	+	4	-	0M"
 
 
 def test_gfa_str(gfa):
