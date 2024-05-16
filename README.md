@@ -14,14 +14,15 @@ Eventually, we aim to generate custom hardware accelerators for these queries vi
 
 There are several things in this repository:
 
-* [mygfa](./mygfa), a simple Python library for parsing, processing, and emitting [GFA][] files.
+* [mygfa](./mygfa), a simple Python library for parsing, processing, and emitting [GFA][] files. See [its documentation][mygfa-docs].
 * [slow_odgi](./slow_odgi), a reference implementation of several GFA queries from the [odgi][] tool using `mygfa`.
-* [FlatGFA](./flatgfa), an experimental fast binary format for representing and analyzing GFA files.
+* [FlatGFA](./flatgfa), an experimental fast binary format for representing and analyzing GFA files. There are also [Python bindings](./flatgfa-py) for this library; check out [their documentation][flatgfa-py-docs].
 * A proof-of-concept Calyx-based [hardware accelerator generator](./pollen_py) for a single GFA query (`odgi depth`) and a data generator for this hardware.
 
 [calyx]: https://calyxir.org
 [odgi]: https://odgi.readthedocs.io/en/latest/
 [gfa]: https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md
+[flatgfa-py-docs]: https://cucapra.github.io/pollen/flatgfa/
 
 
 `mygfa` and `slow_odgi`
