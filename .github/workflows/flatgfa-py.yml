@@ -7,10 +7,11 @@ name: flatgfa-py CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    tags: ["flatgfa-*"]
   pull_request:
     paths:
+      - "flatgfa/**"
       - "flatgfa-py/**"
 
 permissions:
