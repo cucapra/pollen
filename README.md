@@ -44,6 +44,18 @@ Now type `slow_odgi --help` to see if everything's working.
 [mygfa-docs]: http://cucapra.github.io/pollen/mygfa/
 
 
+FlatGFA
+-------
+
+[FlatGFA](./flatgfa) is an efficient representation for GFA files. It is implemented in Rust and available with [Python bindings](./flatgfa-py). The latter is [on PyPI][flatgfa-pypi], so you can get started with:
+
+    $ pip install flatgfa
+
+Then read the [API documentation][flatgfa-py-docs] to see what's available. Or see [the included example](./flatgfa-py/example.py) for a synopsis.
+
+[flatgfa-pypi]: https://pypi.org/project/flatgfa/
+
+
 Credits
 -------
 
