@@ -20,8 +20,8 @@ Here's a quick example::
 
 This example computes the `node depth`_ for every segment in a graph.
 It starts by parsing a GFA text file, but FlatGFA also has its own efficient
-binary representation---you can read and write this format with the `load`
-function and `write_flatgfa` method.
+binary representation---you can read and write this format with
+:func:`flatgfa.load` and :meth:`flatgfa.FlatGFA.write_flatgfa`.
 
 .. _GFA: https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md
 .. _node depth: https://odgi.readthedocs.io/en/latest/rst/commands/odgi_depth.html
