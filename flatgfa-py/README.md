@@ -1,7 +1,7 @@
 # Python Bindings for FlatGFA
 
 This is a Python wrapper for the FlatGFA library.
-It is currently in a "proof of concept" state.
+Read [the API documentation][flatgfa-py-docs] for details about what it can do so far.
 
 To build it, first install [Maturin][]:
 
@@ -27,3 +27,4 @@ Or run the tests:
     pytest
 
 [maturin]: https://www.maturin.rs
+[flatgfa-py-docs]: https://cucapra.github.io/pollen/flatgfa/
