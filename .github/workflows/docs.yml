@@ -36,8 +36,10 @@ jobs:
       - name: Build flatgfa-py
         uses: PyO3/maturin-action@v1
         with:
-          command: develop
-          args: --manifest-path flatgfa-py/Cargo.toml
+          command: build
+          args: --out dist --manifest-path flatgfa-py/Cargo.toml
+      - name: Install flatgfa-py
+        run: pip install dist/flatgfa-*.whl
       - name: Build flatgfa-py docs
         run: |
           cd flatgfa-py/docs
