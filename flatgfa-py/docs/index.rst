@@ -23,7 +23,7 @@ Here's a quick example::
 This example computes the `node depth`_ for every segment in a graph.
 It starts by parsing a GFA text file, but FlatGFA also has its own efficient
 binary representation---you can read and write this format with
-:func:`flatgfa.load` and :meth:`flatgfa.FlatGFA.write_flatgfa`.
+:func:`load` and :meth:`FlatGFA.write_flatgfa`.
 
 .. _GFA: https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md
 .. _node depth: https://odgi.readthedocs.io/en/latest/rst/commands/odgi_depth.html
@@ -35,14 +35,33 @@ API Reference
 Loading Data
 ''''''''''''
 
-.. autofunction:: parse
+The FlatGFA library can both read and write files in two formats: the standard
+`GFA`_ text format, and its own efficient binary representation (called
+"FlatGFA" files). Each of these functions below return a :class:`FlatGFA`
+object. Parsing GFA text can take some time, but loading a binary FlatGFA file
+should be very fast.
 
-.. autofunction:: load
+.. autofunction:: parse
 
 .. autofunction:: parse_bytes
 
+.. autofunction:: load
+
 GFA Graphs
 ''''''''''
+
+The :class:`FlatGFA` class provides the entry point to access the data either
+loaded from a FlatGFA binary file or parsed from a GFA text file. Most
+importantly, you can iterate over the :class:`Segment`, :class:`Path`, and
+:class:`Link` objects that it contains. The :class:`FlatGFA` class exposes
+:class:`list`-like containers for each of these types::
+
+    for seg in graph.segments:
+        print(seg.name)
+    print(graph.segments[0].sequence())
+
+These containers support both iteration (like the ``for`` above) and random
+access (like ``graph.segments[0]`` above).
 
 .. autoclass:: FlatGFA
    :members:
@@ -50,13 +69,20 @@ GFA Graphs
 The GFA Data Model
 ''''''''''''''''''
 
+These classes represent the core data model for GFA graphs:
+:class:`Segment` for vertices in the graph,
+:class:`Path` for walks through the graph,
+and :class:`Link` for edges in the graph.
+The :class:`Handle` class is a segment--orientation pair: both paths and links
+traverse these handles.
+
 .. autoclass:: Segment
    :members:
 
-.. autoclass:: Link
+.. autoclass:: Path
    :members:
 
-.. autoclass:: Path
+.. autoclass:: Link
    :members:
 
 .. autoclass:: Handle
@@ -65,3 +91,21 @@ The GFA Data Model
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+Iteration
+'''''''''
+
+The FlatGFA library exposes special container classes to access the
+:class:`Segment`, :class:`Path`, and :class:`Link` objects that make up a GFA
+graph. These classes are meant to behave sort of like Python :class:`list`
+objects while supporting efficient iteration over FlatGFA's internal
+representation.
+
+.. autoclass:: SegmentList
+   :members:
+
+.. autoclass:: PathList
+   :members:
+
+.. autoclass:: LinkList
+   :members:

@@ -63,6 +63,10 @@ fn parse_bytes(bytes: &[u8]) -> PyFlatGFA {
 }
 
 /// Load a binary FlatGFA file.
+///
+/// This function should be fast to call because it does not actually read the file's data.
+/// It memory-maps the file so subsequent accesses will actually read the data "on demand."
+/// You can produce these files with :meth:`FlatGFA.write_flatgfa`.
 #[pyfunction]
 fn load(filename: &str) -> PyFlatGFA {
     PyFlatGFA(Arc::new(Store::load(filename)))
@@ -70,7 +74,7 @@ fn load(filename: &str) -> PyFlatGFA {
 
 #[pymethods]
 impl PyFlatGFA {
-    /// The segments (nodes) in the graph.
+    /// The segments (nodes) in the graph, as a :class:`SegmentList`.
     #[getter]
     fn segments(&self) -> SegmentList {
         SegmentList {
@@ -78,7 +82,7 @@ impl PyFlatGFA {
         }
     }
 
-    /// The paths in the graph.
+    /// The paths in the graph, as a :class:`PathList`.
     #[getter]
     fn paths(&self) -> PathList {
         PathList {
@@ -86,7 +90,7 @@ impl PyFlatGFA {
         }
     }
 
-    /// The links in the graph.
+    /// The links (edges) in the graph, as a :class:`LinkList`.
     #[getter]
     fn links(&self) -> LinkList {
         LinkList {
@@ -106,6 +110,8 @@ impl PyFlatGFA {
     }
 
     /// Write the graph as a binary FlatGFA file.
+    ///
+    /// You can read the resulting file with :func:`load`.
     fn write_flatgfa(&self, filename: &str) -> PyResult<()> {
         let gfa = self.0.view();
         let mut mmap = file::map_new_file(filename, file::size(&gfa) as u64);
@@ -118,13 +124,6 @@ impl PyFlatGFA {
 /// Generate the Python types for an iterable container of GFA objects.
 macro_rules! gen_container {
     ($type: ident, $field: ident, $pytype: ident, $list: ident, $iter: ident) => {
-        /// A sequence container for `$type`s.
-        #[pyclass]
-        #[pyo3(module = "flatgfa")]
-        struct $list {
-            store: Arc<Store>,
-        }
-
         #[pymethods]
         impl $list {
             fn __getitem__(&self, idx: u32) -> $pytype {
@@ -204,14 +203,14 @@ impl PySegment {
         PyBytes::new_bound(py, seq)
     }
 
-    /// The segment's name as declared in the GFA file.
+    /// The segment's name as declared in the GFA file, an `int`.
     #[getter]
     fn name(&self) -> usize {
         let seg = self.store.view().segs[self.id];
         seg.name
     }
 
-    /// The unique identifier for the segment.
+    /// The unique identifier for the segment, an `int`.
     #[getter]
     fn id(&self) -> u32 {
         self.id.into()
@@ -224,7 +223,7 @@ impl PySegment {
 
 #[pymethods]
 impl SegmentList {
-    /// Find a segment by its name, or return None if not found.
+    /// Find a segment by its name (an `int`), or return `None` if not found.
     fn find(&self, name: usize) -> Option<PySegment> {
         let gfa = self.store.view();
         let id = gfa.find_seg(name)?;
@@ -233,6 +232,13 @@ impl SegmentList {
             id,
         })
     }
+}
+
+/// A sequence of :class:`Segment` objects.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct SegmentList {
+    store: Arc<Store>,
 }
 
 /// A path in a GFA graph.
@@ -254,7 +260,7 @@ struct PyPath {
 
 #[pymethods]
 impl PyPath {
-    /// The unique identifier for the path.
+    /// The unique identifier for the path, an `int`.
     #[getter]
     fn id(&self) -> u32 {
         self.id.into()
@@ -288,9 +294,16 @@ impl PyPath {
     }
 }
 
+/// A sequence of :class:`Path` objects.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct PathList {
+    store: Arc<Store>,
+}
+
 #[pymethods]
 impl PathList {
-    /// Find a path by its name, or return None if not found.
+    /// Find a path by its name a (a `bytes` string), or return `None` if not found.
     fn find(&self, name: &[u8]) -> Option<PyPath> {
         let gfa = self.store.view();
         let id = gfa.find_path(name.as_ref())?;
@@ -302,6 +315,9 @@ impl PathList {
 }
 
 /// An oriented segment reference.
+///
+/// Because both paths and links connect *oriented* segments rather than the segments themselves,
+/// they use this class to distinguish between (for example) ``5+`` and ``5-``.
 #[pyclass(frozen)]
 #[pyo3(name = "Handle", module = "flatgfa")]
 struct PyHandle {
@@ -311,7 +327,7 @@ struct PyHandle {
 
 #[pymethods]
 impl PyHandle {
-    /// The segment ID.
+    /// The segment ID, an `int`.
     #[getter]
     fn seg_id(&self) -> u32 {
         self.handle.segment().into()
@@ -323,7 +339,7 @@ impl PyHandle {
         self.handle.orient() == flatgfa::Orientation::Forward
     }
 
-    /// The segment.
+    /// The segment, as a :class:`Segment` object.
     #[getter]
     fn segment(&self) -> PySegment {
         PySegment {
@@ -413,6 +429,13 @@ impl PyLink {
     }
 }
 
+/// A sequence of :class:`Link` objects.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct LinkList {
+    store: Arc<Store>,
+}
+
 #[pymodule]
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -424,5 +447,8 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPath>()?;
     m.add_class::<PyHandle>()?;
     m.add_class::<PyLink>()?;
+    m.add_class::<SegmentList>()?;
+    m.add_class::<PathList>()?;
+    m.add_class::<LinkList>()?;
     Ok(())
 }
