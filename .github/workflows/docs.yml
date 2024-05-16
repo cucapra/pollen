@@ -18,16 +18,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Set up and run Sphinx.
+      # Set up Sphinx.
       - uses: actions/setup-python@v5
         with:
             python-version: '3.12'
       - run: pip install Sphinx
       - name: "Sphinx problem matcher"
         uses: sphinx-doc/github-problem-matcher@master
+
+      # Docs for mygfa.
       - name: Build mygfa docs
         run: |
           cd mygfa/docs
+          make html
+
+      # Docs for flatgfa-py.
+      - name: Build flatgfa-py
+        uses: PyO3/maturin-action@v1
+        with:
+          command: develop
+          args: --manifest-path flatgfa-py/Cargo.toml
+      - name: Build flatgfa-py docs
+        run: |
+          cd flatgfa-py/docs
           make html
 
       # Create site.
@@ -35,6 +48,7 @@ jobs:
         run: |
           mkdir -p site
           cp -r mygfa/docs/_build/html site/mygfa
+          cp -r flatgfa-py/docs/_build/html site/flatgfa
       - name: Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
