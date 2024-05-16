@@ -13,6 +13,7 @@ classifiers = [
 
 [project.urls]
 repository = "https://github.com/cucapra/pollen"
+documentation = "https://cucapra.github.io/pollen/flatgfa/"
 
 [project.optional-dependencies]
 test = ["pytest"]
