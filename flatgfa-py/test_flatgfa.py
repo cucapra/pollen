@@ -122,3 +122,17 @@ def test_read_write_flatgfa(gfa, tmp_path):
     # And read them back, which should be very fast indeed.
     new_gfa = flatgfa.load(flatgfa_path)
     assert len(new_gfa.segments) == len(gfa.segments)
+
+
+def test_eq(gfa):
+    # The various data components are equatable.
+    assert gfa.segments[0] == gfa.segments[0]
+    assert gfa.segments[0] != gfa.segments[1]
+    assert gfa.paths[0] == gfa.paths[0]
+    assert gfa.paths[0] != gfa.paths[1]
+    assert gfa.links[0] == gfa.links[0]
+    assert gfa.links[0] != gfa.links[1]
+
+    # Including handles, which do not have their own identity.
+    assert gfa.links[1].from_ == gfa.links[2].from_
+    assert gfa.links[1].from_ != gfa.links[1].to
