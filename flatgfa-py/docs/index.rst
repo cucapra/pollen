@@ -1,6 +1,8 @@
 FlatGFA: An Efficient Pangenome Representation
 ==============================================
 
+.. py:module:: flatgfa
+
 `FlatGFA`_ is an efficient on-disk and in-memory way to represent emits
 pangenomic variation graphs. It can losslessly represent `GFA`_ files.
 Here's a quick example::
@@ -30,28 +32,35 @@ binary representation---you can read and write this format with
 API Reference
 -------------
 
-.. automodule:: flatgfa
+Loading Data
+''''''''''''
 
-    .. autofunction:: parse
+.. autofunction:: parse
 
-    .. autofunction:: load
+.. autofunction:: load
 
-    .. autofunction:: parse_bytes
+.. autofunction:: parse_bytes
 
-    .. autoclass:: FlatGFA
-       :members:
+GFA Graphs
+''''''''''
 
-    .. autoclass:: Segment
-       :members:
+.. autoclass:: FlatGFA
+   :members:
 
-    .. autoclass:: Link
-       :members:
+The GFA Data Model
+''''''''''''''''''
 
-    .. autoclass:: Path
-       :members:
+.. autoclass:: Segment
+   :members:
 
-    .. autoclass:: Handle
-       :members:
+.. autoclass:: Link
+   :members:
+
+.. autoclass:: Path
+   :members:
+
+.. autoclass:: Handle
+   :members:
 
 .. toctree::
    :maxdepth: 2
