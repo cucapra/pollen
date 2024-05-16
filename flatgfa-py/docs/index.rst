@@ -3,7 +3,7 @@ FlatGFA: An Efficient Pangenome Representation
 
 .. py:module:: flatgfa
 
-`FlatGFA`_ is an efficient on-disk and in-memory way to represent emits
+`FlatGFA`_ is an efficient on-disk and in-memory way to represent
 pangenomic variation graphs. It can losslessly represent `GFA`_ files.
 Here's a quick example::
 
@@ -25,9 +25,13 @@ It starts by parsing a GFA text file, but FlatGFA also has its own efficient
 binary representation---you can read and write this format with
 :func:`load` and :meth:`FlatGFA.write_flatgfa`.
 
+The library is on `PyPI`_, so you can get started by typing
+``pip install flatgfa``.
+
 .. _GFA: https://github.com/GFA-spec/GFA-spec/blob/master/GFA1.md
 .. _node depth: https://odgi.readthedocs.io/en/latest/rst/commands/odgi_depth.html
 .. _FlatGFA: https://github.com/cucapra/pollen/tree/main/flatgfa
+.. _PyPI: https://pypi.org/project/flatgfa/
 
 API Reference
 -------------
