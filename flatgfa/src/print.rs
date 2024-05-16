@@ -31,7 +31,7 @@ impl<'a> fmt::Display for flatgfa::Alignment<'a> {
 }
 
 /// A wrapper for displaying components from FlatGFA.
-struct Display<'a, T>(&'a flatgfa::FlatGFA<'a>, T);
+pub struct Display<'a, T>(pub &'a flatgfa::FlatGFA<'a>, pub T);
 
 impl<'a> fmt::Display for Display<'a, flatgfa::Handle> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -59,7 +59,7 @@ impl<'a> fmt::Display for Display<'a, &flatgfa::Path> {
                 write!(f, ",{}", self.0.get_alignment(*overlap))?;
             }
         }
-        writeln!(f)
+        Ok(())
     }
 }
 
@@ -69,7 +69,7 @@ impl<'a> fmt::Display for Display<'a, &flatgfa::Link> {
         let from_name = self.0.get_handle_seg(from).name;
         let to = self.1.to;
         let to_name = self.0.get_handle_seg(to).name;
-        writeln!(
+        write!(
             f,
             "L\t{}\t{}\t{}\t{}\t{}",
             from_name,
@@ -88,7 +88,7 @@ impl<'a> fmt::Display for Display<'a, &flatgfa::Segment> {
         if !self.1.optional.is_empty() {
             write!(f, "\t{}", self.0.get_optional_data(self.1))?;
         }
-        writeln!(f)
+        Ok(())
     }
 }
 
@@ -106,15 +106,15 @@ fn write_preserved(gfa: &flatgfa::FlatGFA, f: &mut fmt::Formatter<'_>) -> fmt::R
             }
             flatgfa::LineKind::Segment => {
                 let seg = seg_iter.next().expect("too few segments");
-                write!(f, "{}", Display(gfa, seg))?;
+                writeln!(f, "{}", Display(gfa, seg))?;
             }
             flatgfa::LineKind::Path => {
                 let path = path_iter.next().expect("too few paths");
-                write!(f, "{}", Display(gfa, path))?;
+                writeln!(f, "{}", Display(gfa, path))?;
             }
             flatgfa::LineKind::Link => {
                 let link = link_iter.next().expect("too few links");
-                write!(f, "{}", Display(gfa, link))?;
+                writeln!(f, "{}", Display(gfa, link))?;
             }
         }
     }

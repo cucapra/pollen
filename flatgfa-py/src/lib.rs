@@ -1,5 +1,5 @@
 use flatgfa::pool::{Id, Span};
-use flatgfa::{self, file, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use std::io::Write;
@@ -219,6 +219,20 @@ impl PySegment {
     fn __repr__(&self) -> String {
         format!("<Segment {}>", u32::from(self.id))
     }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        let seg = gfa.segs[self.id];
+        format!("{}", print::Display(&gfa, &seg))
+    }
+
+    fn __eq__(&self, other: &PySegment) -> bool {
+        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+    }
+
+    fn __hash__(&self) -> isize {
+        u32::from(self.id) as isize
+    }
 }
 
 #[pymethods]
@@ -266,17 +280,31 @@ impl PyPath {
         self.id.into()
     }
 
-    /// Get the name of this path as declared in the GFA file.
+    /// Get the name of this path as declared in the GFA file, as a string.
     #[getter]
-    fn name<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+    fn name(&self) -> String {
         let gfa = self.store.view();
         let path = &gfa.paths[self.id];
         let name = gfa.get_path_name(path);
-        PyBytes::new_bound(py, name)
+        name.try_into().unwrap()
     }
 
     fn __repr__(&self) -> String {
         format!("<Path {}>", u32::from(self.id))
+    }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        let path = gfa.paths[self.id];
+        format!("{}", print::Display(&gfa, &path))
+    }
+
+    fn __eq__(&self, other: &PyPath) -> bool {
+        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+    }
+
+    fn __hash__(&self) -> isize {
+        u32::from(self.id) as isize
     }
 
     fn __iter__(&self) -> StepIter {
@@ -303,8 +331,8 @@ struct PathList {
 
 #[pymethods]
 impl PathList {
-    /// Find a path by its name a (a `bytes` string), or return `None` if not found.
-    fn find(&self, name: &[u8]) -> Option<PyPath> {
+    /// Find a path by its name (a string), or return `None` if not found.
+    fn find(&self, name: &str) -> Option<PyPath> {
         let gfa = self.store.view();
         let id = gfa.find_path(name.as_ref())?;
         Some(PyPath {
@@ -354,6 +382,19 @@ impl PyHandle {
             u32::from(self.handle.segment()),
             self.handle.orient()
         )
+    }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        format!("{}", print::Display(&gfa, self.handle))
+    }
+
+    fn __eq__(&self, other: &PyHandle) -> bool {
+        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.handle == other.handle
+    }
+
+    fn __hash__(&self) -> isize {
+        (u32::from(self.handle.segment()) as isize) ^ ((self.handle.orient() as isize) << 16)
     }
 }
 
@@ -408,6 +449,20 @@ impl PyLink {
 
     fn __repr__(&self) -> String {
         format!("<Link {}>", u32::from(self.id))
+    }
+
+    fn __str__(&self) -> String {
+        let gfa = self.store.view();
+        let link = gfa.links[self.id];
+        format!("{}", print::Display(&gfa, &link))
+    }
+
+    fn __eq__(&self, other: &PyLink) -> bool {
+        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+    }
+
+    fn __hash__(&self) -> isize {
+        u32::from(self.id) as isize
     }
 
     /// The edge's source handle.

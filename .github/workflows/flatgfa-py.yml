@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          pip install flatgfa --find-links dist --force-reinstall
+          pip install ./dist/flatgfa*.whl
           pip install pytest
           cd flatgfa-py && pytest
 
@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          pip install flatgfa --find-links dist --force-reinstall
+          pip install ./dist/flatgfa*.whl
           pip install pytest
           cd flatgfa-py && pytest
 
@@ -114,7 +114,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          pip install flatgfa --find-links dist --force-reinstall
+          pip install ./dist/flatgfa*.whl
           pip install pytest
           cd flatgfa-py && pytest
 
