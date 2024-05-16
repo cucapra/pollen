@@ -80,6 +80,8 @@ and :class:`Link` for edges in the graph.
 The :class:`Handle` class is a segment--orientation pair: both paths and links
 traverse these handles.
 
+To get a GFA text representation of any of these objects, use ``str(obj)``.
+
 .. autoclass:: Segment
    :members:
 
@@ -104,6 +106,9 @@ The FlatGFA library exposes special container classes to access the
 graph. These classes are meant to behave sort of like Python :class:`list`
 objects while supporting efficient iteration over FlatGFA's internal
 representation.
+
+All of these container objects support subscripting (like
+``graph.segments[i]`` where ``i`` is an integer index) and iteration.
 
 .. autoclass:: SegmentList
    :members:
