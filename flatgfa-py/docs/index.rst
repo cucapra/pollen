@@ -67,6 +67,10 @@ importantly, you can iterate over the :class:`Segment`, :class:`Path`, and
 These containers support both iteration (like the ``for`` above) and random
 access (like ``graph.segments[0]`` above).
 
+You can also write graphs out to disk using :meth:`FlatGFA.write_gfa`
+(producing a standard GFA text file) and :meth:`FlatGFA.write_flatgfa` (our
+binary format). If you just want a GFA string, use `str(graph)`.
+
 .. autoclass:: FlatGFA
    :members:
 
@@ -77,8 +81,19 @@ These classes represent the core data model for GFA graphs:
 :class:`Segment` for vertices in the graph,
 :class:`Path` for walks through the graph,
 and :class:`Link` for edges in the graph.
+Internally, all of these objects only contain references to the underlying
+data stored in a :class:`FlatGFA`, so they are very small, but accessing any
+of the associated data (such as the nucleotide sequence for a segment) require
+further lookups.
+
 The :class:`Handle` class is a segment--orientation pair: both paths and links
 traverse these handles.
+
+To get a GFA text representation of any of these objects, use ``str(obj)``.
+All these objects are equatable (so you can compare them with ``==``) and
+hashable (so you can store them in dicts and sets). This reflects equality on
+the underlying references to the data store, so two objects are equal if they
+refer to the same index in the same :class:`FlatGFA`.
 
 .. autoclass:: Segment
    :members:
@@ -104,6 +119,9 @@ The FlatGFA library exposes special container classes to access the
 graph. These classes are meant to behave sort of like Python :class:`list`
 objects while supporting efficient iteration over FlatGFA's internal
 representation.
+
+All of these container objects support subscripting (like
+``graph.segments[i]`` where ``i`` is an integer index) and iteration.
 
 .. autoclass:: SegmentList
    :members:
