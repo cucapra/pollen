@@ -1,9 +1,3 @@
-# Make mygfa module available to autodoc.
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(".."))
-
 project = "mygfa"
 copyright = "2024, Capra Lab"
 author = "Capra Lab"
