@@ -238,6 +238,13 @@ impl SegmentList {
 /// A path in a GFA graph.
 ///
 /// Paths are walks through the GFA graph, where each step is an oriented segment.
+/// This class is an iterable over the segments in the path, so use something
+/// like this::
+///
+///     for step in path:
+///         print(step.segment.name)
+///
+/// to walk through a path's steps.
 #[pyclass(frozen)]
 #[pyo3(name = "Path", module = "flatgfa")]
 struct PyPath {
