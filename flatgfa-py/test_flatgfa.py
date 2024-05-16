@@ -54,7 +54,7 @@ def test_paths(gfa):
 
     # Individual paths expose their name (a bytestring).
     path = gfa.paths[0]
-    assert path.name == b"one"
+    assert path.name == "one"
 
     # GFA representation.
     assert str(path) == "P	one	1+,2+,4-	*"
@@ -62,9 +62,9 @@ def test_paths(gfa):
 
 def test_paths_find(gfa):
     # There is a method to find a path by its name.
-    path = gfa.paths.find(b"two")
+    path = gfa.paths.find("two")
     assert path.id == 1
-    assert path.name == b"two"
+    assert path.name == "two"
 
 
 def test_path_steps(gfa):
