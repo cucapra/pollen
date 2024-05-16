@@ -229,6 +229,10 @@ impl PySegment {
     fn __eq__(&self, other: &PySegment) -> bool {
         Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
     }
+
+    fn __hash__(&self) -> isize {
+        u32::from(self.id) as isize
+    }
 }
 
 #[pymethods]
@@ -297,6 +301,10 @@ impl PyPath {
 
     fn __eq__(&self, other: &PyPath) -> bool {
         Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+    }
+
+    fn __hash__(&self) -> isize {
+        u32::from(self.id) as isize
     }
 
     fn __iter__(&self) -> StepIter {
@@ -384,6 +392,10 @@ impl PyHandle {
     fn __eq__(&self, other: &PyHandle) -> bool {
         Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.handle == other.handle
     }
+
+    fn __hash__(&self) -> isize {
+        (u32::from(self.handle.segment()) as isize) ^ ((self.handle.orient() as isize) << 16)
+    }
 }
 
 /// An iterator over the steps in a path.
@@ -447,6 +459,10 @@ impl PyLink {
 
     fn __eq__(&self, other: &PyLink) -> bool {
         Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+    }
+
+    fn __hash__(&self) -> isize {
+        u32::from(self.id) as isize
     }
 
     /// The edge's source handle.

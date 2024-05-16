@@ -90,9 +90,10 @@ The :class:`Handle` class is a segment--orientation pair: both paths and links
 traverse these handles.
 
 To get a GFA text representation of any of these objects, use ``str(obj)``.
-All these objects are equatable (so you can compare them with ``==``); this
-uses equality on the underlying references to the data store, so two objects
-are equal if they refer to the same index in the same :class:`FlatGFA`.
+All these objects are equatable (so you can compare them with ``==``) and
+hashable (so you can store them in dicts and sets). This reflects equality on
+the underlying references to the data store, so two objects are equal if they
+refer to the same index in the same :class:`FlatGFA`.
 
 .. autoclass:: Segment
    :members:

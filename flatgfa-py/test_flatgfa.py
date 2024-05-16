@@ -136,3 +136,17 @@ def test_eq(gfa):
     # Including handles, which do not have their own identity.
     assert gfa.links[1].from_ == gfa.links[2].from_
     assert gfa.links[1].from_ != gfa.links[1].to
+
+
+def test_hash(gfa):
+    # The objects are also hashable, so you can put them in dicts and sets.
+    d = {
+        gfa.segments[0]: 'foo',
+        gfa.paths[0]: 'bar',
+        gfa.links[0]: 'baz',
+        gfa.links[1].from_: 'qux',
+    }
+    assert d[gfa.segments[0]] == 'foo'
+    assert d[gfa.paths[0]] == 'bar'
+    assert d[gfa.links[0]] == 'baz'
+    assert d[gfa.links[1].from_] == 'qux'
