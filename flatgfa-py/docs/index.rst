@@ -67,6 +67,10 @@ importantly, you can iterate over the :class:`Segment`, :class:`Path`, and
 These containers support both iteration (like the ``for`` above) and random
 access (like ``graph.segments[0]`` above).
 
+You can also write graphs out to disk using :meth:`FlatGFA.write_gfa`
+(producing a standard GFA text file) and :meth:`FlatGFA.write_flatgfa` (our
+binary format). If you just want a GFA string, use `str(graph)`.
+
 .. autoclass:: FlatGFA
    :members:
 
