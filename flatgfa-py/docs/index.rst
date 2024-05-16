@@ -36,6 +36,8 @@ API Reference
 
     .. autofunction:: load
 
+    .. autofunction:: parse_bytes
+
     .. autoclass:: FlatGFA
        :members:
 
