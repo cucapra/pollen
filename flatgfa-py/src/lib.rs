@@ -239,7 +239,7 @@ impl SegmentList {
 ///
 /// Paths are walks through the GFA graph, where each step is an oriented segment.
 #[pyclass(frozen)]
-#[pyo3(name = "Segment", module = "flatgfa")]
+#[pyo3(name = "Path", module = "flatgfa")]
 struct PyPath {
     store: Arc<Store>,
     id: Id<flatgfa::Path>,
@@ -367,7 +367,7 @@ impl StepIter {
 /// A link in a GFA graph.
 ///
 /// Links are directed edges between oriented segments. The source and sink are both
-/// `Handle`s, i.e., the "forward" or "backward" direction of a given segment.
+/// `Handle` objects, i.e., the "forward" or "backward" direction of a given segment.
 #[pyclass(frozen)]
 #[pyo3(name = "Link", module = "flatgfa")]
 struct PyLink {
