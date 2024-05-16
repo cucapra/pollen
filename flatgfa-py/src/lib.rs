@@ -272,13 +272,13 @@ impl PyPath {
         self.id.into()
     }
 
-    /// Get the name of this path as declared in the GFA file.
+    /// Get the name of this path as declared in the GFA file, as a string.
     #[getter]
-    fn name<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
+    fn name(&self) -> String {
         let gfa = self.store.view();
         let path = &gfa.paths[self.id];
         let name = gfa.get_path_name(path);
-        PyBytes::new_bound(py, name)
+        name.try_into().unwrap()
     }
 
     fn __repr__(&self) -> String {
@@ -315,8 +315,8 @@ struct PathList {
 
 #[pymethods]
 impl PathList {
-    /// Find a path by its name a (a `bytes` string), or return `None` if not found.
-    fn find(&self, name: &[u8]) -> Option<PyPath> {
+    /// Find a path by its name (a string), or return `None` if not found.
+    fn find(&self, name: &str) -> Option<PyPath> {
         let gfa = self.store.view();
         let id = gfa.find_path(name.as_ref())?;
         Some(PyPath {
