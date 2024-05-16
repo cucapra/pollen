@@ -81,10 +81,18 @@ These classes represent the core data model for GFA graphs:
 :class:`Segment` for vertices in the graph,
 :class:`Path` for walks through the graph,
 and :class:`Link` for edges in the graph.
+Internally, all of these objects only contain references to the underlying
+data stored in a :class:`FlatGFA`, so they are very small, but accessing any
+of the associated data (such as the nucleotide sequence for a segment) require
+further lookups.
+
 The :class:`Handle` class is a segment--orientation pair: both paths and links
 traverse these handles.
 
 To get a GFA text representation of any of these objects, use ``str(obj)``.
+All these objects are equatable (so you can compare them with ``==``); this
+uses equality on the underlying references to the data store, so two objects
+are equal if they refer to the same index in the same :class:`FlatGFA`.
 
 .. autoclass:: Segment
    :members:

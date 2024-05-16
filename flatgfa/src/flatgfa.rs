@@ -156,7 +156,7 @@ impl FromStr for Orientation {
 /// A Handle refers to the forward (+) or backward (-) orientation for a given segment.
 /// So, logically, it consists of a pair of a segment reference (usize) and an
 /// orientation (1 bit). We pack the two values into a single word.
-#[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
+#[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(packed)]
 pub struct Handle(u32);
 
