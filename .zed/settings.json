@@ -1,0 +1,12 @@
+{
+  "language_overrides": {
+    "Python": {
+      "formatter": {
+        "external": {
+          "command": "bash",
+          "arguments": ["-c", "ruff format --stdin-filename {buffer_path}"]
+        }
+      }
+    }
+  }
+}
