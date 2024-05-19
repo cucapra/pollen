@@ -14,10 +14,12 @@ cmd.flatgfa = '{fgfa} -i {files[flatgfa]} paths'
 cmd.slow_odgi = '{slow_odgi} paths {files[gfa]}'
 
 [modes.convert]
+convert = false
 cmd.odgi = '{odgi} build -g {files[gfa]} -o {files[og]}'
 cmd.flatgfa = '{fgfa} -I {files[gfa]} -o {files[flatgfa]}'
 
 [modes.roundtrip]
+convert = false
 cmd.flatgfa = '{fgfa} -I {files[gfa]}'
 cmd.slow_odgi = '{slow_odgi} norm {files[gfa]}'
 cmd.odgi = '{odgi} view -g -i {files[gfa]}'
