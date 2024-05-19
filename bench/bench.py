@@ -195,6 +195,16 @@ class Runner:
         commands = {k: commands[k] for k in tools}
         yield from self.compare("convert", name, commands)
 
+    def compare_roundtrip(self, name, tools):
+        """Compare round-trip GFA-to-GFA parsing/printing."""
+        commands = {
+            "flatgfa": f'{self.fgfa} -I {quote(graph_path(name, "gfa"))}',
+            "slow_odgi": f'{self.slow_odgi} norm {quote(graph_path(name, "gfa"))}',
+            "odgi": f'{self.odgi} view -g -i {quote(graph_path(name, "gfa"))}',
+        }
+        commands = {k: commands[k] for k in tools}
+        yield from self.compare("roundtrip", name, commands)
+
 
 def run_bench(graph_set, mode, tools, out_csv):
     runner = Runner.default()
@@ -220,6 +230,8 @@ def run_bench(graph_set, mode, tools, out_csv):
                     res = runner.compare_paths(graph, tools)
                 case "convert":
                     res = runner.compare_convert(graph, tools)
+                case "roundtrip":
+                    res = runner.compare_roundtrip(graph, tools)
                 case _:
                     assert False, "unknown mode"
             for row in res:
@@ -248,6 +260,7 @@ def bench_main():
         or {
             "paths": ALL_TOOLS,
             "convert": ["odgi", "flatgfa"],
+            "roundtrip": ALL_TOOLS,
         }[args.mode]
     )
     for tool in tools:
