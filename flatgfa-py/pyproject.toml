@@ -24,7 +24,3 @@ build-backend = "maturin"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
-
-[tool.pyright]
-venvPath = ".."
-venv = ".venv"
