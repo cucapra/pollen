@@ -233,6 +233,12 @@ impl PySegment {
     fn __hash__(&self) -> isize {
         u32::from(self.id) as isize
     }
+
+    fn __len__(&self) -> usize {
+        let gfa = self.store.view();
+        let seg = gfa.segs[self.id];
+        seg.len()
+    }
 }
 
 #[pymethods]
