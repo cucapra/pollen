@@ -30,7 +30,7 @@ def summary():
             if mean > 80:
                 mins = int(mean / 60)
                 secs = int(mean % 60)
-                print(f"  {cmd}: {mins}m{secs}s ± {stddev:.1f}", end='')
+                print(f"  {cmd}: {mins}m{secs}s ± {stddev:.1f}", end="")
             else:
                 if mean < 0.2:
                     mean *= 1000
@@ -38,7 +38,7 @@ def summary():
                     unit = "ms"
                 else:
                     unit = "s"
-                print(f"  {cmd}: {mean:.1f} ± {stddev:.1f} {unit}", end='')
+                print(f"  {cmd}: {mean:.1f} ± {stddev:.1f} {unit}", end="")
 
             print(f" ({ratio:.1f}× {baseline})")
 
