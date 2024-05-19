@@ -1,7 +1,7 @@
 try:
     import tomllib
 except ImportError:
-    import tomli as tomllib
+    import tomli as tomllib  # type:ignore
 import os
 import subprocess
 from subprocess import PIPE
@@ -15,13 +15,13 @@ import datetime
 import logging
 from contextlib import contextmanager
 import time
+import platform
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 RESULTS_DIR = os.path.join(BASE, "results")
-ALL_TOOLS = ["slow_odgi", "odgi", "flatgfa"]
 DECOMPRESS = {
     ".gz": ["gunzip"],
     ".zst": ["zstd", "-d"],
@@ -68,11 +68,19 @@ class HyperfineResult:
 def hyperfine(cmds):
     """Run Hyperfine to compare the commands."""
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        hf_cmd = [
+            "hyperfine",
+            "--export-json",
+            tmp.name,
+            "--shell=none",
+            "--warmup=1",
+            "--min-runs=3",
+            "--max-runs=16",
+        ]
+        hf_cmd += cmds
+
         tmp.close()
-        subprocess.run(
-            ["hyperfine", "-N", "-w", "1", "--export-json", tmp.name] + cmds,
-            check=True,
-        )
+        subprocess.run(hf_cmd, check=True)
         with open(tmp.name, "rb") as f:
             data = json.load(f)
             return [HyperfineResult.from_json(r) for r in data["results"]]
@@ -92,6 +100,7 @@ def fetch_file(dest, url):
         with open(dest, "wb") as f:
             curl = subprocess.Popen(["curl", "-L", url], stdout=PIPE)
             decomp = subprocess.Popen(DECOMPRESS[ext], stdin=curl.stdout, stdout=f)
+            assert curl.stdout is not None
             curl.stdout.close()
             check_wait(decomp)
     else:
@@ -121,6 +130,17 @@ class Runner:
             config = tomllib.load(f)
         return cls(graphs, config)
 
+    def _cmd_vals(self, graph):
+        """Get a dictionary of values to use when formatting a command."""
+        return {
+            "files": {
+                "gfa": quote(graph_path(graph, "gfa")),
+                "og": quote(graph_path(graph, "og")),
+                "flatgfa": quote(graph_path(graph, "flatgfa")),
+            },
+            **self.config["tools"],
+        }
+
     def fetch_graph(self, name):
         """Fetch a single graph, given by its <suite>.<graph> name."""
         suite, key = name.split(".")
@@ -135,29 +155,34 @@ class Runner:
         self.log.info("fetching graph %s", name)
         fetch_file(dest, url)
 
-    def odgi_convert(self, name):
-        """Convert a GFA to odgi's `.og` format."""
-        og = graph_path(name, "og")
-        if os.path.exists(og):
-            self.log.info("og exists for %s", name)
+    def convert(self, graph, tool, ext):
+        """Convert a graph to a new format, unless the file already exists."""
+        dest = graph_path(graph, ext)
+        if os.path.exists(dest):
+            self.log.info("%s already exists for %s", ext, graph)
             return
 
-        gfa = graph_path(name, "gfa")
-        self.log.info("converting %s to og", name)
+        self.log.info("converting %s to %s", graph, ext)
+        cmd = self.config["modes"]["convert"]["cmd"][tool].format(
+            **self._cmd_vals(graph)
+        )
         with logtime(self.log):
-            subprocess.run([self.odgi, "build", "-g", gfa, "-o", og])
+            subprocess.run(cmd, shell=True)
 
-    def flatgfa_convert(self, name):
-        """Convert a GFA to the FlatGFA format."""
-        flatgfa = graph_path(name, "flatgfa")
-        if os.path.exists(flatgfa):
-            self.log.info("flatgfa exists for %s", name)
-            return
+    def prepare_files(self, graph, mode, tools):
+        """Ensure that all the input files are ready for a benchmarking run.
 
-        gfa = graph_path(name, "gfa")
-        self.log.info("converting %s to flatgfa", name)
-        with logtime(self.log):
-            subprocess.run([self.fgfa, "-I", gfa, "-o", flatgfa])
+        We first fetch the graph. Then, if the mode requires it, we convert the graph to the
+        necessary formats for `tools`. Each step is skipped if the files already exist.
+        """
+        self.fetch_graph(graph)
+        if self.config["modes"][mode].get("convert", True):
+            for tool in tools:
+                match tool:
+                    case "odgi":
+                        self.convert(graph, "odgi", "og")
+                    case "flatgfa":
+                        self.convert(graph, "flatgfa", "flatgfa")
 
     def compare(self, mode, graph, commands):
         """Run a Hyperfine comparison and produce CSV lines for the results.
@@ -176,24 +201,14 @@ class Runner:
                 "n": res.count,
             }
 
-    def compare_paths(self, name, tools):
-        """Compare odgi and FlatGFA implementations of path-name extraction."""
+    def compare_mode(self, mode, graph, tools):
+        """Compare a mode across several tools for a single graph."""
+        mode_info = self.config["modes"][mode]
+        subst = self._cmd_vals(graph)
         commands = {
-            "odgi": f'{self.odgi} paths -i {quote(graph_path(name, "og"))} -L',
-            "flatgfa": f'{self.fgfa} -i {quote(graph_path(name, "flatgfa"))} paths',
-            "slow_odgi": f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}',
+            k: v.format(**subst) for k, v in mode_info["cmd"].items() if k in tools
         }
-        commands = {k: commands[k] for k in tools}
-        yield from self.compare("paths", name, commands)
-
-    def compare_convert(self, name, tools):
-        """Compare conversion time from GFA to specialized file formats."""
-        commands = {
-            "odgi": f'{self.odgi} build -g {quote(graph_path(name, "gfa"))} -o {quote(graph_path(name, "og"))}',
-            "flatgfa": f'{self.fgfa} -I {quote(graph_path(name, "gfa"))} -o {quote(graph_path(name, "flatgfa"))}',
-        }
-        commands = {k: commands[k] for k in tools}
-        yield from self.compare("convert", name, commands)
+        yield from self.compare(mode, graph, commands)
 
 
 def run_bench(graph_set, mode, tools, out_csv):
@@ -202,12 +217,18 @@ def run_bench(graph_set, mode, tools, out_csv):
     # The input graphs we'll be using to do the comparison.
     graph_names = runner.config["graph_sets"][graph_set]
 
+    # Which tools are we comparing?
+    if tools:
+        # Check that specified tools are supported.
+        for tool in tools:
+            assert tool in runner.config["modes"][mode]["cmd"], f"unknown tool {tool}"
+    else:
+        # Use all supported tools by deefault.
+        tools = list(runner.config["modes"][mode]["cmd"].keys())
+
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     for graph in graph_names:
-        runner.fetch_graph(graph)
-        if mode != "convert":
-            runner.odgi_convert(graph)
-            runner.flatgfa_convert(graph)
+        runner.prepare_files(graph, mode, tools)
 
     runner.log.debug("writing results to %s", out_csv)
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
@@ -215,20 +236,16 @@ def run_bench(graph_set, mode, tools, out_csv):
         writer = csv.DictWriter(f, ["graph", "cmd", "mean", "stddev", "n"])
         writer.writeheader()
         for graph in graph_names:
-            match mode:
-                case "paths":
-                    res = runner.compare_paths(graph, tools)
-                case "convert":
-                    res = runner.compare_convert(graph, tools)
-                case _:
-                    assert False, "unknown mode"
+            assert mode in runner.config["modes"], "unknown mode"
+            res = runner.compare_mode(mode, graph, tools)
             for row in res:
                 writer.writerow(row)
 
 
 def gen_csv_name(graph_set, mode):
+    host = platform.node().split(".")[0]
     ts = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S.%f")
-    return os.path.join(RESULTS_DIR, f"{mode}-{graph_set}-{ts}.csv")
+    return os.path.join(RESULTS_DIR, f"{mode}-{graph_set}-{host}-{ts}.csv")
 
 
 def bench_main():
@@ -242,21 +259,10 @@ def bench_main():
 
     args = parser.parse_args()
 
-    # Which tools are we comparing?
-    tools = (
-        args.tool
-        or {
-            "paths": ALL_TOOLS,
-            "convert": ["odgi", "flatgfa"],
-        }[args.mode]
-    )
-    for tool in tools:
-        assert tool in ALL_TOOLS, "unknown tool name"
-
     run_bench(
         graph_set=args.graph_set,
         mode=args.mode,
-        tools=tools,
+        tools=args.tool,
         out_csv=args.output or gen_csv_name(args.graph_set, args.mode),
     )
 
