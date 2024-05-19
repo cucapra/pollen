@@ -220,6 +220,11 @@ def run_bench(graph_set, mode, tools, out_csv):
     # The input graphs we'll be using to do the comparison.
     graph_names = runner.config["graph_sets"][graph_set]
 
+    # Which tools are we comparing?
+    tools = tools or runner.config["modes"][mode]["tools"]
+    for tool in tools:
+        assert tool in ALL_TOOLS, "unknown tool name"
+
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     for graph in graph_names:
         runner.fetch_graph(graph)
@@ -263,22 +268,10 @@ def bench_main():
 
     args = parser.parse_args()
 
-    # Which tools are we comparing?
-    tools = (
-        args.tool
-        or {
-            "paths": ALL_TOOLS,
-            "convert": ["odgi", "flatgfa"],
-            "roundtrip": ALL_TOOLS,
-        }[args.mode]
-    )
-    for tool in tools:
-        assert tool in ALL_TOOLS, "unknown tool name"
-
     run_bench(
         graph_set=args.graph_set,
         mode=args.mode,
-        tools=tools,
+        tools=args.tool,
         out_csv=args.output or gen_csv_name(args.graph_set, args.mode),
     )
 
