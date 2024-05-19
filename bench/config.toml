@@ -9,18 +9,15 @@ mini = ["test.lpa", "test.chr6c4", "hprc.chrM"]
 med = ["hprc.chr20", "hprc.chrX", "1000gont.chr16"]
 
 [modes.paths]
-tools = ["slow_odgi", "odgi", "flatgfa"]
 cmd.odgi = '{odgi} paths -i {files[og]} -L'
 cmd.flatgfa = '{fgfa} -i {files[flatgfa]} paths'
 cmd.slow_odgi = '{slow_odgi} paths {files[gfa]}'
 
 [modes.convert]
-tools = ["odgi", "flatgfa"]
 cmd.odgi = '{odgi} build -g {files[gfa]} -o {files[og]}'
 cmd.flatgfa = '{fgfa} -I {files[gfa]} -o {files[flatgfa]}'
 
 [modes.roundtrip]
-tools = ["slow_odgi", "odgi", "flatgfa"]
 cmd.flatgfa = '{fgfa} -I {files[gfa]}'
 cmd.slow_odgi = '{slow_odgi} norm {files[gfa]}'
 cmd.odgi = '{odgi} view -g -i {files[gfa]}'

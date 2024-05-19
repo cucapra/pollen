@@ -201,7 +201,7 @@ def run_bench(graph_set, mode, tools, out_csv):
     graph_names = runner.config["graph_sets"][graph_set]
 
     # Which tools are we comparing?
-    tools = tools or runner.config["modes"][mode]["tools"]
+    tools = tools or list(runner.config["modes"][mode]["cmd"].keys())
     for tool in tools:
         assert tool in ALL_TOOLS, "unknown tool name"
 
