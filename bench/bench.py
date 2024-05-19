@@ -1,7 +1,7 @@
 try:
     import tomllib
 except ImportError:
-    import tomli as tomllib
+    import tomli as tomllib  # type:ignore
 import os
 import subprocess
 from subprocess import PIPE
@@ -92,6 +92,7 @@ def fetch_file(dest, url):
         with open(dest, "wb") as f:
             curl = subprocess.Popen(["curl", "-L", url], stdout=PIPE)
             decomp = subprocess.Popen(DECOMPRESS[ext], stdin=curl.stdout, stdout=f)
+            assert curl.stdout is not None
             curl.stdout.close()
             check_wait(decomp)
     else:
