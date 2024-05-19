@@ -316,6 +316,16 @@ impl PyPath {
         }
     }
 
+    fn __getitem__(&self, idx: usize) -> PyHandle {
+        let gfa = self.store.view();
+        let path = gfa.paths[self.id];
+        let handle = gfa.steps[path.steps][idx];
+        PyHandle {
+            store: self.store.clone(),
+            handle,
+        }
+    }
+
     fn __len__(&self) -> usize {
         let path = self.store.view().paths[self.id];
         path.steps.len()

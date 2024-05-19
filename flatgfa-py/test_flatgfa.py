@@ -1,8 +1,7 @@
 import pytest
 import flatgfa
 
-TINY_GFA = b"""
-H	VN:Z:1.0
+TINY_GFA = b"""H	VN:Z:1.0
 S	1	CAAATAAG
 S	2	AAATTTTCTGGAGTTCTAT
 S	3	TTG
@@ -13,9 +12,7 @@ L	1	+	2	+	0M
 L	2	+	4	-	0M
 L	2	+	3	+	0M
 L	3	+	4	-	0M
-"""[
-    1:
-]
+"""
 
 
 @pytest.fixture
@@ -71,7 +68,8 @@ def test_path_steps(gfa):
     # When you get a path, the path itself acts as a list of steps (handles).
     path = gfa.paths[1]
     assert len(path) == 4
-    step = list(path)[0]
+    assert len(list(path)) == 4
+    step = path[0]
 
     # A step (handle) is a reference to a segment and an orientation.
     assert step.segment.name == 1
