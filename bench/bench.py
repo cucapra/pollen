@@ -176,25 +176,6 @@ class Runner:
                 "n": res.count,
             }
 
-    def compare_paths(self, name, tools):
-        """Compare odgi and FlatGFA implementations of path-name extraction."""
-        commands = {
-            "odgi": f'{self.odgi} paths -i {quote(graph_path(name, "og"))} -L',
-            "flatgfa": f'{self.fgfa} -i {quote(graph_path(name, "flatgfa"))} paths',
-            "slow_odgi": f'{self.slow_odgi} paths {quote(graph_path(name, "gfa"))}',
-        }
-        commands = {k: commands[k] for k in tools}
-        yield from self.compare("paths", name, commands)
-
-    def compare_convert(self, name, tools):
-        """Compare conversion time from GFA to specialized file formats."""
-        commands = {
-            "odgi": f'{self.odgi} build -g {quote(graph_path(name, "gfa"))} -o {quote(graph_path(name, "og"))}',
-            "flatgfa": f'{self.fgfa} -I {quote(graph_path(name, "gfa"))} -o {quote(graph_path(name, "flatgfa"))}',
-        }
-        commands = {k: commands[k] for k in tools}
-        yield from self.compare("convert", name, commands)
-
     def compare_mode(self, mode, graph, tools):
         """Compare a mode across several tools for a single graph."""
         mode_info = self.config["modes"][mode]
@@ -238,16 +219,8 @@ def run_bench(graph_set, mode, tools, out_csv):
         writer = csv.DictWriter(f, ["graph", "cmd", "mean", "stddev", "n"])
         writer.writeheader()
         for graph in graph_names:
-            if mode in runner.config["modes"]:
-                res = runner.compare_mode(mode, graph, tools)
-            else:
-                match mode:
-                    case "paths":
-                        res = runner.compare_paths(graph, tools)
-                    case "convert":
-                        res = runner.compare_convert(graph, tools)
-                    case _:
-                        assert False, "unknown mode"
+            assert mode in runner.config["modes"], "unknown mode"
+            res = runner.compare_mode(mode, graph, tools)
             for row in res:
                 writer.writerow(row)
 
