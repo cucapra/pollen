@@ -28,6 +28,7 @@ def test_segs(gfa):
     # An individual segment exposes its name and nucleotide sequence.
     assert seg.name == 1
     assert seg.sequence() == b"CAAATAAG"
+    assert len(seg) == 8
 
     # You can also pull out the entire sequence of segments.
     seg = list(gfa.segments)[2]

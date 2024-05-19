@@ -7,6 +7,7 @@ class Segment:
     name: int
 
     def sequence(self) -> bytes: ...
+    def __len__(self) -> int: ...
 
 
 class Handle:
