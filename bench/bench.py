@@ -186,12 +186,10 @@ class Runner:
                 "og": quote(graph_path(graph, "og")),
                 "flatgfa": quote(graph_path(graph, "flatgfa")),
             },
-            **self.config["tools"]
+            **self.config["tools"],
         }
         commands = {
-            k: v.format(**subst)
-            for k, v in mode_info["cmd"].items()
-            if k in tools
+            k: v.format(**subst) for k, v in mode_info["cmd"].items() if k in tools
         }
         yield from self.compare(mode, graph, commands)
 
