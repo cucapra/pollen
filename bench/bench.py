@@ -161,6 +161,21 @@ class Runner:
         with logtime(self.log):
             subprocess.run(cmd, shell=True)
 
+    def prepare_files(self, graph, mode, tools):
+        """Ensure that all the input files are ready for a benchmarking run.
+
+        We first fetch the graph. Then, if the mode requires it, we convert the graph to the
+        necessary formats for `tools`. Each step is skipped if the files already exist.
+        """
+        self.fetch_graph(graph)
+        if self.config["modes"][mode].get("convert", True):
+            for tool in tools:
+                match tool:
+                    case "odgi":
+                        self.convert(graph, "odgi", "og")
+                    case "flatgfa":
+                        self.convert(graph, "flatgfa", "flatgfa")
+
     def compare(self, mode, graph, commands):
         """Run a Hyperfine comparison and produce CSV lines for the results.
 
@@ -201,10 +216,7 @@ def run_bench(graph_set, mode, tools, out_csv):
 
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     for graph in graph_names:
-        runner.fetch_graph(graph)
-        if mode != "convert":
-            runner.convert(graph, "odgi", "og")
-            runner.convert(graph, "flatgfa", "flatgfa")
+        runner.prepare_files(graph, mode, tools)
 
     runner.log.debug("writing results to %s", out_csv)
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
