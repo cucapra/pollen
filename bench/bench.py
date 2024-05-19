@@ -122,6 +122,17 @@ class Runner:
             config = tomllib.load(f)
         return cls(graphs, config)
 
+    def _cmd_vals(self, graph):
+        """Get a dictionary of values to use when formatting a command."""
+        return {
+            "files": {
+                "gfa": quote(graph_path(graph, "gfa")),
+                "og": quote(graph_path(graph, "og")),
+                "flatgfa": quote(graph_path(graph, "flatgfa")),
+            },
+            **self.config["tools"],
+        }
+
     def fetch_graph(self, name):
         """Fetch a single graph, given by its <suite>.<graph> name."""
         suite, key = name.split(".")
@@ -136,29 +147,19 @@ class Runner:
         self.log.info("fetching graph %s", name)
         fetch_file(dest, url)
 
-    def odgi_convert(self, name):
-        """Convert a GFA to odgi's `.og` format."""
-        og = graph_path(name, "og")
-        if os.path.exists(og):
-            self.log.info("og exists for %s", name)
+    def convert(self, graph, tool, ext):
+        """Convert a graph to a new format, unless the file already exists."""
+        dest = graph_path(graph, ext)
+        if os.path.exists(dest):
+            self.log.info("%s already exists for %s", ext, graph)
             return
 
-        gfa = graph_path(name, "gfa")
-        self.log.info("converting %s to og", name)
+        self.log.info("converting %s to %s", graph, ext)
+        cmd = self.config["modes"]["convert"]["cmd"][tool].format(
+            **self._cmd_vals(graph)
+        )
         with logtime(self.log):
-            subprocess.run([self.odgi, "build", "-g", gfa, "-o", og])
-
-    def flatgfa_convert(self, name):
-        """Convert a GFA to the FlatGFA format."""
-        flatgfa = graph_path(name, "flatgfa")
-        if os.path.exists(flatgfa):
-            self.log.info("flatgfa exists for %s", name)
-            return
-
-        gfa = graph_path(name, "gfa")
-        self.log.info("converting %s to flatgfa", name)
-        with logtime(self.log):
-            subprocess.run([self.fgfa, "-I", gfa, "-o", flatgfa])
+            subprocess.run(cmd, shell=True)
 
     def compare(self, mode, graph, commands):
         """Run a Hyperfine comparison and produce CSV lines for the results.
@@ -180,14 +181,7 @@ class Runner:
     def compare_mode(self, mode, graph, tools):
         """Compare a mode across several tools for a single graph."""
         mode_info = self.config["modes"][mode]
-        subst = {
-            "files": {
-                "gfa": quote(graph_path(graph, "gfa")),
-                "og": quote(graph_path(graph, "og")),
-                "flatgfa": quote(graph_path(graph, "flatgfa")),
-            },
-            **self.config["tools"],
-        }
+        subst = self._cmd_vals(graph)
         commands = {
             k: v.format(**subst) for k, v in mode_info["cmd"].items() if k in tools
         }
@@ -209,8 +203,8 @@ def run_bench(graph_set, mode, tools, out_csv):
     for graph in graph_names:
         runner.fetch_graph(graph)
         if mode != "convert":
-            runner.odgi_convert(graph)
-            runner.flatgfa_convert(graph)
+            runner.convert(graph, "odgi", "og")
+            runner.convert(graph, "flatgfa", "flatgfa")
 
     runner.log.debug("writing results to %s", out_csv)
     os.makedirs(os.path.dirname(out_csv), exist_ok=True)
