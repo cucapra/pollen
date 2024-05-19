@@ -69,11 +69,19 @@ class HyperfineResult:
 def hyperfine(cmds):
     """Run Hyperfine to compare the commands."""
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        hf_cmd = [
+            "hyperfine",
+            "--export-json",
+            tmp.name,
+            "--shell=none",
+            "--warmup=1",
+            "--min-runs=3",
+            "--max-runs=16",
+        ]
+        hf_cmd += cmds
+
         tmp.close()
-        subprocess.run(
-            ["hyperfine", "-N", "-w", "1", "--export-json", tmp.name] + cmds,
-            check=True,
-        )
+        subprocess.run(hf_cmd, check=True)
         with open(tmp.name, "rb") as f:
             data = json.load(f)
             return [HyperfineResult.from_json(r) for r in data["results"]]
