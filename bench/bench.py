@@ -15,6 +15,7 @@ import datetime
 import logging
 from contextlib import contextmanager
 import time
+import platform
 
 BASE = os.path.dirname(__file__)
 GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
@@ -231,8 +232,9 @@ def run_bench(graph_set, mode, tools, out_csv):
 
 
 def gen_csv_name(graph_set, mode):
+    host = platform.node().split(".")[0]
     ts = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S.%f")
-    return os.path.join(RESULTS_DIR, f"{mode}-{graph_set}-{ts}.csv")
+    return os.path.join(RESULTS_DIR, f"{mode}-{graph_set}-{host}-{ts}.csv")
 
 
 def bench_main():
