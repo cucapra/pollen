@@ -195,15 +195,23 @@ class Runner:
         commands = {k: commands[k] for k in tools}
         yield from self.compare("convert", name, commands)
 
-    def compare_roundtrip(self, name, tools):
-        """Compare round-trip GFA-to-GFA parsing/printing."""
-        commands = {
-            "flatgfa": f'{self.fgfa} -I {quote(graph_path(name, "gfa"))}',
-            "slow_odgi": f'{self.slow_odgi} norm {quote(graph_path(name, "gfa"))}',
-            "odgi": f'{self.odgi} view -g -i {quote(graph_path(name, "gfa"))}',
+    def compare_mode(self, mode, graph, tools):
+        """Compare a mode across several tools for a single graph."""
+        mode_info = self.config["modes"][mode]
+        subst = {
+            "files": {
+                "gfa": quote(graph_path(graph, "gfa")),
+                "og": quote(graph_path(graph, "og")),
+                "flatgfa": quote(graph_path(graph, "flatgfa")),
+            },
+            **self.config["tools"]
         }
-        commands = {k: commands[k] for k in tools}
-        yield from self.compare("roundtrip", name, commands)
+        commands = {
+            k: v.format(**subst)
+            for k, v in mode_info["cmd"].items()
+            if k in tools
+        }
+        yield from self.compare(mode, graph, commands)
 
 
 def run_bench(graph_set, mode, tools, out_csv):
@@ -225,15 +233,16 @@ def run_bench(graph_set, mode, tools, out_csv):
         writer = csv.DictWriter(f, ["graph", "cmd", "mean", "stddev", "n"])
         writer.writeheader()
         for graph in graph_names:
-            match mode:
-                case "paths":
-                    res = runner.compare_paths(graph, tools)
-                case "convert":
-                    res = runner.compare_convert(graph, tools)
-                case "roundtrip":
-                    res = runner.compare_roundtrip(graph, tools)
-                case _:
-                    assert False, "unknown mode"
+            if mode in runner.config["modes"]:
+                res = runner.compare_mode(mode, graph, tools)
+            else:
+                match mode:
+                    case "paths":
+                        res = runner.compare_paths(graph, tools)
+                    case "convert":
+                        res = runner.compare_convert(graph, tools)
+                    case _:
+                        assert False, "unknown mode"
             for row in res:
                 writer.writerow(row)
 

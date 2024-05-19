@@ -7,3 +7,8 @@ slow_odgi = "../.venv/bin/slow_odgi"
 smoke = ["test.k"]
 mini = ["test.lpa", "test.chr6c4", "hprc.chrM"]
 med = ["hprc.chr20", "hprc.chrX", "1000gont.chr16"]
+
+[modes.roundtrip]
+cmd.flatgfa = '{fgfa} -I {files[gfa]}'
+cmd.slow_odgi = '{slow_odgi} norm {files[gfa]}'
+cmd.odgi = '{odgi} view -g -i {files[gfa]}'
