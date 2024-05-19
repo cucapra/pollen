@@ -20,6 +20,7 @@ class Path:
     name: bytes
 
     def __iter__(self) -> Iterator[Handle]: ...
+    def __getitem__(self, idx: int) -> Handle: ...
 
 
 class Link:
