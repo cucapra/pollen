@@ -22,7 +22,6 @@ GRAPHS_TOML = os.path.join(BASE, "graphs.toml")
 CONFIG_TOML = os.path.join(BASE, "config.toml")
 GRAPHS_DIR = os.path.join(BASE, "graphs")
 RESULTS_DIR = os.path.join(BASE, "results")
-ALL_TOOLS = ["slow_odgi", "odgi", "flatgfa"]
 DECOMPRESS = {
     ".gz": ["gunzip"],
     ".zst": ["zstd", "-d"],
@@ -219,9 +218,13 @@ def run_bench(graph_set, mode, tools, out_csv):
     graph_names = runner.config["graph_sets"][graph_set]
 
     # Which tools are we comparing?
-    tools = tools or list(runner.config["modes"][mode]["cmd"].keys())
-    for tool in tools:
-        assert tool in ALL_TOOLS, "unknown tool name"
+    if tools:
+        # Check that specified tools are supported.
+        for tool in tools:
+            assert tool in runner.config["modes"][mode]["cmd"], f"unknown tool {tool}"
+    else:
+        # Use all supported tools by deefault.
+        tools = list(runner.config["modes"][mode]["cmd"].keys())
 
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
     for graph in graph_names:
