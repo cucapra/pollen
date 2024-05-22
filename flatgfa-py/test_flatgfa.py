@@ -149,3 +149,13 @@ def test_hash(gfa):
     assert d[gfa.paths[0]] == "bar"
     assert d[gfa.links[0]] == "baz"
     assert d[gfa.links[1].from_] == "qux"
+
+
+def test_slice(gfa):
+    # The various container types can be sliced to get narrower ranges.
+    assert len(gfa.segments[1:3]) == 2
+    assert len(gfa.segments[2:]) == len(gfa.segments) - 2
+    assert gfa.segments[1:3][0].name == gfa.segments[1].name
+
+    assert len(gfa.paths[1:]) == 1
+    assert len(gfa.links[2:100]) == 2
