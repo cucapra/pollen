@@ -1,7 +1,8 @@
 use flatgfa::pool::{Id, Span};
 use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
+use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
+use pyo3::types::{PyBytes, PySlice};
 use std::io::Write;
 use std::sync::Arc;
 
@@ -79,6 +80,8 @@ impl PyFlatGFA {
     fn segments(&self) -> SegmentList {
         SegmentList {
             store: self.0.clone(),
+            start: 0,
+            end: self.0.view().segs.len() as u32,
         }
     }
 
@@ -87,6 +90,8 @@ impl PyFlatGFA {
     fn paths(&self) -> PathList {
         PathList {
             store: self.0.clone(),
+            start: 0,
+            end: self.0.view().paths.len() as u32,
         }
     }
 
@@ -95,6 +100,8 @@ impl PyFlatGFA {
     fn links(&self) -> LinkList {
         LinkList {
             store: self.0.clone(),
+            start: 0,
+            end: self.0.view().links.len() as u32,
         }
     }
 
@@ -121,15 +128,50 @@ impl PyFlatGFA {
     }
 }
 
+/// A suitable argument to `__getitem__`
+///
+/// Stolen from this GitHub discussion:
+/// https://github.com/PyO3/pyo3/issues/1855#issuecomment-962573796
+#[derive(FromPyObject)]
+enum SliceOrInt<'a> {
+    Slice(&'a PySlice),
+    Int(isize),
+}
+
 /// Generate the Python types for an iterable container of GFA objects.
 macro_rules! gen_container {
     ($type: ident, $field: ident, $pytype: ident, $list: ident, $iter: ident) => {
         #[pymethods]
         impl $list {
-            fn __getitem__(&self, idx: u32) -> $pytype {
-                $pytype {
-                    store: self.store.clone(),
-                    id: Id::from(idx),
+            fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
+                match arg {
+                    SliceOrInt::Slice(slice) => {
+                        let indices = slice.indices(self.__len__() as i64)?;
+                        if indices.step == 1 {
+                            assert!(indices.start >= 0);
+                            assert!(indices.stop <= self.__len__() as isize);
+                            Ok(Self {
+                                store: self.store.clone(),
+                                start: self.start + indices.start as u32,
+                                end: self.start + indices.stop as u32,
+                            }
+                            .into_py(py))
+                        } else {
+                            Err(PyIndexError::new_err("only unit step is supported"))
+                        }
+                    }
+                    SliceOrInt::Int(int) => {
+                        if int >= 0 && int < (self.end as isize) {
+                            let global_idx = (int as u32) + self.start;
+                            Ok($pytype {
+                                store: self.store.clone(),
+                                id: Id::from(global_idx),
+                            }
+                            .into_py(py))
+                        } else {
+                            Err(PyIndexError::new_err("index out of range"))
+                        }
+                    }
                 }
             }
 
@@ -141,7 +183,7 @@ macro_rules! gen_container {
             }
 
             fn __len__(&self) -> usize {
-                self.store.view().$field.len()
+                (self.end - self.start) as usize
             }
         }
 
@@ -259,6 +301,8 @@ impl SegmentList {
 #[pyo3(module = "flatgfa")]
 struct SegmentList {
     store: Arc<Store>,
+    start: u32,
+    end: u32,
 }
 
 /// A path in a GFA graph.
@@ -343,6 +387,8 @@ impl PyPath {
 #[pyo3(module = "flatgfa")]
 struct PathList {
     store: Arc<Store>,
+    start: u32,
+    end: u32,
 }
 
 #[pymethods]
@@ -505,6 +551,8 @@ impl PyLink {
 #[pyo3(module = "flatgfa")]
 struct LinkList {
     store: Arc<Store>,
+    start: u32,
+    end: u32,
 }
 
 #[pymodule]
