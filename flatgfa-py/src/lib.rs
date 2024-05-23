@@ -78,7 +78,7 @@ impl PyFlatGFA {
     /// The segments (nodes) in the graph, as a :class:`SegmentList`.
     #[getter]
     fn segments(&self) -> SegmentList {
-        SegmentList(ListImpl {
+        SegmentList(ListRef {
             store: self.0.clone(),
             start: 0,
             end: self.0.view().segs.len() as u32,
@@ -88,7 +88,7 @@ impl PyFlatGFA {
     /// The paths in the graph, as a :class:`PathList`.
     #[getter]
     fn paths(&self) -> PathList {
-        PathList(ListImpl {
+        PathList(ListRef {
             store: self.0.clone(),
             start: 0,
             end: self.0.view().paths.len() as u32,
@@ -98,7 +98,7 @@ impl PyFlatGFA {
     /// The links (edges) in the graph, as a :class:`LinkList`.
     #[getter]
     fn links(&self) -> LinkList {
-        LinkList(ListImpl {
+        LinkList(ListRef {
             store: self.0.clone(),
             start: 0,
             end: self.0.view().links.len() as u32,
@@ -132,20 +132,23 @@ impl PyFlatGFA {
 ///
 /// We expose various type-specific "XList" types to Python, and they are all wrappers
 /// over this data. They just have to access different fields in the underlying store.
-struct ListImpl {
+struct ListRef {
     store: Arc<Store>,
     start: u32,
     end: u32,
 }
 
-impl ListImpl {
+impl ListRef {
     fn len(&self) -> u32 {
         self.end - self.start
     }
 
-    fn index(&self, i: u32) -> u32 {
+    fn index(&self, i: u32) -> EntityRef {
         assert!(i < self.len());
-        self.start + i
+        EntityRef {
+            store: self.store.clone(),
+            index: self.start + i,
+        }
     }
 
     fn slice(&self, start: u32, end: u32) -> Self {
@@ -156,6 +159,34 @@ impl ListImpl {
             start: self.start + start,
             end: self.start + end,
         }
+    }
+}
+
+/// A reference to a specific thing within a FlatGFA.
+///
+/// Types like `PySegment` and `PyPath` all wrap one of these.
+struct EntityRef {
+    store: Arc<Store>,
+    index: u32,
+}
+
+impl PartialEq for EntityRef {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.index == other.index
+    }
+}
+
+impl Eq for EntityRef {}
+
+impl EntityRef {
+    /// Produce a suitable Python `__repr__` string for this reference.
+    fn py_repr(&self, class: &str) -> String {
+        format!("<{} {}>", class, self.index)
+    }
+
+    /// Get the ID object (for use in pool lookup).
+    fn id<T>(&self) -> Id<T> {
+        self.index.into()
     }
 }
 
@@ -187,14 +218,7 @@ macro_rules! gen_container {
                             Err(PyIndexError::new_err("only unit step is supported"))
                         }
                     }
-                    SliceOrInt::Int(int) => {
-                        let idx = self.0.index(int as u32);
-                        Ok($pytype {
-                            store: self.0.store.clone(),
-                            id: Id::from(idx),
-                        }
-                        .into_py(py))
-                    }
+                    SliceOrInt::Int(int) => Ok($pytype(self.0.index(int as u32)).into_py(py)),
                 }
             }
 
@@ -227,10 +251,10 @@ macro_rules! gen_container {
 
             fn __next__(&mut self) -> Option<$pytype> {
                 if self.idx < self.end as u32 {
-                    let obj = $pytype {
+                    let obj = $pytype(EntityRef {
                         store: self.store.clone(),
-                        id: Id::from(self.idx),
-                    };
+                        index: self.idx,
+                    });
                     self.idx += 1;
                     Some(obj)
                 } else {
@@ -251,10 +275,7 @@ gen_container!(Link, links, PyLink, LinkList, LinkIter);
 /// nucleotide sequence.
 #[pyclass(frozen)]
 #[pyo3(name = "Segment", module = "flatgfa")]
-struct PySegment {
-    store: Arc<Store>,
-    id: Id<flatgfa::Segment>,
-}
+struct PySegment(EntityRef);
 
 #[pymethods]
 impl PySegment {
@@ -263,8 +284,8 @@ impl PySegment {
     /// This copies the underlying sequence data to contruct the Python bytes object,
     /// so it is slow to use for large sequences.
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {
-        let gfa = self.store.view();
-        let seg = &gfa.segs[self.id];
+        let gfa = self.0.store.view();
+        let seg = &gfa.segs[self.0.id()];
         let seq = gfa.get_seq(seg);
         PyBytes::new_bound(py, seq)
     }
@@ -272,37 +293,36 @@ impl PySegment {
     /// The segment's name as declared in the GFA file, an `int`.
     #[getter]
     fn name(&self) -> usize {
-        let seg = self.store.view().segs[self.id];
+        let seg = self.0.store.view().segs[self.0.id()];
         seg.name
     }
 
     /// The unique identifier for the segment, an `int`.
     #[getter]
     fn id(&self) -> u32 {
-        self.id.into()
+        self.0.index
     }
 
     fn __repr__(&self) -> String {
-        format!("<Segment {}>", u32::from(self.id))
+        self.0.py_repr("Segment")
     }
 
     fn __str__(&self) -> String {
-        let gfa = self.store.view();
-        let seg = gfa.segs[self.id];
+        let gfa = self.0.store.view();
+        let seg = gfa.segs[self.0.id()];
         format!("{}", print::Display(&gfa, &seg))
     }
 
     fn __eq__(&self, other: &PySegment) -> bool {
-        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+        self.0 == other.0
     }
 
     fn __hash__(&self) -> isize {
-        u32::from(self.id) as isize
+        self.0.index as isize
     }
 
     fn __len__(&self) -> usize {
-        let gfa = self.store.view();
-        let seg = gfa.segs[self.id];
+        let seg = self.0.store.view().segs[self.0.id()];
         seg.len()
     }
 }
@@ -310,7 +330,7 @@ impl PySegment {
 /// A sequence of :class:`Segment` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
-struct SegmentList(ListImpl);
+struct SegmentList(ListRef);
 
 #[pymethods]
 impl SegmentList {
@@ -318,10 +338,10 @@ impl SegmentList {
     fn find(&self, name: usize) -> Option<PySegment> {
         let gfa = self.0.store.view();
         let id = gfa.find_seg(name)?;
-        Some(PySegment {
+        Some(PySegment(EntityRef {
             store: self.0.store.clone(),
-            id,
-        })
+            index: id.into(),
+        }))
     }
 }
 
@@ -337,67 +357,64 @@ impl SegmentList {
 /// to walk through a path's steps.
 #[pyclass(frozen)]
 #[pyo3(name = "Path", module = "flatgfa")]
-struct PyPath {
-    store: Arc<Store>,
-    id: Id<flatgfa::Path>,
-}
+struct PyPath(EntityRef);
 
 #[pymethods]
 impl PyPath {
     /// The unique identifier for the path, an `int`.
     #[getter]
     fn id(&self) -> u32 {
-        self.id.into()
+        self.0.index
     }
 
     /// Get the name of this path as declared in the GFA file, as a string.
     #[getter]
     fn name(&self) -> String {
-        let gfa = self.store.view();
-        let path = &gfa.paths[self.id];
+        let gfa = self.0.store.view();
+        let path = &gfa.paths[self.0.id()];
         let name = gfa.get_path_name(path);
         name.try_into().unwrap()
     }
 
     fn __repr__(&self) -> String {
-        format!("<Path {}>", u32::from(self.id))
+        self.0.py_repr("Path")
     }
 
     fn __str__(&self) -> String {
-        let gfa = self.store.view();
-        let path = gfa.paths[self.id];
+        let gfa = self.0.store.view();
+        let path = gfa.paths[self.0.id()];
         format!("{}", print::Display(&gfa, &path))
     }
 
     fn __eq__(&self, other: &PyPath) -> bool {
-        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+        self.0 == other.0
     }
 
     fn __hash__(&self) -> isize {
-        u32::from(self.id) as isize
+        self.0.index as isize
     }
 
     fn __iter__(&self) -> StepIter {
-        let path = self.store.view().paths[self.id];
+        let path = self.0.store.view().paths[self.0.id()];
         StepIter {
-            store: self.store.clone(),
+            store: self.0.store.clone(),
             span: path.steps,
             cur: path.steps.start,
         }
     }
 
     fn __getitem__(&self, idx: usize) -> PyHandle {
-        let gfa = self.store.view();
-        let path = gfa.paths[self.id];
+        let gfa = self.0.store.view();
+        let path = gfa.paths[self.0.id()];
         let handle = gfa.steps[path.steps][idx];
         PyHandle {
-            store: self.store.clone(),
+            store: self.0.store.clone(),
             handle,
         }
     }
 
     fn __len__(&self) -> usize {
-        let path = self.store.view().paths[self.id];
+        let path = self.0.store.view().paths[self.0.id()];
         path.steps.len()
     }
 }
@@ -405,7 +422,7 @@ impl PyPath {
 /// A sequence of :class:`Path` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
-struct PathList(ListImpl);
+struct PathList(ListRef);
 
 #[pymethods]
 impl PathList {
@@ -413,10 +430,10 @@ impl PathList {
     fn find(&self, name: &str) -> Option<PyPath> {
         let gfa = self.0.store.view();
         let id = gfa.find_path(name.as_ref())?;
-        Some(PyPath {
+        Some(PyPath(EntityRef {
             store: self.0.store.clone(),
-            id,
-        })
+            index: id.into(),
+        }))
     }
 }
 
@@ -448,10 +465,10 @@ impl PyHandle {
     /// The segment, as a :class:`Segment` object.
     #[getter]
     fn segment(&self) -> PySegment {
-        PySegment {
+        PySegment(EntityRef {
             store: self.store.clone(),
-            id: self.handle.segment(),
-        }
+            index: self.handle.segment().into(),
+        })
     }
 
     fn __repr__(&self) -> String {
@@ -512,43 +529,40 @@ impl StepIter {
 /// `Handle` objects, i.e., the "forward" or "backward" direction of a given segment.
 #[pyclass(frozen)]
 #[pyo3(name = "Link", module = "flatgfa")]
-struct PyLink {
-    store: Arc<Store>,
-    id: Id<flatgfa::Link>,
-}
+struct PyLink(EntityRef);
 
 #[pymethods]
 impl PyLink {
     /// The unique identifier for the link.
     #[getter]
     fn id(&self) -> u32 {
-        self.id.into()
+        self.0.index
     }
 
     fn __repr__(&self) -> String {
-        format!("<Link {}>", u32::from(self.id))
+        self.0.py_repr("Link")
     }
 
     fn __str__(&self) -> String {
-        let gfa = self.store.view();
-        let link = gfa.links[self.id];
+        let gfa = self.0.store.view();
+        let link = gfa.links[self.0.id()];
         format!("{}", print::Display(&gfa, &link))
     }
 
     fn __eq__(&self, other: &PyLink) -> bool {
-        Arc::as_ptr(&self.store) == Arc::as_ptr(&other.store) && self.id == other.id
+        self.0 == other.0
     }
 
     fn __hash__(&self) -> isize {
-        u32::from(self.id) as isize
+        self.0.index as isize
     }
 
     /// The edge's source handle.
     #[getter]
     fn from_(&self) -> PyHandle {
         PyHandle {
-            store: self.store.clone(),
-            handle: self.store.view().links[self.id].from,
+            store: self.0.store.clone(),
+            handle: self.0.store.view().links[self.0.id()].from,
         }
     }
 
@@ -556,8 +570,8 @@ impl PyLink {
     #[getter]
     fn to(&self) -> PyHandle {
         PyHandle {
-            store: self.store.clone(),
-            handle: self.store.view().links[self.id].to,
+            store: self.0.store.clone(),
+            handle: self.0.store.view().links[self.0.id()].to,
         }
     }
 }
@@ -565,7 +579,7 @@ impl PyLink {
 /// A sequence of :class:`Link` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
-struct LinkList(ListImpl);
+struct LinkList(ListRef);
 
 #[pymodule]
 #[pyo3(name = "flatgfa")]
