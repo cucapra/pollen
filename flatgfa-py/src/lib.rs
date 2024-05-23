@@ -78,31 +78,31 @@ impl PyFlatGFA {
     /// The segments (nodes) in the graph, as a :class:`SegmentList`.
     #[getter]
     fn segments(&self) -> SegmentList {
-        SegmentList {
+        SegmentList(ListImpl {
             store: self.0.clone(),
             start: 0,
             end: self.0.view().segs.len() as u32,
-        }
+        })
     }
 
     /// The paths in the graph, as a :class:`PathList`.
     #[getter]
     fn paths(&self) -> PathList {
-        PathList {
+        PathList(ListImpl {
             store: self.0.clone(),
             start: 0,
             end: self.0.view().paths.len() as u32,
-        }
+        })
     }
 
     /// The links (edges) in the graph, as a :class:`LinkList`.
     #[getter]
     fn links(&self) -> LinkList {
-        LinkList {
+        LinkList(ListImpl {
             store: self.0.clone(),
             start: 0,
             end: self.0.view().links.len() as u32,
-        }
+        })
     }
 
     fn __str__(&self) -> String {
@@ -128,6 +128,37 @@ impl PyFlatGFA {
     }
 }
 
+/// A reference to a list of *any* type within a FlatGFA.
+///
+/// We expose various type-specific "XList" types to Python, and they are all wrappers
+/// over this data. They just have to access different fields in the underlying store.
+struct ListImpl {
+    store: Arc<Store>,
+    start: u32,
+    end: u32,
+}
+
+impl ListImpl {
+    fn len(&self) -> u32 {
+        self.end - self.start
+    }
+
+    fn index(&self, i: u32) -> u32 {
+        assert!(i < self.len());
+        self.start + i
+    }
+
+    fn slice(&self, start: u32, end: u32) -> Self {
+        assert!(start <= end);
+        assert!(end <= self.len());
+        Self {
+            store: self.store.clone(),
+            start: self.start + start,
+            end: self.start + end,
+        }
+    }
+}
+
 /// A suitable argument to `__getitem__`
 ///
 /// Stolen from this GitHub discussion:
@@ -148,43 +179,35 @@ macro_rules! gen_container {
                     SliceOrInt::Slice(slice) => {
                         let indices = slice.indices(self.__len__() as i64)?;
                         if indices.step == 1 {
-                            assert!(indices.start >= 0);
-                            assert!(indices.stop <= self.__len__() as isize);
-                            Ok(Self {
-                                store: self.store.clone(),
-                                start: self.start + indices.start as u32,
-                                end: self.start + indices.stop as u32,
-                            }
-                            .into_py(py))
+                            Ok(
+                                Self(self.0.slice(indices.start as u32, indices.stop as u32))
+                                    .into_py(py),
+                            )
                         } else {
                             Err(PyIndexError::new_err("only unit step is supported"))
                         }
                     }
                     SliceOrInt::Int(int) => {
-                        if int >= 0 && int < (self.end as isize) {
-                            let global_idx = (int as u32) + self.start;
-                            Ok($pytype {
-                                store: self.store.clone(),
-                                id: Id::from(global_idx),
-                            }
-                            .into_py(py))
-                        } else {
-                            Err(PyIndexError::new_err("index out of range"))
+                        let idx = self.0.index(int as u32);
+                        Ok($pytype {
+                            store: self.0.store.clone(),
+                            id: Id::from(idx),
                         }
+                        .into_py(py))
                     }
                 }
             }
 
             fn __iter__(&self) -> $iter {
                 $iter {
-                    store: self.store.clone(),
-                    idx: self.start,
-                    end: self.end,
+                    store: self.0.store.clone(),
+                    idx: self.0.start,
+                    end: self.0.end,
                 }
             }
 
             fn __len__(&self) -> usize {
-                (self.end - self.start) as usize
+                self.0.len() as usize
             }
         }
 
@@ -284,26 +307,22 @@ impl PySegment {
     }
 }
 
+/// A sequence of :class:`Segment` objects.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct SegmentList(ListImpl);
+
 #[pymethods]
 impl SegmentList {
     /// Find a segment by its name (an `int`), or return `None` if not found.
     fn find(&self, name: usize) -> Option<PySegment> {
-        let gfa = self.store.view();
+        let gfa = self.0.store.view();
         let id = gfa.find_seg(name)?;
         Some(PySegment {
-            store: self.store.clone(),
+            store: self.0.store.clone(),
             id,
         })
     }
-}
-
-/// A sequence of :class:`Segment` objects.
-#[pyclass]
-#[pyo3(module = "flatgfa")]
-struct SegmentList {
-    store: Arc<Store>,
-    start: u32,
-    end: u32,
 }
 
 /// A path in a GFA graph.
@@ -386,20 +405,16 @@ impl PyPath {
 /// A sequence of :class:`Path` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
-struct PathList {
-    store: Arc<Store>,
-    start: u32,
-    end: u32,
-}
+struct PathList(ListImpl);
 
 #[pymethods]
 impl PathList {
     /// Find a path by its name (a string), or return `None` if not found.
     fn find(&self, name: &str) -> Option<PyPath> {
-        let gfa = self.store.view();
+        let gfa = self.0.store.view();
         let id = gfa.find_path(name.as_ref())?;
         Some(PyPath {
-            store: self.store.clone(),
+            store: self.0.store.clone(),
             id,
         })
     }
@@ -550,11 +565,7 @@ impl PyLink {
 /// A sequence of :class:`Link` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
-struct LinkList {
-    store: Arc<Store>,
-    start: u32,
-    end: u32,
-}
+struct LinkList(ListImpl);
 
 #[pymodule]
 #[pyo3(name = "flatgfa")]
