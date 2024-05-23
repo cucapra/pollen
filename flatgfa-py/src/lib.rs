@@ -178,7 +178,8 @@ macro_rules! gen_container {
             fn __iter__(&self) -> $iter {
                 $iter {
                     store: self.store.clone(),
-                    idx: 0,
+                    idx: self.start,
+                    end: self.end,
                 }
             }
 
@@ -192,6 +193,7 @@ macro_rules! gen_container {
         struct $iter {
             store: Arc<Store>,
             idx: u32,
+            end: u32,
         }
 
         #[pymethods]
@@ -201,8 +203,7 @@ macro_rules! gen_container {
             }
 
             fn __next__(&mut self) -> Option<$pytype> {
-                let gfa = self.store.view();
-                if self.idx < gfa.$field.len() as u32 {
+                if self.idx < self.end as u32 {
                     let obj = $pytype {
                         store: self.store.clone(),
                         id: Id::from(self.idx),
