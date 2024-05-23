@@ -160,6 +160,25 @@ impl ListRef {
             end: self.start + end,
         }
     }
+
+    /// A suitable implementation of `__getitem__` for Python classes.
+    fn py_getitem<L, E>(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject>
+    where
+        L: From<ListRef> + IntoPy<PyObject>,
+        E: From<EntityRef> + IntoPy<PyObject>,
+    {
+        match arg {
+            SliceOrInt::Slice(slice) => {
+                let indices = slice.indices(self.len() as i64)?;
+                if indices.step == 1 {
+                    Ok(L::from(self.slice(indices.start as u32, indices.stop as u32)).into_py(py))
+                } else {
+                    Err(PyIndexError::new_err("only unit step is supported"))
+                }
+            }
+            SliceOrInt::Int(int) => Ok(E::from(self.index(int as u32)).into_py(py)),
+        }
+    }
 }
 
 /// A reference to a specific thing within a FlatGFA.
@@ -206,20 +225,7 @@ macro_rules! gen_container {
         #[pymethods]
         impl $list {
             fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
-                match arg {
-                    SliceOrInt::Slice(slice) => {
-                        let indices = slice.indices(self.__len__() as i64)?;
-                        if indices.step == 1 {
-                            Ok(
-                                Self(self.0.slice(indices.start as u32, indices.stop as u32))
-                                    .into_py(py),
-                            )
-                        } else {
-                            Err(PyIndexError::new_err("only unit step is supported"))
-                        }
-                    }
-                    SliceOrInt::Int(int) => Ok($pytype(self.0.index(int as u32)).into_py(py)),
-                }
+                self.0.py_getitem::<$list, $pytype>(arg, py)
             }
 
             fn __iter__(&self) -> $iter {
@@ -277,6 +283,12 @@ gen_container!(Link, links, PyLink, LinkList, LinkIter);
 #[pyo3(name = "Segment", module = "flatgfa")]
 struct PySegment(EntityRef);
 
+impl From<EntityRef> for PySegment {
+    fn from(entity: EntityRef) -> Self {
+        Self(entity)
+    }
+}
+
 #[pymethods]
 impl PySegment {
     /// Get the nucleotide sequence for the segment as a byte string.
@@ -332,6 +344,12 @@ impl PySegment {
 #[pyo3(module = "flatgfa")]
 struct SegmentList(ListRef);
 
+impl From<ListRef> for SegmentList {
+    fn from(list: ListRef) -> Self {
+        Self(list)
+    }
+}
+
 #[pymethods]
 impl SegmentList {
     /// Find a segment by its name (an `int`), or return `None` if not found.
@@ -358,6 +376,12 @@ impl SegmentList {
 #[pyclass(frozen)]
 #[pyo3(name = "Path", module = "flatgfa")]
 struct PyPath(EntityRef);
+
+impl From<EntityRef> for PyPath {
+    fn from(entity: EntityRef) -> Self {
+        Self(entity)
+    }
+}
 
 #[pymethods]
 impl PyPath {
@@ -423,6 +447,12 @@ impl PyPath {
 #[pyclass]
 #[pyo3(module = "flatgfa")]
 struct PathList(ListRef);
+
+impl From<ListRef> for PathList {
+    fn from(list: ListRef) -> Self {
+        Self(list)
+    }
+}
 
 #[pymethods]
 impl PathList {
@@ -531,6 +561,12 @@ impl StepIter {
 #[pyo3(name = "Link", module = "flatgfa")]
 struct PyLink(EntityRef);
 
+impl From<EntityRef> for PyLink {
+    fn from(entity: EntityRef) -> Self {
+        Self(entity)
+    }
+}
+
 #[pymethods]
 impl PyLink {
     /// The unique identifier for the link.
@@ -580,6 +616,12 @@ impl PyLink {
 #[pyclass]
 #[pyo3(module = "flatgfa")]
 struct LinkList(ListRef);
+
+impl From<ListRef> for LinkList {
+    fn from(list: ListRef) -> Self {
+        Self(list)
+    }
+}
 
 #[pymodule]
 #[pyo3(name = "flatgfa")]
