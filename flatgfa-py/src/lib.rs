@@ -231,7 +231,7 @@ macro_rules! gen_container {
             fn __iter__(&self) -> $iter {
                 $iter {
                     store: self.0.store.clone(),
-                    idx: self.0.start,
+                    index: self.0.start,
                     end: self.0.end,
                 }
             }
@@ -245,7 +245,7 @@ macro_rules! gen_container {
         #[pyo3(module = "flatgfa")]
         struct $iter {
             store: Arc<Store>,
-            idx: u32,
+            index: u32,
             end: u32,
         }
 
@@ -256,12 +256,12 @@ macro_rules! gen_container {
             }
 
             fn __next__(&mut self) -> Option<$pytype> {
-                if self.idx < self.end as u32 {
+                if self.index < self.end as u32 {
                     let obj = $pytype(EntityRef {
                         store: self.store.clone(),
-                        index: self.idx,
+                        index: self.index,
                     });
-                    self.idx += 1;
+                    self.index += 1;
                     Some(obj)
                 } else {
                     None
