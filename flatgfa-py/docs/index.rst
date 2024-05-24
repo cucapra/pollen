@@ -131,3 +131,6 @@ All of these container objects support subscripting (like
 
 .. autoclass:: LinkList
    :members:
+
+.. autoclass:: StepList
+   :members:

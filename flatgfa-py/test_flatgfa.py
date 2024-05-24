@@ -1,8 +1,7 @@
 import pytest
 import flatgfa
 
-TINY_GFA = b"""
-H	VN:Z:1.0
+TINY_GFA = b"""H	VN:Z:1.0
 S	1	CAAATAAG
 S	2	AAATTTTCTGGAGTTCTAT
 S	3	TTG
@@ -13,9 +12,7 @@ L	1	+	2	+	0M
 L	2	+	4	-	0M
 L	2	+	3	+	0M
 L	3	+	4	-	0M
-"""[
-    1:
-]
+"""
 
 
 @pytest.fixture
@@ -31,6 +28,7 @@ def test_segs(gfa):
     # An individual segment exposes its name and nucleotide sequence.
     assert seg.name == 1
     assert seg.sequence() == b"CAAATAAG"
+    assert len(seg) == 8
 
     # You can also pull out the entire sequence of segments.
     seg = list(gfa.segments)[2]
@@ -71,7 +69,8 @@ def test_path_steps(gfa):
     # When you get a path, the path itself acts as a list of steps (handles).
     path = gfa.paths[1]
     assert len(path) == 4
-    step = list(path)[0]
+    assert len(list(path)) == 4
+    step = path[0]
 
     # A step (handle) is a reference to a segment and an orientation.
     assert step.segment.name == 1
@@ -150,3 +149,21 @@ def test_hash(gfa):
     assert d[gfa.paths[0]] == "bar"
     assert d[gfa.links[0]] == "baz"
     assert d[gfa.links[1].from_] == "qux"
+
+
+def test_slice(gfa):
+    # The various container types can be sliced to get narrower ranges.
+    assert len(gfa.segments[1:3]) == 2
+    assert len(gfa.segments[2:]) == len(gfa.segments) - 2
+    assert gfa.segments[1:3][0].name == gfa.segments[1].name
+
+    assert len(gfa.paths[1:]) == 1
+    assert len(gfa.links[2:100]) == 2
+
+    assert len(list(gfa.paths[:1])) == 1
+
+    # Including paths, which act like lists of steps.
+    path = gfa.paths[0]
+    assert len(path[2:]) == len(path) - 2
+    assert path[2:][0] == path[2]
+    assert len(list(path[2:])) == len(path) - 2
