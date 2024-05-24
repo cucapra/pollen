@@ -161,3 +161,9 @@ def test_slice(gfa):
     assert len(gfa.links[2:100]) == 2
 
     assert len(list(gfa.paths[:1])) == 1
+
+    # Including paths, which act like lists of steps.
+    path = gfa.paths[0]
+    assert len(path[2:]) == len(path) - 2
+    assert path[2:][0] == path[2]
+    assert len(list(path[2:])) == len(path) - 2
