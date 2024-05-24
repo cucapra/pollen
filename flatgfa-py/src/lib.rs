@@ -169,7 +169,7 @@ impl ListRef {
     {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.len() as i64)?;
+                let indices = slice.indices(self.len().try_into().unwrap())?;
                 if indices.step == 1 {
                     Ok(L::from(self.slice(indices.start as u32, indices.stop as u32)).into_py(py))
                 } else {
@@ -547,7 +547,7 @@ impl StepList {
     fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.0.len() as i64)?;
+                let indices = slice.indices(self.0.len().try_into().unwrap())?;
                 if indices.step == 1 {
                     let list = self.0.slice(indices.start as u32, indices.stop as u32);
                     Ok(Self(list).into_py(py))
