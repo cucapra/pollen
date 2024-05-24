@@ -525,7 +525,7 @@ impl PyHandle {
     }
 }
 
-/// A list of :class:`Handle`s, such as a sequence of path steps.
+/// A list of :class:`Handle` objects, such as a sequence of path steps.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
 struct StepList(ListRef);
