@@ -1,4 +1,4 @@
-use flatgfa::pool::{Id, Span};
+use flatgfa::pool::Id;
 use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
@@ -422,8 +422,8 @@ impl PyPath {
         let path = self.0.store.view().paths[self.0.id()];
         StepIter {
             store: self.0.store.clone(),
-            span: path.steps,
-            cur: path.steps.start,
+            index: path.steps.start.into(),
+            end: path.steps.end.into(),
         }
     }
 
@@ -523,13 +523,33 @@ impl PyHandle {
     }
 }
 
+/// A list of :class:`Handle`s, such as a sequence of path steps.
+#[pyclass]
+#[pyo3(module = "flatgfa")]
+struct StepList(ListRef);
+
+#[pymethods]
+impl StepList {
+    fn __len__(&self) -> usize {
+        self.0.len() as usize
+    }
+
+    fn __iter__(&self) -> StepIter {
+        StepIter {
+            store: self.0.store.clone(),
+            index: self.0.start,
+            end: self.0.end,
+        }
+    }
+}
+
 /// An iterator over the steps in a path.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
 struct StepIter {
     store: Arc<Store>,
-    span: Span<flatgfa::Handle>,
-    cur: Id<flatgfa::Handle>,
+    index: u32,
+    end: u32,
 }
 
 #[pymethods]
@@ -540,12 +560,12 @@ impl StepIter {
 
     fn __next__(&mut self) -> Option<PyHandle> {
         let gfa = self.store.view();
-        if self.span.contains(self.cur) {
+        if self.index < self.end {
             let handle = PyHandle {
                 store: self.store.clone(),
-                handle: gfa.steps[self.cur],
+                handle: gfa.steps[Id::from(self.index)],
             };
-            self.cur = (u32::from(self.cur) + 1).into();
+            self.index += 1;
             Some(handle)
         } else {
             None
@@ -637,5 +657,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SegmentList>()?;
     m.add_class::<PathList>()?;
     m.add_class::<LinkList>()?;
+    m.add_class::<StepList>()?;
     Ok(())
 }
