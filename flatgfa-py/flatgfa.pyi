@@ -13,12 +13,23 @@ class Handle:
     segment: Segment
     is_forward: bool
 
+class StepList:
+    def __iter__(self) -> Iterator[Handle]: ...
+    def __len__(self) -> int: ...
+    @overload
+    def __getitem__(self, idx: int) -> Handle: ...
+    @overload
+    def __getitem__(self, slice: slice) -> StepList: ...
+
 class Path:
     id: int
     name: bytes
 
     def __iter__(self) -> Iterator[Handle]: ...
+    @overload
     def __getitem__(self, idx: int) -> Handle: ...
+    @overload
+    def __getitem__(self, slice: slice) -> StepList: ...
 
 class Link:
     id: int
