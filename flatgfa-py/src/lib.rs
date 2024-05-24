@@ -418,28 +418,30 @@ impl PyPath {
         self.0.index as isize
     }
 
-    fn __iter__(&self) -> StepIter {
+    /// Get a list of steps in this path.
+    ///
+    /// For convenience, the path itself provides direct access to the step list. So, for
+    /// example, ``path.steps[4]`` is the same as ``path[4]``.
+    #[getter]
+    fn steps(&self) -> StepList {
         let path = self.0.store.view().paths[self.0.id()];
-        StepIter {
+        StepList(ListRef {
             store: self.0.store.clone(),
-            index: path.steps.start.into(),
+            start: path.steps.start.into(),
             end: path.steps.end.into(),
-        }
+        })
     }
 
-    fn __getitem__(&self, idx: usize) -> PyHandle {
-        let gfa = self.0.store.view();
-        let path = gfa.paths[self.0.id()];
-        let handle = gfa.steps[path.steps][idx];
-        PyHandle {
-            store: self.0.store.clone(),
-            handle,
-        }
+    fn __iter__(&self) -> StepIter {
+        self.steps().__iter__()
+    }
+
+    fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
+        self.steps().__getitem__(arg, py)
     }
 
     fn __len__(&self) -> usize {
-        let path = self.0.store.view().paths[self.0.id()];
-        path.steps.len()
+        self.steps().__len__()
     }
 }
 
@@ -539,6 +541,29 @@ impl StepList {
             store: self.0.store.clone(),
             index: self.0.start,
             end: self.0.end,
+        }
+    }
+
+    fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
+        match arg {
+            SliceOrInt::Slice(slice) => {
+                let indices = slice.indices(self.0.len() as i64)?;
+                if indices.step == 1 {
+                    let list = self.0.slice(indices.start as u32, indices.stop as u32);
+                    Ok(Self(list).into_py(py))
+                } else {
+                    Err(PyIndexError::new_err("only unit step is supported"))
+                }
+            }
+            SliceOrInt::Int(int) => {
+                let index = self.0.start + (int as u32);
+                let handle = self.0.store.view().steps[Id::from(index)];
+                Ok(PyHandle {
+                    store: self.0.store.clone(),
+                    handle,
+                }
+                .into_py(py))
+            }
         }
     }
 }
