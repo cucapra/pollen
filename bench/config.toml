@@ -25,3 +25,13 @@ cmd.flatgfa = '{fgfa} -I {files[gfa]}'
 cmd.slow_odgi = '{slow_odgi} norm {files[gfa]}'
 cmd.odgi = '{odgi} view -g -i {files[gfa]}'
 cmd.gfatools = "{gfatools} view {files[gfa]}"
+
+[modes.depth]
+cmd.flatgfa = '{fgfa} -i {files[flatgfa]} depth'
+cmd.odgi = '{odgi} depth -i {files[og]} -d'
+cmd.slow_odgi = '{slow_odgi} depth {files[gfa]}'
+
+[modes.depth_hash]
+cmd.flatgfa = '{fgfa} -i {files[flatgfa]} depth -h'
+cmd.odgi = '{odgi} depth -i {files[og]} -d'
+cmd.slow_odgi = '{slow_odgi} depth {files[gfa]}'

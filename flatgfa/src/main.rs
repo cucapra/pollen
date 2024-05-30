@@ -101,8 +101,8 @@ fn main() -> Result<(), &'static str> {
             let store = cmds::extract(&gfa, sub_args)?;
             dump(&store.as_ref(), &args.output);
         }
-        Some(Command::Depth(_)) => {
-            cmds::depth(&gfa);
+        Some(Command::Depth(sub_args)) => {
+            cmds::depth(&gfa, sub_args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
