@@ -298,14 +298,13 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
     let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
     uniq_paths.resize(gfa.segs.len(), HashSet::new());
     // do not assume that each handle in `gfa.steps()` is unique
-    for path in gfa.paths.all() {
-        let path_name = gfa.get_path_name(path);
+    for (idx, path) in gfa.paths.all().iter().enumerate() {
         for step in &gfa.steps[path.steps] {
             let seg_id = step.segment().index();
             // Increment depths
             depths[seg_id] += 1;
             // Update uniq_paths
-            uniq_paths[seg_id].insert(path_name);
+            uniq_paths[seg_id].insert(idx);
         }
     }
     // print out depth and depth.uniq
