@@ -290,76 +290,111 @@ impl<'a> SubgraphBuilder<'a> {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "depth")]
 pub struct Depth {
-    /// use hashset implementation of node depth
-    #[argh(switch, short = 'h')]
-    hash: bool
+    /// specify which algorithm of node depth to use - 'd' for default, 'h' for hash, or 'b' for (vector of) booleans
+    #[argh(option, short = 'a')]
+    algo: char
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
-    if args.hash {
-        // Initialize node depth
-        let mut depths = HashMap::new();
-        // Initialize uniq_paths
-        let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
-        uniq_paths.resize(gfa.segs.len(), HashSet::new());
-        // do not assume that each handle in `gfa.steps()` is unique
-        for path in gfa.paths.all() {
-            let path_name = gfa.get_path_name(path);
-            for step in &gfa.steps[path.steps] {
-                let seg_id = step.segment().index();
-                // Increment depths
-                match depths.get(&seg_id) {
-                    Some(depth) => depths.insert(seg_id, depth + 1),
-                    None => depths.insert(seg_id, 1)
-                };
-                // Update uniq_paths
-                uniq_paths[seg_id].insert(path_name);
-            }
-        }
-        // print out depth and depth.uniq
-        println!("#node.id\tdepth\tdepth.uniq");
-        for (id, seg) in gfa.segs.items() {
-            let name: u32 = seg.name as u32;
-            let depth = {
-                match depths.get(&id.index()) {
-                    Some(depth_) => depth_,
-                    None => &0
+    match args.algo {
+        'h' => {
+            // Initialize node depth
+            let mut depths = HashMap::new();
+            // Initialize uniq_paths
+            let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
+            uniq_paths.resize(gfa.segs.len(), HashSet::new());
+            // do not assume that each handle in `gfa.steps()` is unique
+            for path in gfa.paths.all() {
+                let path_name = gfa.get_path_name(path);
+                for step in &gfa.steps[path.steps] {
+                    let seg_id = step.segment().index();
+                    // Increment depths
+                    match depths.get(&seg_id) {
+                        Some(depth) => depths.insert(seg_id, depth + 1),
+                        None => depths.insert(seg_id, 1)
+                    };
+                    // Update uniq_paths
+                    uniq_paths[seg_id].insert(path_name);
                 }
-            };
-            println!(
-                "{}\t{}\t{}",
-                name,
-                depth,
-                uniq_paths[id.index()].len()
-            );
-        }
-    } else {
-        // Initialize node depth
-        let mut depths = vec![0; gfa.segs.len()];
-        // Initialize uniq_paths
-        let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
-        uniq_paths.resize(gfa.segs.len(), HashSet::new());
-        // do not assume that each handle in `gfa.steps()` is unique
-        for path in gfa.paths.all() {
-            let path_name = gfa.get_path_name(path);
-            for step in &gfa.steps[path.steps] {
-                let seg_id = step.segment().index();
-                // Increment depths
-                depths[seg_id] += 1;
-                // Update uniq_paths
-                uniq_paths[seg_id].insert(path_name);
             }
-        }
-        // print out depth and depth.uniq
-        println!("#node.id\tdepth\tdepth.uniq");
-        for (id, seg) in gfa.segs.items() {
-            let name: u32 = seg.name as u32;
-            println!(
-                "{}\t{}\t{}",
-                name,
-                depths[id.index()],
-                uniq_paths[id.index()].len()
-            );
+            // print out depth and depth.uniq
+            println!("#node.id\tdepth\tdepth.uniq");
+            for (id, seg) in gfa.segs.items() {
+                let name: u32 = seg.name as u32;
+                let depth = {
+                    match depths.get(&id.index()) {
+                        Some(depth_) => depth_,
+                        None => &0
+                    }
+                };
+                println!(
+                    "{}\t{}\t{}",
+                    name,
+                    depth,
+                    uniq_paths[id.index()].len()
+                );
+            }
+        },
+        'b' => {
+            // Initialize node depth
+            let mut depths = vec![0; gfa.segs.len()];
+            // Initialize uniq_depths
+            let mut uniq_depths = vec![0; gfa.segs.len()];
+        
+            // do not assume that each handle in `gfa.steps()` is unique
+            for (idx, path) in gfa.paths.all().iter().enumerate() {
+                let mut seen_path = vec![0; gfa.paths.len()];
+                for step in &gfa.steps[path.steps] {
+                    let seg_id = step.segment().index();
+                    // Increment depths
+                    depths[seg_id] += 1;
+                    // Update uniq_paths
+                    if seen_path[idx] == 0 {
+                        uniq_depths[seg_id] += 1;
+                        seen_path[idx] = 1;
+                    }
+                }
+            }
+            // print out depth and depth.uniq
+            println!("#node.id\tdepth\tdepth.uniq");
+            for (idx, seg) in gfa.segs.iter.enumerate() {
+                let name: u32 = seg.name as u32;
+                println!(
+                    "{}\t{}\t{}",
+                    name,
+                    depths[idx],
+                    uniq_depths[idx]
+                );
+            }
+        },
+        _ => {
+            // Initialize node depth
+            let mut depths = vec![0; gfa.segs.len()];
+            // Initialize uniq_paths
+            let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
+            uniq_paths.resize(gfa.segs.len(), HashSet::new());
+            // do not assume that each handle in `gfa.steps()` is unique
+            for path in gfa.paths.all() {
+                let path_name = gfa.get_path_name(path);
+                for step in &gfa.steps[path.steps] {
+                    let seg_id = step.segment().index();
+                    // Increment depths
+                    depths[seg_id] += 1;
+                    // Update uniq_paths
+                    uniq_paths[seg_id].insert(path_name);
+                }
+            }
+            // print out depth and depth.uniq
+            println!("#node.id\tdepth\tdepth.uniq");
+            for (id, seg) in gfa.segs.items() {
+                let name: u32 = seg.name as u32;
+                println!(
+                    "{}\t{}\t{}",
+                    name,
+                    depths[id.index()],
+                    uniq_paths[id.index()].len()
+                );
+            }
         }
     }
 }
