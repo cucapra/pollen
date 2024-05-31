@@ -1,7 +1,6 @@
 use crate::flatgfa::{self, Handle, Segment};
 use crate::pool::{self, Id, Store};
 use argh::FromArgs;
-use bstr::BStr;
 use std::collections::{HashMap, HashSet};
 
 /// print the FlatGFA table of contents
@@ -295,7 +294,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
     // Initialize node depth
     let mut depths = vec![0; gfa.segs.len()];
     // Initialize uniq_paths
-    let mut uniq_paths = Vec::<HashSet<&BStr>>::new();
+    let mut uniq_paths = Vec::<HashSet<usize>>::new();
     uniq_paths.resize(gfa.segs.len(), HashSet::new());
     // do not assume that each handle in `gfa.steps()` is unique
     for (idx, path) in gfa.paths.all().iter().enumerate() {
