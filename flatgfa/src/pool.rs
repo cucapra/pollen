@@ -82,6 +82,10 @@ impl<T> Span<T> {
             _marker: PhantomData,
         }
     }
+
+    pub fn new_empty() -> Self {
+        Span::new(Id::new(0), Id::new(0))
+    }
 }
 
 /// A simple arena for objects of a single type.

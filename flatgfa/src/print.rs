@@ -127,13 +127,13 @@ pub fn write_normalized(gfa: &flatgfa::FlatGFA, f: &mut fmt::Formatter<'_>) -> f
         writeln!(f, "H\t{}", bstr::BStr::new(gfa.header.all()))?;
     }
     for seg in gfa.segs.all().iter() {
-        write!(f, "{}", Display(gfa, seg))?;
+        writeln!(f, "{}", Display(gfa, seg))?;
     }
     for path in gfa.paths.all().iter() {
-        write!(f, "{}", Display(gfa, path))?;
+        writeln!(f, "{}", Display(gfa, path))?;
     }
     for link in gfa.links.all().iter() {
-        write!(f, "{}", Display(gfa, link))?;
+        writeln!(f, "{}", Display(gfa, link))?;
     }
     Ok(())
 }

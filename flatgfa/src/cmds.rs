@@ -1,5 +1,5 @@
-use crate::flatgfa::{self, Handle, Segment};
-use crate::pool::{self, Id, Store};
+use crate::flatgfa::{self, Handle, Segment, Path, Orientation};
+use crate::pool::{self, Id, Span, Store};
 use argh::FromArgs;
 use std::collections::{HashMap, HashSet};
 
@@ -245,6 +245,7 @@ impl<'a> SubgraphBuilder<'a> {
 
     /// Translate a handle from the source graph to this subgraph.
     fn tr_handle(&self, old_handle: flatgfa::Handle) -> flatgfa::Handle {
+        // TODO: is this just generating the handle or should we add it to the new graph?
         flatgfa::Handle::new(self.seg_map[&old_handle.segment()], old_handle.orient())
     }
 
@@ -317,4 +318,126 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
             uniq_paths[id.index()].len()
         );
     }
+}
+
+
+/// chop the segments in a graph into sizes of N or smaller
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "chop")]
+pub struct Chop {
+    /// maximimum segment size.
+    // Use c in keeping with odgi convention
+    #[argh(option, short = 'c')]
+    c: usize,
+}
+
+/// Chop a graph into segments of size no larger than c
+/// By default, compact node ids
+/// CIGAR strings, links, and optional Segment data are invalidated by chop
+/// Generates a new graph, rather than modifying the old one in place
+pub fn chop<'a>(
+    gfa: &'a flatgfa::FlatGFA<'a>,
+    args: Chop,
+) -> Result<flatgfa::HeapGFAStore, &'static str> {
+
+    let mut flat = flatgfa::HeapGFAStore::default();        
+
+    let mut seg_map: Vec<(Id<Segment>, Id<Segment>)> = Vec::new();
+    let mut max_node_id = 0;
+
+    fn empty_span<T>() -> Span<T> {
+        Span::new(Id::new(0), Id::new(0))
+    }
+
+    // Add new, chopped segments
+    for seg in gfa.segs.all().iter() {
+        let len = seg.len();
+        if len <= args.c {
+            // Leave the segment as is
+            let id = flat.segs.add(Segment {
+                name: max_node_id,
+                seq: seg.seq,
+                optional: empty_span()
+                // TODO: Optional data may stay valid when seg not chopped?
+            });
+            max_node_id += 1;
+            seg_map.push((id, flat.segs.next_id()));
+        }
+        else {
+            let seq_end = seg.seq.end;
+            let mut offset = seg.seq.start.index();
+            let segs_start = flat.segs.next_id();
+            // Could also generate end_id by setting it equal to the start_id and
+            // updating it for each segment that is added - only benefits us if we 
+            // don't unroll the last iteration of this loop
+            while offset < seq_end.index() - args.c {
+                // Generate a new segment of length c
+                flat.segs.add(Segment {
+                    name: max_node_id,
+                    seq: Span::new(Id::new(offset), Id::new(offset + args.c)),
+                    optional: empty_span()
+                });
+                offset = offset + args.c;
+                max_node_id += 1;
+            }
+            // Generate the last segment
+            let segs_end = flat.segs.add(Segment {
+                    name: max_node_id,
+                    seq: Span::new(Id::new(offset), seq_end),
+                    optional: empty_span()
+            });
+            max_node_id += 1;
+            seg_map.push((segs_start, segs_end));
+        }
+    }
+
+    // For each path, add updated handles. Then add the updated path
+    for path in gfa.paths.all().iter() {
+        let path_start = flat.steps.next_id();
+        let mut path_end = flat.steps.next_id();
+        // Generate the new handles
+        // Tentative to-do: see if it is faster to read Id from segs than to re-generate it?
+        for step in &gfa.steps[path.steps] {
+            let (start_id, end_id) = seg_map[step.segment().index()];
+            let (start_idx, end_idx) = (start_id.index(), end_id.index());
+            match step.orient() {
+                Orientation::Forward => {
+                    // In this builder, Id.index() == seg.name for all seg
+                    path_end = flat.add_steps(
+                        (start_idx..end_idx).map(|idx| {
+                            Handle::new(
+                                Id::new(idx),
+                                Orientation::Forward
+                            )
+                        })
+                    ).end;
+                },
+                Orientation::Backward => {
+                    path_end = flat.add_steps(
+                        (start_idx..end_idx).rev().map(|idx| {
+                            Handle::new(
+                                Id::new(idx),
+                                Orientation::Backward
+                            )
+                        })
+                    ).end;
+                }
+            }
+        }
+
+        // Add the updated path
+        flat.paths.add(Path{
+            name: path.name,
+            steps: Span::new(path_start, path_end),
+            overlaps: Span::new(flat.overlaps.next_id(), flat.overlaps.next_id())
+        });
+    }
+
+    Ok(flat)
+
+    // TODO: Once we figure out how to handle links, fix them?
+    // * Is there any logical correspondence between links and edges?
+    // * Should we preserve/generate updated CIGAR string information? Do we care about links if not?
+    // * * * Maybe generating links/CIGAR strings should be left to whoever is analyzing the graph?
+    // * Go back and add/update links between chopped nodes
 }
