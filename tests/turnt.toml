@@ -171,6 +171,11 @@ output.gfa = "-"
 command = "../flatgfa/target/debug/fgfa -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../flatgfa/target/debug/fgfa -m -i {base}.inplace.flatgfa"
 output.gfa = "-"
 
+[envs.odgi_depth]
+binary = true
+command = "odgi depth -d -i {filename}"
+output.depth = "-"
+
 [envs.flatgfa_depth]
 command = "../flatgfa/target/debug/fgfa -I {filename} depth"
 output.depth = "-"
