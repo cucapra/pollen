@@ -170,3 +170,11 @@ output.gfa = "-"
 [envs.flatgfa_file_inplace]
 command = "../flatgfa/target/debug/fgfa -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../flatgfa/target/debug/fgfa -m -i {base}.inplace.flatgfa"
 output.gfa = "-"
+
+[envs.flatgfa_depth]
+command = "../flatgfa/target/debug/fgfa -I {filename} depth"
+output.depth = "-"
+
+[envs.flatgfa_chop]
+command = "../flatgfa/target/debug/fgfa -I {filename} chop -c 3"
+output.chop = "-"

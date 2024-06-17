@@ -343,7 +343,7 @@ pub fn chop<'a>(
     let mut flat = flatgfa::HeapGFAStore::default();        
 
     let mut seg_map: Vec<(Id<Segment>, Id<Segment>)> = Vec::new();
-    let mut max_node_id = 0;
+    let mut max_node_id = 1;
 
     fn empty_span<T>() -> Span<T> {
         Span::new(Id::new(0), Id::new(0))
@@ -381,13 +381,13 @@ pub fn chop<'a>(
                 max_node_id += 1;
             }
             // Generate the last segment
-            let segs_end = flat.segs.add(Segment {
+            flat.segs.add(Segment {
                     name: max_node_id,
                     seq: Span::new(Id::new(offset), seq_end),
                     optional: empty_span()
             });
             max_node_id += 1;
-            seg_map.push((segs_start, segs_end));
+            seg_map.push((segs_start, flat.segs.next_id()));
         }
     }
 
@@ -402,7 +402,7 @@ pub fn chop<'a>(
             let (start_idx, end_idx) = (start_id.index(), end_id.index());
             match step.orient() {
                 Orientation::Forward => {
-                    // In this builder, Id.index() == seg.name for all seg
+                    // In this builder, Id.index() == seg.name - 1 for all seg
                     path_end = flat.add_steps(
                         (start_idx..end_idx).map(|idx| {
                             Handle::new(

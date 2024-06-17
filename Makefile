@@ -17,6 +17,12 @@ test-slow-odgi: fetch
 	make -C slow_odgi test
 
 .PHONY: test-flatgfa
-test-flatgfa:
+test-flatgfa: fetch
 	cd flatgfa ; cargo build
 	turnt -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa
+
+	-turnt --save -e chop_oracle tests/*.gfa
+	turnt -e flatgfa_chop tests/*.gfa
+
+clean:
+	rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth
