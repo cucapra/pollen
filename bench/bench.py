@@ -223,7 +223,7 @@ def run_bench(graph_set, mode, tools, out_csv):
         for tool in tools:
             assert tool in runner.config["modes"][mode]["cmd"], f"unknown tool {tool}"
     else:
-        # Use all supported tools by deefault.
+        # Use all supported tools by default.
         tools = list(runner.config["modes"][mode]["cmd"].keys())
 
     # Fetch all the graphs and convert them to both odgi and FlatGFA.
