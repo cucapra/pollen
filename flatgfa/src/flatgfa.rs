@@ -101,6 +101,12 @@ pub struct Path {
     pub overlaps: Span<Span<AlignOp>>,
 }
 
+impl Path {
+    pub fn step_count(&self) -> usize {
+        self.steps.end.index() - self.steps.start.index()
+    }
+}
+
 /// An allowed edge between two oriented segments.
 #[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
 #[repr(packed)]
@@ -277,8 +283,8 @@ impl<'a> FlatGFA<'a> {
 
     /// Look up a CIGAR alignment.
     pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
-        Alignment {
-            ops: &self.alignment[overlap],
+        Alignment { 
+            ops: &self.alignment[overlap]
         }
     }
 
@@ -351,6 +357,11 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     /// Add a single step.
     pub fn add_step(&mut self, step: Handle) -> Id<Handle> {
         self.steps.add(step)
+    }
+
+    /// Add a sequence of links.
+    pub fn add_links(&mut self, links: impl Iterator<Item = Link>) -> Span<Link> {
+        self.links.add_iter(links)
     }
 
     /// Add a link between two (oriented) segments.

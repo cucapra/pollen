@@ -23,6 +23,9 @@ impl fmt::Display for flatgfa::AlignOpcode {
 
 impl<'a> fmt::Display for flatgfa::Alignment<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.ops.len() == 0 {
+            write!(f, "0M")?;
+        }
         for op in self.ops {
             write!(f, "{}{}", op.len(), op.op())?;
         }

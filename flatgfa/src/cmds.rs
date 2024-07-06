@@ -1,5 +1,6 @@
-use crate::flatgfa::{self, Handle, Segment, Path, Orientation};
+use crate::flatgfa::{self, Handle, Segment, Path, Orientation, Link};
 use crate::pool::{self, Id, Span, Store};
+use crate::{GFAStore, HeapFamily};
 use argh::FromArgs;
 use std::collections::{HashMap, HashSet};
 
@@ -329,6 +330,10 @@ pub struct Chop {
     // Use c in keeping with odgi convention
     #[argh(option, short = 'c')]
     c: usize,
+
+    /// compute new links
+    #[argh(switch, short = 'l')]
+    l: bool,
 }
 
 /// Chop a graph into segments of size no larger than c
@@ -431,6 +436,113 @@ pub fn chop<'a>(
             steps: Span::new(path_start, path_end),
             overlaps: Span::new(flat.overlaps.next_id(), flat.overlaps.next_id())
         });
+    }
+
+    // If the 'l' flag is specified, compute the links in the new graph
+
+    fn link_foward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
+        let overlap = Span::new(flat.alignment.next_id(), flat.alignment.next_id());
+        flat.add_links(
+            (range.0.index()..(range.1.index()-1)).map(|idx| {
+                Link {
+                    from: Handle::new(Id::new(idx), Orientation::Forward),
+                    to: Handle::new(Id::new(idx+1), Orientation::Forward),
+                    overlap: overlap
+                }
+            })
+        );
+    }
+
+    fn link_backward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
+        let overlap = Span::new(flat.alignment.next_id(), flat.alignment.next_id());
+        flat.add_links(
+            (range.0.index()..(range.1.index()-1)).map(|idx| {
+                Link {
+                    from: Handle::new(Id::new(idx+1), Orientation::Backward),
+                    to: Handle::new(Id::new(idx), Orientation::Backward),
+                    overlap: overlap
+                }
+            })
+        );
+    }
+
+    if args.l {
+        // For each link in the old graph, from handle A -> B:
+        //      Add a link from
+        //          (A.forward ? (A.end, forward) : (A.begin, backwards))
+        //          -> (B.forward ? (B.begin, forward) : (B.end ? backwards))
+        //      If A was chopped:       // For each chopped node, add links between the new nodes if incident edges exist
+        //          If A.forward, add forward edges along A's new nodes *if not already added*
+        //          If A.backward, add backwards edges along A's new nodes *if not already added*
+        //      If B was chopped:       
+        //          If B.forward, add forward edges along B's new nodes *if not already added*
+        //          If B.backward, add backwards edges along B's new nodes *if not already added*
+
+        let mut chopped_linked: HashSet<Handle> = HashSet::new();
+        for link in gfa.links.all().iter() {
+            let new_from = {
+                let old_from = link.from;
+                let chopped_segs = seg_map[old_from.segment().index()];
+                match old_from.orient() {
+                    Orientation::Forward => {
+                        if (chopped_segs.1.index() - chopped_segs.0.index()) > 1 
+                            && !chopped_linked.contains(&old_from) {
+                                link_foward(&mut flat, &chopped_segs);
+                                chopped_linked.insert(old_from);
+                        }
+                        Handle::new(
+                            chopped_segs.1 - 1,
+                            Orientation::Forward
+                        )
+                    },
+                    Orientation::Backward => {
+                        if chopped_segs.1.index() - chopped_segs.0.index() > 1
+                            && !chopped_linked.contains(&old_from) {
+                                link_backward(&mut flat, &chopped_segs);
+                                chopped_linked.insert(old_from);
+                        }
+                        Handle::new(
+                            chopped_segs.0,
+                            Orientation::Backward
+                        )
+                    }
+                }
+            };
+            let new_to = {
+                let old_to = link.to;
+                let chopped_segs = seg_map[old_to.segment().index()];
+                match old_to.orient() {
+                    Orientation::Forward => {
+                        if (chopped_segs.1.index() - chopped_segs.0.index()) > 1 {
+                            if !chopped_linked.contains(&old_to) {
+                                link_foward(&mut flat, &chopped_segs);
+                                chopped_linked.insert(old_to);
+                            }
+                        } 
+                        Handle::new(
+                            chopped_segs.0,
+                            Orientation::Forward
+                        )
+                    },
+                    Orientation::Backward => {
+                        if chopped_segs.1.index() - chopped_segs.0.index() > 1
+                            && !chopped_linked.contains(&old_to) {
+                                link_backward(&mut flat, &chopped_segs);
+                                chopped_linked.insert(old_to);
+                        }
+                        Handle::new(
+                            chopped_segs.1 - 1,
+                            Orientation::Backward
+                        )
+                    }
+                }
+            };
+            flat.add_link(
+                new_from,
+                new_to,
+                vec![]
+            );
+        }
     }
 
     Ok(flat)

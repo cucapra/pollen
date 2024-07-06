@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::ops::{Index, Add, Sub};
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -19,6 +19,23 @@ impl<T> Eq for Id<T> {}
 impl<T> Hash for Id<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state)
+    }
+}
+
+impl<T> Add<u32> for Id<T> {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: u32) -> Self::Output {
+        Self(self.0 + rhs, PhantomData)
+    }
+}
+
+impl<T> Sub<u32> for Id<T> {
+    type Output = Self;
+    #[inline]
+    fn sub(self, rhs:u32) -> Self::Output {
+        Self(self.0 - rhs, PhantomData)
     }
 }
 
