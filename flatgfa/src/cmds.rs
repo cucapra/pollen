@@ -354,6 +354,20 @@ pub fn chop<'a>(
         Span::new(Id::new(0), Id::new(0))
     }
 
+    fn link_forward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
+        // Link segments range.0 through range.1 from head to tail
+        let overlap = empty_span();
+        flat.add_links(
+            (range.0.index()..(range.1.index()-1)).map(|idx| {
+                Link {
+                    from: Handle::new(Id::new(idx), Orientation::Forward),
+                    to: Handle::new(Id::new(idx+1), Orientation::Forward),
+                    overlap: overlap
+                }
+            })
+        );
+    }
+
     // Add new, chopped segments
     for seg in gfa.segs.all().iter() {
         let len = seg.len();
@@ -392,7 +406,11 @@ pub fn chop<'a>(
                     optional: empty_span()
             });
             max_node_id += 1;
-            seg_map.push((segs_start, flat.segs.next_id()));
+            let new_seg_range = (segs_start, flat.segs.next_id());
+            seg_map.push(new_seg_range);
+            if args.l {
+                link_forward(&mut flat, &new_seg_range);
+            }
         }
     }
 
@@ -440,67 +458,25 @@ pub fn chop<'a>(
 
     // If the 'l' flag is specified, compute the links in the new graph
 
-    fn link_foward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
-        let overlap = Span::new(flat.alignment.next_id(), flat.alignment.next_id());
-        flat.add_links(
-            (range.0.index()..(range.1.index()-1)).map(|idx| {
-                Link {
-                    from: Handle::new(Id::new(idx), Orientation::Forward),
-                    to: Handle::new(Id::new(idx+1), Orientation::Forward),
-                    overlap: overlap
-                }
-            })
-        );
-    }
-
-    fn link_backward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
-        let overlap = Span::new(flat.alignment.next_id(), flat.alignment.next_id());
-        flat.add_links(
-            (range.0.index()..(range.1.index()-1)).map(|idx| {
-                Link {
-                    from: Handle::new(Id::new(idx+1), Orientation::Backward),
-                    to: Handle::new(Id::new(idx), Orientation::Backward),
-                    overlap: overlap
-                }
-            })
-        );
-    }
 
     if args.l {
         // For each link in the old graph, from handle A -> B:
         //      Add a link from
         //          (A.forward ? (A.end, forward) : (A.begin, backwards))
         //          -> (B.forward ? (B.begin, forward) : (B.end ? backwards))
-        //      If A was chopped:       // For each chopped node, add links between the new nodes if incident edges exist
-        //          If A.forward, add forward edges along A's new nodes *if not already added*
-        //          If A.backward, add backwards edges along A's new nodes *if not already added*
-        //      If B was chopped:       
-        //          If B.forward, add forward edges along B's new nodes *if not already added*
-        //          If B.backward, add backwards edges along B's new nodes *if not already added*
 
-        let mut chopped_linked: HashSet<Handle> = HashSet::new();
         for link in gfa.links.all().iter() {
             let new_from = {
                 let old_from = link.from;
                 let chopped_segs = seg_map[old_from.segment().index()];
                 match old_from.orient() {
                     Orientation::Forward => {
-                        if (chopped_segs.1.index() - chopped_segs.0.index()) > 1 
-                            && !chopped_linked.contains(&old_from) {
-                                link_foward(&mut flat, &chopped_segs);
-                                chopped_linked.insert(old_from);
-                        }
                         Handle::new(
                             chopped_segs.1 - 1,
                             Orientation::Forward
                         )
                     },
                     Orientation::Backward => {
-                        if chopped_segs.1.index() - chopped_segs.0.index() > 1
-                            && !chopped_linked.contains(&old_from) {
-                                link_backward(&mut flat, &chopped_segs);
-                                chopped_linked.insert(old_from);
-                        }
                         Handle::new(
                             chopped_segs.0,
                             Orientation::Backward
@@ -513,23 +489,12 @@ pub fn chop<'a>(
                 let chopped_segs = seg_map[old_to.segment().index()];
                 match old_to.orient() {
                     Orientation::Forward => {
-                        if (chopped_segs.1.index() - chopped_segs.0.index()) > 1 {
-                            if !chopped_linked.contains(&old_to) {
-                                link_foward(&mut flat, &chopped_segs);
-                                chopped_linked.insert(old_to);
-                            }
-                        } 
                         Handle::new(
                             chopped_segs.0,
                             Orientation::Forward
                         )
                     },
                     Orientation::Backward => {
-                        if chopped_segs.1.index() - chopped_segs.0.index() > 1
-                            && !chopped_linked.contains(&old_to) {
-                                link_backward(&mut flat, &chopped_segs);
-                                chopped_linked.insert(old_to);
-                        }
                         Handle::new(
                             chopped_segs.1 - 1,
                             Orientation::Backward
