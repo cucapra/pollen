@@ -9,15 +9,20 @@ endif
 tests/%.gfa:
 	curl -Lo ./$@ $(GFA_URL)/$*.gfa
 
+tests/%.og: tests/%.gfa
+	odgi build -g $< -o $@
+
 .PHONY: fetch
 fetch: $(TEST_FILES:%=tests/%.gfa)
+
+fetch-og: $(TEST_FILES:%=tests/%.og)
 
 .PHONY: test-slow-odgi
 test-slow-odgi: fetch
 	make -C slow_odgi test
 
 .PHONY: test-flatgfa
-test-flatgfa: fetch
+test-flatgfa: fetch-og
 	cd flatgfa ; cargo build
 
 	turnt -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa
@@ -29,4 +34,4 @@ test-flatgfa: fetch
 	turnt -v -e flatgfa_depth tests/*.gfa
 
 clean:
-	rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth
+	-rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth tests/*.gfa tests/*.og
