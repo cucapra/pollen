@@ -362,7 +362,7 @@ pub fn chop<'a>(
                 Link {
                     from: Handle::new(Id::new(idx), Orientation::Forward),
                     to: Handle::new(Id::new(idx+1), Orientation::Forward),
-                    overlap: overlap
+                    overlap
                 }
             })
         );
@@ -396,7 +396,7 @@ pub fn chop<'a>(
                     seq: Span::new(Id::new(offset), Id::new(offset + args.c)),
                     optional: empty_span()
                 });
-                offset = offset + args.c;
+                offset += args.c;
                 max_node_id += 1;
             }
             // Generate the last segment
@@ -457,8 +457,6 @@ pub fn chop<'a>(
     }
 
     // If the 'l' flag is specified, compute the links in the new graph
-
-
     if args.l {
         // For each link in the old graph, from handle A -> B:
         //      Add a link from
