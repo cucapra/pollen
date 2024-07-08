@@ -22,11 +22,11 @@ test-flatgfa: fetch
 
 	turnt -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa
 
-	-turnt --save -e chop_oracle_fgfa tests/*.gfa
-	turnt -e flatgfa_chop tests/*.gfa
+	-turnt --save -v -e chop_oracle_fgfa tests/*.gfa
+	turnt -v -e flatgfa_chop tests/*.gfa
 
-	-turnt --save -e odgi_depth tests/*.gfa
-	turnt -e flatgfa_depth tests/*.gfa
+	-turnt --save -v -e odgi_depth tests/*.gfa
+	turnt -v -e flatgfa_depth tests/*.gfa
 
 clean:
 	rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth
