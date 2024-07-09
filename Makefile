@@ -27,11 +27,11 @@ test-flatgfa: fetch-og
 
 	turnt -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa
 
-	-turnt --save -v -e chop_oracle_fgfa tests/*.og
-	turnt -v --diff -e flatgfa_chop tests/*.gfa
+	-turnt --save -vp -e chop_oracle_fgfa tests/*.og
+	turnt -vp -e flatgfa_chop tests/*.gfa
 
-	-turnt --save -v -e odgi_depth tests/*.og
-	turnt -v --diff -e flatgfa_depth tests/*.gfa
+	-turnt --save -vp -e odgi_depth tests/*.og
+	turnt -vp -e flatgfa_depth tests/*.gfa
 
 clean:
 	-rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth tests/*.gfa tests/*.og
