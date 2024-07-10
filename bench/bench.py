@@ -72,7 +72,6 @@ def hyperfine(cmds):
             "hyperfine",
             "--export-json",
             tmp.name,
-            # "--shell=none",
             "--warmup=1",
             "--min-runs=3",
             "--max-runs=16",

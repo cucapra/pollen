@@ -33,5 +33,5 @@ cmd.slow_odgi = '{slow_odgi} depth {files[gfa]}'
 
 [modes.chop]
 cmd.flatgfa = '{fgfa} -i {files[flatgfa]} chop -c 3'
-cmd.odgi = '{odgi} chop -i {files[og]} -c 3 -o - | {odgi} view -g -i - | {slow_odgi} norm --nl'
+cmd.odgi = '{odgi} chop -i {files[og]} -c 3 -o -'
 cmd.slow_odgi = '{slow_odgi} chop {files[gfa]} -n 3'

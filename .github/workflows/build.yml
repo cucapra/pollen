@@ -94,8 +94,8 @@ jobs:
       # Install odgi
       - name: Pull odgi container
         run: |
-          docker pull quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0
-          docker tag quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0 odgi
+          docker pull quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1
+          docker tag quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1 odgi
       - name: Install odgi alias
         run: |
           mkdir -p $HOME/.local/bin

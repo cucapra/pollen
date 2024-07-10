@@ -347,16 +347,15 @@ pub fn chop<'a>(
 
     let mut flat = flatgfa::HeapGFAStore::default();        
 
+    // when segment S is chopped into segments S1 through S2 (exclusive), 
+    // seg_map[S.name] = (Id(S1.name), Id(S2.name)). If S is not chopped: S=S1, S2.name = S1.name+1
     let mut seg_map: Vec<(Id<Segment>, Id<Segment>)> = Vec::new();
+    // The smallest id (>0) which does not already belong to a segment in the new graph
     let mut max_node_id = 1;
-
-    fn empty_span<T>() -> Span<T> {
-        Span::new(Id::new(0), Id::new(0))
-    }
 
     fn link_forward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
         // Link segments range.0 through range.1 from head to tail
-        let overlap = empty_span();
+        let overlap = Span::new_empty();
         flat.add_links(
             (range.0.index()..(range.1.index()-1)).map(|idx| {
                 Link {
@@ -376,7 +375,7 @@ pub fn chop<'a>(
             let id = flat.segs.add(Segment {
                 name: max_node_id,
                 seq: seg.seq,
-                optional: empty_span()
+                optional: Span::new_empty()
                 // TODO: Optional data may stay valid when seg not chopped?
             });
             max_node_id += 1;
@@ -394,7 +393,7 @@ pub fn chop<'a>(
                 flat.segs.add(Segment {
                     name: max_node_id,
                     seq: Span::new(Id::new(offset), Id::new(offset + args.c)),
-                    optional: empty_span()
+                    optional: Span::new_empty()
                 });
                 offset += args.c;
                 max_node_id += 1;
@@ -403,7 +402,7 @@ pub fn chop<'a>(
             flat.segs.add(Segment {
                     name: max_node_id,
                     seq: Span::new(Id::new(offset), seq_end),
-                    optional: empty_span()
+                    optional: Span::new_empty()
             });
             max_node_id += 1;
             let new_seg_range = (segs_start, flat.segs.next_id());
@@ -452,7 +451,7 @@ pub fn chop<'a>(
         flat.paths.add(Path{
             name: path.name,
             steps: Span::new(path_start, path_end),
-            overlaps: Span::new(flat.overlaps.next_id(), flat.overlaps.next_id())
+            overlaps: Span::new_empty()
         });
     }
 
@@ -467,38 +466,20 @@ pub fn chop<'a>(
             let new_from = {
                 let old_from = link.from;
                 let chopped_segs = seg_map[old_from.segment().index()];
-                match old_from.orient() {
-                    Orientation::Forward => {
-                        Handle::new(
-                            chopped_segs.1 - 1,
-                            Orientation::Forward
-                        )
-                    },
-                    Orientation::Backward => {
-                        Handle::new(
-                            chopped_segs.0,
-                            Orientation::Backward
-                        )
-                    }
-                }
+                let seg_id = match old_from.orient() {
+                    Orientation::Forward => chopped_segs.1 - 1,
+                    Orientation::Backward => chopped_segs.0
+                };
+                Handle::new(seg_id, old_from.orient())
             };
             let new_to = {
                 let old_to = link.to;
                 let chopped_segs = seg_map[old_to.segment().index()];
-                match old_to.orient() {
-                    Orientation::Forward => {
-                        Handle::new(
-                            chopped_segs.0,
-                            Orientation::Forward
-                        )
-                    },
-                    Orientation::Backward => {
-                        Handle::new(
-                            chopped_segs.1 - 1,
-                            Orientation::Backward
-                        )
-                    }
-                }
+                let seg_id = match old_to.orient() {
+                    Orientation::Forward => chopped_segs.0, 
+                    Orientation::Backward => chopped_segs.1 - 1,
+                };
+                Handle::new(seg_id, old_to.orient())
             };
             flat.add_link(
                 new_from,
@@ -509,10 +490,4 @@ pub fn chop<'a>(
     }
 
     Ok(flat)
-
-    // TODO: Once we figure out how to handle links, fix them?
-    // * Is there any logical correspondence between links and edges?
-    // * Should we preserve/generate updated CIGAR string information? Do we care about links if not?
-    // * * * Maybe generating links/CIGAR strings should be left to whoever is analyzing the graph?
-    // * Go back and add/update links between chopped nodes
 }
