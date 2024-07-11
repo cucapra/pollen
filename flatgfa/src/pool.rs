@@ -79,6 +79,12 @@ impl<T> From<Span<T>> for std::ops::Range<usize> {
     }
 }
 
+impl<T> From<&Span<T>> for std::ops::Range<usize> {
+    fn from(span: &Span<T>) -> std::ops::Range<usize> {
+        (span.start.0 as usize)..(span.end.0 as usize)
+    }
+}
+
 impl<T> Span<T> {
     pub fn is_empty(&self) -> bool {
         self.start.0 == self.end.0

@@ -271,6 +271,10 @@ impl<'a> FlatGFA<'a> {
         self.name_data[path.name].as_ref()
     }
 
+    pub fn get_path_steps(&self, path: &Path) -> impl Iterator<Item = &Handle> {
+        self.steps[path.steps].iter()
+    }
+
     /// Get a handle's associated segment.
     pub fn get_handle_seg(&self, handle: Handle) -> &Segment {
         &self.segs[handle.segment()]

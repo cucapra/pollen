@@ -348,16 +348,16 @@ pub fn chop<'a>(
     let mut flat = flatgfa::HeapGFAStore::default();        
 
     // when segment S is chopped into segments S1 through S2 (exclusive), 
-    // seg_map[S.name] = (Id(S1.name), Id(S2.name)). If S is not chopped: S=S1, S2.name = S1.name+1
-    let mut seg_map: Vec<(Id<Segment>, Id<Segment>)> = Vec::new();
-    // The smallest id (>0) which does not already belong to a segment in the new graph
+    // seg_map[S.name] = Span(Id(S1.name), Id(S2.name)). If S is not chopped: S=S1, S2.name = S1.name+1
+    let mut seg_map: Vec<(Span<Segment>)> = Vec::new();
+    // The smallest id (>0) which does not already belong to a segment in `flat`
     let mut max_node_id = 1;
 
-    fn link_forward(flat: &mut GFAStore<'static, HeapFamily>, range: &(Id<Segment>, Id<Segment>)) {
-        // Link segments range.0 through range.1 from head to tail
+    fn link_forward(flat: &mut GFAStore<'static, HeapFamily>, span: &Span<Segment>) {
+        // Link segments spanned by `span` from head to tail
         let overlap = Span::new_empty();
         flat.add_links(
-            (range.0.index()..(range.1.index()-1)).map(|idx| {
+            std::ops::Range::from(span).map(|idx| {
                 Link {
                     from: Handle::new(Id::new(idx), Orientation::Forward),
                     to: Handle::new(Id::new(idx+1), Orientation::Forward),
@@ -379,7 +379,7 @@ pub fn chop<'a>(
                 // TODO: Optional data may stay valid when seg not chopped?
             });
             max_node_id += 1;
-            seg_map.push((id, flat.segs.next_id()));
+            seg_map.push(Span::new(id, flat.segs.next_id()));
         }
         else {
             let seq_end = seg.seq.end;
@@ -405,10 +405,10 @@ pub fn chop<'a>(
                     optional: Span::new_empty()
             });
             max_node_id += 1;
-            let new_seg_range = (segs_start, flat.segs.next_id());
-            seg_map.push(new_seg_range);
+            let new_seg_span = Span::new(segs_start, flat.segs.next_id());
+            seg_map.push(new_seg_span);
             if args.l {
-                link_forward(&mut flat, &new_seg_range);
+                link_forward(&mut flat, &new_seg_span);
             }
         }
     }
@@ -419,14 +419,16 @@ pub fn chop<'a>(
         let mut path_end = flat.steps.next_id();
         // Generate the new handles
         // Tentative to-do: see if it is faster to read Id from segs than to re-generate it?
-        for step in &gfa.steps[path.steps] {
-            let (start_id, end_id) = seg_map[step.segment().index()];
-            let (start_idx, end_idx) = (start_id.index(), end_id.index());
+        for step in gfa.get_path_steps(path) {
+            let range = {
+                let span = seg_map[step.segment().index()];
+                std::ops::Range::from(span)
+            };
             match step.orient() {
                 Orientation::Forward => {
                     // In this builder, Id.index() == seg.name - 1 for all seg
                     path_end = flat.add_steps(
-                        (start_idx..end_idx).map(|idx| {
+                        range.map(|idx| {
                             Handle::new(
                                 Id::new(idx),
                                 Orientation::Forward
@@ -436,7 +438,7 @@ pub fn chop<'a>(
                 },
                 Orientation::Backward => {
                     path_end = flat.add_steps(
-                        (start_idx..end_idx).rev().map(|idx| {
+                        range.rev().map(|idx| {
                             Handle::new(
                                 Id::new(idx),
                                 Orientation::Backward
@@ -467,8 +469,8 @@ pub fn chop<'a>(
                 let old_from = link.from;
                 let chopped_segs = seg_map[old_from.segment().index()];
                 let seg_id = match old_from.orient() {
-                    Orientation::Forward => chopped_segs.1 - 1,
-                    Orientation::Backward => chopped_segs.0
+                    Orientation::Forward => chopped_segs.start - 1,
+                    Orientation::Backward => chopped_segs.end
                 };
                 Handle::new(seg_id, old_from.orient())
             };
@@ -476,8 +478,8 @@ pub fn chop<'a>(
                 let old_to = link.to;
                 let chopped_segs = seg_map[old_to.segment().index()];
                 let seg_id = match old_to.orient() {
-                    Orientation::Forward => chopped_segs.0, 
-                    Orientation::Backward => chopped_segs.1 - 1,
+                    Orientation::Forward => chopped_segs.start, 
+                    Orientation::Backward => chopped_segs.end - 1,
                 };
                 Handle::new(seg_id, old_to.orient())
             };
