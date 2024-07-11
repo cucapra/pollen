@@ -147,6 +147,14 @@ pub struct Extract {
     /// number of edges "away" from the node to include
     #[argh(option, short = 'c')]
     link_distance: usize,
+
+    /// maximum number of basepairs allowed between subpaths s.t. the subpaths are merged together
+    #[argh(option, short = 'd', long = "max-distance-subpaths", default = "300000")]
+    max_distance_subpaths: usize, // TODO: possibly make this bigger
+
+    /// maximum number of iterations before we stop merging subpaths
+    #[argh(option, short = 'e', long = "max-merging-iterations", default = "6")]
+    num_iterations: usize // TODO: probably make this smaller
 }
 
 pub fn extract(
@@ -156,7 +164,8 @@ pub fn extract(
     let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
 
     let mut subgraph = SubgraphBuilder::new(gfa);
-    subgraph.extract(origin_seg, args.link_distance);
+    subgraph.add_header();
+    subgraph.extract(origin_seg, args.link_distance, args.max_distance_subpaths, args.num_iterations);
     Ok(subgraph.store)
 }
 
@@ -179,6 +188,16 @@ impl<'a> SubgraphBuilder<'a> {
             store: flatgfa::HeapGFAStore::default(),
             seg_map: HashMap::new(),
         }
+    }
+
+    /// Include the old graph's header
+    fn add_header(&mut self) {
+            // pub fn add_header(&mut self, version: &[u8]) {
+            //     assert!(self.header.as_ref().is_empty());
+            //     self.header.add_slice(version);
+            // }
+        assert!(self.store.header.as_ref().is_empty());
+        self.store.header.add_slice(self.old.header.all());
     }
 
     /// Add a segment from the source graph to this subgraph.
@@ -206,6 +225,40 @@ impl<'a> SubgraphBuilder<'a> {
         let name = format!("{}:{}-{}", self.old.get_path_name(path), start.pos, end_pos);
         self.store
             .add_path(name.as_bytes(), steps, std::iter::empty());
+    }
+
+    /// Identify all the subpaths in a path from the original graph that cross through
+    /// segments in this subgraph and merge them if possible.
+    fn merge_subpaths(&mut self, path: &flatgfa::Path, max_distance_subpaths: usize) {
+        // these are subpaths which *aren't* already included in the new graph
+        let mut cur_subpath_start: Option<usize> = Some(0);
+        let mut subpath_length = 0;
+        let mut ignore_path = true;
+
+        for (idx, step) in self.old.steps[path.steps].iter().enumerate() {
+            let in_neighb = self.seg_map.contains_key(&step.segment());
+
+            if let (Some(start), true) = (&cur_subpath_start, in_neighb) {
+                // We just entered the subgraph. End the current subpath.
+                if !ignore_path && subpath_length <= max_distance_subpaths {
+                    // TODO: type safety
+                    let subpath_span = Span::new(path.steps.start + *start as u32, path.steps.start + idx as u32);
+                    for step in &self.old.steps[subpath_span] {
+                        if !self.seg_map.contains_key(&step.segment()) {
+                            self.include_seg(step.segment());
+                        }
+                    }
+                }
+                cur_subpath_start = None;
+                ignore_path = false;
+            } else if let (None, false) = (&cur_subpath_start, in_neighb) {
+                // We've exited the current subgraph, start a new subpath
+                cur_subpath_start = Some(idx);
+            } 
+
+            // Track the current bp position in the path.
+            subpath_length += self.old.get_handle_seg(*step).len();
+        }
     }
 
     /// Identify all the subpaths in a path from the original graph that cross through
@@ -260,7 +313,7 @@ impl<'a> SubgraphBuilder<'a> {
     ///
     /// Include any links between the segments in the neighborhood and subpaths crossing
     /// through the neighborhood.
-    fn extract(&mut self, origin: Id<Segment>, dist: usize) {
+    fn extract(&mut self, origin: Id<Segment>, dist: usize, max_distance_subpaths: usize, num_iterations: usize) {
         self.include_seg(origin);
 
         // Find the set of all segments that are 1 link away.
@@ -270,6 +323,13 @@ impl<'a> SubgraphBuilder<'a> {
                 if !self.seg_map.contains_key(&other_seg) {
                     self.include_seg(other_seg);
                 }
+            }
+        }
+
+        // Merge subpaths within max_distance_subpaths bp of each other, num_iterations times
+        for _ in 0..num_iterations {
+            for path in self.old.paths.all().iter() {
+                self.merge_subpaths(path, max_distance_subpaths);
             }
         }
 

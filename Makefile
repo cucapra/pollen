@@ -33,5 +33,8 @@ test-flatgfa: fetch
 	-turnt --save -v -e odgi_depth tests/*.gfa
 	turnt -v -e flatgfa_depth tests/*.gfa
 
+	-turnt --save -v -e odgi_extract tests/*.gfa
+	turnt -v -e flatgfa_extract tests/*.gfa
+
 clean:
-	-rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth tests/*.gfa tests/*.og
+	-rm tests/*.flatgfa tests/*.inplace.flatgfa tests/*.chop tests/*.depth tests/*.extract tests/*.gfa tests/*.og
