@@ -202,7 +202,7 @@ impl<'a> SubgraphBuilder<'a> {
 
     /// Add a single subpath from the given path to the subgraph.
     fn include_subpath(&mut self, path: &flatgfa::Path, start: &SubpathStart, end_pos: usize) {
-        let steps = pool::Span::new(start.step, self.store.steps.next_id());
+        let steps = pool::Span::new(start.step, self.store.steps.next_id()); // why the next id?
         let name = format!("{}:{}-{}", self.old.get_path_name(path), start.pos, end_pos);
         self.store
             .add_path(name.as_bytes(), steps, std::iter::empty());
@@ -349,7 +349,7 @@ pub fn chop<'a>(
 
     // when segment S is chopped into segments S1 through S2 (exclusive), 
     // seg_map[S.name] = Span(Id(S1.name), Id(S2.name)). If S is not chopped: S=S1, S2.name = S1.name+1
-    let mut seg_map: Vec<(Span<Segment>)> = Vec::new();
+    let mut seg_map: Vec<Span<Segment>> = Vec::new();
     // The smallest id (>0) which does not already belong to a segment in `flat`
     let mut max_node_id = 1;
 
@@ -357,7 +357,7 @@ pub fn chop<'a>(
         // Link segments spanned by `span` from head to tail
         let overlap = Span::new_empty();
         flat.add_links(
-            std::ops::Range::from(span).map(|idx| {
+            (span.start.index()..span.end.index()-1).map(|idx| {
                 Link {
                     from: Handle::new(Id::new(idx), Orientation::Forward),
                     to: Handle::new(Id::new(idx+1), Orientation::Forward),
@@ -469,8 +469,8 @@ pub fn chop<'a>(
                 let old_from = link.from;
                 let chopped_segs = seg_map[old_from.segment().index()];
                 let seg_id = match old_from.orient() {
-                    Orientation::Forward => chopped_segs.start - 1,
-                    Orientation::Backward => chopped_segs.end
+                    Orientation::Forward => chopped_segs.end - 1,
+                    Orientation::Backward => chopped_segs.start
                 };
                 Handle::new(seg_id, old_from.orient())
             };
