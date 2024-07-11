@@ -330,8 +330,8 @@ class Graph:
             print(header, file=outfile)
         for segment in sorted(self.segments.items()):
             print(str(segment[1]), file=outfile)
-        for path in self.paths.values():
-            print(str(path), file=outfile)
+        for path in sorted(self.paths.items()):
+            print(str(path[1]), file=outfile)
         if showlinks:
             for link_str in sorted(map(lambda l: str(l), self.links)):
                 print(link_str, file=outfile)
