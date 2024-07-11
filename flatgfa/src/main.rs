@@ -2,6 +2,7 @@ use argh::FromArgs;
 use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
 use flatgfa::{cmds, file, parse};
+use flatgfa::pool::Store; // TODO: hopefully remove at some point, this breaks a lot of principles
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
@@ -39,6 +40,7 @@ enum Command {
     Position(cmds::Position),
     Extract(cmds::Extract),
     Depth(cmds::Depth),
+    Chop(cmds::Chop)
 }
 
 fn main() -> Result<(), &'static str> {
@@ -103,6 +105,23 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Depth(_)) => {
             cmds::depth(&gfa);
+        }
+        Some(Command::Chop(sub_args)) => {
+            let store = cmds::chop(&gfa, sub_args)?;
+            let flat = flatgfa::FlatGFA {
+                header: gfa.header,
+                seq_data: gfa.seq_data,
+                name_data: gfa.name_data,
+                segs: store.segs.as_ref(),
+                paths: store.paths.as_ref(),
+                links: store.links.as_ref(),
+                steps: store.steps.as_ref(),
+                overlaps: store.overlaps.as_ref(),
+                alignment: store.alignment.as_ref(),
+                optional_data: store.optional_data.as_ref(),
+                line_order: store.line_order.as_ref(),
+            };
+            dump(&flat, &args.output);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
