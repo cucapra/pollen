@@ -316,8 +316,7 @@ impl<'a> SubgraphBuilder<'a> {
     fn extract(&mut self, origin: Id<Segment>, dist: usize, max_distance_subpaths: usize, num_iterations: usize) {
         self.include_seg(origin);
 
-        // Find the set of all segments that are 1 link away.
-        // assert_eq!(dist, 1, "only `-c 1` is implemented so far");
+        // Find the set of all segments that are c links away.
         let mut frontier: Vec<Id<Segment>> = Vec::new();
         let mut next_frontier: Vec<Id<Segment>> = Vec::new();
         frontier.push(origin);
