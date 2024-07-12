@@ -191,9 +191,9 @@ output.chop = "-"
 
 [envs.odgi_extract]
 binary = true
-command = "odgi extract -i {filename} -n 3 -c 1 -o - | odgi view -g -i - | slow_odgi norm"
+command = "odgi extract -i {filename} -n 3 -c 3 -o - | odgi view -g -i - | slow_odgi norm"
 output.extract = "-"
 
 [envs.flatgfa_extract]
-command = "../flatgfa/target/debug/fgfa -I {filename} extract -n 3 -c 1 | slow_odgi norm"
+command = "../flatgfa/target/debug/fgfa -I {filename} extract -n 3 -c 3 | slow_odgi norm"
 output.extract = "-"

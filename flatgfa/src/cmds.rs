@@ -317,13 +317,23 @@ impl<'a> SubgraphBuilder<'a> {
         self.include_seg(origin);
 
         // Find the set of all segments that are 1 link away.
-        assert_eq!(dist, 1, "only `-c 1` is implemented so far");
-        for link in self.old.links.all().iter() {
-            if let Some(other_seg) = link.incident_seg(origin) {
-                if !self.seg_map.contains_key(&other_seg) {
-                    self.include_seg(other_seg);
+        // assert_eq!(dist, 1, "only `-c 1` is implemented so far");
+        let mut frontier: Vec<Id<Segment>> = Vec::new();
+        let mut next_frontier: Vec<Id<Segment>> = Vec::new();
+        frontier.push(origin);
+        for _ in 0..dist {
+            while let Some(seg_id) = frontier.pop() {
+                for link in self.old.links.all().iter() {
+                    if let Some(other_seg) = link.incident_seg(seg_id) {
+                        // Add other_seg to the frontier set if it is not already in the frontier set or the seg_map
+                        if !self.seg_map.contains_key(&other_seg) {
+                            self.include_seg(other_seg);
+                            next_frontier.push(other_seg);
+                        }
+                    }
                 }
             }
+            (frontier, next_frontier) = (next_frontier, frontier);
         }
 
         // Merge subpaths within max_distance_subpaths bp of each other, num_iterations times
