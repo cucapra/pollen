@@ -43,8 +43,8 @@ jobs:
 
       - name: Pull odgi container
         run: |
-          docker pull quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0
-          docker tag quay.io/biocontainers/odgi:0.8.3--py310h6cc9453_0 odgi
+          docker pull quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1
+          docker tag quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1 odgi
       - name: Install odgi alias
         run: |
           mkdir -p $HOME/.local/bin
@@ -75,6 +75,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      # Install slow-odgi.
+      - uses: actions/cache@v4
+        id: cache-uv
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-uv
+      - name: Create and activate virtualenv with uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv venv
+          echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+      - name: Install Python tools
+        run: uv pip install -r requirements.txt
+
+      # Install odgi
+      - name: Pull odgi container
+        run: |
+          docker pull quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1
+          docker tag quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1 odgi
+      - name: Install odgi alias
+        run: |
+          mkdir -p $HOME/.local/bin
+          cp .github/odgi.sh $HOME/.local/bin/odgi
+          chmod a+x $HOME/.local/bin/odgi
 
       # Install Turnt.
       - uses: actions/setup-python@v5
