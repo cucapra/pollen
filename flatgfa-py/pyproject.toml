@@ -24,3 +24,6 @@ build-backend = "maturin"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
+
+[tool.uv]
+dev-dependencies = ["pytest"]

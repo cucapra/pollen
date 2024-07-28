@@ -1,11 +1,8 @@
 [tool.uv.workspace]
-members = ["mygfa", "slow_odgi", "pollen_py", "pollen_data_gen"]
+members = ["mygfa", "slow_odgi", "pollen_py", "pollen_data_gen", "flatgfa_py"]
 
 [tool.uv.sources]
 mygfa = { workspace = true }
 slow_odgi = { workspace = true }
 pollen_py = { workspace = true }
 pollen_data_gen = { workspace = true }
-
-[tool.uv]
-dev-dependencies = ["turnt"]
