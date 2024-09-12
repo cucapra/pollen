@@ -6,6 +6,7 @@ __pycache__/
 **/*.degree
 **/*.depth
 **/*.emit
+**/*.extract
 **/*.flatten
 **/*.flip
 **/*.matrix
