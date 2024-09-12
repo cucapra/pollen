@@ -1,5 +1,5 @@
 [envs.chop_oracle]
-binary = true
+binary = true 
 command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | slow_odgi norm --nl"
 output.chop = "-"
 
@@ -170,3 +170,21 @@ output.gfa = "-"
 [envs.flatgfa_file_inplace]
 command = "../flatgfa/target/debug/fgfa -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../flatgfa/target/debug/fgfa -m -i {base}.inplace.flatgfa"
 output.gfa = "-"
+
+[envs.odgi_depth]
+binary = true
+command = "odgi depth -d -i {filename}"
+output.depth = "-"
+
+[envs.flatgfa_depth]
+command = "../flatgfa/target/debug/fgfa -I {filename} depth"
+output.depth = "-"
+
+[envs.chop_oracle_fgfa]
+binary = true 
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | slow_odgi norm"
+output.chop = "-"
+
+[envs.flatgfa_chop]
+command = "../flatgfa/target/debug/fgfa -I {filename} chop -l -c 3 | slow_odgi norm"
+output.chop = "-"
