@@ -147,6 +147,14 @@ pub struct Extract {
     /// number of edges "away" from the node to include
     #[argh(option, short = 'c')]
     link_distance: usize,
+
+    /// maximum number of basepairs allowed between subpaths s.t. the subpaths are merged together
+    #[argh(option, short = 'd', long = "max-distance-subpaths", default = "300000")]
+    max_distance_subpaths: usize, // TODO: possibly make this bigger
+
+    /// maximum number of iterations before we stop merging subpaths
+    #[argh(option, short = 'e', long = "max-merging-iterations", default = "6")]
+    num_iterations: usize // TODO: probably make this smaller
 }
 
 pub fn extract(
@@ -156,7 +164,8 @@ pub fn extract(
     let origin_seg = gfa.find_seg(args.seg_name).ok_or("segment not found")?;
 
     let mut subgraph = SubgraphBuilder::new(gfa);
-    subgraph.extract(origin_seg, args.link_distance);
+    subgraph.add_header();
+    subgraph.extract(origin_seg, args.link_distance, args.max_distance_subpaths, args.num_iterations);
     Ok(subgraph.store)
 }
 
@@ -179,6 +188,16 @@ impl<'a> SubgraphBuilder<'a> {
             store: flatgfa::HeapGFAStore::default(),
             seg_map: HashMap::new(),
         }
+    }
+
+    /// Include the old graph's header
+    fn add_header(&mut self) {
+            // pub fn add_header(&mut self, version: &[u8]) {
+            //     assert!(self.header.as_ref().is_empty());
+            //     self.header.add_slice(version);
+            // }
+        assert!(self.store.header.as_ref().is_empty());
+        self.store.header.add_slice(self.old.header.all());
     }
 
     /// Add a segment from the source graph to this subgraph.
@@ -206,6 +225,40 @@ impl<'a> SubgraphBuilder<'a> {
         let name = format!("{}:{}-{}", self.old.get_path_name(path), start.pos, end_pos);
         self.store
             .add_path(name.as_bytes(), steps, std::iter::empty());
+    }
+
+    /// Identify all the subpaths in a path from the original graph that cross through
+    /// segments in this subgraph and merge them if possible.
+    fn merge_subpaths(&mut self, path: &flatgfa::Path, max_distance_subpaths: usize) {
+        // these are subpaths which *aren't* already included in the new graph
+        let mut cur_subpath_start: Option<usize> = Some(0);
+        let mut subpath_length = 0;
+        let mut ignore_path = true;
+
+        for (idx, step) in self.old.steps[path.steps].iter().enumerate() {
+            let in_neighb = self.seg_map.contains_key(&step.segment());
+
+            if let (Some(start), true) = (&cur_subpath_start, in_neighb) {
+                // We just entered the subgraph. End the current subpath.
+                if !ignore_path && subpath_length <= max_distance_subpaths {
+                    // TODO: type safety
+                    let subpath_span = Span::new(path.steps.start + *start as u32, path.steps.start + idx as u32);
+                    for step in &self.old.steps[subpath_span] {
+                        if !self.seg_map.contains_key(&step.segment()) {
+                            self.include_seg(step.segment());
+                        }
+                    }
+                }
+                cur_subpath_start = None;
+                ignore_path = false;
+            } else if let (None, false) = (&cur_subpath_start, in_neighb) {
+                // We've exited the current subgraph, start a new subpath
+                cur_subpath_start = Some(idx);
+            } 
+
+            // Track the current bp position in the path.
+            subpath_length += self.old.get_handle_seg(*step).len();
+        }
     }
 
     /// Identify all the subpaths in a path from the original graph that cross through
@@ -260,16 +313,32 @@ impl<'a> SubgraphBuilder<'a> {
     ///
     /// Include any links between the segments in the neighborhood and subpaths crossing
     /// through the neighborhood.
-    fn extract(&mut self, origin: Id<Segment>, dist: usize) {
+    fn extract(&mut self, origin: Id<Segment>, dist: usize, max_distance_subpaths: usize, num_iterations: usize) {
         self.include_seg(origin);
 
-        // Find the set of all segments that are 1 link away.
-        assert_eq!(dist, 1, "only `-c 1` is implemented so far");
-        for link in self.old.links.all().iter() {
-            if let Some(other_seg) = link.incident_seg(origin) {
-                if !self.seg_map.contains_key(&other_seg) {
-                    self.include_seg(other_seg);
+        // Find the set of all segments that are c links away.
+        let mut frontier: Vec<Id<Segment>> = Vec::new();
+        let mut next_frontier: Vec<Id<Segment>> = Vec::new();
+        frontier.push(origin);
+        for _ in 0..dist {
+            while let Some(seg_id) = frontier.pop() {
+                for link in self.old.links.all().iter() {
+                    if let Some(other_seg) = link.incident_seg(seg_id) {
+                        // Add other_seg to the frontier set if it is not already in the frontier set or the seg_map
+                        if !self.seg_map.contains_key(&other_seg) {
+                            self.include_seg(other_seg);
+                            next_frontier.push(other_seg);
+                        }
+                    }
                 }
+            }
+            (frontier, next_frontier) = (next_frontier, frontier);
+        }
+
+        // Merge subpaths within max_distance_subpaths bp of each other, num_iterations times
+        for _ in 0..num_iterations {
+            for path in self.old.paths.all().iter() {
+                self.merge_subpaths(path, max_distance_subpaths);
             }
         }
 
@@ -343,9 +412,10 @@ pub fn chop<'a>(
     gfa: &'a flatgfa::FlatGFA<'a>,
     args: Chop,
 ) -> Result<flatgfa::HeapGFAStore, &'static str> {
-    let mut flat = flatgfa::HeapGFAStore::default();
 
-    // when segment S is chopped into segments S1 through S2 (exclusive),
+    let mut flat = flatgfa::HeapGFAStore::default();        
+
+    // when segment S is chopped into segments S1 through S2 (exclusive), 
     // seg_map[S.name] = Span(Id(S1.name), Id(S2.name)). If S is not chopped: S=S1, S2.name = S1.name+1
     let mut seg_map: Vec<Span<Segment>> = Vec::new();
     // The smallest id (>0) which does not already belong to a segment in `flat`
@@ -378,14 +448,14 @@ pub fn chop<'a>(
             let mut offset = seg.seq.start.index();
             let segs_start = flat.segs.next_id();
             // Could also generate end_id by setting it equal to the start_id and
-            // updating it for each segment that is added - only benefits us if we
+            // updating it for each segment that is added - only benefits us if we 
             // don't unroll the last iteration of this loop
             while offset < seq_end.index() - args.c {
                 // Generate a new segment of length c
                 flat.segs.add(Segment {
                     name: max_node_id,
                     seq: Span::new(Id::new(offset), Id::new(offset + args.c)),
-                    optional: Span::new_empty(),
+                    optional: Span::new_empty()
                 });
                 offset += args.c;
                 max_node_id += 1;

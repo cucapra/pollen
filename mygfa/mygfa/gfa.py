@@ -194,6 +194,11 @@ class Link:
         return Link(self.to_.rev(), self.from_.rev(), self.overlap)
 
     def __str__(self) -> str:
+        if self.to_.name < self.from_.name:
+            return str(self.rev())
+        if self.from_.name == self.to_.name:
+            if not self.from_.ori:
+                return str(self.rev())
         return "\t".join(
             [
                 "L",
@@ -323,10 +328,10 @@ class Graph:
         """Emit a GFA file."""
         for header in self.headers:
             print(header, file=outfile)
-        for segment in self.segments.values():
-            print(str(segment), file=outfile)
-        for path in self.paths.values():
-            print(str(path), file=outfile)
+        for segment in sorted(self.segments.items()):
+            print(str(segment[1]), file=outfile)
+        for path in sorted(self.paths.items()):
+            print(str(path[1]), file=outfile)
         if showlinks:
-            for link in sorted(self.links):
-                print(str(link), file=outfile)
+            for link_str in sorted(map(lambda l: str(l), self.links)):
+                print(link_str, file=outfile)
