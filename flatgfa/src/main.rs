@@ -1,8 +1,8 @@
 use argh::FromArgs;
 use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
-use flatgfa::{cmds, file, parse};
-use flatgfa::pool::Store; // TODO: hopefully remove at some point, this breaks a lot of principles
+use flatgfa::pool::Store;
+use flatgfa::{cmds, file, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
@@ -40,7 +40,7 @@ enum Command {
     Position(cmds::Position),
     Extract(cmds::Extract),
     Depth(cmds::Depth),
-    Chop(cmds::Chop)
+    Chop(cmds::Chop),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -108,6 +108,10 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Chop(sub_args)) => {
             let store = cmds::chop(&gfa, sub_args)?;
+            // TODO: Ideally, find a way to encapsulate the logic of chop in `cmd.rs`, instead of
+            // defining here which values from out input `gfa` are needed by our final `flat` gfa.
+            // Here we are reference values in two different Stores to create this Flatgfa, and 
+            // have not yet found a good rust-safe way to do this
             let flat = flatgfa::FlatGFA {
                 header: gfa.header,
                 seq_data: gfa.seq_data,
