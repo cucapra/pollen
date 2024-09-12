@@ -101,6 +101,12 @@ pub struct Path {
     pub overlaps: Span<Span<AlignOp>>,
 }
 
+impl Path {
+    pub fn step_count(&self) -> usize {
+        self.steps.end.index() - self.steps.start.index()
+    }
+}
+
 /// An allowed edge between two oriented segments.
 #[derive(Debug, FromBytes, FromZeroes, AsBytes, Clone, Copy)]
 #[repr(packed)]
@@ -265,6 +271,10 @@ impl<'a> FlatGFA<'a> {
         self.name_data[path.name].as_ref()
     }
 
+    pub fn get_path_steps(&self, path: &Path) -> impl Iterator<Item = &Handle> {
+        self.steps[path.steps].iter()
+    }
+
     /// Get a handle's associated segment.
     pub fn get_handle_seg(&self, handle: Handle) -> &Segment {
         &self.segs[handle.segment()]
@@ -351,6 +361,11 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     /// Add a single step.
     pub fn add_step(&mut self, step: Handle) -> Id<Handle> {
         self.steps.add(step)
+    }
+
+    /// Add a sequence of links.
+    pub fn add_links(&mut self, links: impl Iterator<Item = Link>) -> Span<Link> {
+        self.links.add_iter(links)
     }
 
     /// Add a link between two (oriented) segments.

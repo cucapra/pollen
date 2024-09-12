@@ -21,7 +21,7 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
 
     /// Parse a GFA text file from an I/O stream.
     pub fn parse_stream<R: BufRead>(mut self, stream: R) -> flatgfa::GFAStore<'a, P> {
-        // We can parse sements immediately, but we need to defer links and paths until we have all
+        // We can parse segments immediately, but we need to defer links and paths until we have all
         // the segment names that they might refer to.
         let mut deferred_links = Vec::new();
         let mut deferred_paths = Vec::new();
