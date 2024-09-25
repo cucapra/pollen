@@ -1,6 +1,6 @@
-use crate::flatgfa::{self, Handle, Link, Orientation, Path, Segment};
-use crate::pool::{self, Id, Span, Store};
-use crate::{GFAStore, HeapFamily};
+use fgfa_ds::flatgfa::{self, Handle, Link, Orientation, Path, Segment};
+use fgfa_ds::pool::{self, Id, Span, Store};
+use fgfa_ds::{GFAStore, HeapFamily};
 use argh::FromArgs;
 use std::collections::{HashMap, HashSet};
 

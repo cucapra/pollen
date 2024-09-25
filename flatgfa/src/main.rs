@@ -1,8 +1,10 @@
 use argh::FromArgs;
-use flatgfa::flatgfa::FlatGFA;
-use flatgfa::parse::Parser;
-use flatgfa::pool::Store;
-use flatgfa::{cmds, file, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
+use fgfa_ds::flatgfa::FlatGFA;
+use fgfa_ds::parse::Parser;
+use fgfa_ds::pool::Store;
+use fgfa_ds::{file, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
+
+mod cmds;
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
@@ -112,7 +114,7 @@ fn main() -> Result<(), &'static str> {
             // defining here which values from out input `gfa` are needed by our final `flat` gfa.
             // Here we are reference values in two different Stores to create this Flatgfa, and 
             // have not yet found a good rust-safe way to do this
-            let flat = flatgfa::FlatGFA {
+            let flat = FlatGFA {
                 header: gfa.header,
                 seq_data: gfa.seq_data,
                 name_data: gfa.name_data,

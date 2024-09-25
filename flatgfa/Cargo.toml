@@ -1,3 +1,6 @@
+[workspace]
+members = ["fgfa_ds"]
+
 [package]
 name = "flatgfa"
 version = "0.1.0"
@@ -9,13 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 argh = "0.1.12"
-atoi = "2.0.0"
-bstr = "1.9.1"
-memchr = "2.7.1"
-memmap = "0.7.0"
-num_enum = "0.7.2"
-tinyvec = "1.6.0"
-zerocopy = { version = "0.7.32", features = ["derive"] }
+fgfa_ds = { path = "fgfa_ds" }
 
 [profile.profiling]
 inherits = "release"
