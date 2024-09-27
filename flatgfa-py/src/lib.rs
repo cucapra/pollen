@@ -1,4 +1,4 @@
-use flatgfa::pool::Id;
+use flatgfa::fgfa_ds::pool::Id;
 use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;

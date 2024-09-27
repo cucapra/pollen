@@ -1,10 +1,17 @@
 use argh::FromArgs;
+
+mod fgfa_ds;
 use fgfa_ds::flatgfa::FlatGFA;
 use fgfa_ds::parse::Parser;
 use fgfa_ds::pool::Store;
 use fgfa_ds::{file, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
 
-mod cmds;
+mod commands;
+use commands::basic_cmds::{Toc, Paths, Stats, Position};
+use commands::{chop::Chop, depth::Depth, extract::Extract};
+
+use commands::basic_cmds::{toc, paths, stats, position};
+use commands::{chop::chop, depth::depth, extract::extract};
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
@@ -36,13 +43,13 @@ struct PolBin {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 enum Command {
-    Toc(cmds::Toc),
-    Paths(cmds::Paths),
-    Stats(cmds::Stats),
-    Position(cmds::Position),
-    Extract(cmds::Extract),
-    Depth(cmds::Depth),
-    Chop(cmds::Chop),
+    Toc(Toc),
+    Paths(Paths),
+    Stats(Stats),
+    Position(Position),
+    Extract(Extract),
+    Depth(Depth),
+    Chop(Chop),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -90,26 +97,26 @@ fn main() -> Result<(), &'static str> {
 
     match args.command {
         Some(Command::Toc(_)) => {
-            cmds::toc(&gfa);
+            toc(&gfa);
         }
         Some(Command::Paths(_)) => {
-            cmds::paths(&gfa);
+            paths(&gfa);
         }
         Some(Command::Stats(sub_args)) => {
-            cmds::stats(&gfa, sub_args);
+            stats(&gfa, sub_args);
         }
         Some(Command::Position(sub_args)) => {
-            cmds::position(&gfa, sub_args)?;
+            position(&gfa, sub_args)?;
         }
         Some(Command::Extract(sub_args)) => {
-            let store = cmds::extract(&gfa, sub_args)?;
+            let store = extract(&gfa, sub_args)?;
             dump(&store.as_ref(), &args.output);
         }
         Some(Command::Depth(_)) => {
-            cmds::depth(&gfa);
+            depth(&gfa);
         }
         Some(Command::Chop(sub_args)) => {
-            let store = cmds::chop(&gfa, sub_args)?;
+            let store = chop(&gfa, sub_args)?;
             // TODO: Ideally, find a way to encapsulate the logic of chop in `cmd.rs`, instead of
             // defining here which values from out input `gfa` are needed by our final `flat` gfa.
             // Here we are reference values in two different Stores to create this Flatgfa, and 
