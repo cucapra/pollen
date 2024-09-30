@@ -86,9 +86,9 @@ impl<T> From<&Span<T>> for std::ops::Range<usize> {
 }
 
 impl<T> Span<T> {
-    // pub fn is_empty(&self) -> bool {
-    //     self.start.0 == self.end.0
-    // }
+    pub fn is_empty(&self) -> bool {
+        self.start.0 == self.end.0
+    }
 
     pub fn len(&self) -> usize {
         (self.end.0 - self.start.0) as usize
@@ -135,9 +135,9 @@ pub trait Store<T: Clone> {
     fn len(&self) -> usize;
 
     /// Check whether the pool is empty.
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
+    // fn is_empty(&self) -> bool {
+    //     self.len() == 0
+    // }
 
     /// Get the next available ID.
     fn next_id(&self) -> Id<T> {
