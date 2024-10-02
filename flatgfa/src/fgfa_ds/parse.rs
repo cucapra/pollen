@@ -63,7 +63,11 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
             self.add_link(link);
         }
         for line in deferred_paths {
-            self.add_path(&line);
+            if let gfaline::Line::Path(path) = gfaline::parse_line(&line).unwrap() {
+                self.add_path(path);
+            } else {
+                unreachable!("unexpected deferred line")
+            }
         }
 
         self.flat
@@ -104,13 +108,15 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
 
         // "Unwind" the deferred lines.
         for line in deferred_lines {
-            if line[0] == b'P' {
-                self.add_path(line);
-            } else {
-                let gfa_line = gfaline::parse_line(line).unwrap();
-                if let gfaline::Line::Link(link) = gfa_line {
+            let gfa_line = gfaline::parse_line(line).unwrap();
+            match gfa_line {
+                gfaline::Line::Link(link) => { 
                     self.add_link(link);
-                } else {
+                }
+                gfaline::Line::Path(path) => {
+                    self.add_path(path);
+                }
+                gfaline::Line::Header(_) | gfaline::Line::Segment(_) => {
                     unreachable!("unexpected deferred line")
                 }
             }
@@ -140,16 +146,10 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         self.flat.add_link(from, to, link.overlap);
     }
 
-    fn add_path(&mut self, line: &[u8]) {
-        // This must be a path line.
-        assert_eq!(&line[..2], b"P\t");
-        let line = &line[2..];
-
-        // Parse the name.
-        let (name, rest) = gfaline::parse_field(line).unwrap();
-
+    fn add_path(&mut self, path: gfaline::Path) {
+ 
         // Parse the steps.
-        let mut step_parser = gfaline::StepsParser::new(rest);
+        let mut step_parser = gfaline::StepsParser::new(&path.steps);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
                 self.seg_ids.get(name).into(),
@@ -160,13 +160,9 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
                 },
             )
         }));
-        let rest = step_parser.rest();
+        assert!(step_parser.rest().is_empty());
 
-        // Parse the overlaps.
-        let (overlaps, rest) = gfaline::parse_maybe_overlap_list(rest).unwrap();
-
-        assert!(rest.is_empty());
-        self.flat.add_path(name, steps, overlaps.into_iter());
+        self.flat.add_path(path.name, steps, path.overlaps.into_iter());
     }
 }
 
