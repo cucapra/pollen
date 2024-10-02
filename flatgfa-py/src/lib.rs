@@ -1,5 +1,5 @@
-use flatgfa::fgfa_ds::pool::Id;
-use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
+use flatgfa::fgfa_ds::{file, print, pool::Id};
+use flatgfa::{self, FlatGFA, HeapGFAStore};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
