@@ -25,7 +25,7 @@ test-slow-odgi: fetch
 test-flatgfa: fetch
 	cd flatgfa ; cargo build
 
-	turnt -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa
+	turnt -v -e flatgfa_mem -e flatgfa_file -e flatgfa_file_inplace tests/*.gfa
 
 	-turnt --save -v -e chop_oracle_fgfa tests/*.gfa
 	turnt -v -e flatgfa_chop tests/*.gfa
