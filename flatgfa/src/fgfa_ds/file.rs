@@ -1,5 +1,5 @@
-use crate::flatgfa;
-use crate::pool::{FixedStore, Pool, Span, Store};
+use super::pool::{FixedStore, Pool, Span, Store};
+use super::flatgfa::{AlignOp, FlatGFA, FixedGFAStore, Handle, Link, Path, Segment};
 use memmap::{Mmap, MmapMut};
 use std::mem::{size_of, size_of_val};
 use tinyvec::SliceVec;
@@ -65,20 +65,20 @@ impl Toc {
     pub fn size(&self) -> usize {
         size_of::<Self>()
             + self.header.bytes::<u8>()
-            + self.segs.bytes::<flatgfa::Segment>()
-            + self.paths.bytes::<flatgfa::Path>()
-            + self.links.bytes::<flatgfa::Link>()
-            + self.steps.bytes::<flatgfa::Handle>()
+            + self.segs.bytes::<Segment>()
+            + self.paths.bytes::<Path>()
+            + self.links.bytes::<Link>()
+            + self.steps.bytes::<Handle>()
             + self.seq_data.bytes::<u8>()
-            + self.overlaps.bytes::<Span<flatgfa::AlignOp>>()
-            + self.alignment.bytes::<flatgfa::AlignOp>()
+            + self.overlaps.bytes::<Span<AlignOp>>()
+            + self.alignment.bytes::<AlignOp>()
             + self.name_data.bytes::<u8>()
             + self.optional_data.bytes::<u8>()
             + self.line_order.bytes::<u8>()
     }
 
     /// Get a table of contents that fits a FlatGFA with no spare space.
-    fn full(gfa: &flatgfa::FlatGFA) -> Self {
+    fn full(gfa: &FlatGFA) -> Self {
         Self {
             magic: MAGIC_NUMBER,
             header: Size::of_pool(gfa.header),
@@ -95,7 +95,7 @@ impl Toc {
         }
     }
 
-    pub fn for_fixed_store(store: &flatgfa::FixedGFAStore) -> Self {
+    pub fn for_fixed_store(store: &FixedGFAStore) -> Self {
         Self {
             magic: MAGIC_NUMBER,
             header: Size::of_store(&store.header),
@@ -183,7 +183,7 @@ fn read_toc_mut(data: &mut [u8]) -> (&mut Toc, &mut [u8]) {
 }
 
 /// Get a FlatGFA backed by the data in a byte buffer.
-pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
+pub fn view(data: &[u8]) -> FlatGFA {
     let (toc, rest) = read_toc(data);
 
     let (header, rest) = slice_prefix(rest, toc.header);
@@ -198,7 +198,7 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
     let (optional_data, rest) = slice_prefix(rest, toc.optional_data);
     let (line_order, _) = slice_prefix(rest, toc.line_order);
 
-    flatgfa::FlatGFA {
+    FlatGFA {
         header: header.into(),
         segs: segs.into(),
         paths: paths.into(),
@@ -224,7 +224,7 @@ fn slice_vec_prefix<T: FromBytes + AsBytes>(
 }
 
 /// Get a FlatGFA `SliceStore` from the suffix of a file just following the table of contents.
-fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::FixedGFAStore<'a> {
+fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> FixedGFAStore<'a> {
     let (header, rest) = slice_vec_prefix(data, toc.header);
     let (segs, rest) = slice_vec_prefix(rest, toc.segs);
     let (paths, rest) = slice_vec_prefix(rest, toc.paths);
@@ -237,7 +237,7 @@ fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::FixedGFAStore<'a> 
     let (optional_data, rest) = slice_vec_prefix(rest, toc.optional_data);
     let (line_order, _) = slice_vec_prefix(rest, toc.line_order);
 
-    flatgfa::FixedGFAStore {
+    FixedGFAStore {
         header: header.into(),
         segs: segs.into(),
         paths: paths.into(),
@@ -253,13 +253,13 @@ fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::FixedGFAStore<'a> 
 }
 
 /// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
-pub fn view_store(data: &mut [u8]) -> flatgfa::FixedGFAStore {
+pub fn view_store(data: &mut [u8]) -> FixedGFAStore {
     let (toc, rest) = read_toc_mut(data);
     slice_store(rest, toc)
 }
 
 /// Initialize a buffer with an empty FlatGFA store.
-pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore) {
+pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, FixedGFAStore) {
     // Write the table of contents.
     assert!(data.len() == toc.size());
     toc.write_to_prefix(data).unwrap();
@@ -285,7 +285,7 @@ fn write_bytes<'a>(buf: &'a mut [u8], data: &[u8]) -> Option<&'a mut [u8]> {
 }
 
 /// Copy a FlatGFA into a byte buffer.
-pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
+pub fn dump(gfa: &FlatGFA, buf: &mut [u8]) {
     // Table of contents.
     let toc = Toc::full(gfa);
     let rest = write_bump(buf, &toc).unwrap();
@@ -306,7 +306,7 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
 
 /// Get the total size in bytes of a FlatGFA structure. This should result in a big
 /// enough buffer to write the entire FlatGFA into with `dump`.
-pub fn size(gfa: &flatgfa::FlatGFA) -> usize {
+pub fn size(gfa: &FlatGFA) -> usize {
     Toc::full(gfa).size()
 }
 
