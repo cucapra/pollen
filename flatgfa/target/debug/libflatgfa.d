@@ -1,1 +1,0 @@
-/Users/user/pollen/flatgfa/target/debug/libflatgfa.rlib: /Users/user/pollen/flatgfa/src/cmds.rs /Users/user/pollen/flatgfa/src/file.rs /Users/user/pollen/flatgfa/src/flatgfa.rs /Users/user/pollen/flatgfa/src/gfaline.rs /Users/user/pollen/flatgfa/src/lib.rs /Users/user/pollen/flatgfa/src/parse.rs /Users/user/pollen/flatgfa/src/pool.rs /Users/user/pollen/flatgfa/src/print.rs
