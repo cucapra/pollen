@@ -10,3 +10,6 @@ for path in graph.paths:
 print("#node.id\tdepth")
 for seg in graph.segments:
     print("{}\t{}".format(seg.name, depths[seg.id]))
+
+# Print the node depths and unique depths for graph 
+flatgfa.depth(graph)
