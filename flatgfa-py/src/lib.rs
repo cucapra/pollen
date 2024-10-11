@@ -1,7 +1,7 @@
-use flatgfa::fgfa_ds::pool::Id;
-use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
-use flatgfa::fgfa_ds::{basic_cmds, chop, depth, extract};
-use pyo3::exceptions::PyIndexError;
+use flatgfa::fgfa_ds::{file, print, pool::Id};
+use flatgfa::{self, FlatGFA, HeapGFAStore};
+use flatgfa::commands::{basic_cmds, chop, depth, extract};
+use pyo3::exceptions::{PyIndexError, PyLookupError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
 use std::io::Write;
@@ -671,60 +671,79 @@ impl From<ListRef> for LinkList {
 
 /// Prints summary of the fgfa data structure
 #[pyfunction(name = "toc")]
-fn pytoc(gfa : PyFlatGFA) {
-    basic_cmds::toc(gfa);
+fn pytoc(gfa : &Bound<'_, PyFlatGFA>) {
+    let fgfa = &gfa.get().0.view();
+    basic_cmds::toc(fgfa);
 }
 
 /// List the paths in the fgfa
 #[pyfunction(name = "paths")]
-fn pypaths(gfa: PyFlatGFA) {
-    basic_cmds::paths(gfa);
+fn pypaths(gfa: &Bound<'_, PyFlatGFA>) {
+    let fgfa = &gfa.get().0.view();
+    basic_cmds::paths(fgfa);
 }
 
 /// Print a summary of the graph statistics
 #[pyfunction(name = "stats")]
-fn pystats(gfa: PyFlatGFA) {
-    basic_cmds::stats(gfa);
+#[pyo3(signature = (gfa, s=true, l=false))]
+fn pystats(gfa: &Bound<'_, PyFlatGFA>, s: bool, l: bool) {
+    let fgfa = &gfa.get().0.view();
+    basic_cmds::stats(fgfa, basic_cmds::Stats { summarize: s, self_loops: l });
 }
 
 /// Find the nucleotide at a given position in the graph
 #[pyfunction(name = "position")]
-fn pypos(gfa: PyFlatGFA, pos: &str) {
-    basic_cmds::position(gfa, basic_cmds::Position{path_pos: pos});
+fn pyposition(gfa: &Bound<'_, PyFlatGFA>, pos: &str) -> PyResult<()> {
+    let fgfa = &gfa.get().0.view();
+    match basic_cmds::position(fgfa, basic_cmds::Position{path_pos: pos.to_string()}) {
+        Ok(_) => Ok(()),
+        Err(s) => Err(PyLookupError::new_err(s))
+    }
 }
 
 /// Chop the segments in a graph into sizes of N or smaller
 #[pyfunction(name = "chop")]
-fn pychop(gfa: PyFlatGFA, c: usize) -> PyFlatGFA {
+fn pychop(gfa: &Bound<'_, PyFlatGFA>, c: usize) -> PyFlatGFA {
+    let fgfa = &gfa.get().0.view();
     let args = chop::Chop{c: c, l: true};
     PyFlatGFA(
-        Arc::new(chop::chop(gfa, args)?)
+        Arc::new(
+            Store::Heap(
+                Box::new(chop::chop(fgfa, args).unwrap())
+            )
+        )
     )
 }
 
 /// Chop the segments in a graph into sizes of N or smaller
 #[pyfunction(name = "depth")]
-fn pydepth(gfa: PyFlatGFA, c: usize) {
-    depth::depth(gfa);
+fn pydepth(gfa: &Bound<'_, PyFlatGFA>) {
+    let fgfa = &gfa.get().0.view();
+    depth::depth(fgfa);
 }
 
 /// create a subset graph
 #[pyfunction(name = "extract")]
-#[pyo(signature = (gfa, seg_id, link_dist, subpaths_dist=300000, iters=6))]
+#[pyo3(signature = (gfa, seg_id, link_dist, subpaths_dist=300000, iters=6))]
 // TODO: make the default values not magic numbers
 fn pyextract(
-    gfa: PyFlatGFA,
+    gfa: &Bound<'_, PyFlatGFA>,
     seg_id: usize,
     link_dist: usize,
     subpaths_dist: usize,
     iters: usize) -> PyFlatGFA
 {
+    let fgfa = &gfa.get().0.view();
     let args = extract::Extract{
         seg_name: seg_id, link_distance: link_dist,
         max_distance_subpaths: subpaths_dist, num_iterations: iters
     };
     PyFlatGFA(
-        Arc::new(extract::extract(gfa, args)?)
+        Arc::new(
+            Store::Heap(
+                Box::new(extract::extract(fgfa, args).unwrap())
+            )
+        )
     )
 }
 
@@ -744,5 +763,13 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PathList>()?;
     m.add_class::<LinkList>()?;
     m.add_class::<StepList>()?;
+    // fgfa commands
+    m.add_function(wrap_pyfunction!(pytoc, m)?)?;
+    m.add_function(wrap_pyfunction!(pypaths, m)?)?;
+    m.add_function(wrap_pyfunction!(pystats, m)?)?;
+    m.add_function(wrap_pyfunction!(pyposition, m)?)?;
+    m.add_function(wrap_pyfunction!(pychop, m)?)?;
+    m.add_function(wrap_pyfunction!(pydepth, m)?)?;
+    m.add_function(wrap_pyfunction!(pyextract, m)?)?;
     Ok(())
 }

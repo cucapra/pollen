@@ -10,11 +10,11 @@ pub struct Chop {
     /// maximimum segment size.
     // Use c in keeping with odgi convention
     #[argh(option, short = 'c')]
-    c: usize,
+    pub c: usize,
 
     /// compute new links
     #[argh(switch, short = 'l')]
-    l: bool,
+    pub l: bool,
 }
 
 /// Chop a graph into segments of size no larger than c

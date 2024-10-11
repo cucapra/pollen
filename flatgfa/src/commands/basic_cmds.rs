@@ -39,11 +39,11 @@ pub fn paths(gfa: &flatgfa::FlatGFA) {
 pub struct Stats {
     /// show basic metrics
     #[argh(switch, short = 'S')]
-    summarize: bool,
+    pub summarize: bool,
 
     /// number of segments with at least one self-loop link
     #[argh(switch, short = 'L')]
-    self_loops: bool,
+    pub self_loops: bool,
 }
 
 pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
@@ -79,7 +79,7 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
 pub struct Position {
     /// path_name,offset,orientation
     #[argh(option, short = 'p')]
-    path_pos: String,
+    pub path_pos: String,
 }
 
 pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static str> {

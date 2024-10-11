@@ -9,19 +9,19 @@ use std::collections::HashMap;
 pub struct Extract {
     /// segment to extract around
     #[argh(option, short = 'n')]
-    seg_name: usize,
+    pub seg_name: usize,
 
     /// number of edges "away" from the node to include
     #[argh(option, short = 'c')]
-    link_distance: usize,
+    pub link_distance: usize,
 
     /// maximum number of basepairs allowed between subpaths s.t. the subpaths are merged together
     #[argh(option, short = 'd', long = "max-distance-subpaths", default = "300000")]
-    max_distance_subpaths: usize, // TODO: possibly make this bigger
+    pub max_distance_subpaths: usize, // TODO: possibly make this bigger
 
     /// maximum number of iterations before we stop merging subpaths
     #[argh(option, short = 'e', long = "max-merging-iterations", default = "6")]
-    num_iterations: usize // TODO: probably make this smaller
+    pub num_iterations: usize // TODO: probably make this smaller
 }
 
 pub fn extract(
