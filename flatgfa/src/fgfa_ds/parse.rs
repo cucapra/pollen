@@ -1,5 +1,6 @@
-use crate::flatgfa::{self, Handle, LineKind, Orientation};
-use crate::gfaline;
+use super::file::Toc;
+use super::flatgfa::{self, Handle, LineKind, Orientation};
+use super::gfaline;
 use std::collections::HashMap;
 use std::io::BufRead;
 
@@ -209,7 +210,7 @@ impl NameMap {
 
 /// Scan a GFA text file to count the number of each type of line and measure some sizes
 /// that are useful in estimating the final size of the FlatGFA file.
-pub fn estimate_toc(buf: &[u8]) -> crate::file::Toc {
+pub fn estimate_toc(buf: &[u8]) -> Toc {
     let mut segs = 0;
     let mut links = 0;
     let mut paths = 0;
@@ -248,7 +249,7 @@ pub fn estimate_toc(buf: &[u8]) -> crate::file::Toc {
         rest = &rest[next + 1..];
     }
 
-    crate::file::Toc::estimate(segs, links, paths, header_bytes, seg_bytes, path_bytes)
+    Toc::estimate(segs, links, paths, header_bytes, seg_bytes, path_bytes)
 }
 
 struct MemchrSplit<'a> {

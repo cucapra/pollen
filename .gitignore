@@ -22,4 +22,7 @@ pollen/target
 polbin/target
 pollen/*.rlib
 
+flatgfa/target
+flatgfa/**/target
+
 slow_odgi/dist/

@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::pool::{self, Id, Pool, Span, Store};
+use super::pool::{self, Id, Pool, Span, Store};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -287,8 +287,8 @@ impl<'a> FlatGFA<'a> {
 
     /// Look up a CIGAR alignment.
     pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
-        Alignment { 
-            ops: &self.alignment[overlap]
+        Alignment {
+            ops: &self.alignment[overlap],
         }
     }
 

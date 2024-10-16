@@ -1,4 +1,4 @@
-use crate::flatgfa;
+use super::flatgfa;
 use std::fmt;
 
 impl fmt::Display for flatgfa::Orientation {

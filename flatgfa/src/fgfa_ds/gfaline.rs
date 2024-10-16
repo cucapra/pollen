@@ -1,4 +1,4 @@
-use crate::flatgfa::{AlignOp, Orientation};
+use super::flatgfa::{AlignOp, AlignOpcode, Orientation};
 use atoi::FromRadix10;
 
 type ParseResult<T> = Result<T, &'static str>;
@@ -174,10 +174,10 @@ fn parse_orient(line: &[u8]) -> PartialParseResult<Orientation> {
 fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
     let (len, rest) = parse_num::<u32>(s)?;
     let op = match rest[0] {
-        b'M' => crate::flatgfa::AlignOpcode::Match,
-        b'N' => crate::flatgfa::AlignOpcode::Gap,
-        b'D' => crate::flatgfa::AlignOpcode::Deletion,
-        b'I' => crate::flatgfa::AlignOpcode::Insertion,
+        b'M' => AlignOpcode::Match,
+        b'N' => AlignOpcode::Gap,
+        b'D' => AlignOpcode::Deletion,
+        b'I' => AlignOpcode::Insertion,
         _ => return Err("expected align op"),
     };
     Ok((AlignOp::new(op, len), &rest[1..]))
