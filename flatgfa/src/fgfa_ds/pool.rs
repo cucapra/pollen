@@ -134,10 +134,10 @@ pub trait Store<T: Clone> {
     /// Get the number of items in the pool.
     fn len(&self) -> usize;
 
-    /// Check whether the pool is empty.
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
+    // /// Check whether the pool is empty.
+    // fn is_empty(&self) -> bool {
+    //     self.len() == 0
+    // }
 
     /// Get the next available ID.
     fn next_id(&self) -> Id<T> {
