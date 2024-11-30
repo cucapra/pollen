@@ -35,8 +35,64 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
                 println!("backward!");
             } else if *byte == b'>' {
                 println!("forward!");
+            } else {
+                panic!("expected direction (> or <)");
             }
             break;
         }
     }
+}
+
+/// Parse a GAF path string, which looks like >12<34>56.
+struct PathParser<'a> {
+    str: &'a [u8],
+    index: usize,
+}
+
+impl<'a> PathParser<'a> {
+    pub fn new(str: &'a [u8]) -> Self {
+        Self { str, index: 0 }
+    }
+
+    pub fn rest(&self) -> &[u8] {
+        &self.str[self.index..]
+    }
+}
+
+impl<'a> Iterator for PathParser<'a> {
+    type Item = (usize, bool);
+
+    fn next(&mut self) -> Option<(usize, bool)> {
+        // The first character must be a direction.
+        let byte = self.str[self.index];
+        self.index += 1;
+        let forward = match byte {
+            b'>' => true,
+            b'<' => false,
+            _ => return None,
+        };
+
+        // Parse the integer segment name.
+        let mut seg_name: usize = 0;
+        while self.index < self.str.len() {
+            let byte = self.str[self.index];
+            if byte.is_ascii_digit() {
+                seg_name *= 10;
+                seg_name += (byte - b'0') as usize;
+                self.index += 1;
+            } else {
+                break;
+            }
+        }
+        return Some((seg_name, forward));
+    }
+}
+
+#[test]
+fn test_parse_gaf_path() {
+    let s = b">12<34>5 suffix";
+    let mut parser = PathParser::new(s);
+    let path: Vec<_> = (&mut parser).collect();
+    assert_eq!(path, vec![(12, true), (34, false), (5, true)]);
+    assert_eq!(parser.rest(), b"suffix");
 }
