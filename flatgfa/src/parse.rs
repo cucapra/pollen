@@ -1,5 +1,6 @@
 use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
+use crate::memfile::MemchrSplit;
 use std::collections::HashMap;
 use std::io::BufRead;
 
@@ -109,7 +110,7 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         for line in deferred_lines {
             let gfa_line = gfaline::parse_line(line).unwrap();
             match gfa_line {
-                gfaline::Line::Link(link) => { 
+                gfaline::Line::Link(link) => {
                     self.add_link(link);
                 }
                 gfaline::Line::Path(path) => {
@@ -146,7 +147,6 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
     }
 
     fn add_path(&mut self, path: gfaline::Path) {
- 
         // Parse the steps.
         let mut step_parser = gfaline::StepsParser::new(&path.steps);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
@@ -161,7 +161,8 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         }));
         assert!(step_parser.rest().is_empty());
 
-        self.flat.add_path(path.name, steps, path.overlaps.into_iter());
+        self.flat
+            .add_path(path.name, steps, path.overlaps.into_iter());
     }
 }
 
@@ -249,31 +250,4 @@ pub fn estimate_toc(buf: &[u8]) -> crate::file::Toc {
     }
 
     crate::file::Toc::estimate(segs, links, paths, header_bytes, seg_bytes, path_bytes)
-}
-
-struct MemchrSplit<'a> {
-    haystack: &'a [u8],
-    memchr: memchr::Memchr<'a>,
-    pos: usize,
-}
-
-impl<'a> Iterator for MemchrSplit<'a> {
-    type Item = &'a [u8];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let start = self.pos;
-        let end = self.memchr.next()?;
-        self.pos = end + 1;
-        Some(&self.haystack[start..end])
-    }
-}
-
-impl MemchrSplit<'_> {
-    fn new(needle: u8, haystack: &[u8]) -> MemchrSplit {
-        MemchrSplit {
-            haystack,
-            memchr: memchr::memchr_iter(needle, haystack),
-            pos: 0,
-        }
-    }
 }
