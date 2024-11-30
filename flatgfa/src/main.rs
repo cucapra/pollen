@@ -1,8 +1,9 @@
 use argh::FromArgs;
 use flatgfa::flatgfa::FlatGFA;
+use flatgfa::gaf;
 use flatgfa::parse::Parser;
 use flatgfa::pool::Store;
-use flatgfa::{cmds, file, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
+use flatgfa::{cmds, file, memfile, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
@@ -41,6 +42,7 @@ enum Command {
     Extract(cmds::Extract),
     Depth(cmds::Depth),
     Chop(cmds::Chop),
+    GafLookup(gaf::GafLookup),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -62,11 +64,11 @@ fn main() -> Result<(), &'static str> {
     let gfa = match args.input {
         Some(name) => {
             if args.mutate {
-                mmap_mut = file::map_file_mut(&name);
+                mmap_mut = memfile::map_file_mut(&name);
                 slice_store = file::view_store(&mut mmap_mut);
                 slice_store.as_ref()
             } else {
-                mmap = file::map_file(&name);
+                mmap = memfile::map_file(&name);
                 file::view(&mmap)
             }
         }
@@ -74,7 +76,7 @@ fn main() -> Result<(), &'static str> {
             // Parse from stdin or a file.
             store = match args.input_gfa {
                 Some(name) => {
-                    let file = file::map_file(&name);
+                    let file = memfile::map_file(&name);
                     Parser::for_heap().parse_mem(file.as_ref())
                 }
                 None => {
@@ -110,7 +112,7 @@ fn main() -> Result<(), &'static str> {
             let store = cmds::chop(&gfa, sub_args)?;
             // TODO: Ideally, find a way to encapsulate the logic of chop in `cmd.rs`, instead of
             // defining here which values from out input `gfa` are needed by our final `flat` gfa.
-            // Here we are reference values in two different Stores to create this Flatgfa, and 
+            // Here we are reference values in two different Stores to create this Flatgfa, and
             // have not yet found a good rust-safe way to do this
             let flat = flatgfa::FlatGFA {
                 header: gfa.header,
@@ -127,6 +129,9 @@ fn main() -> Result<(), &'static str> {
             };
             dump(&flat, &args.output);
         }
+        Some(Command::GafLookup(sub_args)) => {
+            gaf::gaf_lookup(&gfa, sub_args);
+        }
         None => {
             // Just emit the GFA or FlatGFA file.
             dump(&gfa, &args.output);
@@ -141,7 +146,7 @@ fn main() -> Result<(), &'static str> {
 fn dump(gfa: &FlatGFA, output: &Option<String>) {
     match output {
         Some(name) => {
-            let mut mmap = file::map_new_file(name, file::size(gfa) as u64);
+            let mut mmap = memfile::map_new_file(name, file::size(gfa) as u64);
             file::dump(gfa, &mut mmap);
             mmap.flush().unwrap();
         }
@@ -158,7 +163,7 @@ fn prealloc_translate(in_name: Option<&str>, out_name: &str, prealloc_factor: us
     let (input_buf, empty_toc) = match in_name {
         // If we have an input GFA file, we can estimate its sizes for the TOC.
         Some(name) => {
-            file = file::map_file(name);
+            file = memfile::map_file(name);
             let toc = parse::estimate_toc(file.as_ref());
             (Some(file.as_ref()), toc)
         }
@@ -168,7 +173,7 @@ fn prealloc_translate(in_name: Option<&str>, out_name: &str, prealloc_factor: us
     };
 
     // Create a file with an empty table of contents.
-    let mut mmap = file::map_new_file(out_name, empty_toc.size() as u64);
+    let mut mmap = memfile::map_new_file(out_name, empty_toc.size() as u64);
     let (toc, store) = file::init(&mut mmap, empty_toc);
 
     // Parse the input into the file.
