@@ -27,18 +27,11 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
         field_iter.next().unwrap();
         field_iter.next().unwrap();
 
-        // Step through the path. Using MemchrSplit is pretty lazy; it would be
+        // Using MemchrSplit to get the GAF fields is pretty lazy; it would be
         // better to manage the indices directly.
         let path = field_iter.next().unwrap();
-        for byte in path {
-            if *byte == b'<' {
-                println!("backward!");
-            } else if *byte == b'>' {
-                println!("forward!");
-            } else {
-                panic!("expected direction (> or <)");
-            }
-            break;
+        for step in PathParser::new(path) {
+            dbg!(step);
         }
     }
 }
@@ -63,6 +56,10 @@ impl<'a> Iterator for PathParser<'a> {
     type Item = (usize, bool);
 
     fn next(&mut self) -> Option<(usize, bool)> {
+        if self.index >= self.str.len() {
+            return None;
+        }
+
         // The first character must be a direction.
         let byte = self.str[self.index];
         self.index += 1;
