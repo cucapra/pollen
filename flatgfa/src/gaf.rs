@@ -19,28 +19,8 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
         let read = GAFRead::parse(line);
         println!("{}", read.name);
 
-        // Walk down the path to find the start and end coordinates in the segments.
-        let mut pos = 0;
-        let mut started = false;
-        for (seg_name, forward) in read.steps() {
-            let seg_id = gfa.find_seg(seg_name).expect("GAF has unknown segment");
-
-            // Accumulate the length to track our position in the path.
-            let next_pos = pos + gfa.segs[seg_id].len();
-            if !started {
-                if pos <= read.start && read.start < next_pos {
-                    let seg_start_pos = read.start - pos;
-                    println!("started at {}.{}", seg_name, seg_start_pos);
-                    started = true;
-                }
-            } else {
-                if pos <= read.end && read.end < next_pos {
-                    let seg_end_pos = read.end - pos;
-                    println!("ended at {}.{}", seg_name, seg_end_pos);
-                    break;
-                }
-            }
-            pos = next_pos;
+        for event in PathChunker::new(gfa, read) {
+            dbg!(event);
         }
     }
 }
@@ -83,6 +63,83 @@ impl<'a> GAFRead<'a> {
 
     fn steps(&self) -> PathParser {
         PathParser::new(self.path)
+    }
+}
+
+struct PathChunker<'a, 'b> {
+    gfa: &'a flatgfa::FlatGFA<'a>,
+    steps: PathParser<'b>,
+    start: usize,
+    end: usize,
+
+    // State for the walk.
+    index: usize,
+    pos: usize,
+    started: bool,
+}
+
+impl<'a, 'b> PathChunker<'a, 'b> {
+    fn new(gfa: &'a flatgfa::FlatGFA, read: GAFRead<'b>) -> Self {
+        let steps = PathParser::new(read.path);
+        Self {
+            gfa,
+            steps,
+            start: read.start,
+            end: read.end,
+            index: 0,
+            pos: 0,
+            started: false,
+        }
+    }
+}
+
+#[derive(Debug)]
+struct ChunkEvent {
+    index: usize,
+    handle: flatgfa::Handle,
+}
+
+impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
+    type Item = ChunkEvent;
+
+    fn next(&mut self) -> Option<ChunkEvent> {
+        let (seg_name, forward) = self.steps.next()?;
+
+        // Get the corresponding handle from the GFA.
+        let seg_id = self
+            .gfa
+            .find_seg(seg_name)
+            .expect("GAF refernces unknown segment");
+        let dir = match forward {
+            true => flatgfa::Orientation::Forward,
+            false => flatgfa::Orientation::Backward,
+        };
+        let handle = flatgfa::Handle::new(seg_id, dir);
+
+        // Accumulate the length to track our position in the path.
+        let next_pos = self.pos + self.gfa.segs[seg_id].len();
+        if !self.started {
+            if self.pos <= self.start && self.start < next_pos {
+                let seg_start_pos = self.start - self.pos;
+                println!("started at {}.{}", seg_name, seg_start_pos);
+                self.started = true;
+            }
+        } else {
+            if self.pos <= self.end && self.end < next_pos {
+                let seg_end_pos = self.end - self.pos;
+                println!("ended at {}.{}", seg_name, seg_end_pos);
+                return None; // TODO
+            }
+        }
+        self.pos = next_pos;
+
+        // Produce the event.
+        let out = ChunkEvent {
+            handle,
+            index: self.index,
+        };
+        self.index += 1;
+        Some(out)
     }
 }
 
