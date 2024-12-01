@@ -30,8 +30,34 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
         // Using MemchrSplit to get the GAF fields is pretty lazy; it would be
         // better to manage the indices directly.
         let path = field_iter.next().unwrap();
-        for step in PathParser::new(path) {
-            dbg!(step);
+
+        // Get the read's coordinates.
+        let path_len: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
+        let read_start: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
+        let read_end: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
+
+        // Walk down the path to find the start and end coordinates in the segments.
+        let mut pos = 0;
+        let mut started = false;
+        for (seg_name, forward) in PathParser::new(path) {
+            let seg_id = gfa.find_seg(seg_name).expect("GAF has unknown segment");
+
+            // Accumulate the length to track our position in the path.
+            let next_pos = pos + gfa.segs[seg_id].len();
+            if !started {
+                if pos <= read_start && read_start < next_pos {
+                    let seg_start_pos = read_start - pos;
+                    println!("started at {}.{}", seg_name, seg_start_pos);
+                    started = true;
+                }
+            } else {
+                if pos <= read_end && read_end < next_pos {
+                    let seg_end_pos = read_end - pos;
+                    println!("ended at {}.{}", seg_name, seg_end_pos);
+                    break;
+                }
+            }
+            pos = next_pos;
         }
     }
 }
@@ -49,6 +75,42 @@ impl<'a> PathParser<'a> {
 
     pub fn rest(&self) -> &[u8] {
         &self.str[self.index..]
+    }
+}
+
+/// Parse an integer from a byte string starting at `index`. Update `index` to
+/// point just past the parsed integer.
+fn parse_int(bytes: &[u8], index: &mut usize) -> Option<usize> {
+    let mut num = 0;
+    let mut first_digit = true;
+
+    while *index < bytes.len() {
+        let byte = bytes[*index];
+        if byte.is_ascii_digit() {
+            num *= 10;
+            num += (byte - b'0') as usize;
+            *index += 1;
+            first_digit = false;
+        } else {
+            break;
+        }
+    }
+
+    if first_digit {
+        return None;
+    } else {
+        return Some(num);
+    }
+}
+
+/// Parse an integer from a byte string, which should contain only the integer.
+fn parse_int_all(bytes: &[u8]) -> Option<usize> {
+    let mut index = 0;
+    let num = parse_int(bytes, &mut index)?;
+    if index == bytes.len() {
+        return Some(num);
+    } else {
+        return None;
     }
 }
 
@@ -70,17 +132,7 @@ impl<'a> Iterator for PathParser<'a> {
         };
 
         // Parse the integer segment name.
-        let mut seg_name: usize = 0;
-        while self.index < self.str.len() {
-            let byte = self.str[self.index];
-            if byte.is_ascii_digit() {
-                seg_name *= 10;
-                seg_name += (byte - b'0') as usize;
-                self.index += 1;
-            } else {
-                break;
-            }
-        }
+        let seg_name = parse_int(self.str, &mut self.index)?;
         return Some((seg_name, forward));
     }
 }
