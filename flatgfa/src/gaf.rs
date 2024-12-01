@@ -43,17 +43,24 @@ fn print_event(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
     let seg = gfa.segs[event.handle.segment()];
     let seg_name = seg.name;
     match event.range {
-        ChunkRange::Partial(len) => {
+        ChunkRange::Partial(start, end) => {
+            println!(
+                "{}: {}{}, {}-{}bp",
+                event.index,
+                seg_name,
+                event.handle.orient(),
+                start,
+                end,
+            );
+        }
+        ChunkRange::All => {
             println!(
                 "{}: {}{}, {}bp",
                 event.index,
                 seg_name,
                 event.handle.orient(),
-                len
+                seg.len()
             );
-        }
-        ChunkRange::All => {
-            println!("{}: {}{}", event.index, seg_name, event.handle.orient());
         }
         ChunkRange::None => {
             println!("{}: (skipped)", event.index);
@@ -66,8 +73,8 @@ fn print_seq(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
     let seq = gfa.get_seq(&seg);
     // TODO Reverse-complement for backward orientation.
     match event.range {
-        ChunkRange::Partial(len) => {
-            print!("{}", &seq[0..len]);
+        ChunkRange::Partial(start, end) => {
+            print!("{}", &seq[start..end]);
         }
         ChunkRange::All => {
             print!("{}", seq);
@@ -153,7 +160,7 @@ struct ChunkEvent {
 enum ChunkRange {
     None,
     All,
-    Partial(usize),
+    Partial(usize, usize),
 }
 
 impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
@@ -174,13 +181,22 @@ impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
         let handle = flatgfa::Handle::new(seg_id, dir);
 
         // Accumulate the length to track our position in the path.
-        let next_pos = self.pos + self.gfa.segs[seg_id].len();
-        let range = if !self.started && self.pos <= self.start && self.start < next_pos {
+        let seg_len = self.gfa.segs[seg_id].len();
+        let next_pos = self.pos + seg_len;
+        let range = if !self.started && self.start < next_pos {
             self.started = true;
-            ChunkRange::Partial(self.start - self.pos)
-        } else if self.started && !self.ended && self.pos <= self.end && self.end < next_pos {
+            if self.end < next_pos {
+                // Also ending in the same segment.
+                self.ended = true;
+                ChunkRange::Partial(self.start - self.pos, self.end - self.pos)
+            } else {
+                // Just starting in this segment.
+                ChunkRange::Partial(self.start - self.pos, seg_len)
+            }
+        } else if self.started && !self.ended && self.end < next_pos {
+            // Just ending in this segment.
             self.ended = true;
-            ChunkRange::Partial(self.end - self.pos)
+            ChunkRange::Partial(0, self.end - self.pos)
         } else if self.started && !self.ended {
             ChunkRange::All
         } else {
