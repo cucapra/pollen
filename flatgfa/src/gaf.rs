@@ -20,6 +20,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     let gaf_buf = map_file(&args.gaf);
 
     if args.seqs {
+        // Print the actual sequences for each chunk in the GAF.
         for line in MemchrSplit::new(b'\n', &gaf_buf) {
             let read = GAFLine::parse(line);
             print!("{}\t", read.name);
@@ -29,6 +30,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
             println!();
         }
     } else {
+        // Just print some info about the offsets in the segments.
         for line in MemchrSplit::new(b'\n', &gaf_buf) {
             let read = GAFLine::parse(line);
             println!("{}", read.name);
@@ -226,6 +228,7 @@ impl<'a> PathParser<'a> {
         Self { str, index: 0 }
     }
 
+    #[allow(dead_code)]
     pub fn rest(&self) -> &[u8] {
         &self.str[self.index..]
     }
