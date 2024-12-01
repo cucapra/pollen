@@ -22,14 +22,23 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
         for event in PathChunker::new(gfa, read) {
             let seg = gfa.segs[event.handle.segment()];
             let seg_name = seg.name;
-            print!("{}: {}{}", event.index, seg_name, event.handle.orient());
             match event.range {
                 ChunkRange::Partial(len) => {
-                    print!(", {}bp", len);
+                    println!(
+                        "{}: {}{}, {}bp",
+                        event.index,
+                        seg_name,
+                        event.handle.orient(),
+                        len
+                    );
                 }
-                _ => {}
+                ChunkRange::All => {
+                    println!("{}: {}{}", event.index, seg_name, event.handle.orient());
+                }
+                ChunkRange::None => {
+                    println!("{}: (skipped)", event.index);
+                }
             }
-            println!();
         }
     }
 }
