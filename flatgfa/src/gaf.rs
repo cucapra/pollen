@@ -1,5 +1,6 @@
 use crate::flatgfa;
 use crate::memfile::{map_file, MemchrSplit};
+use crate::parse::NameMap;
 use argh::FromArgs;
 use bstr::BStr;
 
@@ -17,14 +18,20 @@ pub struct GAFLookup {
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
-    let gaf_buf = map_file(&args.gaf);
+    // Build a map to efficiently look up segments by name.
+    // TODO Maybe move this to a library?
+    let mut name_map = NameMap::default();
+    for (id, seg) in gfa.segs.items() {
+        name_map.insert(seg.name, id);
+    }
 
+    let gaf_buf = map_file(&args.gaf);
     if args.seqs {
         // Print the actual sequences for each chunk in the GAF.
         for line in MemchrSplit::new(b'\n', &gaf_buf) {
             let read = GAFLine::parse(line);
             print!("{}\t", read.name);
-            for event in PathChunker::new(gfa, read) {
+            for event in PathChunker::new(gfa, &name_map, read) {
                 print_seq(gfa, event);
             }
             println!();
@@ -34,7 +41,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
         for line in MemchrSplit::new(b'\n', &gaf_buf) {
             let read = GAFLine::parse(line);
             println!("{}", read.name);
-            for event in PathChunker::new(gfa, read) {
+            for event in PathChunker::new(gfa, &name_map, read) {
                 print_event(gfa, event);
             }
         }
@@ -124,6 +131,7 @@ impl<'a> GAFLine<'a> {
 
 struct PathChunker<'a, 'b> {
     gfa: &'a flatgfa::FlatGFA<'a>,
+    name_map: &'a NameMap,
     steps: PathParser<'b>,
     start: usize,
     end: usize,
@@ -136,10 +144,11 @@ struct PathChunker<'a, 'b> {
 }
 
 impl<'a, 'b> PathChunker<'a, 'b> {
-    fn new(gfa: &'a flatgfa::FlatGFA, read: GAFLine<'b>) -> Self {
+    fn new(gfa: &'a flatgfa::FlatGFA, name_map: &'a NameMap, read: GAFLine<'b>) -> Self {
         let steps = PathParser::new(read.path);
         Self {
             gfa,
+            name_map,
             steps,
             start: read.start,
             end: read.end,
@@ -172,10 +181,7 @@ impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
         let (seg_name, forward) = self.steps.next()?;
 
         // Get the corresponding handle from the GFA.
-        let seg_id = self
-            .gfa
-            .find_seg(seg_name)
-            .expect("GAF references unknown segment");
+        let seg_id = self.name_map.get(seg_name);
         let dir = match forward {
             true => flatgfa::Orientation::Forward,
             false => flatgfa::Orientation::Backward,
