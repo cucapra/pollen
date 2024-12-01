@@ -1,6 +1,6 @@
 use crate::flatgfa;
 use crate::memfile::{map_file, MemchrSplit};
-use crate::parse::NameMap;
+use crate::namemap::NameMap;
 use argh::FromArgs;
 use bstr::BStr;
 
