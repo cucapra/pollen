@@ -22,7 +22,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
         // Walk down the path to find the start and end coordinates in the segments.
         let mut pos = 0;
         let mut started = false;
-        for (seg_name, forward) in PathParser::new(read.path) {
+        for (seg_name, forward) in read.steps() {
             let seg_id = gfa.find_seg(seg_name).expect("GAF has unknown segment");
 
             // Accumulate the length to track our position in the path.
@@ -53,7 +53,7 @@ struct GAFRead<'a> {
 }
 
 impl<'a> GAFRead<'a> {
-    pub fn parse(line: &'a [u8]) -> Self {
+    fn parse(line: &'a [u8]) -> Self {
         // Lines in a GAF are tab-separated.
         let mut field_iter = MemchrSplit::new(b'\t', line);
         let name = BStr::new(field_iter.next().unwrap());
@@ -79,6 +79,10 @@ impl<'a> GAFRead<'a> {
             end,
             path,
         }
+    }
+
+    fn steps(&self) -> PathParser {
+        PathParser::new(self.path)
     }
 }
 
