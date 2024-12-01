@@ -7,39 +7,72 @@ use bstr::BStr;
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "gaf")]
 pub struct GAFLookup {
-    /// path_name,offset,orientation
+    /// GAF file associated with the GFA
     #[argh(positional)]
     gaf: String,
+
+    /// print the actual sequences
+    #[argh(switch, short = 's')]
+    seqs: bool,
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
-    // Read the lines in the GAF.
     let gaf_buf = map_file(&args.gaf);
-    for line in MemchrSplit::new(b'\n', &gaf_buf) {
-        let read = GAFLine::parse(line);
-        println!("{}", read.name);
 
-        for event in PathChunker::new(gfa, read) {
-            let seg = gfa.segs[event.handle.segment()];
-            let seg_name = seg.name;
-            match event.range {
-                ChunkRange::Partial(len) => {
-                    println!(
-                        "{}: {}{}, {}bp",
-                        event.index,
-                        seg_name,
-                        event.handle.orient(),
-                        len
-                    );
-                }
-                ChunkRange::All => {
-                    println!("{}: {}{}", event.index, seg_name, event.handle.orient());
-                }
-                ChunkRange::None => {
-                    println!("{}: (skipped)", event.index);
-                }
+    if args.seqs {
+        for line in MemchrSplit::new(b'\n', &gaf_buf) {
+            let read = GAFLine::parse(line);
+            print!("{}\t", read.name);
+            for event in PathChunker::new(gfa, read) {
+                print_seq(gfa, event);
+            }
+            println!();
+        }
+    } else {
+        for line in MemchrSplit::new(b'\n', &gaf_buf) {
+            let read = GAFLine::parse(line);
+            println!("{}", read.name);
+            for event in PathChunker::new(gfa, read) {
+                print_event(gfa, event);
             }
         }
+    }
+}
+
+fn print_event(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
+    let seg = gfa.segs[event.handle.segment()];
+    let seg_name = seg.name;
+    match event.range {
+        ChunkRange::Partial(len) => {
+            println!(
+                "{}: {}{}, {}bp",
+                event.index,
+                seg_name,
+                event.handle.orient(),
+                len
+            );
+        }
+        ChunkRange::All => {
+            println!("{}: {}{}", event.index, seg_name, event.handle.orient());
+        }
+        ChunkRange::None => {
+            println!("{}: (skipped)", event.index);
+        }
+    }
+}
+
+fn print_seq(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
+    let seg = gfa.segs[event.handle.segment()];
+    let seq = gfa.get_seq(&seg);
+    // TODO Reverse-complement for backward orientation.
+    match event.range {
+        ChunkRange::Partial(len) => {
+            print!("{}", &seq[0..len]);
+        }
+        ChunkRange::All => {
+            print!("{}", seq);
+        }
+        ChunkRange::None => {}
     }
 }
 
