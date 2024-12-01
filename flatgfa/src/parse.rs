@@ -1,6 +1,7 @@
-use crate::flatgfa::{self, Handle, LineKind, Orientation};
+use crate::flatgfa::{self, Handle, LineKind, Orientation, Segment};
 use crate::gfaline;
 use crate::memfile::MemchrSplit;
+use crate::pool::Id;
 use std::collections::HashMap;
 use std::io::BufRead;
 
@@ -137,12 +138,12 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
 
     fn add_seg(&mut self, seg: gfaline::Segment) {
         let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
-        self.seg_ids.insert(seg.name, seg_id.into());
+        self.seg_ids.insert(seg.name, seg_id);
     }
 
     fn add_link(&mut self, link: gfaline::Link) {
-        let from = Handle::new(self.seg_ids.get(link.from_seg).into(), link.from_orient);
-        let to = Handle::new(self.seg_ids.get(link.to_seg).into(), link.to_orient);
+        let from = Handle::new(self.seg_ids.get(link.from_seg), link.from_orient);
+        let to = Handle::new(self.seg_ids.get(link.to_seg), link.to_orient);
         self.flat.add_link(from, to, link.overlap);
     }
 
@@ -151,7 +152,7 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         let mut step_parser = gfaline::StepsParser::new(&path.steps);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
-                self.seg_ids.get(name).into(),
+                self.seg_ids.get(name),
                 if dir {
                     Orientation::Forward
                 } else {
@@ -179,7 +180,7 @@ impl<'a> Parser<'a, flatgfa::FixedFamily> {
 }
 
 #[derive(Default)]
-struct NameMap {
+pub struct NameMap {
     /// Names at most this are assigned *sequential* IDs, i.e., the ID is just the name
     /// minus one.
     sequential_max: usize,
@@ -189,21 +190,21 @@ struct NameMap {
 }
 
 impl NameMap {
-    fn insert(&mut self, name: usize, id: u32) {
+    pub fn insert(&mut self, name: usize, id: Id<Segment>) {
         // Is this the next sequential name? If so, no need to record it in our hash table;
         // just bump the number of sequential names we've seen.
-        if (name - 1) == self.sequential_max && (name - 1) == (id as usize) {
+        if (name - 1) == self.sequential_max && (name - 1) == id.index() {
             self.sequential_max += 1;
         } else {
-            self.others.insert(name, id);
+            self.others.insert(name, id.into());
         }
     }
 
-    fn get(&self, name: usize) -> u32 {
+    pub fn get(&self, name: usize) -> Id<Segment> {
         if name <= self.sequential_max {
-            (name - 1) as u32
+            ((name - 1) as u32).into()
         } else {
-            self.others[&name]
+            self.others[&name].into()
         }
     }
 }
