@@ -13,7 +13,7 @@ pub struct GafLookup {
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
-    // Read the GAF file, I suppose.
+    // Read the lines in the GAF.
     let gaf_buf = map_file(&args.gaf);
     for line in MemchrSplit::new(b'\n', &gaf_buf) {
         let read = GAFRead::parse(line);
@@ -69,7 +69,7 @@ impl<'a> GAFRead<'a> {
         let path = field_iter.next().unwrap();
 
         // Get the read's coordinates.
-        let path_len: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
+        field_iter.next().unwrap(); // Skip path length.
         let start: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
         let end: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
 
