@@ -15,6 +15,10 @@ pub struct GAFLookup {
     /// print the actual sequences
     #[argh(switch, short = 's')]
     seqs: bool,
+
+    /// benchmark only: print nothing; limit reads if nonzero
+    #[argh(option, short = 'b')]
+    bench: Option<u32>,
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
@@ -32,6 +36,19 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
             }
             println!();
         }
+    } else if let Some(limit) = args.bench {
+        // Benchmarking mode: just process all the chunks but print nothing.
+        let mut count = 0;
+        for (i, line) in MemchrSplit::new(b'\n', &gaf_buf).enumerate() {
+            let read = GAFLine::parse(line);
+            for _event in PathChunker::new(gfa, &name_map, read) {
+                count += 1;
+            }
+            if limit > 0 && i >= (limit as usize) {
+                break;
+            }
+        }
+        println!("{}", count);
     } else {
         // Just print some info about the offsets in the segments.
         for line in MemchrSplit::new(b'\n', &gaf_buf) {
