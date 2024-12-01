@@ -6,17 +6,17 @@ use bstr::BStr;
 /// look up positions from a GAF file
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "gaf")]
-pub struct GafLookup {
+pub struct GAFLookup {
     /// path_name,offset,orientation
     #[argh(positional)]
     gaf: String,
 }
 
-pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
+pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     // Read the lines in the GAF.
     let gaf_buf = map_file(&args.gaf);
     for line in MemchrSplit::new(b'\n', &gaf_buf) {
-        let read = GAFRead::parse(line);
+        let read = GAFLine::parse(line);
         println!("{}", read.name);
 
         for event in PathChunker::new(gfa, read) {
@@ -25,14 +25,14 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GafLookup) {
     }
 }
 
-struct GAFRead<'a> {
+struct GAFLine<'a> {
     name: &'a BStr,
     start: usize,
     end: usize,
     path: &'a [u8],
 }
 
-impl<'a> GAFRead<'a> {
+impl<'a> GAFLine<'a> {
     fn parse(line: &'a [u8]) -> Self {
         // Lines in a GAF are tab-separated.
         let mut field_iter = MemchrSplit::new(b'\t', line);
@@ -60,10 +60,6 @@ impl<'a> GAFRead<'a> {
             path,
         }
     }
-
-    fn steps(&self) -> PathParser {
-        PathParser::new(self.path)
-    }
 }
 
 struct PathChunker<'a, 'b> {
@@ -79,7 +75,7 @@ struct PathChunker<'a, 'b> {
 }
 
 impl<'a, 'b> PathChunker<'a, 'b> {
-    fn new(gfa: &'a flatgfa::FlatGFA, read: GAFRead<'b>) -> Self {
+    fn new(gfa: &'a flatgfa::FlatGFA, read: GAFLine<'b>) -> Self {
         let steps = PathParser::new(read.path);
         Self {
             gfa,
@@ -109,7 +105,7 @@ impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
         let seg_id = self
             .gfa
             .find_seg(seg_name)
-            .expect("GAF refernces unknown segment");
+            .expect("GAF references unknown segment");
         let dir = match forward {
             true => flatgfa::Orientation::Forward,
             false => flatgfa::Orientation::Backward,

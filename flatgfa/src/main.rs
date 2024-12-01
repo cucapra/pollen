@@ -42,7 +42,7 @@ enum Command {
     Extract(cmds::Extract),
     Depth(cmds::Depth),
     Chop(cmds::Chop),
-    GafLookup(gaf::GafLookup),
+    GafLookup(gaf::GAFLookup),
 }
 
 fn main() -> Result<(), &'static str> {
