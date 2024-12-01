@@ -19,11 +19,7 @@ pub struct GAFLookup {
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     // Build a map to efficiently look up segments by name.
-    // TODO Maybe move this to a library?
-    let mut name_map = NameMap::default();
-    for (id, seg) in gfa.segs.items() {
-        name_map.insert(seg.name, id);
-    }
+    let name_map = NameMap::build(gfa);
 
     let gaf_buf = map_file(&args.gaf);
     if args.seqs {
