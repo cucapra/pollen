@@ -1,4 +1,4 @@
-use crate::flatgfa::Segment;
+use crate::flatgfa::{FlatGFA, Segment};
 use crate::pool::Id;
 use std::collections::HashMap;
 
@@ -30,5 +30,14 @@ impl NameMap {
         } else {
             self.others[&name].into()
         }
+    }
+
+    /// Construct a name map for all the segments in a GFA.
+    pub fn build(gfa: &FlatGFA) -> Self {
+        let mut name_map = NameMap::default();
+        for (id, seg) in gfa.segs.items() {
+            name_map.insert(seg.name, id);
+        }
+        name_map
     }
 }
