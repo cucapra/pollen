@@ -72,6 +72,7 @@ struct PathChunker<'a, 'b> {
     index: usize,
     pos: usize,
     started: bool,
+    ended: bool,
 }
 
 impl<'a, 'b> PathChunker<'a, 'b> {
@@ -85,6 +86,7 @@ impl<'a, 'b> PathChunker<'a, 'b> {
             index: 0,
             pos: 0,
             started: false,
+            ended: false,
         }
     }
 }
@@ -93,6 +95,14 @@ impl<'a, 'b> PathChunker<'a, 'b> {
 struct ChunkEvent {
     index: usize,
     handle: flatgfa::Handle,
+    range: ChunkRange,
+}
+
+#[derive(Debug)]
+enum ChunkRange {
+    None,
+    All,
+    Partial(usize),
 }
 
 impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
@@ -114,25 +124,24 @@ impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
 
         // Accumulate the length to track our position in the path.
         let next_pos = self.pos + self.gfa.segs[seg_id].len();
-        if !self.started {
-            if self.pos <= self.start && self.start < next_pos {
-                let seg_start_pos = self.start - self.pos;
-                println!("started at {}.{}", seg_name, seg_start_pos);
-                self.started = true;
-            }
+        let range = if !self.started && self.pos <= self.start && self.start < next_pos {
+            self.started = true;
+            ChunkRange::Partial(self.start - self.pos)
+        } else if self.started && !self.ended && self.pos <= self.end && self.end < next_pos {
+            self.ended = true;
+            ChunkRange::Partial(self.end - self.pos)
+        } else if self.started && !self.ended {
+            ChunkRange::All
         } else {
-            if self.pos <= self.end && self.end < next_pos {
-                let seg_end_pos = self.end - self.pos;
-                println!("ended at {}.{}", seg_name, seg_end_pos);
-                return None; // TODO
-            }
-        }
+            ChunkRange::None
+        };
         self.pos = next_pos;
 
         // Produce the event.
         let out = ChunkEvent {
             handle,
             index: self.index,
+            range,
         };
         self.index += 1;
         Some(out)
