@@ -1,8 +1,9 @@
 use crate::flatgfa;
-use crate::memfile::map_file;
+use crate::memfile::{map_file, MemchrSplit};
 use crate::namemap::NameMap;
 use argh::FromArgs;
 use bstr::BStr;
+use rayon::prelude::*;
 
 /// look up positions from a GAF file
 #[derive(FromArgs, PartialEq, Debug)]
@@ -192,6 +193,19 @@ impl<'a> Iterator for GAFParser<'a> {
         }
         Some(self.parse_line())
     }
+}
+
+fn gaf_parse_parallel(buf: &[u8]) {
+    rayon::scope(|s| {
+        MemchrSplit::new(b'\n', buf).for_each(|line| {
+            s.spawn(|_| {
+                let mut parser = GAFParser::new(line);
+                for read in parser {
+                    dbg!(read);
+                }
+            });
+        });
+    });
 }
 
 struct PathChunker<'a, 'b> {
