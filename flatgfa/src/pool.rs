@@ -1,4 +1,4 @@
-use std::ops::{Index, Add, Sub};
+use std::ops::{Add, Index, Sub};
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
@@ -34,16 +34,18 @@ impl<T> Add<u32> for Id<T> {
 impl<T> Sub<u32> for Id<T> {
     type Output = Self;
     #[inline]
-    fn sub(self, rhs:u32) -> Self::Output {
+    fn sub(self, rhs: u32) -> Self::Output {
         Self(self.0 - rhs, PhantomData)
     }
 }
 
 impl<T> Id<T> {
+    /// Get the ID's location in the relevant pool.
     pub fn index(self) -> usize {
         self.0 as usize
     }
 
+    /// Create a new ID pointing to a given pool index.
     pub fn new(index: usize) -> Self {
         Self(index.try_into().expect("id too large"), PhantomData)
     }

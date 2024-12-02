@@ -1,6 +1,7 @@
 use crate::flatgfa::{self, Handle, LineKind, Orientation};
 use crate::gfaline;
-use std::collections::HashMap;
+use crate::memfile::MemchrSplit;
+use crate::namemap::NameMap;
 use std::io::BufRead;
 
 pub struct Parser<'a, P: flatgfa::StoreFamily<'a>> {
@@ -109,7 +110,7 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         for line in deferred_lines {
             let gfa_line = gfaline::parse_line(line).unwrap();
             match gfa_line {
-                gfaline::Line::Link(link) => { 
+                gfaline::Line::Link(link) => {
                     self.add_link(link);
                 }
                 gfaline::Line::Path(path) => {
@@ -136,22 +137,21 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
 
     fn add_seg(&mut self, seg: gfaline::Segment) {
         let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
-        self.seg_ids.insert(seg.name, seg_id.into());
+        self.seg_ids.insert(seg.name, seg_id);
     }
 
     fn add_link(&mut self, link: gfaline::Link) {
-        let from = Handle::new(self.seg_ids.get(link.from_seg).into(), link.from_orient);
-        let to = Handle::new(self.seg_ids.get(link.to_seg).into(), link.to_orient);
+        let from = Handle::new(self.seg_ids.get(link.from_seg), link.from_orient);
+        let to = Handle::new(self.seg_ids.get(link.to_seg), link.to_orient);
         self.flat.add_link(from, to, link.overlap);
     }
 
     fn add_path(&mut self, path: gfaline::Path) {
- 
         // Parse the steps.
         let mut step_parser = gfaline::StepsParser::new(&path.steps);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
-                self.seg_ids.get(name).into(),
+                self.seg_ids.get(name),
                 if dir {
                     Orientation::Forward
                 } else {
@@ -161,7 +161,8 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         }));
         assert!(step_parser.rest().is_empty());
 
-        self.flat.add_path(path.name, steps, path.overlaps.into_iter());
+        self.flat
+            .add_path(path.name, steps, path.overlaps.into_iter());
     }
 }
 
@@ -174,36 +175,6 @@ impl Parser<'static, flatgfa::HeapFamily> {
 impl<'a> Parser<'a, flatgfa::FixedFamily> {
     pub fn for_slice(store: flatgfa::FixedGFAStore<'a>) -> Self {
         Self::new(store)
-    }
-}
-
-#[derive(Default)]
-struct NameMap {
-    /// Names at most this are assigned *sequential* IDs, i.e., the ID is just the name
-    /// minus one.
-    sequential_max: usize,
-
-    /// Non-sequential names go here.
-    others: HashMap<usize, u32>,
-}
-
-impl NameMap {
-    fn insert(&mut self, name: usize, id: u32) {
-        // Is this the next sequential name? If so, no need to record it in our hash table;
-        // just bump the number of sequential names we've seen.
-        if (name - 1) == self.sequential_max && (name - 1) == (id as usize) {
-            self.sequential_max += 1;
-        } else {
-            self.others.insert(name, id);
-        }
-    }
-
-    fn get(&self, name: usize) -> u32 {
-        if name <= self.sequential_max {
-            (name - 1) as u32
-        } else {
-            self.others[&name]
-        }
     }
 }
 
@@ -249,31 +220,4 @@ pub fn estimate_toc(buf: &[u8]) -> crate::file::Toc {
     }
 
     crate::file::Toc::estimate(segs, links, paths, header_bytes, seg_bytes, path_bytes)
-}
-
-struct MemchrSplit<'a> {
-    haystack: &'a [u8],
-    memchr: memchr::Memchr<'a>,
-    pos: usize,
-}
-
-impl<'a> Iterator for MemchrSplit<'a> {
-    type Item = &'a [u8];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let start = self.pos;
-        let end = self.memchr.next()?;
-        self.pos = end + 1;
-        Some(&self.haystack[start..end])
-    }
-}
-
-impl MemchrSplit<'_> {
-    fn new(needle: u8, haystack: &[u8]) -> MemchrSplit {
-        MemchrSplit {
-            haystack,
-            memchr: memchr::memchr_iter(needle, haystack),
-            pos: 0,
-        }
-    }
 }
