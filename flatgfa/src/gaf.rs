@@ -129,6 +129,14 @@ impl<'a> GAFParser<'a> {
         Some(&self.buf[start..(start + end)])
     }
 
+    fn skip_fields(&mut self, n: usize) -> Option<()> {
+        for _ in 0..n {
+            let end = memchr::memchr(b'\t', &self.buf[self.pos..])?;
+            self.pos += end + 1;
+        }
+        Some(())
+    }
+
     fn int_field(&mut self) -> Option<usize> {
         let val = parse_int(&self.buf, &mut self.pos);
         assert!(matches!(self.buf[self.pos], b'\t' | b'\n'));
@@ -154,18 +162,13 @@ impl<'a> GAFParser<'a> {
         assert!(self.pos < self.buf.len());
 
         let name = BStr::new(self.next_field().unwrap());
-
-        // Skip the other fields up to the actual path. TODO add utility.
-        self.next_field();
-        self.next_field();
-        self.next_field();
-        self.next_field();
+        self.skip_fields(4);
 
         // The actual path string (which we don't parse yet).
         let path = self.next_field().unwrap();
 
         // Get the read's coordinates.
-        self.next_field(); // Skip path length.
+        self.skip_fields(1); // Skip path length.
         let start: usize = self.int_field().unwrap();
         let end: usize = self.int_field().unwrap();
 
