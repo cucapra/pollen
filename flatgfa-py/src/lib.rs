@@ -1,5 +1,5 @@
 use flatgfa::pool::Id;
-use flatgfa::{self, file, print, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
@@ -18,7 +18,7 @@ enum Store {
 impl Store {
     /// Parse a text GFA file.
     fn parse_file(filename: &str) -> Self {
-        let file = file::map_file(filename);
+        let file = memfile::map_file(filename);
         Self::parse_gfa(file.as_ref())
     }
 
@@ -30,7 +30,7 @@ impl Store {
 
     /// Load a FlatGFA binary file.
     fn load(filename: &str) -> Self {
-        let mmap = file::map_file(filename);
+        let mmap = memfile::map_file(filename);
         Self::File(mmap)
     }
 
@@ -121,7 +121,7 @@ impl PyFlatGFA {
     /// You can read the resulting file with :func:`load`.
     fn write_flatgfa(&self, filename: &str) -> PyResult<()> {
         let gfa = self.0.view();
-        let mut mmap = file::map_new_file(filename, file::size(&gfa) as u64);
+        let mut mmap = memfile::map_new_file(filename, file::size(&gfa) as u64);
         file::dump(&gfa, &mut mmap);
         mmap.flush()?;
         Ok(())
