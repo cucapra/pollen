@@ -1,5 +1,5 @@
 use crate::flatgfa;
-use crate::memfile::{map_file, MemchrSplit};
+use crate::memfile::map_file;
 use crate::namemap::NameMap;
 use argh::FromArgs;
 use bstr::BStr;
@@ -26,10 +26,11 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     let name_map = NameMap::build(gfa);
 
     let gaf_buf = map_file(&args.gaf);
+    let parser = GAFParser::new(&gaf_buf);
+
     if args.seqs {
         // Print the actual sequences for each chunk in the GAF.
-        for line in MemchrSplit::new(b'\n', &gaf_buf) {
-            let read = GAFLine::parse(line);
+        for read in parser {
             print!("{}\t", read.name);
             for event in PathChunker::new(gfa, &name_map, read) {
                 print_seq(gfa, event);
@@ -39,8 +40,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     } else if let Some(limit) = args.bench {
         // Benchmarking mode: just process all the chunks but print nothing.
         let mut count = 0;
-        for (i, line) in MemchrSplit::new(b'\n', &gaf_buf).enumerate() {
-            let read = GAFLine::parse(line);
+        for (i, read) in parser.enumerate() {
             for _event in PathChunker::new(gfa, &name_map, read) {
                 count += 1;
             }
@@ -51,8 +51,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
         println!("{}", count);
     } else {
         // Just print some info about the offsets in the segments.
-        for line in MemchrSplit::new(b'\n', &gaf_buf) {
-            let read = GAFLine::parse(line);
+        for read in parser {
             println!("{}", read.name);
             for event in PathChunker::new(gfa, &name_map, read) {
                 print_event(gfa, event);
@@ -105,6 +104,12 @@ fn print_seq(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
     }
 }
 
+struct GAFParser<'a> {
+    buf: &'a [u8],
+    pos: usize,
+}
+
+#[derive(Debug)]
 struct GAFLine<'a> {
     name: &'a BStr,
     start: usize,
@@ -112,33 +117,77 @@ struct GAFLine<'a> {
     path: &'a [u8],
 }
 
-impl<'a> GAFLine<'a> {
-    fn parse(line: &'a [u8]) -> Self {
-        // Lines in a GAF are tab-separated.
-        let mut field_iter = MemchrSplit::new(b'\t', line);
-        let name = BStr::new(field_iter.next().unwrap());
+impl<'a> GAFParser<'a> {
+    fn new(buf: &'a [u8]) -> Self {
+        Self { buf, pos: 0 }
+    }
 
-        // Skip the other fields up to the actual path. Would be nice if
-        // `Iterator::advance_by` was stable.
-        field_iter.next().unwrap();
-        field_iter.next().unwrap();
-        field_iter.next().unwrap();
-        field_iter.next().unwrap();
+    fn next_field(&mut self) -> Option<&'a [u8]> {
+        let start = self.pos;
+        let end = memchr::memchr(b'\t', &self.buf[self.pos..])?;
+        self.pos += end + 1;
+        Some(&self.buf[start..(start + end)])
+    }
+
+    fn int_field(&mut self) -> Option<usize> {
+        let val = parse_int(&self.buf, &mut self.pos);
+        assert!(matches!(self.buf[self.pos], b'\t' | b'\n'));
+        self.pos += 1;
+        val
+    }
+
+    fn advance_line(&mut self) -> bool {
+        let newline_pos = memchr::memchr(b'\n', &self.buf[self.pos..]);
+        match newline_pos {
+            None => {
+                self.pos = self.buf.len();
+                false
+            }
+            Some(pos) => {
+                self.pos += pos + 1;
+                true
+            }
+        }
+    }
+
+    fn parse_line(&mut self) -> GAFLine<'a> {
+        assert!(self.pos < self.buf.len());
+
+        let name = BStr::new(self.next_field().unwrap());
+
+        // Skip the other fields up to the actual path. TODO add utility.
+        self.next_field();
+        self.next_field();
+        self.next_field();
+        self.next_field();
 
         // The actual path string (which we don't parse yet).
-        let path = field_iter.next().unwrap();
+        let path = self.next_field().unwrap();
 
         // Get the read's coordinates.
-        field_iter.next().unwrap(); // Skip path length.
-        let start: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
-        let end: usize = parse_int_all(field_iter.next().unwrap()).unwrap();
+        self.next_field(); // Skip path length.
+        let start: usize = self.int_field().unwrap();
+        let end: usize = self.int_field().unwrap();
 
-        Self {
+        self.advance_line();
+
+        GAFLine {
             name,
             start,
             end,
             path,
         }
+    }
+}
+
+impl<'a> Iterator for GAFParser<'a> {
+    type Item = GAFLine<'a>;
+
+    fn next(&mut self) -> Option<GAFLine<'a>> {
+        if self.pos >= self.buf.len() {
+            return None;
+        }
+        Some(self.parse_line())
     }
 }
 
@@ -275,17 +324,6 @@ fn parse_int(bytes: &[u8], index: &mut usize) -> Option<usize> {
         return None;
     } else {
         return Some(num);
-    }
-}
-
-/// Parse an integer from a byte string, which should contain only the integer.
-fn parse_int_all(bytes: &[u8]) -> Option<usize> {
-    let mut index = 0;
-    let num = parse_int(bytes, &mut index)?;
-    if index == bytes.len() {
-        return Some(num);
-    } else {
-        return None;
     }
 }
 
