@@ -3,7 +3,7 @@ use crate::memfile::{map_file, MemchrSplit};
 use crate::namemap::NameMap;
 use argh::FromArgs;
 use bstr::BStr;
-use rayon::prelude::*;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 /// look up positions from a GAF file
 #[derive(FromArgs, PartialEq, Debug)]
@@ -18,8 +18,8 @@ pub struct GAFLookup {
     seqs: bool,
 
     /// benchmark only: print nothing; limit reads if nonzero
-    #[argh(option, short = 'b')]
-    bench: Option<u32>,
+    #[argh(switch, short = 'b')]
+    bench: bool,
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
@@ -27,37 +27,37 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     let name_map = NameMap::build(gfa);
 
     let gaf_buf = map_file(&args.gaf);
-    let parser = GAFParser::new(&gaf_buf);
+    let parse_iter = gaf_parse_par(&gaf_buf);
 
     if args.seqs {
         // Print the actual sequences for each chunk in the GAF.
-        for read in parser {
+        parse_iter.for_each(|read| {
             print!("{}\t", read.name);
             for event in PathChunker::new(gfa, &name_map, read) {
                 print_seq(gfa, event);
             }
             println!();
-        }
-    } else if let Some(limit) = args.bench {
+        });
+    } else if args.bench {
         // Benchmarking mode: just process all the chunks but print nothing.
-        let mut count = 0;
-        for (i, read) in parser.enumerate() {
-            for _event in PathChunker::new(gfa, &name_map, read) {
-                count += 1;
-            }
-            if limit > 0 && i >= (limit as usize) {
-                break;
-            }
-        }
+        let count: usize = parse_iter
+            .map(|read| {
+                let mut count: usize = 0;
+                for _event in PathChunker::new(gfa, &name_map, read) {
+                    count += 1;
+                }
+                count
+            })
+            .sum();
         println!("{}", count);
     } else {
         // Just print some info about the offsets in the segments.
-        for read in parser {
+        parse_iter.for_each(|read| {
             println!("{}", read.name);
             for event in PathChunker::new(gfa, &name_map, read) {
                 print_event(gfa, event);
             }
-        }
+        });
     }
 }
 
@@ -195,17 +195,11 @@ impl<'a> Iterator for GAFParser<'a> {
     }
 }
 
-fn gaf_parse_parallel(buf: &[u8]) {
-    rayon::scope(|s| {
-        MemchrSplit::new(b'\n', buf).for_each(|line| {
-            s.spawn(|_| {
-                let mut parser = GAFParser::new(line);
-                for read in parser {
-                    dbg!(read);
-                }
-            });
-        });
-    });
+fn gaf_parse_par(buf: &[u8]) -> impl ParallelIterator<Item = GAFLine> {
+    MemchrSplit::new(b'\n', buf).par_bridge().map(|line| {
+        let mut parser = GAFParser::new(line);
+        parser.parse_line()
+    })
 }
 
 struct PathChunker<'a, 'b> {
