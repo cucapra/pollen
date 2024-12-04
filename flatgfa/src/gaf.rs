@@ -3,6 +3,7 @@ use crate::memfile::{map_file, MemchrSplit};
 use crate::namemap::NameMap;
 use argh::FromArgs;
 use bstr::BStr;
+use rayon::iter::plumbing::UnindexedProducer;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
 /// look up positions from a GAF file
@@ -106,6 +107,7 @@ fn print_seq(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
 }
 
 struct GAFParser<'a> {
+    // TK Do we really need both of these? Or could we just move the left side of the slice?
     buf: &'a [u8],
     pos: usize,
 }
@@ -192,6 +194,41 @@ impl<'a> Iterator for GAFParser<'a> {
             return None;
         }
         Some(self.parse_line())
+    }
+}
+
+impl<'a> UnindexedProducer for GAFParser<'a> {
+    type Item = GAFLine<'a>;
+
+    fn split(self) -> (Self, Option<Self>) {
+        // Split the buffer roughly in half. TK surely there are off-by-one problems here.
+        let buf = &self.buf[self.pos..];
+        let mid = buf.len() / 2;
+
+        // Move the midpoint to the nearest newline.
+        let mid_nl = mid
+            + match memchr::memchr(b'\n', &buf[mid..]) {
+                Some(n) => n,
+                None => return (self, None),
+            };
+
+        (
+            Self {
+                buf: &buf[..mid_nl],
+                pos: 0,
+            },
+            Some(Self {
+                buf: &buf[mid_nl..],
+                pos: 0,
+            }),
+        )
+    }
+
+    fn fold_with<F>(self, folder: F) -> F
+    where
+        F: rayon::iter::plumbing::Folder<Self::Item>,
+    {
+        todo!()
     }
 }
 

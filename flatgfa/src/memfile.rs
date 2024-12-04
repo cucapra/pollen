@@ -1,4 +1,5 @@
 use memmap::{Mmap, MmapMut};
+use rayon::iter::plumbing::UnindexedProducer;
 
 pub fn map_file(name: &str) -> Mmap {
     let file = std::fs::File::open(name).unwrap();
@@ -28,7 +29,7 @@ pub fn map_file_mut(name: &str) -> MmapMut {
 pub struct MemchrSplit<'a> {
     haystack: &'a [u8],
     memchr: memchr::Memchr<'a>,
-    pos: usize,
+    pos: usize, // TODO Eliminate `pos` in favor of just moving the haystack?
 }
 
 impl<'a> Iterator for MemchrSplit<'a> {
