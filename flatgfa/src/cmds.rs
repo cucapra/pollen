@@ -145,6 +145,10 @@ pub struct Bench {
     /// count lines in a text file
     #[argh(option)]
     wcl: Option<String>,
+
+    /// enable parallelism when available
+    #[argh(switch, short = 'p')]
+    parallel: bool,
 }
 
 pub fn bench(args: Bench) {
@@ -152,7 +156,11 @@ pub fn bench(args: Bench) {
     if let Some(filename) = args.wcl {
         let buf = memfile::map_file(&filename);
         let split = memfile::MemchrSplit::new(b'\n', &buf);
-        let count = ParallelIterator::count(split);
+        let count = if args.parallel {
+            ParallelIterator::count(split)
+        } else {
+            Iterator::count(split)
+        };
         println!("{}", count);
     }
 }
