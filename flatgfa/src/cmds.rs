@@ -3,6 +3,7 @@ use crate::memfile;
 use crate::pool::{self, Id, Span, Store};
 use crate::{GFAStore, HeapFamily};
 use argh::FromArgs;
+use rayon::iter::ParallelIterator;
 use std::collections::{HashMap, HashSet};
 
 /// print the FlatGFA table of contents
@@ -151,7 +152,8 @@ pub fn bench(args: Bench) {
     match args.wcl {
         Some(filename) => {
             let buf = memfile::map_file(&filename);
-            let count = memfile::MemchrSplit::new(b'\n', &buf).count();
+            let split = memfile::MemchrSplit::new(b'\n', &buf);
+            let count = ParallelIterator::count(split);
             println!("{}", count);
         }
         None => {}
