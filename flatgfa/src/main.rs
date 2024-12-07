@@ -43,6 +43,7 @@ enum Command {
     Depth(cmds::Depth),
     Chop(cmds::Chop),
     GafLookup(gaf::GAFLookup),
+    Bench(cmds::Bench),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -131,6 +132,9 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::GafLookup(sub_args)) => {
             gaf::gaf_lookup(&gfa, sub_args);
+        }
+        Some(Command::Bench(sub_args)) => {
+            cmds::bench(sub_args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
