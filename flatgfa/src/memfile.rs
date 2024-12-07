@@ -71,7 +71,7 @@ impl<'a> UnindexedProducer for MemchrSplit<'a> {
             return (self, None);
         };
 
-        // Advance the midpoint to a line boundary.
+        // Advance the midpoint to a needle boundary.
         let mid_nl = memchr::memchr(self.needle, &self.haystack[mid..]);
         let right_start = match mid_nl {
             Some(mid_nl) => mid + mid_nl + 1,
