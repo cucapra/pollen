@@ -149,14 +149,11 @@ pub struct Bench {
 
 pub fn bench(args: Bench) {
     // TODO: We don't need a GFA for (some of) these? So avoid opening it.
-    match args.wcl {
-        Some(filename) => {
-            let buf = memfile::map_file(&filename);
-            let split = memfile::MemchrSplit::new(b'\n', &buf);
-            let count = ParallelIterator::count(split);
-            println!("{}", count);
-        }
-        None => {}
+    if let Some(filename) = args.wcl {
+        let buf = memfile::map_file(&filename);
+        let split = memfile::MemchrSplit::new(b'\n', &buf);
+        let count = ParallelIterator::count(split);
+        println!("{}", count);
     }
 }
 
