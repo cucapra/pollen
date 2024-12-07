@@ -65,7 +65,8 @@ impl<'a> UnindexedProducer for MemchrSplit<'a> {
     type Item = &'a [u8];
 
     fn split(self) -> (Self, Option<Self>) {
-        // TODO Surely there is an off-by-one in here somewhere.
+        // Roughly chop the buffer in half. Maybe this should give up if the current
+        // size is already below a threshold.
         let mid = self.pos + (self.haystack.len() - self.pos) / 2;
         if mid >= self.haystack.len() || mid == 0 {
             return (self, None);
@@ -78,6 +79,7 @@ impl<'a> UnindexedProducer for MemchrSplit<'a> {
             None => return (self, None),
         };
 
+        // Create two sub-iterators.
         let left = Self {
             needle: self.needle,
             haystack: &self.haystack[..right_start],
