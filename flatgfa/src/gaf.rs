@@ -89,16 +89,48 @@ fn print_event(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
     }
 }
 
+fn reverse_complement(seq: &[u8]) -> Vec<u8> {
+    seq.iter()
+        .rev()
+        .map(|&b| match b {
+            b'A' => b'T',
+            b'T' => b'A',
+            b'C' => b'G',
+            b'G' => b'C',
+            b'a' => b't', 
+            b't' => b'a',
+            b'c' => b'g',
+            b'g' => b'c',
+            x => x,
+        })
+        .collect()
+}
+
 fn print_seq(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
     let seg = gfa.segs[event.handle.segment()];
     let seq = gfa.get_seq(&seg);
-    // TODO Reverse-complement for backward orientation.
+
     match event.range {
         ChunkRange::Partial(start, end) => {
-            print!("{}", &seq[start..end]);
+            let chunk = if event.handle.orient() == flatgfa::Orientation::Forward {
+                &seq[start..end]
+            } else {
+                let len = seq.len();
+                &seq[(len - end)..(len - start)]
+            };
+            
+            if event.handle.orient() == flatgfa::Orientation::Forward {
+                print!("{}", chunk);
+            } else {
+                print!("{}", String::from_utf8_lossy(&reverse_complement(chunk)));
+            }
         }
         ChunkRange::All => {
-            print!("{}", seq);
+            if event.handle.orient() == flatgfa::Orientation::Forward {
+                print!("{}", seq);
+            } else {
+                print!("{}", String::from_utf8_lossy(&reverse_complement(seq)));
+            }
         }
         ChunkRange::None => {}
     }
@@ -252,7 +284,7 @@ impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
             false => flatgfa::Orientation::Backward,
         };
         let handle = flatgfa::Handle::new(seg_id, dir);
-
+        
         // Accumulate the length to track our position in the path.
         let seg_len = self.gfa.segs[seg_id].len();
         let next_pos = self.pos + seg_len;
