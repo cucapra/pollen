@@ -248,6 +248,47 @@ pub enum LineKind {
     Link,
 }
 
+pub struct Sequence<'a> {
+    data: &'a [u8],
+    revcmp: bool,
+}
+
+impl<'a> Sequence<'a> {
+    pub fn new(data: &'a [u8], ori: Orientation) -> Self {
+        Self {
+            data,
+            revcmp: ori == Orientation::Backward,
+        }
+    }
+}
+
+fn nucleotide_complement(c: u8) -> u8 {
+    match c {
+        b'A' => b'T',
+        b'T' => b'A',
+        b'C' => b'G',
+        b'G' => b'C',
+        b'a' => b't',
+        b't' => b'a',
+        b'c' => b'g',
+        b'g' => b'c',
+        x => x,
+    }
+}
+
+impl<'a> std::fmt::Display for Sequence<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.revcmp {
+            for &c in self.data.iter().rev() {
+                write!(f, "{}", nucleotide_complement(c))?;
+            }
+        } else {
+            write!(f, "{}", BStr::new(self.data))?;
+        }
+        Ok(())
+    }
+}
+
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
@@ -287,8 +328,8 @@ impl<'a> FlatGFA<'a> {
 
     /// Look up a CIGAR alignment.
     pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
-        Alignment { 
-            ops: &self.alignment[overlap]
+        Alignment {
+            ops: &self.alignment[overlap],
         }
     }
 
