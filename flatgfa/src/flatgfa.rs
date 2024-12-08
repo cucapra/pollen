@@ -314,6 +314,10 @@ fn nucleotide_complement(c: u8) -> u8 {
 impl<'a> std::fmt::Display for Sequence<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.revcmp {
+            // For small sequences, it's faster to allocate the reverse-complement
+            // string and write the whole buffer at once. For larger sequences, it
+            // may be more efficient to do it one character at a time to avoid an
+            // allocation? Not sure, but could be worth a try.
             let bytes = self.as_vec();
             write!(f, "{}", BStr::new(&bytes))?;
         } else {
