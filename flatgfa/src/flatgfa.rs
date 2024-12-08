@@ -283,6 +283,18 @@ impl<'a> Sequence<'a> {
             revcmp: self.revcmp,
         }
     }
+
+    pub fn as_vec(&self) -> Vec<u8> {
+        if self.revcmp {
+            self.data
+                .iter()
+                .rev()
+                .map(|&c| nucleotide_complement(c))
+                .collect()
+        } else {
+            self.data.to_vec()
+        }
+    }
 }
 
 fn nucleotide_complement(c: u8) -> u8 {
@@ -302,9 +314,8 @@ fn nucleotide_complement(c: u8) -> u8 {
 impl<'a> std::fmt::Display for Sequence<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.revcmp {
-            for &c in self.data.iter().rev() {
-                write!(f, "{}", nucleotide_complement(c) as char)?;
-            }
+            let bytes = self.as_vec();
+            write!(f, "{}", BStr::new(&bytes))?;
         } else {
             write!(f, "{}", BStr::new(self.data))?;
         }
