@@ -1,3 +1,4 @@
+use std::ops::Range;
 use std::str::FromStr;
 
 use crate::pool::{self, Id, Pool, Span, Store};
@@ -248,10 +249,94 @@ pub enum LineKind {
     Link,
 }
 
+pub struct Sequence<'a> {
+    data: &'a [u8],
+    revcmp: bool,
+}
+
+impl<'a> Sequence<'a> {
+    pub fn new(data: &'a [u8], ori: Orientation) -> Self {
+        Self {
+            data,
+            revcmp: ori == Orientation::Backward,
+        }
+    }
+
+    pub fn index(&self, idx: usize) -> u8 {
+        if self.revcmp {
+            nucleotide_complement(self.data[self.data.len() - idx - 1])
+        } else {
+            self.data[idx]
+        }
+    }
+
+    pub fn slice(&self, range: Range<usize>) -> Self {
+        let data = if self.revcmp {
+            // The range starts at the end of the buffer:
+            // [-----<end<******<start<------]
+            &self.data[(self.data.len() - range.end)..(self.data.len() - range.start)]
+        } else {
+            &self.data[range]
+        };
+        Self {
+            data,
+            revcmp: self.revcmp,
+        }
+    }
+
+    pub fn as_vec(&self) -> Vec<u8> {
+        if self.revcmp {
+            self.data
+                .iter()
+                .rev()
+                .map(|&c| nucleotide_complement(c))
+                .collect()
+        } else {
+            self.data.to_vec()
+        }
+    }
+}
+
+fn nucleotide_complement(c: u8) -> u8 {
+    match c {
+        b'A' => b'T',
+        b'T' => b'A',
+        b'C' => b'G',
+        b'G' => b'C',
+        b'a' => b't',
+        b't' => b'a',
+        b'c' => b'g',
+        b'g' => b'c',
+        x => x,
+    }
+}
+
+impl<'a> std::fmt::Display for Sequence<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.revcmp {
+            // For small sequences, it's faster to allocate the reverse-complement
+            // string and write the whole buffer at once. For larger sequences, it
+            // may be more efficient to do it one character at a time to avoid an
+            // allocation? Not sure, but could be worth a try.
+            let bytes = self.as_vec();
+            write!(f, "{}", BStr::new(&bytes))?;
+        } else {
+            write!(f, "{}", BStr::new(self.data))?;
+        }
+        Ok(())
+    }
+}
+
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
         self.seq_data[seg.seq].as_ref()
+    }
+
+    pub fn get_seq_oriented(&self, handle: Handle) -> Sequence {
+        let seg = self.get_handle_seg(handle);
+        let seq_data = self.seq_data[seg.seq].as_ref();
+        Sequence::new(seq_data, handle.orient())
     }
 
     /// Look up a segment by its name.
@@ -287,8 +372,8 @@ impl<'a> FlatGFA<'a> {
 
     /// Look up a CIGAR alignment.
     pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
-        Alignment { 
-            ops: &self.alignment[overlap]
+        Alignment {
+            ops: &self.alignment[overlap],
         }
     }
 
