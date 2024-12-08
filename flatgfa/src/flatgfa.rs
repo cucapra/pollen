@@ -1,3 +1,4 @@
+use std::ops::Range;
 use std::str::FromStr;
 
 use crate::pool::{self, Id, Pool, Span, Store};
@@ -260,6 +261,28 @@ impl<'a> Sequence<'a> {
             revcmp: ori == Orientation::Backward,
         }
     }
+
+    pub fn index(&self, idx: usize) -> u8 {
+        if self.revcmp {
+            nucleotide_complement(self.data[self.data.len() - idx - 1])
+        } else {
+            self.data[idx]
+        }
+    }
+
+    pub fn slice(&self, range: Range<usize>) -> Self {
+        let data = if self.revcmp {
+            // The range starts at the end of the buffer:
+            // [-----<end<******<start<------]
+            &self.data[(self.data.len() - range.end)..(self.data.len() - range.start)]
+        } else {
+            &self.data[range]
+        };
+        Self {
+            data,
+            revcmp: self.revcmp,
+        }
+    }
 }
 
 fn nucleotide_complement(c: u8) -> u8 {
@@ -280,7 +303,7 @@ impl<'a> std::fmt::Display for Sequence<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.revcmp {
             for &c in self.data.iter().rev() {
-                write!(f, "{}", nucleotide_complement(c))?;
+                write!(f, "{}", nucleotide_complement(c) as char)?;
             }
         } else {
             write!(f, "{}", BStr::new(self.data))?;
@@ -293,6 +316,12 @@ impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> &BStr {
         self.seq_data[seg.seq].as_ref()
+    }
+
+    pub fn get_seq_oriented(&self, handle: Handle) -> Sequence {
+        let seg = self.get_handle_seg(handle);
+        let seq_data = self.seq_data[seg.seq].as_ref();
+        Sequence::new(seq_data, handle.orient())
     }
 
     /// Look up a segment by its name.
