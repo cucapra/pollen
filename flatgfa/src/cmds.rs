@@ -1,9 +1,7 @@
 use crate::flatgfa::{self, Segment};
-use crate::memfile;
 use crate::ops;
 use crate::pool::Id;
 use argh::FromArgs;
-use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
 
 /// print the FlatGFA table of contents
@@ -141,14 +139,7 @@ pub struct Bench {
 pub fn bench(args: Bench) {
     // TODO: We don't need a GFA for (some of) these? So avoid opening it.
     if let Some(filename) = args.wcl {
-        let buf = memfile::map_file(&filename);
-        let split = memfile::MemchrSplit::new(b'\n', &buf);
-        let count = if args.parallel {
-            ParallelIterator::count(split)
-        } else {
-            Iterator::count(split)
-        };
-        println!("{}", count);
+        println!("{}", ops::bench::line_count(&filename, args.parallel));
     }
 }
 
