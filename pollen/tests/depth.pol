@@ -1,6 +1,0 @@
-// Output is a (Segment, int) set.
-outset out_depths[(Segment, int)];
-
-for segment in in_g.segments {
-  emit (segment, segment.steps.size()) to out_depths;
-}
