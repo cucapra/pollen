@@ -106,21 +106,8 @@ pub fn position(gfa: &flatgfa::FlatGFA, args: Position) -> Result<(), &'static s
         "only + is implemented so far"
     );
 
-    // Traverse the path until we reach the position.
-    let mut cur_pos = 0;
-    let mut found = None;
-    for step in &gfa.steps[path.steps] {
-        let seg = gfa.get_handle_seg(*step);
-        let end_pos = cur_pos + seg.len();
-        if offset < end_pos {
-            // Found it!
-            found = Some((*step, offset - cur_pos));
-            break;
-        }
-        cur_pos = end_pos;
-    }
-
     // Print the match.
+    let found = ops::position::position(gfa, path, offset);
     if let Some((handle, seg_off)) = found {
         let seg = gfa.get_handle_seg(handle);
         let seg_name = seg.name;
