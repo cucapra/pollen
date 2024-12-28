@@ -1,8 +1,0 @@
-def degree() {
-  // Output is a (Segment, int) set.
-  parset out_degs[(Segment*int)];
-
-  for segment in in_g.segments {
-    emit (segment, segment.edges.size()) to out_degs;
-  }
-}
