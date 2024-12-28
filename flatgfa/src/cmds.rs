@@ -219,14 +219,13 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "chop")]
 pub struct Chop {
-    /// maximimum segment size.
-    // Use c in keeping with odgi convention
+    /// maximimum segment size
     #[argh(option, short = 'c')]
-    c: usize,
+    count: usize,
 
     /// compute new links
     #[argh(switch, short = 'l')]
-    l: bool,
+    links: bool,
 }
 
 /// Chop a graph into segments of size no larger than c
@@ -237,5 +236,5 @@ pub fn chop<'a>(
     gfa: &'a flatgfa::FlatGFA<'a>,
     args: Chop,
 ) -> Result<flatgfa::HeapGFAStore, &'static str> {
-    Ok(ops::chop::chop(gfa, args.c, args.l))
+    Ok(ops::chop::chop(gfa, args.count, args.links))
 }
