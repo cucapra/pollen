@@ -1,4 +1,4 @@
-pub mod cmds;
+pub mod cli;
 pub mod file;
 pub mod flatgfa;
 pub mod gaf;

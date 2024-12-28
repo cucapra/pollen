@@ -3,7 +3,7 @@ use flatgfa::flatgfa::FlatGFA;
 use flatgfa::gaf;
 use flatgfa::parse::Parser;
 use flatgfa::pool::Store;
-use flatgfa::{cmds, file, memfile, parse}; // TODO: hopefully remove at some point, this breaks a lot of principles
+use flatgfa::{cli::cmds, file, memfile, parse};
 
 #[derive(FromArgs)]
 /// Convert between GFA text and FlatGFA binary formats.
