@@ -5,7 +5,6 @@ use bstr::BStr;
 
 pub struct GAFLineParser<'a> {
     buf: &'a [u8],
-    pos: usize,
 }
 
 #[derive(Debug)]
@@ -18,33 +17,38 @@ pub struct GAFLine<'a> {
 
 impl<'a> GAFLineParser<'a> {
     pub fn new(buf: &'a [u8]) -> Self {
-        Self { buf, pos: 0 }
+        Self { buf }
+    }
+
+    fn advance(&mut self, offset: usize) {
+        self.buf = &self.buf[offset..];
     }
 
     fn next_field(&mut self) -> Option<&'a [u8]> {
-        let start = self.pos;
-        let end = memchr::memchr(b'\t', &self.buf[self.pos..])?;
-        self.pos += end + 1;
-        Some(&self.buf[start..(start + end)])
+        let end = memchr::memchr(b'\t', self.buf)?;
+        let res = &self.buf[..end];
+        self.advance(end + 1);
+        Some(res)
     }
 
     fn skip_fields(&mut self, n: usize) -> Option<()> {
         for _ in 0..n {
-            let end = memchr::memchr(b'\t', &self.buf[self.pos..])?;
-            self.pos += end + 1;
+            let end = memchr::memchr(b'\t', self.buf)?;
+            self.advance(end + 1);
         }
         Some(())
     }
 
     fn int_field(&mut self) -> Option<usize> {
-        let val = parse_int(&self.buf, &mut self.pos);
-        assert!(matches!(self.buf[self.pos], b'\t' | b'\n'));
-        self.pos += 1;
+        let mut pos = 0;
+        let val = parse_int(&self.buf, &mut pos);
+        assert!(matches!(self.buf[pos], b'\t' | b'\n'));
+        self.advance(pos + 1);
         val
     }
 
     fn parse(&mut self) -> GAFLine<'a> {
-        assert!(self.pos < self.buf.len());
+        assert!(!self.buf.is_empty());
 
         let name = BStr::new(self.next_field().unwrap());
         self.skip_fields(4);
@@ -92,7 +96,7 @@ impl<'a> GAFParser<'a> {
     fn parse_line(&mut self) -> GAFLine<'a> {
         let mut parser = GAFLineParser::new(self.buf);
         let line = parser.parse();
-        self.buf = &self.buf[parser.pos..];
+        self.buf = parser.buf;
         self.advance_line();
         line
     }
