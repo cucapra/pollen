@@ -23,7 +23,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
         for step in &gfa.steps[path.steps] {
             let seg_id = step.segment().index();
             depths[seg_id] += 1;
-            if seen[seg_id] {
+            if !seen[seg_id] {
                 // The first traversal of this path over this segment.
                 uniq_depths[seg_id] += 1;
                 seen.set(seg_id, true);
