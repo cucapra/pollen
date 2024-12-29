@@ -245,8 +245,8 @@ pub struct GAFLookup {
     seqs: bool,
 
     /// benchmark only: print nothing; limit reads if nonzero
-    #[argh(option, short = 'b')]
-    bench: Option<u32>,
+    #[argh(switch, short = 'b')]
+    bench: bool,
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
@@ -265,15 +265,12 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
             }
             println!();
         }
-    } else if let Some(limit) = args.bench {
+    } else if args.bench {
         // Benchmarking mode: just process all the chunks but print nothing.
         let mut count = 0;
-        for (i, read) in parser.enumerate() {
+        for read in parser {
             for _event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
                 count += 1;
-            }
-            if limit > 0 && i >= (limit as usize) {
-                break;
             }
         }
         println!("{}", count);

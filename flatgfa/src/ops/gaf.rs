@@ -71,60 +71,17 @@ impl<'a> GAFLineParser<'a> {
 }
 
 pub struct GAFParser<'a> {
-    buf: &'a [u8],
-}
-
-impl<'a> GAFParser<'a> {
-    pub fn new(buf: &[u8]) -> GAFParser {
-        GAFParser { buf }
-    }
-
-    fn advance_line(&mut self) -> bool {
-        let newline_pos = memchr::memchr(b'\n', &self.buf);
-        match newline_pos {
-            None => {
-                self.buf = &self.buf[self.buf.len()..];
-                false
-            }
-            Some(pos) => {
-                self.buf = &self.buf[pos + 1..];
-                true
-            }
-        }
-    }
-
-    fn parse_line(&mut self) -> GAFLine<'a> {
-        let mut parser = GAFLineParser::new(self.buf);
-        let line = parser.parse();
-        self.buf = parser.buf;
-        self.advance_line();
-        line
-    }
-}
-
-impl<'a> Iterator for GAFParser<'a> {
-    type Item = GAFLine<'a>;
-
-    fn next(&mut self) -> Option<GAFLine<'a>> {
-        if self.buf.is_empty() {
-            return None;
-        }
-        Some(self.parse_line())
-    }
-}
-
-pub struct ParallelGAFParser<'a> {
     split: MemchrSplit<'a>,
 }
 
-impl<'a> ParallelGAFParser<'a> {
+impl<'a> GAFParser<'a> {
     pub fn new(buf: &'a [u8]) -> Self {
         let split = MemchrSplit::new(b'\n', buf);
         Self { split }
     }
 }
 
-impl<'a> Iterator for ParallelGAFParser<'a> {
+impl<'a> Iterator for GAFParser<'a> {
     type Item = GAFLine<'a>;
 
     fn next(&mut self) -> Option<GAFLine<'a>> {
