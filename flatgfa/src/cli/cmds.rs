@@ -262,12 +262,15 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     let parser = ops::gaf::GAFParser::new(&gaf_buf);
 
     if args.parallel {
-        // TODO actually do useful stuff
-        let count = ParallelIterator::map(parser, |read| {
-            ops::gaf::PathChunker::new(gfa, &name_map, read).count()
-        })
-        .reduce(|| 0, |a, b| a + b);
-        println!("{}", count);
+        if args.bench {
+            let count = ParallelIterator::map(parser, |read| {
+                ops::gaf::PathChunker::new(gfa, &name_map, read).count()
+            })
+            .reduce(|| 0, |a, b| a + b);
+            println!("{}", count);
+        } else {
+            unimplemented!("only the no-op mode is parallel")
+        }
     } else {
         if args.seqs {
             // Print the actual sequences for each chunk in the GAF.
