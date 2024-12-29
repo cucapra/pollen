@@ -1,8 +1,7 @@
 use crate::flatgfa;
 use std::collections::HashSet;
 
-pub fn depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<HashSet<usize>>) {
-    // Initialize node depth
+pub fn depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     let mut depths = vec![0; gfa.segs.len()];
     // Initialize uniq_paths
     let mut uniq_paths = Vec::<HashSet<usize>>::new();
@@ -18,5 +17,6 @@ pub fn depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<HashSet<usize>>) {
         }
     }
 
-    (depths, uniq_paths)
+    let uniq_depths = uniq_paths.iter().map(|set| set.len()).collect();
+    (depths, uniq_depths)
 }

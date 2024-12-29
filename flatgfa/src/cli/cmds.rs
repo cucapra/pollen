@@ -204,7 +204,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA) {
             "{}\t{}\t{}",
             name,
             depths[id.index()],
-            uniq_paths[id.index()].len()
+            uniq_paths[id.index()],
         );
     }
 }
