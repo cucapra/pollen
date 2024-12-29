@@ -1,6 +1,5 @@
 use argh::FromArgs;
 use flatgfa::flatgfa::FlatGFA;
-use flatgfa::gaf;
 use flatgfa::parse::Parser;
 use flatgfa::pool::Store;
 use flatgfa::{cli::cmds, file, memfile, parse};
@@ -42,7 +41,7 @@ enum Command {
     Extract(cmds::Extract),
     Depth(cmds::Depth),
     Chop(cmds::Chop),
-    GafLookup(gaf::GAFLookup),
+    GafLookup(cmds::GAFLookup),
     Bench(cmds::Bench),
 }
 
@@ -131,7 +130,7 @@ fn main() -> Result<(), &'static str> {
             dump(&flat, &args.output);
         }
         Some(Command::GafLookup(sub_args)) => {
-            gaf::gaf_lookup(&gfa, sub_args);
+            cmds::gaf_lookup(&gfa, sub_args);
         }
         Some(Command::Bench(sub_args)) => {
             cmds::bench(sub_args);

@@ -1,123 +1,22 @@
 use crate::flatgfa;
-use crate::memfile::map_file;
 use crate::namemap::NameMap;
-use argh::FromArgs;
 use bstr::BStr;
 
-/// look up positions from a GAF file
-#[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "gaf")]
-pub struct GAFLookup {
-    /// GAF file associated with the GFA
-    #[argh(positional)]
-    gaf: String,
-
-    /// print the actual sequences
-    #[argh(switch, short = 's')]
-    seqs: bool,
-
-    /// benchmark only: print nothing; limit reads if nonzero
-    #[argh(option, short = 'b')]
-    bench: Option<u32>,
-}
-
-pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
-    // Build a map to efficiently look up segments by name.
-    let name_map = NameMap::build(gfa);
-
-    let gaf_buf = map_file(&args.gaf);
-    let parser = GAFParser::new(&gaf_buf);
-
-    if args.seqs {
-        // Print the actual sequences for each chunk in the GAF.
-        for read in parser {
-            print!("{}\t", read.name);
-            for event in PathChunker::new(gfa, &name_map, read) {
-                print_seq(gfa, event);
-            }
-            println!();
-        }
-    } else if let Some(limit) = args.bench {
-        // Benchmarking mode: just process all the chunks but print nothing.
-        let mut count = 0;
-        for (i, read) in parser.enumerate() {
-            for _event in PathChunker::new(gfa, &name_map, read) {
-                count += 1;
-            }
-            if limit > 0 && i >= (limit as usize) {
-                break;
-            }
-        }
-        println!("{}", count);
-    } else {
-        // Just print some info about the offsets in the segments.
-        for read in parser {
-            println!("{}", read.name);
-            for event in PathChunker::new(gfa, &name_map, read) {
-                print_event(gfa, event);
-            }
-        }
-    }
-}
-
-fn print_event(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
-    let seg = gfa.segs[event.handle.segment()];
-    let seg_name = seg.name;
-    match event.range {
-        ChunkRange::Partial(start, end) => {
-            println!(
-                "{}: {}{}, {}-{}bp",
-                event.index,
-                seg_name,
-                event.handle.orient(),
-                start,
-                end,
-            );
-        }
-        ChunkRange::All => {
-            println!(
-                "{}: {}{}, {}bp",
-                event.index,
-                seg_name,
-                event.handle.orient(),
-                seg.len()
-            );
-        }
-        ChunkRange::None => {
-            println!("{}: (skipped)", event.index);
-        }
-    }
-}
-
-fn print_seq(gfa: &flatgfa::FlatGFA, event: ChunkEvent) {
-    let seq = gfa.get_seq_oriented(event.handle);
-
-    match event.range {
-        ChunkRange::Partial(start, end) => {
-            print!("{}", &seq.slice(start..end));
-        }
-        ChunkRange::All => {
-            print!("{}", seq);
-        }
-        ChunkRange::None => {}
-    }
-}
-
-struct GAFParser<'a> {
+pub struct GAFParser<'a> {
     buf: &'a [u8],
     pos: usize,
 }
 
 #[derive(Debug)]
-struct GAFLine<'a> {
-    name: &'a BStr,
-    start: usize,
-    end: usize,
-    path: &'a [u8],
+pub struct GAFLine<'a> {
+    pub name: &'a BStr,
+    pub start: usize,
+    pub end: usize,
+    pub path: &'a [u8],
 }
 
 impl<'a> GAFParser<'a> {
-    fn new(buf: &'a [u8]) -> Self {
+    pub fn new(buf: &'a [u8]) -> Self {
         Self { buf, pos: 0 }
     }
 
@@ -193,7 +92,7 @@ impl<'a> Iterator for GAFParser<'a> {
     }
 }
 
-struct PathChunker<'a, 'b> {
+pub struct PathChunker<'a, 'b> {
     gfa: &'a flatgfa::FlatGFA<'a>,
     name_map: &'a NameMap,
     steps: PathParser<'b>,
@@ -208,7 +107,7 @@ struct PathChunker<'a, 'b> {
 }
 
 impl<'a, 'b> PathChunker<'a, 'b> {
-    fn new(gfa: &'a flatgfa::FlatGFA, name_map: &'a NameMap, read: GAFLine<'b>) -> Self {
+    pub fn new(gfa: &'a flatgfa::FlatGFA, name_map: &'a NameMap, read: GAFLine<'b>) -> Self {
         let steps = PathParser::new(read.path);
         Self {
             gfa,
@@ -225,7 +124,7 @@ impl<'a, 'b> PathChunker<'a, 'b> {
 }
 
 #[derive(Debug)]
-struct ChunkEvent {
+pub struct ChunkEvent {
     index: usize,
     handle: flatgfa::Handle,
     range: ChunkRange,
@@ -236,6 +135,51 @@ enum ChunkRange {
     None,
     All,
     Partial(usize, usize),
+}
+
+impl ChunkEvent {
+    pub fn print(&self, gfa: &flatgfa::FlatGFA) {
+        let seg = gfa.segs[self.handle.segment()];
+        let seg_name = seg.name;
+        match self.range {
+            ChunkRange::Partial(start, end) => {
+                println!(
+                    "{}: {}{}, {}-{}bp",
+                    self.index,
+                    seg_name,
+                    self.handle.orient(),
+                    start,
+                    end,
+                );
+            }
+            ChunkRange::All => {
+                println!(
+                    "{}: {}{}, {}bp",
+                    self.index,
+                    seg_name,
+                    self.handle.orient(),
+                    seg.len()
+                );
+            }
+            ChunkRange::None => {
+                println!("{}: (skipped)", self.index);
+            }
+        }
+    }
+
+    pub fn print_seq(&self, gfa: &flatgfa::FlatGFA) {
+        let seq = gfa.get_seq_oriented(self.handle);
+
+        match self.range {
+            ChunkRange::Partial(start, end) => {
+                print!("{}", &seq.slice(start..end));
+            }
+            ChunkRange::All => {
+                print!("{}", seq);
+            }
+            ChunkRange::None => {}
+        }
+    }
 }
 
 impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
