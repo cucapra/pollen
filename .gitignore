@@ -18,8 +18,8 @@ __pycache__/
 og_to_gfa.py
 compute_maxes.py
 
-pollen/target
-polbin/target
+flatgfa/target
+flatgfa-py/target
 pollen/*.rlib
 
 slow_odgi/dist/
