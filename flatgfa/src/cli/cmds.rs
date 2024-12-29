@@ -4,6 +4,7 @@ use crate::namemap::NameMap;
 use crate::ops;
 use crate::pool::Id;
 use argh::FromArgs;
+use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
 
 /// print the FlatGFA table of contents
@@ -247,6 +248,10 @@ pub struct GAFLookup {
     /// benchmark only: print nothing; limit reads if nonzero
     #[argh(switch, short = 'b')]
     bench: bool,
+
+    /// parallelize the GAF parser
+    #[argh(switch, short = 'p')]
+    parallel: bool,
 }
 
 pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
@@ -256,30 +261,39 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     let gaf_buf = map_file(&args.gaf);
     let parser = ops::gaf::GAFParser::new(&gaf_buf);
 
-    if args.seqs {
-        // Print the actual sequences for each chunk in the GAF.
-        for read in parser {
-            print!("{}\t", read.name);
-            for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
-                event.print_seq(gfa);
-            }
-            println!();
-        }
-    } else if args.bench {
-        // Benchmarking mode: just process all the chunks but print nothing.
-        let mut count = 0;
-        for read in parser {
-            for _event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
-                count += 1;
-            }
-        }
+    if args.parallel {
+        // TODO actually do useful stuff
+        let count = ParallelIterator::map(parser, |read| {
+            ops::gaf::PathChunker::new(gfa, &name_map, read).count()
+        })
+        .reduce(|| 0, |a, b| a + b);
         println!("{}", count);
     } else {
-        // Just print some info about the offsets in the segments.
-        for read in parser {
-            println!("{}", read.name);
-            for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
-                event.print(gfa);
+        if args.seqs {
+            // Print the actual sequences for each chunk in the GAF.
+            for read in parser {
+                print!("{}\t", read.name);
+                for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
+                    event.print_seq(gfa);
+                }
+                println!();
+            }
+        } else if args.bench {
+            // Benchmarking mode: just process all the chunks but print nothing.
+            let mut count = 0;
+            for read in parser {
+                for _event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
+                    count += 1;
+                }
+            }
+            println!("{}", count);
+        } else {
+            // Just print some info about the offsets in the segments.
+            for read in parser {
+                println!("{}", read.name);
+                for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
+                    event.print(gfa);
+                }
             }
         }
     }

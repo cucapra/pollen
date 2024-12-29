@@ -2,6 +2,7 @@ use crate::flatgfa;
 use crate::memfile::MemchrSplit;
 use crate::namemap::NameMap;
 use bstr::BStr;
+use rayon::iter::{plumbing::UnindexedConsumer, ParallelIterator};
 
 pub struct GAFLineParser<'a> {
     buf: &'a [u8],
@@ -87,6 +88,18 @@ impl<'a> Iterator for GAFParser<'a> {
     fn next(&mut self) -> Option<GAFLine<'a>> {
         let line = self.split.next()?;
         Some(GAFLineParser::new(line).parse())
+    }
+}
+
+impl<'a> ParallelIterator for GAFParser<'a> {
+    type Item = GAFLine<'a>;
+
+    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+    where
+        C: UnindexedConsumer<Self::Item>,
+    {
+        ParallelIterator::map(self.split, |line| GAFLineParser::new(line).parse())
+            .drive_unindexed(consumer)
     }
 }
 
