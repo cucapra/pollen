@@ -1,15 +1,14 @@
 [build-system]
-requires = ["flit_core >=2,<4"]
+requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
-[tool.flit.metadata]
-module = "pollen"
-author = "Susan Garry"
-author-email = "shg64@cs.cornell.edu"
-home-page = "https://github.com/cucapra/pollen"
-description-file = "README.md"
-requires-python = ">=3.8"
-requires = []
+[project]
+name = "pollen"
+authors = [
+    { name = "Susan Garry", email = "shg64@cs.cornell.edu" }
+]
+readme = "README.md"
+dynamic = ["version", "description"]
 
-[tool.flit.scripts]
+[project.scripts]
 exine = "pollen.main:main"

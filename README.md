@@ -34,11 +34,13 @@ Similarly, `slow_odgi` is a set of GFA analyses based on `mygfa`; it's meant to 
 
 To set up both of them from this repository, try using [uv][]:
 
-    $ uv venv
-    $ uv pip install -r requirements.txt
-    $ source .venv/bin/activate
+    $ uv run slow_odgi --help
 
-Now type `slow_odgi --help` to see if everything's working.
+Or, alternatively, you can set up and activate the environment manually:
+
+    $ uv sync
+    $ source .venv/bin/activate
+    $ slow_odgi --help
 
 [uv]: https://github.com/astral-sh/uv
 [mygfa-docs]: http://cucapra.github.io/pollen/mygfa/

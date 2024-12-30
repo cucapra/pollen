@@ -10,8 +10,7 @@ Think of it as a code-forward spec for `odgi` commands.
 
 One easy way to install everything in the Pollen repo is to use [uv][]:
 
-    $ uv venv
-    $ uv pip install -r requirements.txt
+    $ uv sync
     $ source .venv/bin/activate
 
 [uv]: https://github.com/astral-sh/uv
@@ -30,7 +29,7 @@ To test `slow_odgi`, we treat odgi as an oracle and compare our outputs against 
 To run these tests, you will need:
 
 1. [Odgi][]. Our tests were run against a built-from-source copy of odgi (commit `34f006f`).
-2. [Turnt][]. This is installed automatically if you use `requirements.txt` as above.
+2. [Turnt][]. This is installed automatically if you use `uv` as above.
 
 With these in place, run `make test-slow-odgi`. The "oracle" files will be generated first, and this will toss up a large number of warnings which can all be ignored. Then the tests will begin to run, and the `ok`/`not ok` signals there are actually of interest.
 

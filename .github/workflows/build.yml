@@ -24,18 +24,14 @@ jobs:
         with:
           path: ~/.cache/uv
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-uv
-      - name: Create and activate virtualenv with uv
+      - name: uv sync and activate
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv venv
+          uv sync
           echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
-      - name: Install Python tools
-        run: uv pip install -r requirements.txt
 
       # Set up for tests.
-      - name: Install Turnt
-        run: uv pip install turnt
       - name: Problem matcher
         run: echo '::add-matcher::.github/tap-matcher.json'
       - name: Fetch test data
@@ -70,14 +66,12 @@ jobs:
         with:
           path: ~/.cache/uv
           key: ${{ runner.os }}-python-${{ matrix.python-version }}-uv
-      - name: Create and activate virtualenv with uv
+      - name: uv sync and activate
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv venv
+          uv sync
           echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
-      - name: Install Python tools
-        run: uv pip install -r requirements.txt
 
       # Install odgi
       - name: Pull odgi container

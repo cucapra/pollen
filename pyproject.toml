@@ -1,0 +1,27 @@
+[project]
+name = "pollen_workspace"
+version = "0.0.0"
+requires-python = ">=3.8"
+dependencies = [
+    "mygfa",
+    "slow_odgi",
+    "pollen",
+    "pollen_data_gen",
+    "turnt>=1.11.0",
+]
+
+[tool.uv.sources]
+mygfa = { workspace = true }
+slow_odgi = { workspace = true }
+pollen = { workspace = true }
+pollen_data_gen = { workspace = true }
+flatgfa = { workspace = true }
+
+[tool.uv.workspace]
+members = [
+    "mygfa",
+    "slow_odgi",
+    "pollen_py",
+    "pollen_data_gen",
+    "flatgfa-py",
+]
