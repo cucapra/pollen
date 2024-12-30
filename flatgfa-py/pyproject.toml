@@ -15,8 +15,8 @@ classifiers = [
 repository = "https://github.com/cucapra/pollen"
 documentation = "https://cucapra.github.io/pollen/flatgfa/"
 
-[project.optional-dependencies]
-test = ["pytest"]
+[dependency-groups]
+dev = ["pytest>=8.3.0"]
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
