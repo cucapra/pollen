@@ -112,8 +112,7 @@ Clone this repository:
 
 And then install the Python tools using [uv][]:
 
-    $ uv venv
-    $ uv pip install -r requirements.txt
+    $ uv sync
     $ source .venv/bin/activate
 
 [calyx]: https://calyxir.org
