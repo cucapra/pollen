@@ -1,5 +1,6 @@
+use flatgfa::cli::cmds::depth;
 use flatgfa::pool::Id;
-use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore,cli};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
@@ -44,6 +45,10 @@ impl Store {
             Store::File(ref mmap) => file::view(mmap),
         }
     }
+    fn py_depth(&self){
+        let gfa=self.view();
+        depth(&gfa)
+    }
 }
 
 /// An efficient representation of a Graphical Fragment Assembly (GFA) file.
@@ -62,6 +67,11 @@ fn parse(filename: &str) -> PyFlatGFA {
 fn parse_bytes(bytes: &[u8]) -> PyFlatGFA {
     PyFlatGFA(Arc::new(Store::parse_gfa(bytes)))
 }
+
+// #[pyfunction]
+// fn depth(gfaInstance:PyFlatGFA) {
+//     gfaInstance.
+// }
 
 /// Load a binary FlatGFA file.
 ///
@@ -83,6 +93,10 @@ impl PyFlatGFA {
             start: 0,
             end: self.0.view().segs.len() as u32,
         })
+    }
+    #[getter]
+    fn depth(&self) {
+        self.0.py_depth()
     }
 
     /// The paths in the graph, as a :class:`PathList`.
