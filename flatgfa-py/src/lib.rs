@@ -94,7 +94,7 @@ impl PyFlatGFA {
             end: self.0.view().segs.len() as u32,
         })
     }
-    #[getter]
+   
     fn depth(&self) {
         self.0.py_depth()
     }
