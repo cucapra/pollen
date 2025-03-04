@@ -1,6 +1,7 @@
 use flatgfa::cli::cmds::depth;
 use flatgfa::pool::Id;
-use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore,cli};
+use flatgfa::{self, cli, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
+use flatgfa::ops::gaf::{self, ChunkEvent, GAFLine, GAFLineParser,PathChunker};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
@@ -55,6 +56,7 @@ impl Store {
 #[pyclass(frozen)]
 #[pyo3(name = "FlatGFA", module = "flatgfa")]
 struct PyFlatGFA(Arc<Store>);
+
 
 /// Parse a GFA file into our FlatGFA representation.
 #[pyfunction]
@@ -139,6 +141,25 @@ impl PyFlatGFA {
         file::dump(&gfa, &mut mmap);
         mmap.flush()?;
         Ok(())
+    }
+    fn test_gaf(&self, gaf: &str) -> PyPathChunker {
+        let gfa = self.0.view();
+
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
+
+        let gaf_buf = flatgfa::memfile::map_file(&gaf);
+        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
+
+        let r = parser.into_iter().map(
+                |x| PyPathChunker{chunker:flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)}.
+                    chunker.into_iter()
+                    .map(|c| PyChunkEvent { chunk_event: c.into() })
+                    .collect()
+            ).collect();
+            
+        PyPathChunker {
+            chunker: r,
+        }
     }
 }
 
@@ -459,7 +480,94 @@ impl PyPath {
     }
 }
 
-/// A sequence of :class:`Path` objects.
+#[pyclass(frozen)]
+#[pyo3(name = "ChunkEvent", module = "flatgfa")]
+struct PyChunkEvent {
+    chunk_event: Arc<ChunkEvent>,
+}
+
+#[pymethods]
+impl PyChunkEvent{
+
+    #[getter]
+    fn handle(&self) -> String {
+        let seg_num: u32 = self.chunk_event.handle.segment().into();
+        format!("{}, {}", &self.chunk_event.handle.orient(), seg_num)
+    }
+
+    #[getter]
+    fn range(&self) -> String {
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::None => { "".to_string() },
+            flatgfa::ops::gaf::ChunkRange::All => { "all".to_string() },
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => {
+                format!("[{}, {})", start, end)
+            }
+        }
+    }
+    fn get_seq(&self, gfa: &PyFlatGFA) -> String {
+        let inner_gfa = gfa.0.view();
+        let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
+
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => {
+                seq.slice(start..end).to_string()
+            }
+            flatgfa::ops::gaf::ChunkRange::All => {
+                seq.to_string()
+            }
+            flatgfa::ops::gaf::ChunkRange::None => {"".to_string()}
+        }
+    }
+
+}
+#[pyclass]
+#[pyo3(name = "PathChunker",module = "flatgfa")]
+struct PyPathChunker {
+    chunker: PathChunker<'static, 'static>, 
+}
+
+#[pymethods]
+impl PyPathChunker {
+
+
+    fn __iter__(self_: Py<Self>) -> Py<Self> {
+        self_
+    }
+
+    fn __next__(&mut self) -> Option<PyChunkEvent> {
+        let temp = self.chunker.next();
+        match temp {
+            Some(chunk) => Some(PyChunkEvent{chunk_event:chunk.into()}),
+            None => None,
+        }
+    }
+}
+
+#[pyclass]
+#[pyo3(name = "GAFLine",module = "flatgfa")]
+
+struct PyGAFLine{
+    gaf:GAFLine<'static>
+}
+#[pymethods]
+impl PyGAFLine{
+    #[getter]
+    fn get_name(&self)-> String{
+        self.gaf.name.to_string()
+    }
+
+    fn toPathChunker(&self,gaf: &str,gfa:&PyFlatGFA)-> PyPathChunker{
+        let real_gfa = &gfa.0.view();
+        let name_map = flatgfa::namemap::NameMap::build(&real_gfa);
+        let chunk= flatgfa::ops::gaf::PathChunker::new(&real_gfa, &name_map, self.gaf);
+        PyPathChunker { chunker:chunk }
+    }
+
+}
+
+
+
 #[pyclass]
 #[pyo3(module = "flatgfa")]
 struct PathList(ListRef);
