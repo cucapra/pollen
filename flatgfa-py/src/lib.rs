@@ -163,7 +163,10 @@ impl PyFlatGFA {
         let r: Vec<Vec<PyChunkEvent>> = parser.into_iter().map(
                 |x| flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
                     .into_iter()
-                    .map(|c| PyChunkEvent { chunk_event: c.into() })
+                    .map(|c| PyChunkEvent {
+                        chunk_event: c.into(),
+                        gfa: self.0.clone(),
+                    })
                     .collect()
             ).collect();
             
@@ -175,6 +178,7 @@ impl PyFlatGFA {
 #[pyo3(name = "ChunkEvent", module = "flatgfa")]
 struct PyChunkEvent {
     chunk_event: Arc<ChunkEvent>,
+    gfa: Arc<Store>,
 }
 
 #[pymethods]
@@ -200,8 +204,8 @@ impl PyChunkEvent {
         }
     }
 
-    fn get_seq(&self, gfa: &PyFlatGFA) -> String {
-        let inner_gfa = gfa.0.view();
+    fn get_seq(&self) -> String {
+        let inner_gfa = self.gfa.view();
         let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
 
         match self.chunk_event.range {
@@ -771,5 +775,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PathList>()?;
     m.add_class::<LinkList>()?;
     m.add_class::<StepList>()?;
+    m.add_class::<PyChunkEvent>()?;
     Ok(())
 }
