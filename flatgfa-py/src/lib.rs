@@ -1,12 +1,13 @@
 use flatgfa::cli::cmds::depth;
 use flatgfa::pool::Id;
 use flatgfa::{self, cli, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
-use flatgfa::ops::gaf::{self, ChunkEvent, GAFLine, GAFLineParser,PathChunker};
+use flatgfa::ops::gaf::{self, ChunkEvent, GAFLine, GAFLineParser, GAFParser, PathChunker};
+use memmap::Mmap;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
 use std::io::Write;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Storage for a FlatGFA.
 ///
@@ -142,23 +143,23 @@ impl PyFlatGFA {
         mmap.flush()?;
         Ok(())
     }
-    fn test_gaf(&self, gaf: &str) -> PyPathChunker {
+    fn load_gaf(&self, gaf: &str) -> PyGAFParser {
         let gfa = self.0.view();
 
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
+        let gaf_buf = Arc::new(flatgfa::memfile::map_file(&gaf));
+        let cloned =gaf_buf.clone();
+        let parser = flatgfa::ops::gaf::GAFParser::new(&cloned);
 
-        let gaf_buf = flatgfa::memfile::map_file(&gaf);
-        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
-
-        let r = parser.into_iter().map(
-                |x| PyPathChunker{chunker:flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)}.
-                    chunker.into_iter()
-                    .map(|c| PyChunkEvent { chunk_event: c.into() })
-                    .collect()
-            ).collect();
-            
-        PyPathChunker {
-            chunker: r,
+        // let r = parser.into_iter().map( 
+        //         |x| PyPathChunker{chunker:flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)}.
+        //             chunker.into_iter()
+        //             .map(|c| PyChunkEvent { chunk_event: c.into() })
+        //             .collect()
+        //     ).collect();      
+        PyGAFParser {
+            gaf:Arc::new(Mutex::new(parser)),
+            store: self.0.clone()
         }
     }
 }
@@ -548,6 +549,7 @@ impl PyPathChunker {
 #[pyo3(name = "GAFLine",module = "flatgfa")]
 
 struct PyGAFLine{
+    store: Arc<Store>,
     gaf:GAFLine<'static>
 }
 #[pymethods]
@@ -557,11 +559,34 @@ impl PyGAFLine{
         self.gaf.name.to_string()
     }
 
-    fn toPathChunker(&self,gaf: &str,gfa:&PyFlatGFA)-> PyPathChunker{
-        let real_gfa = &gfa.0.view();
-        let name_map = flatgfa::namemap::NameMap::build(&real_gfa);
-        let chunk= flatgfa::ops::gaf::PathChunker::new(&real_gfa, &name_map, self.gaf);
-        PyPathChunker { chunker:chunk }
+    // fn toPathChunker(&self,gaf: &str)-> PyPathChunker{
+    //     let real_gfa = self.store.clone().view();
+    //     let name_map = flatgfa::namemap::NameMap::build(&real_gfa);
+    //     let chunk= flatgfa::ops::gaf::PathChunker::new(&real_gfa, &name_map, self.gaf);
+    //     PyPathChunker { chunker:chunk }
+    // }
+
+}
+
+#[pyclass]
+#[pyo3(name = "GAFPasrser",module = "flatgfa")]
+
+struct PyGAFParser{
+    gaf: Arc<Mutex<GAFParser<'static>>>,
+    store: Arc<Store>,
+}
+#[pymethods]
+impl PyGAFParser{
+    fn __iter__(self_: Py<Self>) -> Py<Self> {
+        self_
+    }
+
+    fn __next__(&mut self) -> Option<PyGAFLine> {
+        let temp = self.gaf.lock().unwrap().next();
+        match temp {
+            Some(chunk) => Some(PyGAFLine{store: self.store.clone(),  gaf:chunk.into()}),
+            None => None,
+        }
     }
 
 }

@@ -1,4 +1,4 @@
-use crate::flatgfa;
+use crate::{flatgfa, Handle};
 use crate::memfile::MemchrSplit;
 use crate::namemap::NameMap;
 use bstr::BStr;
@@ -137,18 +137,19 @@ impl<'a, 'b> PathChunker<'a, 'b> {
 #[derive(Debug)]
 pub struct ChunkEvent {
     index: usize,
-    handle: flatgfa::Handle,
-    range: ChunkRange,
+    pub handle: flatgfa::Handle,
+    pub range: ChunkRange,
 }
 
 #[derive(Debug)]
-enum ChunkRange {
+pub enum ChunkRange {
     None,
     All,
     Partial(usize, usize),
 }
 
 impl ChunkEvent {
+
     pub fn print(&self, gfa: &flatgfa::FlatGFA) {
         let seg = gfa.segs[self.handle.segment()];
         let seg_name = seg.name;
