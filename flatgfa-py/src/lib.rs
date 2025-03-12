@@ -22,7 +22,7 @@ impl OwnedGAFParser{
         OwnedGAFParser { mmap:mmap.clone()}
     }
 
-    fn view_gafparser(&'static self) -> GAFParser{
+    fn view_gafparser<'a>(&'a self) -> GAFParser<'a> {
        flatgfa::ops::gaf::GAFParser::new(&self.mmap)
     }
     
@@ -609,6 +609,8 @@ impl PyGAFParser{
         // let mut parser = buffer.view_gafparser();
         //(ref store) => (**store).as_ref(),
         //   Store::File(ref mmap) => file::view(mmap),
+        // let mut parser = self.gaf_buf.view_gafparser(self.gaf_buf);
+        // let copy = self.gaf_buf.clone();
         let mut parser = self.gaf_buf.view_gafparser();
         // Read the next chunks
         match parser.next() {
