@@ -13,6 +13,20 @@ use std::sync::{Arc, Mutex};
 ///
 /// This may be either an in-memory data structure or a memory-mapped file. It exposes a
 /// uniform interface to the FlatGFA data via `view`.
+/// 
+struct OwnedGAFParser{
+    mmap: Arc<Mmap>,
+}
+impl OwnedGAFParser{
+    fn new(mmap: Arc<Mmap>) -> Self {
+        OwnedGAFParser { mmap:mmap.clone()}
+    }
+
+    fn view_gafparser(&'static self) -> GAFParser{
+       flatgfa::ops::gaf::GAFParser::new(&self.mmap)
+    }
+    
+}
 enum Store {
     Heap(Box<HeapGFAStore>),
     File(memmap::Mmap),
@@ -51,6 +65,11 @@ impl Store {
         let gfa=self.view();
         depth(&gfa)
     }
+
+    // fn view_gafparser(m: Mmap) -> OwnedGAFParser {
+    //     let parser = flatgfa::ops::gaf::GAFParser::new(&m);
+    //     OwnedGAFParser { mmap: m, parser }
+    // }
 }
 
 /// An efficient representation of a Graphical Fragment Assembly (GFA) file.
@@ -70,6 +89,8 @@ fn parse(filename: &str) -> PyFlatGFA {
 fn parse_bytes(bytes: &[u8]) -> PyFlatGFA {
     PyFlatGFA(Arc::new(Store::parse_gfa(bytes)))
 }
+
+
 
 // #[pyfunction]
 // fn depth(gfaInstance:PyFlatGFA) {
@@ -143,25 +164,25 @@ impl PyFlatGFA {
         mmap.flush()?;
         Ok(())
     }
-    fn load_gaf(&self, gaf: &str) -> PyGAFParser {
-        let gfa = self.0.view();
+    // fn load_gaf(&self, gaf: &str) -> PyGAFParser {
+    //     let gfa = self.0.view();
 
-        let name_map = flatgfa::namemap::NameMap::build(&gfa);
-        let gaf_buf = Arc::new(flatgfa::memfile::map_file(&gaf));
-        let cloned =gaf_buf.clone();
-        let parser = flatgfa::ops::gaf::GAFParser::new(&cloned);
+    //     let name_map = flatgfa::namemap::NameMap::build(&gfa);
+    //     let gaf_buf = Arc::new(flatgfa::memfile::map_file(&gaf));
+    //     let cloned =gaf_buf.clone();
+    //     let parser = flatgfa::ops::gaf::GAFParser::new(&cloned);
 
-        // let r = parser.into_iter().map( 
-        //         |x| PyPathChunker{chunker:flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)}.
-        //             chunker.into_iter()
-        //             .map(|c| PyChunkEvent { chunk_event: c.into() })
-        //             .collect()
-        //     ).collect();      
-        PyGAFParser {
-            gaf:Arc::new(Mutex::new(parser)),
-            store: self.0.clone()
-        }
-    }
+    //     // let r = parser.into_iter().map( 
+    //     //         |x| PyPathChunker{chunker:flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)}.
+    //     //             chunker.into_iter()
+    //     //             .map(|c| PyChunkEvent { chunk_event: c.into() })
+    //     //             .collect()
+    //     //     ).collect();      
+    //     PyGAFParser {
+    //         gaf:Arc::new(Mutex::new(parser)),
+    //         store: self.0.clone()
+    //     }
+    // }
 }
 
 /// A reference to a list of *any* type within a FlatGFA.
@@ -572,7 +593,8 @@ impl PyGAFLine{
 #[pyo3(name = "GAFPasrser",module = "flatgfa")]
 
 struct PyGAFParser{
-    gaf: Arc<Mutex<GAFParser<'static>>>,
+    // gaf_buf: Arc<Mmap>,
+    gaf_buf: OwnedGAFParser,
     store: Arc<Store>,
 }
 #[pymethods]
@@ -582,9 +604,18 @@ impl PyGAFParser{
     }
 
     fn __next__(&mut self) -> Option<PyGAFLine> {
-        let temp = self.gaf.lock().unwrap().next();
-        match temp {
-            Some(chunk) => Some(PyGAFLine{store: self.store.clone(),  gaf:chunk.into()}),
+        // let cloned_mmap = self.gaf_buf.mmap.clone();
+        // let buffer = OwnedGAFParser::new(self.gaf_buf.mmap.clone());
+        // let mut parser = buffer.view_gafparser();
+        //(ref store) => (**store).as_ref(),
+        //   Store::File(ref mmap) => file::view(mmap),
+        let mut parser = self.gaf_buf.view_gafparser();
+        // Read the next chunks
+        match parser.next() {
+            Some(chunk) => Some(PyGAFLine {
+                store: self.store.clone(),
+                gaf: chunk.into(),
+            }),
             None => None,
         }
     }
