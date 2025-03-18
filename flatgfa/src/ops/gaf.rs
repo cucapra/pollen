@@ -7,7 +7,7 @@ use rayon::iter::{plumbing::UnindexedConsumer, ParallelIterator};
 pub struct GAFLineParser<'a> {
     buf: &'a [u8],
 }
-
+#[derive(Clone)]
 #[derive(Debug)]
 pub struct GAFLine<'a> {
     pub name: &'a BStr,
@@ -191,6 +191,46 @@ impl ChunkEvent {
             }
             ChunkRange::None => {}
         }
+    }
+    pub fn get_seq_string(&self, gfa: &flatgfa::FlatGFA) -> String {
+        let seq = gfa.get_seq_oriented(self.handle);
+    
+        match self.range {
+            ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
+            ChunkRange::All => seq.to_string(),
+            ChunkRange::None => String::new(),
+        }
+    }
+    pub fn get_seg(&self, gfa: &flatgfa::FlatGFA)->String {
+        let seg = gfa.segs[self.handle.segment()];
+    let seg_name = seg.name;
+    let mut result = String::new();
+
+    match self.range {
+        ChunkRange::Partial(start, end) => {
+            result.push_str(&format!(
+                "{}: {}{}, {}-{}bp",
+                self.index,
+                seg_name,
+                self.handle.orient(),
+                start,
+                end
+            ));
+        }
+        ChunkRange::All => {
+            result.push_str(&format!(
+                "{}: {}{}, {}bp",
+                self.index,
+                seg_name,
+                self.handle.orient(),
+                seg.len()
+            ));
+        }
+        ChunkRange::None => {
+            result.push_str(&format!("{}: (skipped)", self.index));
+        }
+    }
+    result
     }
 }
 
