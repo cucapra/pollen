@@ -152,7 +152,7 @@ impl PyFlatGFA {
         }
     }
 
-    fn test_gaf(&self, gaf: &str) -> Vec<Vec<PyChunkEvent>> {
+    fn test_gaf(&self, gaf: &str) -> Vec<PyLineIterator> {
         let gfa = self.0.view();
 
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
@@ -160,18 +160,39 @@ impl PyFlatGFA {
         let gaf_buf = flatgfa::memfile::map_file(&gaf);
         let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
 
-        let r: Vec<Vec<PyChunkEvent>> = parser.into_iter().map(
-                |x| flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
-                    .into_iter()
-                    .map(|c| PyChunkEvent {
-                        chunk_event: c.into(),
-                        gfa: self.0.clone(),
-                    })
-                    .collect()
-            ).collect();
-            
+        let r: Vec<PyLineIterator> = parser.into_iter().map(
+            |x| PyLineIterator {
+                chunk_event_iterator: Box::new(
+                    flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
+                    .into_iter())
+            }
+            // flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
+            //     .into_iter()
+            //     .map(|c| PyChunkEvent {
+            //         chunk_event: c.into(),
+            //         gfa: self.0.clone(),
+            //     })
+            //     .collect()
+        ).collect();
+
+        // let r: Vec<Vec<PyChunkEvent>> = parser.into_iter().map(
+        //         |x| flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
+        //             .into_iter()
+        //             .map(|c| PyChunkEvent {
+        //                 chunk_event: c.into(),
+        //                 gfa: self.0.clone(),
+        //             })
+        //             .collect()
+        //     ).collect();
+
         r
     }
+}
+
+#[pyclass(frozen)]
+#[pyo3(name = "GAFLineIterator", module = "flatgfa")]
+struct PyLineIterator {
+    chunk_event_iterator: Box<dyn Iterator<Item = ChunkEvent> + Send>,
 }
 
 #[pyclass(frozen)]
