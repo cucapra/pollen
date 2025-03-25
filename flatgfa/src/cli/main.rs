@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use bstr::BStr;
 use flatgfa::flatbed::BEDParser;
 use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
@@ -31,6 +32,14 @@ struct PolBin {
     /// read a BED file
     #[argh(option, short = 'b')]
     bed_file: Option<String>,
+
+    /// intersect a BED file start
+    #[argh(option, short = 's')]
+    intersect_start: u64,
+
+    /// intersect a BED file end
+    #[argh(option, short = 'e')]
+    intersect_end: u64,
 
     #[argh(subcommand)]
     command: Option<Command>,
@@ -65,7 +74,16 @@ fn main() -> Result<(), &'static str> {
         let file = memfile::map_file(&bed_file_path);
         let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
         let bed = bed_store.as_ref();
-        println!("{}", bed.get_num_entries());
+        println!("Total Number of BED Entries: {}", bed.get_num_entries());
+        
+        let intersects = bed.get_intersects(args.intersect_start, args.intersect_end);
+        println!("Intersections with {} - {}:", args.intersect_start, args.intersect_end);
+        for val in intersects.iter() {
+            let name: &BStr = bed.name_data[val.name].as_ref();
+            let start = val.start;
+            let end = val.end;
+            println!("{}:\t{} - {}", name, start, end);
+        }
         return Ok(());
     }
 

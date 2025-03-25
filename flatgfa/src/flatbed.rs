@@ -22,6 +22,13 @@ impl<'a> FlatBED<'a> {
     pub fn get_num_entries(&self) -> usize {
         self.entries.len()
     }
+
+    pub fn get_intersects(&self, start: u64, end: u64) -> Vec<BEDEntry> {
+        self.entries.items()
+            .map(|x| x.1.clone())
+            .filter(|x| x.start <= end && x.end >= start)
+            .collect()
+    }
 }
 
 
