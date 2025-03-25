@@ -12,11 +12,16 @@ pub struct BEDEntry {
     pub end: u64,
 }
 
-#[derive(FromZeroes, FromBytes, AsBytes, Clone, Copy)]
-#[repr(packed)]
 pub struct FlatBED<'a> {
     pub name_data: Pool<'a, u8>,
     pub entries: Pool<'a, BEDEntry>,
+}
+
+impl<'a> FlatBED<'a> {
+    /// Get the base-pair sequence for a segment.
+    pub fn get_num_entries(&self) -> usize {
+        self.entries.len()
+    }
 }
 
 
@@ -44,6 +49,13 @@ impl<'a, P: StoreFamily<'a>> BEDStore<'a, P> {
             start,
             end,
         })
+    }
+
+    pub fn as_ref(&self) -> FlatBED {
+        FlatBED {
+            name_data: self.name_data.as_ref(),
+            entries: self.entries.as_ref(),
+        }
     }
 }
 
@@ -74,7 +86,7 @@ pub type FixedBEDStore<'a> = BEDStore<'a, FixedFamily>;
 /// This store contains a bunch of `Vec`s: one per array required to implement a
 /// `FlatBED`. It exposes an API for building up a BED data structure, so it is
 /// useful for creating new ones from scratch.
-pub type HeapGFAStore = BEDStore<'static, HeapFamily>;
+pub type HeapBEDStore = BEDStore<'static, HeapFamily>;
 
 
 
@@ -148,4 +160,16 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
         self.flat
     }
 
+}
+
+impl BEDParser<'static, HeapFamily> {
+    pub fn for_heap() -> Self {
+        Self::new(HeapBEDStore::default())
+    }
+}
+
+impl<'a> BEDParser<'a, FixedFamily> {
+    pub fn for_slice(store: FixedBEDStore<'a>) -> Self {
+        Self::new(store)
+    }
 }

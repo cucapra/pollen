@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use flatgfa::flatbed::BEDParser;
 use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
 use flatgfa::pool::Store;
@@ -27,6 +28,10 @@ struct PolBin {
     #[argh(option, short = 'p', default = "32")]
     prealloc_factor: usize,
 
+    /// read a BED file
+    #[argh(option, short = 'b')]
+    bed_file: Option<String>,
+
     #[argh(subcommand)]
     command: Option<Command>,
 }
@@ -54,6 +59,14 @@ fn main() -> Result<(), &'static str> {
             prealloc_translate(args.input_gfa.as_deref(), out_name, args.prealloc_factor);
             return Ok(());
         }
+    }
+
+    if let Some(bed_file_path) = args.bed_file{
+        let file = memfile::map_file(&bed_file_path);
+        let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
+        let bed = bed_store.as_ref();
+        println!("{}", bed.get_num_entries());
+        return Ok(());
     }
 
     // Load the input from a file (binary) or stdin (text).
