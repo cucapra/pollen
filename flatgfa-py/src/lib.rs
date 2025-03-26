@@ -19,15 +19,14 @@ use std::str;
 /// 
 struct OwnedGAFParser{
     mmap: Arc<Mmap>,
-    pos: usize,
 }
 impl OwnedGAFParser{
     // fn new(mmap: Arc<Mmap>) -> Self {
     //     OwnedGAFParser { mmap:mmap.clone()}
     // }
 
-    fn view_gafparser<'a>(&'a self) -> GAFParser<'a> {
-        let sub_slice = &self.mmap[self.pos..];
+    fn view_gafparser<'a>(&'a self, position: usize) -> GAFParser<'a> {
+        let sub_slice = &self.mmap[position..];
        flatgfa::ops::gaf::GAFParser::new(&sub_slice)
     }
     
@@ -182,7 +181,9 @@ impl PyFlatGFA {
         PyGAFParser {
             gaf_buf: OwnedGAFParser { mmap:gaf_buf },
             store: self.0.clone(),
-            name_map:name_map1
+            name_map:name_map1,
+            pos:0
+            
         }
     }
 }
@@ -625,6 +626,7 @@ struct PyGAFParser{
     gaf_buf: OwnedGAFParser,
     store: Arc<Store>,
     name_map:NameMap,
+    pos: usize,
 }
 #[pymethods]
 impl PyGAFParser{
@@ -636,20 +638,13 @@ impl PyGAFParser{
     }
 
     fn __next__(&mut self) -> Option<PyGAFLine> {
-        // let cloned_mmap = self.gaf_buf.mmap.clone();
-        // let buffer = OwnedGAFParser::new(self.gaf_buf.mmap.clone());
-        // let mut parser = buffer.view_gafparser();
-        //(ref store) => (**store).as_ref(),
-        //   Store::File(ref mmap) => file::view(mmap),
-        // let mut parser = self.gaf_buf.view_gafparser(self.gaf_buf);
-        // let copy = self.gaf_buf.clone();
-        let mut parser = self.gaf_buf.view_gafparser();
-        let result = parser.next();
+        let mut parser = self.gaf_buf.view_gafparser(self.pos);
         // Read the next chunks
         match parser.next() {
             Some(chunk) => {
                 let position=parser.split.pos;
-                self.gaf_buf.pos=position;
+                self.pos=position;
+                println!("The position right now is : {}", self.pos);
                 let res = Some(PyGAFLine {
                     store: self.store.clone(),
                     gaf: chunk.name.to_string(),
