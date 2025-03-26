@@ -72,7 +72,7 @@ impl<'a> GAFLineParser<'a> {
 }
 
 pub struct GAFParser<'a> {
-    split: MemchrSplit<'a>,
+    pub split: MemchrSplit<'a>,
 }
 
 impl<'a> GAFParser<'a> {

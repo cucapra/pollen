@@ -1,5 +1,6 @@
 use flatgfa::cli::cmds::depth;
 use flatgfa::namemap::NameMap;
+use flatgfa::ops::position;
 use flatgfa::pool::Id;
 use flatgfa::{self, cli, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
 use flatgfa::ops::gaf::{self, ChunkEvent, GAFLine, GAFLineParser, GAFParser, PathChunker};
@@ -18,14 +19,16 @@ use std::str;
 /// 
 struct OwnedGAFParser{
     mmap: Arc<Mmap>,
+    pos: usize,
 }
 impl OwnedGAFParser{
-    fn new(mmap: Arc<Mmap>) -> Self {
-        OwnedGAFParser { mmap:mmap.clone()}
-    }
+    // fn new(mmap: Arc<Mmap>) -> Self {
+    //     OwnedGAFParser { mmap:mmap.clone()}
+    // }
 
     fn view_gafparser<'a>(&'a self) -> GAFParser<'a> {
-       flatgfa::ops::gaf::GAFParser::new(&self.mmap)
+        let sub_slice = &self.mmap[self.pos..];
+       flatgfa::ops::gaf::GAFParser::new(&sub_slice)
     }
     
 }
@@ -641,17 +644,23 @@ impl PyGAFParser{
         // let mut parser = self.gaf_buf.view_gafparser(self.gaf_buf);
         // let copy = self.gaf_buf.clone();
         let mut parser = self.gaf_buf.view_gafparser();
+        let result = parser.next();
         // Read the next chunks
         match parser.next() {
-            Some(chunk) => Some(PyGAFLine {
-                store: self.store.clone(),
-                gaf: chunk.name.to_string(),
-                vec_chunk:
-                flatgfa::ops::gaf::PathChunker::new(&self.store.view(), &self.name_map, chunk).into_iter()
-                .map(|c| PyChunkEvent {
-                    chunk_event: c.into(),
-                }).collect(),
-            }),
+            Some(chunk) => {
+                let position=parser.split.pos;
+                self.gaf_buf.pos=position;
+                let res = Some(PyGAFLine {
+                    store: self.store.clone(),
+                    gaf: chunk.name.to_string(),
+                    vec_chunk:
+                    flatgfa::ops::gaf::PathChunker::new(&self.store.view(), &self.name_map, chunk).into_iter()
+                    .map(|c| PyChunkEvent {
+                        chunk_event: c.into(),
+                    }).collect(),
+                });
+                res
+            },
             None => None,
         }
     }
