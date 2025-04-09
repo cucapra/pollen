@@ -9,4 +9,3 @@ for read in gaf_parser:
     for element in read.chunk_list:
         print(element.handle)
         print(element.range)
-          
