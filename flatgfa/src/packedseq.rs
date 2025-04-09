@@ -5,9 +5,12 @@ static C: u8 = 1;
 static G: u8 = 2;
 static T: u8 = 3;
 
+/// A compressed vector-like structure for storing nucleotide sequences
+///     - Two base pairs are stored per byte
 ///
-///
-///
+/// data: a vector that stores a compressed encoding of this vec's sequence
+/// high_nibble_end: whether the final base pair in the sequence is stored at a 
+///                   high or low nibble 
 struct PackedVec {
     data: Vec<u8>,
     high_nibble_end: bool,
@@ -35,13 +38,15 @@ impl PackedVec {
 
 impl Index<usize> for PackedVec {
     type Output = u8;
-
     fn index(&self, index: usize) -> &Self::Output {
-        &self.data[index]
+        if index % 2 == 1 {
+            (&self.data[index as usize / 2] & 0b11110000u8) >> 4
+        } else {
+            &self.data[index as usize / 2] & 0b00001111u8
+        }
     }
 }
 
-/// Prints out the sequence of data 
 impl fmt::Display for PackedVec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
@@ -98,15 +103,21 @@ impl<'a> Iterator for PackedVecIterator<'a> {
     }
 }
 
+/// A reference to a subsection of a nucleotide sequence stored in a PackedVec 
+/// data_ref: The underlying vector that stores the sequence referenced by this slice
+/// span: The specific section of the sequence that this slice references
 struct PackedSlice<'a> {
     data_ref: &'a Vec<u8>,
     span: Span
 }
 
+
+/// Used by PackedSlices to reference a subsection of a nucleotide sequence  
 struct Span {
     start: u8,
     end: u8,
 }
+
 
 fn get_seq(compressed_data: &Vec<u8> , span: Span)  -> Vec<u8> {
     let mut arr: Vec<u8> = Vec::with_capacity((span.end - span.start).into());
@@ -120,6 +131,7 @@ fn get_seq(compressed_data: &Vec<u8> , span: Span)  -> Vec<u8> {
     return arr;
 }
 
+/// Returns a uncompressed vector that contains the sequence in *seq*
 fn get_vec_seq(seq: &PackedVec) -> Vec<u8> {
     let end_index = if (seq.high_nibble_end) {
         (seq.data.len() * 2) - 1 
@@ -130,6 +142,7 @@ fn get_vec_seq(seq: &PackedVec) -> Vec<u8> {
     return get_seq(&seq.data, span);
 }
 
+/// Returns a compressed PackedVec given an uncompressed vector *arr*
 fn create_vec(arr: Vec<u8>) -> PackedVec {
     let mut high_nibble = true;
     if arr.len() % 2 == 1 {
@@ -158,12 +171,15 @@ fn create_vec(arr: Vec<u8>) -> PackedVec {
     };
 }
 
+/// Returns a PackedSlice given a compressed PackVec *vec* that acts as a reference 
+/// to the section of *vec* contained within the index bounds of Span *s*.
 fn create_slice<'a>(vec: &'a PackedVec, s: Span) -> PackedSlice<'a> {
     return PackedSlice{data_ref: &vec.data, span: s};
 }
 
-fn get_slice_seq<'a>(slice: PackedSlice<'a>, span: Span) -> Vec<u8> {
-    return get_seq(slice.data_ref, span);
+/// Returns a vector containing the base pairs referenced by *slice*
+fn get_slice_seq<'a>(slice: PackedSlice<'a>) -> Vec<u8> {
+    return get_seq(slice.data_ref, slice.span);
 }
 
 fn print_arr(arr: Vec<u8>) {
@@ -181,46 +197,74 @@ fn print_arr(arr: Vec<u8>) {
 }
 
 fn main() {
-     let span = Span { start: 0, end: 4 };
-    let mut seq = create_vec(vec![C, A, T, C, G, C]);
-    seq.push(C);
-    let arr = get_vec_seq(&seq);
+    let mut vec = create_vec(vec![C, A, T, C, G, C]);
+    vec.push(C);
+    let arr = get_vec_seq(&vec);
     print_arr(arr);
-   // println!("{}", seq);
+    println!("{}", vec);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_create_vec_and_push() {
-        let mut seq = create_vec(vec![A, C, G, T, A]);
-        seq.push(A);
-        let arr = get_vec_seq(seq);
-        assert_eq!(arr[0], A); 
-        assert_eq!(arr[1], C);
-        assert_eq!(arr[2], G); 
-        assert_eq!(arr[2], T); 
-        assert_eq!(arr[2], A); 
-        assert_eq!(arr[2], A); 
-    }
-
-    #[test]
-    fn test_pushing_multiple_values() {
-        let mut seq = create_vec(vec![A, C, G, T]);
-        seq.push(A);
-        seq.push(C);
-        seq.push(G);
-        seq.push(T);
-        let arr = get_vec_seq(seq);
-        assert_eq!(arr[0], A);
-        assert_eq!(arr[1], C);
-        assert_eq!(arr[2], G);
-        assert_eq!(arr[3], T);
-        assert_eq!(arr[4], A);
-        assert_eq!(arr[5], C);
-        assert_eq!(arr[6], G);
-        assert_eq!(arr[7], T);
-    }
+#[test]
+fn test_vec() {
+    let mut vec = create_vec(vec![A, C, G, T, A]);
+    vec.push(A);
+    let arr = get_vec_seq(&vec);
+    assert_eq!(arr[0], A); 
+    assert_eq!(arr[1], C);
+    assert_eq!(arr[2], G); 
+    assert_eq!(arr[3], T); 
+    assert_eq!(arr[4], A); 
+    assert_eq!(arr[5], A); 
 }
+
+#[test]
+fn test_vec_push() {
+    let mut vec = create_vec(vec![A, C, G, T]);
+    vec.push(A);
+    vec.push(C);
+    vec.push(G);
+    vec.push(T);
+    let arr = get_vec_seq(&vec);
+    assert_eq!(arr[0], A);
+    assert_eq!(arr[1], C);
+    assert_eq!(arr[2], G);
+    assert_eq!(arr[3], T);
+    assert_eq!(arr[4], A);
+    assert_eq!(arr[5], C);
+    assert_eq!(arr[6], G);
+    assert_eq!(arr[7], T);
+}
+
+#[test]
+fn test_slice() {
+    let span = Span {start: 1, end: 4};
+    let mut vec = create_vec(vec![A, C, G, T, A, G]);
+    let mut slice = create_slice(&vec, span);
+    let arr = get_slice_seq(slice);
+    assert_eq!(arr[0], C);
+    assert_eq!(arr[1], G);
+    assert_eq!(arr[2], T);
+    assert_eq!(arr[3], A);
+}
+
+#[test]
+fn test_display_even() {
+    let mut vec = create_vec(vec![C, A, T, C, G, C]);
+    assert_eq!("[C, A, T, C, G, C]", vec.to_string());
+}
+
+#[test]
+fn test_display_odd() {
+    let mut vec = create_vec(vec![C, A, T, C, G, C, C]);
+    assert_eq!("[C, A, T, C, G, C, C]", vec.to_string());
+}
+
+#[test]
+fn test_index() {
+    let mut vec = create_vec(vec![C, A, T, C, G, C, C]);
+    assert_eq!(vec[0], C);
+}
+
+
+
