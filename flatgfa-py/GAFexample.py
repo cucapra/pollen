@@ -1,4 +1,5 @@
 import flatgfa
+
 graph = flatgfa.parse("./chr6.gfa")
 gaf = "./chr6gaf.gaf"
 gaf_parser = graph.load_gaf(gaf)
