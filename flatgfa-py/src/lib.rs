@@ -1,16 +1,15 @@
 use flatgfa::cli::cmds::depth;
 use flatgfa::namemap::NameMap;
-use flatgfa::ops::gaf::{self, ChunkEvent, GAFLine, GAFLineParser, GAFParser, PathChunker};
-use flatgfa::ops::position;
+use flatgfa::ops::gaf::{ ChunkEvent, GAFParser};
 use flatgfa::pool::Id;
-use flatgfa::{self, cli, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
+use flatgfa::{self,file, memfile, print, FlatGFA, HeapGFAStore};
 use memmap::Mmap;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
 use std::io::Write;
 use std::str;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Storage for a FlatGFA.
 ///

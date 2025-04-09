@@ -1,4 +1,4 @@
-use crate::{flatgfa, Handle};
+use crate::flatgfa;
 use crate::memfile::MemchrSplit;
 use crate::namemap::NameMap;
 use bstr::BStr;
