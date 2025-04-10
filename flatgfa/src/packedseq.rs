@@ -36,16 +36,16 @@ impl PackedVec {
     }
 }
 
-impl Index<usize> for PackedVec {
-    type Output = u8;
-    fn index(&self, index: usize) -> &Self::Output {
-        if index % 2 == 1 {
-            (&self.data[index as usize / 2] & 0b11110000u8) >> 4
-        } else {
-            &self.data[index as usize / 2] & 0b00001111u8
-        }
-    }
-}
+// impl Index<usize> for PackedVec {
+//     type Output = u8;
+//     fn index(&self, index: usize) -> &Self::Output {
+//         if index % 2 == 1 {
+//             (&self.data[index as usize / 2] & 0b11110000u8) >> 4
+//         } else {
+//             &self.data[index as usize / 2] & 0b00001111u8
+//         }
+//     }
+// }
 
 impl fmt::Display for PackedVec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -129,6 +129,29 @@ fn get_seq(compressed_data: &Vec<u8> , span: Span)  -> Vec<u8> {
         }
     }
     return arr;
+}
+
+/// Returns the element of *seq* at index *index*
+fn get_vec_elem(seq: &mut PackedVec, index: u8) -> u8 {
+    if index % 2 == 1 {
+        let i: usize = (index / 2) as usize;
+        (&seq.data[i] & 0b11110000u8) >> 4
+    } else {
+        let i: usize = (index / 2) as usize;
+        &seq.data[i] & 0b00001111u8
+    }
+}
+ 
+/// Sets the element of *seq* at index *index* to *elem*
+fn set_vec_elem(seq: &mut PackedVec, index: u8, elem: u8) {
+    if index % 2 == 1 {
+        let i: usize = (index / 2) as usize;
+        println!("i: {}",i);
+        seq.data[i] =  (0b00001111u8 & seq.data[i]) | (elem << 4);
+    } else {
+        let i: usize = (index / 2) as usize;
+        seq.data[i] = (0b11110000u8 & seq.data[i]) | elem;
+    }
 }
 
 /// Returns a uncompressed vector that contains the sequence in *seq*
@@ -261,10 +284,10 @@ fn test_display_odd() {
 }
 
 #[test]
-fn test_index() {
-    let mut vec = create_vec(vec![C, A, T, C, G, C, C]);
-    assert_eq!(vec[0], C);
+fn test_getter_setter() {
+    let mut vec = create_vec(vec![A, A, T, C, G, C, C]);
+    assert_eq!(get_vec_elem(&mut vec, 0), A);
+    assert_eq!(get_vec_elem(&mut vec, 1), A);
+    set_vec_elem(&mut vec, 1, G);
+    assert_eq!(get_vec_elem(&mut vec, 1), G);
 }
-
-
-
