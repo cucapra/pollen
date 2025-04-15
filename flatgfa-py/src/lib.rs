@@ -51,10 +51,6 @@ impl Store {
             Store::File(ref mmap) => file::view(mmap),
         }
     }
-    fn py_depth(&self) {
-        let gfa = self.view();
-        depth(&gfa)
-    }
 }
 
 /// An efficient representation of a Graphical Fragment Assembly (GFA) file.
@@ -96,9 +92,6 @@ impl PyFlatGFA {
         })
     }
 
-    fn depth(&self) {
-        self.0.py_depth()
-    }
 
     /// The paths in the graph, as a :class:`PathList`.
     #[getter]
@@ -143,12 +136,12 @@ impl PyFlatGFA {
     }
     fn load_gaf(&self, gaf: &str) -> PyGAFParser {
         let gfa = self.0.view();
-        let name_map1 = flatgfa::namemap::NameMap::build(&gfa);
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
         let gaf_buf = Arc::new(flatgfa::memfile::map_file(&gaf));
         PyGAFParser {
             gaf_buf: OwnedGAFParser { mmap: gaf_buf },
             store: self.0.clone(),
-            name_map: name_map1,
+            name_map: name_map,
             pos: 0,
         }
     }
@@ -474,7 +467,7 @@ impl PyPath {
 #[pyclass(frozen)]
 #[pyo3(name = "ChunkEvent", module = "flatgfa")]
 struct PyChunkEvent {
-    chunk_event: Arc<ChunkEvent>,
+    chunk_event: ChunkEvent,
 }
 
 #[pymethods]
@@ -495,15 +488,9 @@ impl PyChunkEvent {
             }
         }
     }
-    fn get_seq(&self, gfa: &PyFlatGFA) -> String {
+    fn sequence(&self, gfa: &PyFlatGFA) -> String {
         let inner_gfa = gfa.0.view();
-        let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
-
-        match self.chunk_event.range {
-            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
-            flatgfa::ops::gaf::ChunkRange::All => seq.to_string(),
-            flatgfa::ops::gaf::ChunkRange::None => "".to_string(),
-        }
+        self.chunk_event.get_seq_string(&inner_gfa)
     }
 }
 
@@ -512,32 +499,32 @@ impl PyChunkEvent {
 
 struct PyGAFLine {
     store: Arc<Store>,
-    vec_chunk: Vec<PyChunkEvent>,
+    chunks: Vec<PyChunkEvent>,
     gaf: String,
 }
 #[pymethods]
 impl PyGAFLine {
     #[getter]
-    fn get_name(&self) -> String {
+    fn name(&self) -> String {
         self.gaf.clone()
     }
 
     #[getter]
-    fn get_chunk_list(&self) -> Vec<PyChunkEvent> {
-        self.vec_chunk.clone()
+    fn chunks(&self) -> Vec<PyChunkEvent> {
+        self.chunks.clone()
     }
-    fn get_sequence(&self) -> String {
+    fn sequence(&self) -> String {
         let gfa = self.store.view();
         let mut res: String = "".to_string();
-        for part in self.vec_chunk.clone() {
+        for part in self.chunks.clone() {
             res = res + &part.chunk_event.get_seq_string(&gfa);
         }
         res
     }
-    fn get_seg(&self) -> String {
+    fn segment_ranges(&self) -> String {
         let gfa = self.store.view();
         let mut res: String = "".to_string();
-        for part in self.vec_chunk.clone() {
+        for part in self.chunks.clone() {
             res = res +"\n"+ &part.chunk_event.get_seg(&gfa);
         }
         res
@@ -577,7 +564,7 @@ impl PyGAFParser {
                 let res = Some(PyGAFLine {
                     store: self.store.clone(),
                     gaf: chunk.name.to_string(),
-                    vec_chunk: flatgfa::ops::gaf::PathChunker::new(
+                    chunks: flatgfa::ops::gaf::PathChunker::new(
                         &self.store.view(),
                         &self.name_map,
                         chunk,
@@ -594,7 +581,7 @@ impl PyGAFParser {
         }
     }
 }
-
+/// A sequence of :class:`Path` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
 struct PathList(ListRef);
@@ -823,6 +810,7 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFlatGFA>()?;
     m.add_class::<PyGAFParser>()?;
     m.add_class::<PyGAFLine>()?;
+    m.add_class::<PyChunkEvent>()?;
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(parse_bytes, m)?)?;
     m.add_function(wrap_pyfunction!(load, m)?)?;
