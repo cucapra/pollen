@@ -2,6 +2,7 @@ use zerocopy::{AsBytes, FromBytes, FromZeroes};
 use crate::memfile::MemchrSplit;
 use std::io::BufRead;
 use atoi::FromRadix10;
+use bstr::BStr;
 use crate::pool::{Pool, Span, Store, HeapStore, FixedStore, Id};
 
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
@@ -23,10 +24,18 @@ impl<'a> FlatBED<'a> {
         self.entries.len()
     }
 
-    pub fn get_intersects(&self, start: u64, end: u64) -> Vec<BEDEntry> {
+    pub fn get_name_of_entry(&self, entry: &BEDEntry) -> &BStr {
+        self.name_data[entry.name].as_ref()
+    }
+
+    pub fn get_intersects(&self, bed: &FlatBED, entry: &BEDEntry) -> Vec<BEDEntry> {
         self.entries.items()
-            .map(|x| x.1.clone())
-            .filter(|x| x.start <= end && x.end >= start)
+            .map(|x| BEDEntry {
+                name: x.1.name,
+                start: if x.1.start < entry.start { entry.start } else { x.1.start },
+                end: if entry.end < x.1.end { entry.end } else { x.1.end },
+            })
+            .filter(|x| bed.get_name_of_entry(entry).eq(self.get_name_of_entry(x)) && x.end > x.start)
             .collect()
     }
 }

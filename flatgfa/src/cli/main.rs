@@ -33,13 +33,9 @@ struct PolBin {
     #[argh(option, short = 'b')]
     bed_file: Option<String>,
 
-    /// intersect a BED file start
-    #[argh(option, short = 's')]
-    intersect_start: u64,
-
-    /// intersect a BED file end
+    /// intersect the read BED file with another
     #[argh(option, short = 'e')]
-    intersect_end: u64,
+    bed_file_2: Option<String>,
 
     #[argh(subcommand)]
     command: Option<Command>,
@@ -70,20 +66,27 @@ fn main() -> Result<(), &'static str> {
         }
     }
 
-    if let Some(bed_file_path) = args.bed_file{
+    if let Some(bed_file_path) = args.bed_file {
         let file = memfile::map_file(&bed_file_path);
         let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
         let bed = bed_store.as_ref();
-        println!("Total Number of BED Entries: {}", bed.get_num_entries());
         
-        let intersects = bed.get_intersects(args.intersect_start, args.intersect_end);
-        println!("Intersections with {} - {}:", args.intersect_start, args.intersect_end);
-        for val in intersects.iter() {
-            let name: &BStr = bed.name_data[val.name].as_ref();
-            let start = val.start;
-            let end = val.end;
-            println!("{}:\t{} - {}", name, start, end);
+        if let Some(bed_file_path2) = args.bed_file_2 {
+            let file2 = memfile::map_file(&bed_file_path2);
+            let bed_store2 = BEDParser::for_heap().parse_mem(file2.as_ref());
+            let bed2 = bed_store2.as_ref();
+
+            for outer_entries in bed.entries.items() {
+                let intersects = bed2.get_intersects(&bed, outer_entries.1);
+                for val in intersects.iter() {
+                    let name: &BStr = bed2.get_name_of_entry(val);
+                    let start = val.start;
+                    let end = val.end;
+                    println!("{}\t{}\t{}", name, start, end);
+                }
+            }
         }
+        
         return Ok(());
     }
 
