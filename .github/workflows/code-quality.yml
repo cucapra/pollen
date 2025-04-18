@@ -1,16 +1,33 @@
-name: CodeQuality
+name: quality
 on: [pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: CodeQuality
+    name: Python lint
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+
+    - name: lint
+      uses: astral-sh/ruff-action@v3
       with:
-        python-version: 3.x
-    - run: pip install --upgrade pip
-    - run: pip install "black<24" mypy==v1.3
-    - run: black --diff --check $(git ls-files '*.py')
-    - run: MYPYPATH=mygfa mypy --no-namespace-packages --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
+        src: >-
+          mygfa
+          slow_odgi
+          pollen_data_gen
+          flatgfa-py
+
+    - name: format
+      uses: astral-sh/ruff-action@v3
+      with:
+        args: "format --check --diff"
+        src: >-
+          mygfa
+          slow_odgi
+          pollen_data_gen
+          flatgfa-py
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+    - name: types
+      run: MYPYPATH=mygfa uv tool run mypy --no-namespace-packages --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
