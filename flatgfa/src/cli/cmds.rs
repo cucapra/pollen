@@ -271,32 +271,30 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
         } else {
             unimplemented!("only the no-op mode is parallel")
         }
+    } else if args.seqs {
+        // Print the actual sequences for each chunk in the GAF.
+        for read in parser {
+            print!("{}\t", read.name);
+            for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
+                event.print_seq(gfa);
+            }
+            println!();
+        }
+    } else if args.bench {
+        // Benchmarking mode: just process all the chunks but print nothing.
+        let mut count = 0;
+        for read in parser {
+            for _event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
+                count += 1;
+            }
+        }
+        println!("{}", count);
     } else {
-        if args.seqs {
-            // Print the actual sequences for each chunk in the GAF.
-            for read in parser {
-                print!("{}\t", read.name);
-                for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
-                    event.print_seq(gfa);
-                }
-                println!();
-            }
-        } else if args.bench {
-            // Benchmarking mode: just process all the chunks but print nothing.
-            let mut count = 0;
-            for read in parser {
-                for _event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
-                    count += 1;
-                }
-            }
-            println!("{}", count);
-        } else {
-            // Just print some info about the offsets in the segments.
-            for read in parser {
-                println!("{}", read.name);
-                for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
-                    event.print(gfa);
-                }
+        // Just print some info about the offsets in the segments.
+        for read in parser {
+            println!("{}", read.name);
+            for event in ops::gaf::PathChunker::new(gfa, &name_map, read) {
+                event.print(gfa);
             }
         }
     }

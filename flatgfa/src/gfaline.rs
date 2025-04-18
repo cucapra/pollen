@@ -227,7 +227,7 @@ impl<'a> StepsParser<'a> {
     }
 }
 
-impl<'a> Iterator for StepsParser<'a> {
+impl Iterator for StepsParser<'_> {
     type Item = (usize, bool);
     fn next(&mut self) -> Option<(usize, bool)> {
         while self.index < self.str.len() {

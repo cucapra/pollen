@@ -1,3 +1,5 @@
+#![allow(clippy::repr_packed_without_abi)]
+
 use std::ops::Range;
 use std::str::FromStr;
 
@@ -174,7 +176,7 @@ impl Handle {
         assert!(seg_num & (1 << (u32::BITS - 1)) == 0, "index too large");
         let orient_bit: u8 = orient.into();
         assert!(orient_bit & !1 == 0, "invalid orientation");
-        Self(seg_num << 1 | (orient_bit as u32))
+        Self((seg_num << 1) | (orient_bit as u32))
     }
 
     /// Get the segment ID. This is an index in the `segs` pool.
@@ -311,7 +313,7 @@ fn nucleotide_complement(c: u8) -> u8 {
     }
 }
 
-impl<'a> std::fmt::Display for Sequence<'a> {
+impl std::fmt::Display for Sequence<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.revcmp {
             // For small sequences, it's faster to allocate the reverse-complement
