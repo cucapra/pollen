@@ -160,15 +160,15 @@ command = "pollen_data_gen simple {filename} | jq .depth"
 output.json = "-"
 
 [envs.flatgfa_mem]
-command = "../flatgfa/target/debug/fgfa < {filename}"
+command = "../target/debug/fgfa < {filename}"
 output.gfa = "-"
 
 [envs.flatgfa_file]
-command = "../flatgfa/target/debug/fgfa -o {base}.flatgfa < {filename} ; ../flatgfa/target/debug/fgfa -i {base}.flatgfa"
+command = "../target/debug/fgfa -o {base}.flatgfa < {filename} ; ../flatgfa/target/debug/fgfa -i {base}.flatgfa"
 output.gfa = "-"
 
 [envs.flatgfa_file_inplace]
-command = "../flatgfa/target/debug/fgfa -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../flatgfa/target/debug/fgfa -m -i {base}.inplace.flatgfa"
+command = "../target/debug/fgfa -m -p 128 -o {base}.inplace.flatgfa -I {filename} ; ../target/debug/fgfa -m -i {base}.inplace.flatgfa"
 output.gfa = "-"
 
 [envs.odgi_depth]
@@ -177,16 +177,16 @@ command = "odgi depth -d -i {filename}"
 output.depth = "-"
 
 [envs.flatgfa_depth]
-command = "../flatgfa/target/debug/fgfa -I {filename} depth"
+command = "../target/debug/fgfa -I {filename} depth"
 output.depth = "-"
 
 [envs.chop_oracle_fgfa]
-binary = true 
+binary = true
 command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | slow_odgi norm"
 output.chop = "-"
 
 [envs.flatgfa_chop]
-command = "../flatgfa/target/debug/fgfa -I {filename} chop -l -c 3 | slow_odgi norm"
+command = "../target/debug/fgfa -I {filename} chop -l -c 3 | slow_odgi norm"
 output.chop = "-"
 
 [envs.odgi_extract]
@@ -195,5 +195,5 @@ command = "odgi extract -i {filename} -n 3 -c 3 -o - | odgi view -g -i - | slow_
 output.extract = "-"
 
 [envs.flatgfa_extract]
-command = "../flatgfa/target/debug/fgfa -I {filename} extract -n 3 -c 3 | slow_odgi norm"
+command = "../target/debug/fgfa -I {filename} extract -n 3 -c 3 | slow_odgi norm"
 output.extract = "-"
