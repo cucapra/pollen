@@ -148,7 +148,7 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
 
     fn add_path(&mut self, path: gfaline::Path) {
         // Parse the steps.
-        let mut step_parser = gfaline::StepsParser::new(&path.steps);
+        let mut step_parser = gfaline::StepsParser::new(path.steps);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
             Handle::new(
                 self.seg_ids.get(name),

@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = ["flatgfa", "flatgfa-py"]
+
+[profile.profiling]
+inherits = "release"
+debug = true
