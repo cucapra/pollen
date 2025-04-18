@@ -333,5 +333,5 @@ class Graph:
         for path in sorted(self.paths.items()):
             print(str(path[1]), file=outfile)
         if showlinks:
-            for link_str in sorted(map(lambda l: str(l), self.links)):
+            for link_str in sorted(str(lnk) for lnk in self.links):
                 print(link_str, file=outfile)
