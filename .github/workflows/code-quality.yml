@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  python:
     runs-on: ubuntu-latest
     name: Python
     steps:
@@ -34,3 +34,13 @@ jobs:
       uses: astral-sh/setup-uv@v5
     - name: mypy
       run: MYPYPATH=mygfa uv tool run mypy --no-namespace-packages --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
+
+  rust:
+    runs-on: ubuntu-latest
+    name: Rust
+    steps:
+    - uses: actions/checkout@v4
+    - uses: uses: dtolnay/rust-toolchain@stable
+    - run: cargo check
+    - run: cargo clippy
+    - run: cargo fmt --check
