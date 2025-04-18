@@ -40,7 +40,7 @@ jobs:
     name: Rust
     steps:
     - uses: actions/checkout@v4
-    - uses: uses: dtolnay/rust-toolchain@stable
+    - uses: dtolnay/rust-toolchain@stable
     - run: cargo check
     - run: cargo clippy
     - run: cargo fmt --check
