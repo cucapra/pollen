@@ -38,6 +38,8 @@ jobs:
   rust:
     runs-on: ubuntu-latest
     name: Rust
+    env:
+      RUSTFLAGS: "-Dwarnings"
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
