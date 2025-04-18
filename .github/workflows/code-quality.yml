@@ -7,11 +7,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Python lint
+    name: Python
     steps:
     - uses: actions/checkout@v4
 
-    - name: lint
+    - name: ruff check
       uses: astral-sh/ruff-action@v3
       with:
         src: >-
@@ -20,7 +20,7 @@ jobs:
           pollen_data_gen
           flatgfa-py
 
-    - name: format
+    - name: ruff format
       uses: astral-sh/ruff-action@v3
       with:
         args: "format --check --diff"
@@ -32,5 +32,5 @@ jobs:
 
     - name: Install uv
       uses: astral-sh/setup-uv@v5
-    - name: types
+    - name: mypy
       run: MYPYPATH=mygfa uv tool run mypy --no-namespace-packages --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
