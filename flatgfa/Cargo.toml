@@ -18,7 +18,3 @@ num_enum = "0.7.3"
 rayon = "1.10.0"
 tinyvec = "1.8.0"
 zerocopy = { version = "0.7.35", features = ["derive"] }
-
-[profile.profiling]
-inherits = "release"
-debug = true
