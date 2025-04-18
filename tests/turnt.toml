@@ -164,7 +164,7 @@ command = "../target/debug/fgfa < {filename}"
 output.gfa = "-"
 
 [envs.flatgfa_file]
-command = "../target/debug/fgfa -o {base}.flatgfa < {filename} ; ../flatgfa/target/debug/fgfa -i {base}.flatgfa"
+command = "../target/debug/fgfa -o {base}.flatgfa < {filename} ; ../target/debug/fgfa -i {base}.flatgfa"
 output.gfa = "-"
 
 [envs.flatgfa_file_inplace]
