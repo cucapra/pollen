@@ -42,7 +42,7 @@ jobs:
       RUSTFLAGS: "-Dwarnings"
     steps:
     - uses: actions/checkout@v4
-    - run: rustup toolchain install stable --profile minimal --no-self-update
+    - run: rustup toolchain install stable --no-self-update
     - uses: Swatinem/rust-cache@v2
     - run: cargo check
     - run: cargo clippy
