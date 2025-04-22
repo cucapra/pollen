@@ -57,6 +57,8 @@ fn main() -> Result<(), &'static str> {
         }
     }
 
+    // Another special case for parsing BED files,
+    // since we do not parse a GFA file for that.
     if let Some(Command::BedIntersect(sub_args)) = args.command {
         cmds::bed_intersect(sub_args);
         return Ok(());
