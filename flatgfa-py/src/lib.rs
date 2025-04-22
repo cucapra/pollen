@@ -152,7 +152,7 @@ impl PyFlatGFA {
         }
     }
 
-    fn test_gaf(&self, gaf: &str) -> Vec<Vec<PyChunkEvent>> {
+    fn all_reads(&self, gaf: &str) -> Vec<Vec<PyChunkEvent>> {
         let gfa = self.0.view();
 
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
@@ -183,14 +183,12 @@ struct PyChunkEvent {
 
 #[pymethods]
 impl PyChunkEvent {
-    fn __str__(&self) -> String {
-        "".to_string()
-    }
-
     #[getter]
-    fn handle(&self) -> String {
-        let seg_num: u32 = self.chunk_event.handle.segment().into();
-        format!("{}, {}", &self.chunk_event.handle.orient(), seg_num)
+    fn handle(&self) -> PyHandle {
+        PyHandle {
+            store: self.gfa.clone(),
+            handle: self.chunk_event.handle
+        }
     }
 
     #[getter]
@@ -204,7 +202,7 @@ impl PyChunkEvent {
         }
     }
 
-    fn get_seq(&self) -> String {
+    fn sequence(&self) -> String {
         let inner_gfa = self.gfa.view();
         let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
 
