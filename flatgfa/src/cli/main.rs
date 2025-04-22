@@ -1,6 +1,4 @@
 use argh::FromArgs;
-use bstr::BStr;
-use flatgfa::flatbed::BEDParser;
 use flatgfa::flatgfa::FlatGFA;
 use flatgfa::parse::Parser;
 use flatgfa::pool::Store;
@@ -29,14 +27,6 @@ struct PolBin {
     #[argh(option, short = 'p', default = "32")]
     prealloc_factor: usize,
 
-    /// read a BED file
-    #[argh(option, short = 'b')]
-    bed_file: Option<String>,
-
-    /// intersect the read BED file with another
-    #[argh(option, short = 'e')]
-    bed_file_2: Option<String>,
-
     #[argh(subcommand)]
     command: Option<Command>,
 }
@@ -53,6 +43,7 @@ enum Command {
     Chop(cmds::Chop),
     GafLookup(cmds::GAFLookup),
     Bench(cmds::Bench),
+    BedIntersect(cmds::BEDIntersect),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -66,27 +57,8 @@ fn main() -> Result<(), &'static str> {
         }
     }
 
-    if let Some(bed_file_path) = args.bed_file {
-        let file = memfile::map_file(&bed_file_path);
-        let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
-        let bed = bed_store.as_ref();
-        
-        if let Some(bed_file_path2) = args.bed_file_2 {
-            let file2 = memfile::map_file(&bed_file_path2);
-            let bed_store2 = BEDParser::for_heap().parse_mem(file2.as_ref());
-            let bed2 = bed_store2.as_ref();
-
-            for outer_entries in bed.entries.items() {
-                let intersects = bed2.get_intersects(&bed, outer_entries.1);
-                for val in intersects.iter() {
-                    let name: &BStr = bed2.get_name_of_entry(val);
-                    let start = val.start;
-                    let end = val.end;
-                    println!("{}\t{}\t{}", name, start, end);
-                }
-            }
-        }
-        
+    if let Some(Command::BedIntersect(sub_args)) = args.command {
+        cmds::bed_intersect(sub_args);
         return Ok(());
     }
 
@@ -168,6 +140,9 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Bench(sub_args)) => {
             cmds::bench(sub_args);
+        }
+        Some(Command::BedIntersect(_sub_args)) => {
+            panic!("Unreachable code");
         }
         None => {
             // Just emit the GFA or FlatGFA file.
