@@ -1,8 +1,8 @@
 use flatgfa::cli::cmds::depth;
 use flatgfa::namemap::NameMap;
-use flatgfa::ops::gaf::{ ChunkEvent, GAFParser};
+use flatgfa::ops::gaf::{ChunkEvent, GAFParser};
 use flatgfa::pool::Id;
-use flatgfa::{self,file, memfile, print, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
 use memmap::Mmap;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
@@ -91,7 +91,6 @@ impl PyFlatGFA {
             end: self.0.view().segs.len() as u32,
         })
     }
-
 
     /// The paths in the graph, as a :class:`PathList`.
     #[getter]
@@ -468,14 +467,18 @@ impl PyPath {
 #[pyo3(name = "ChunkEvent", module = "flatgfa")]
 struct PyChunkEvent {
     chunk_event: ChunkEvent,
+    store: Arc<Store>,
 }
 
 #[pymethods]
 impl PyChunkEvent {
     #[getter]
-    fn handle(&self) -> String {
-        let seg_num: u32 = self.chunk_event.handle.segment().into();
-        format!("{}, {}", &self.chunk_event.handle.orient(), seg_num)
+    fn handle(&self) -> PyHandle {
+        let handle: Handle = self.chunk_event.handle;
+        PyHandle {
+            store: (self.store.clone()),
+            handle: (handle),
+        }
     }
 
     #[getter]
@@ -516,7 +519,7 @@ impl PyGAFLine {
     fn sequence(&self) -> String {
         let gfa = self.store.view();
         let mut res: String = "".to_string();
-        for part in self.chunks.clone() {
+        for part in self.chunks.iter() {
             res = res + &part.chunk_event.get_seq_string(&gfa);
         }
         res
@@ -525,7 +528,7 @@ impl PyGAFLine {
         let gfa = self.store.view();
         let mut res: String = "".to_string();
         for part in self.chunks.clone() {
-            res = res +"\n"+ &part.chunk_event.get_seg(&gfa);
+            res = res + "\n" + &part.chunk_event.get_seg(&gfa);
         }
         res
     }
@@ -571,6 +574,7 @@ impl PyGAFParser {
                     )
                     .into_iter()
                     .map(|c| PyChunkEvent {
+                        store: self.store.clone(),
                         chunk_event: c.into(),
                     })
                     .collect(),
