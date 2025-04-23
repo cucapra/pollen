@@ -15,7 +15,6 @@ use std::sync::Arc;
 /// This may be either an in-memory data structure or a memory-mapped file. It exposes a
 /// uniform interface to the FlatGFA data via `view`.
 ///
-
 enum Store {
     Heap(Box<HeapGFAStore>),
     File(memmap::Mmap),
@@ -135,11 +134,11 @@ impl PyFlatGFA {
     fn load_gaf(&self, gaf: &str) -> PyGAFParser {
         let gfa = self.0.view();
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
-        let gaf_buf = Arc::new(flatgfa::memfile::map_file(&gaf));
+        let gaf_buf = Arc::new(flatgfa::memfile::map_file(gaf));
         PyGAFParser {
             gaf_buf: OwnedGAFParser { mmap: gaf_buf },
             store: self.0.clone(),
-            name_map: name_map,
+            name_map,
             pos: 0,
         }
     }
@@ -186,7 +185,7 @@ impl ListRef {
     {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.len().try_into().unwrap())?;
+                let indices = slice.indices(self.len().into())?;
                 if indices.step == 1 {
                     Ok(L::from(self.slice(indices.start as u32, indices.stop as u32)).into_py(py))
                 } else {
@@ -536,9 +535,9 @@ struct OwnedGAFParser {
     mmap: Arc<Mmap>,
 }
 impl OwnedGAFParser {
-    fn view_gafparser<'a>(&'a self, position: usize) -> GAFParser<'a> {
+    fn view_gafparser(&self, position: usize) -> GAFParser<'_> {
         let sub_slice = &self.mmap[position..];
-        flatgfa::ops::gaf::GAFParser::new(&sub_slice)
+        flatgfa::ops::gaf::GAFParser::new(sub_slice)
     }
 }
 
@@ -571,10 +570,9 @@ impl PyGAFParser {
                         &self.name_map,
                         chunk,
                     )
-                    .into_iter()
                     .map(|c| PyChunkEvent {
                         store: self.store.clone(),
-                        chunk_event: c.into(),
+                        chunk_event: c,
                     })
                     .collect(),
                 });
@@ -686,7 +684,7 @@ impl StepList {
     fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.0.len().try_into().unwrap())?;
+                let indices = slice.indices(self.0.len().into())?;
                 if indices.step == 1 {
                     let list = self.0.slice(indices.start as u32, indices.stop as u32);
                     Ok(Self(list).into_py(py))
