@@ -1,9 +1,9 @@
-use zerocopy::{AsBytes, FromBytes, FromZeroes};
 use crate::memfile::MemchrSplit;
-use std::io::BufRead;
+use crate::pool::{FixedStore, HeapStore, Id, Pool, Span, Store};
 use atoi::FromRadix10;
 use bstr::BStr;
-use crate::pool::{Pool, Span, Store, HeapStore, FixedStore, Id};
+use std::io::BufRead;
+use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(packed)]
@@ -29,26 +29,27 @@ impl<'a> FlatBED<'a> {
     }
 
     pub fn get_intersects(&self, bed: &FlatBED, entry: &BEDEntry) -> Vec<BEDEntry> {
-        self.entries.items()
+        self.entries
+            .items()
             .map(|x| BEDEntry {
                 name: x.1.name,
-                start: if x.1.start < entry.start { entry.start } else { x.1.start },
-                end: if entry.end < x.1.end { entry.end } else { x.1.end },
+                start: if x.1.start < entry.start {
+                    entry.start
+                } else {
+                    x.1.start
+                },
+                end: if entry.end < x.1.end {
+                    entry.end
+                } else {
+                    x.1.end
+                },
             })
-            .filter(|x| bed.get_name_of_entry(entry).eq(self.get_name_of_entry(x)) && x.end > x.start)
+            .filter(|x| {
+                bed.get_name_of_entry(entry).eq(self.get_name_of_entry(x)) && x.end > x.start
+            })
             .collect()
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 /// The data storage pools for a `FlatBED`.
 #[derive(Default)]
@@ -60,11 +61,7 @@ pub struct BEDStore<'a, P: StoreFamily<'a>> {
 impl<'a, P: StoreFamily<'a>> BEDStore<'a, P> {
     pub fn add_entry(&mut self, name: &[u8], start: u64, end: u64) -> Id<BEDEntry> {
         let name = self.name_data.add_slice(name);
-        self.entries.add(BEDEntry {
-            name,
-            start,
-            end,
-        })
+        self.entries.add(BEDEntry { name, start, end })
     }
 
     pub fn as_ref(&self) -> FlatBED {
@@ -104,23 +101,6 @@ pub type FixedBEDStore<'a> = BEDStore<'a, FixedFamily>;
 /// useful for creating new ones from scratch.
 pub type HeapBEDStore = BEDStore<'static, HeapFamily>;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 type ParseResult<T> = Result<T, &'static str>;
 type PartialParseResult<'a, T> = ParseResult<(T, &'a [u8])>;
 fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<T> {
@@ -137,9 +117,7 @@ pub struct BEDParser<'a, P: StoreFamily<'a>> {
 
 impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
     pub fn new(builder: BEDStore<'a, P>) -> Self {
-        Self {
-            flat: builder,
-        }
+        Self { flat: builder }
     }
 
     /// Parse a GFA text file from an I/O stream.
@@ -150,7 +128,7 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
             let first_tab_index = line.iter().position(|&x| x == b'\t').unwrap();
             let name_slice = &line[0..first_tab_index];
 
-            let rest_of_vec = &line[first_tab_index+1..];
+            let rest_of_vec = &line[first_tab_index + 1..];
             let (start_num, rest) = parse_num(rest_of_vec).unwrap();
             let (end_num, _) = parse_num(&rest[1..]).unwrap();
 
@@ -166,7 +144,7 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
             let first_tab_index = line.iter().position(|&x| x == b'\t').unwrap();
             let name_slice = &line[0..first_tab_index];
 
-            let rest_of_vec = &line[first_tab_index+1..];
+            let rest_of_vec = &line[first_tab_index + 1..];
             let (start_num, rest) = parse_num(rest_of_vec).unwrap();
             let (end_num, _) = parse_num(&rest[1..]).unwrap();
 
@@ -175,7 +153,6 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
 
         self.flat
     }
-
 }
 
 impl BEDParser<'static, HeapFamily> {

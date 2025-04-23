@@ -304,7 +304,6 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     }
 }
 
-
 /// parse a BED file
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "bed")]
@@ -312,33 +311,31 @@ pub struct BEDIntersect {
     /// first BED file to intersect
     #[argh(option, short = 'a')]
     first_bed_file_path: String,
-    
+
     /// second BED file to intersect
     #[argh(option, short = 'b')]
     second_bed_file_path: String,
 }
 
 pub fn bed_intersect(args: BEDIntersect) {
-
     let bed_file_path = args.first_bed_file_path;
     let bed_file_path2 = args.second_bed_file_path;
 
-        let file = memfile::map_file(&bed_file_path);
-        let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
-        let bed = bed_store.as_ref();
-        
-            let file2 = memfile::map_file(&bed_file_path2);
-            let bed_store2 = BEDParser::for_heap().parse_mem(file2.as_ref());
-            let bed2 = bed_store2.as_ref();
+    let file = memfile::map_file(&bed_file_path);
+    let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
+    let bed = bed_store.as_ref();
 
-            for outer_entries in bed.entries.items() {
-                let intersects = bed2.get_intersects(&bed, outer_entries.1);
-                for val in intersects.iter() {
-                    let name: &BStr = bed2.get_name_of_entry(val);
-                    let start = val.start;
-                    let end = val.end;
-                    println!("{}\t{}\t{}", name, start, end);
-                }
-            }
+    let file2 = memfile::map_file(&bed_file_path2);
+    let bed_store2 = BEDParser::for_heap().parse_mem(file2.as_ref());
+    let bed2 = bed_store2.as_ref();
 
+    for outer_entries in bed.entries.items() {
+        let intersects = bed2.get_intersects(&bed, outer_entries.1);
+        for val in intersects.iter() {
+            let name: &BStr = bed2.get_name_of_entry(val);
+            let start = val.start;
+            let end = val.end;
+            println!("{}\t{}\t{}", name, start, end);
+        }
+    }
 }
