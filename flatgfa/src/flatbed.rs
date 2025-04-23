@@ -18,7 +18,7 @@ pub struct FlatBED<'a> {
     pub entries: Pool<'a, BEDEntry>,
 }
 
-impl<'a> FlatBED<'a> {
+impl FlatBED<'_> {
     /// Get the base-pair sequence for a segment.
     pub fn get_num_entries(&self) -> usize {
         self.entries.len()
