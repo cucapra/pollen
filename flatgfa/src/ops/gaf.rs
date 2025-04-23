@@ -133,14 +133,14 @@ impl<'a, 'b> PathChunker<'a, 'b> {
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct ChunkEvent {
     index: usize,
     pub handle: flatgfa::Handle,
     pub range: ChunkRange,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum ChunkRange {
     None,
     All,
