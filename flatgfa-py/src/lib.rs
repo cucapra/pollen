@@ -1,4 +1,3 @@
-use flatgfa::cli::cmds::depth;
 use flatgfa::namemap::NameMap;
 use flatgfa::ops::gaf::{ChunkEvent, GAFParser};
 use flatgfa::pool::Id;
