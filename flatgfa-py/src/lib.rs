@@ -185,7 +185,7 @@ impl ListRef {
     {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.len().into())?;
+                let indices = py_slice_indices(slice, self.len())?;
                 if indices.step == 1 {
                     Ok(L::from(self.slice(indices.start as u32, indices.stop as u32)).into_py(py))
                 } else {
@@ -662,6 +662,17 @@ impl PyHandle {
     }
 }
 
+/// Get the components of a Python slice object.
+///
+/// This wraps an underlying PyO3 utility but supports a `usize` length.
+fn py_slice_indices(slice: &PySlice, len: u32) -> PyResult<pyo3::types::PySliceIndices> {
+    // Depending on the size of a C `long`, this may or may not need a fallible
+    // conversion. This is a workaround to avoid either errors or Clippy
+    // warnings, depending on the platform.
+    #[allow(clippy::unnecessary_fallible_conversions)]
+    slice.indices(len.try_into().unwrap())
+}
+
 /// A list of :class:`Handle` objects, such as a sequence of path steps.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
@@ -684,7 +695,7 @@ impl StepList {
     fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.0.len().into())?;
+                let indices = py_slice_indices(slice, self.0.len())?;
                 if indices.step == 1 {
                     let list = self.0.slice(indices.start as u32, indices.stop as u32);
                     Ok(Self(list).into_py(py))

@@ -41,7 +41,7 @@ impl<'a> GAFLineParser<'a> {
 
     fn int_field(&mut self) -> Option<usize> {
         let mut pos = 0;
-        let val = parse_int(&self.buf, &mut pos);
+        let val = parse_int(self.buf, &mut pos);
         assert!(matches!(self.buf[pos], b'\t' | b'\n'));
         self.advance(pos + 1);
         val
@@ -197,7 +197,7 @@ impl ChunkEvent {
     }
 }
 
-impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
+impl Iterator for PathChunker<'_, '_> {
     type Item = ChunkEvent;
 
     fn next(&mut self) -> Option<ChunkEvent> {
@@ -282,13 +282,13 @@ fn parse_int(bytes: &[u8], index: &mut usize) -> Option<usize> {
     }
 
     if first_digit {
-        return None;
+        None
     } else {
-        return Some(num);
+        Some(num)
     }
 }
 
-impl<'a> Iterator for PathParser<'a> {
+impl Iterator for PathParser<'_> {
     type Item = (usize, bool);
 
     fn next(&mut self) -> Option<(usize, bool)> {
@@ -307,7 +307,7 @@ impl<'a> Iterator for PathParser<'a> {
 
         // Parse the integer segment name.
         let seg_name = parse_int(self.str, &mut self.index)?;
-        return Some((seg_name, forward));
+        Some((seg_name, forward))
     }
 }
 

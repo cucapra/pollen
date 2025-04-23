@@ -13,6 +13,7 @@ pub fn map_new_file(name: &str, size: u64) -> MmapMut {
     let file = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
+        .truncate(true)
         .create(true)
         .open(name)
         .unwrap();
