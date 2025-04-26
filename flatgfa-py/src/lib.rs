@@ -127,7 +127,7 @@ impl PyFlatGFA {
         mmap.flush()?;
         Ok(())
     }
-    
+
     #[getter]
     fn size(&self) -> usize {
         let gfa = self.0.view();
@@ -139,7 +139,7 @@ impl PyFlatGFA {
 
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
 
-        let gaf_buf = flatgfa::memfile::map_file(&gaf);
+        let gaf_buf = flatgfa::memfile::map_file(gaf);
         let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
 
         // Print the actual sequences for each chunk in the GAF.
@@ -157,19 +157,21 @@ impl PyFlatGFA {
 
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
 
-        let gaf_buf = flatgfa::memfile::map_file(&gaf);
+        let gaf_buf = flatgfa::memfile::map_file(gaf);
         let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
 
-        let r: Vec<Vec<PyChunkEvent>> = parser.into_iter().map(
-                |x| flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
-                    .into_iter()
+        let r: Vec<Vec<PyChunkEvent>> = parser
+            .into_iter()
+            .map(|x| {
+                flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
                     .map(|c| PyChunkEvent {
                         chunk_event: c.into(),
                         gfa: self.0.clone(),
                     })
                     .collect()
-            ).collect();
-            
+            })
+            .collect();
+
         r
     }
 }
@@ -187,22 +189,20 @@ impl PyChunkEvent {
     fn handle(&self) -> PyHandle {
         PyHandle {
             store: self.gfa.clone(),
-            handle: self.chunk_event.handle
+            handle: self.chunk_event.handle,
         }
     }
 
     #[getter]
     fn range(&self) -> (usize, usize) {
         match self.chunk_event.range {
-            flatgfa::ops::gaf::ChunkRange::None => { (1, 0) },
-            flatgfa::ops::gaf::ChunkRange::All => { 
+            flatgfa::ops::gaf::ChunkRange::None => (1, 0),
+            flatgfa::ops::gaf::ChunkRange::All => {
                 let inner_gfa = self.gfa.view();
                 let seg = inner_gfa.segs[self.chunk_event.handle.segment()];
                 (0, seg.len() - 1)
-             },
-            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => {
-                (start, end)
             }
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
         }
     }
 
@@ -211,13 +211,9 @@ impl PyChunkEvent {
         let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
 
         match self.chunk_event.range {
-            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => {
-                seq.slice(start..end).to_string()
-            }
-            flatgfa::ops::gaf::ChunkRange::All => {
-                seq.to_string()
-            }
-            flatgfa::ops::gaf::ChunkRange::None => {"".to_string()}
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
+            flatgfa::ops::gaf::ChunkRange::All => seq.to_string(),
+            flatgfa::ops::gaf::ChunkRange::None => "".to_string(),
         }
     }
 }
