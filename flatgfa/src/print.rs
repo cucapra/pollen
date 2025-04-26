@@ -21,9 +21,9 @@ impl fmt::Display for flatgfa::AlignOpcode {
     }
 }
 
-impl<'a> fmt::Display for flatgfa::Alignment<'a> {
+impl fmt::Display for flatgfa::Alignment<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.ops.len() == 0 {
+        if self.ops.is_empty() {
             write!(f, "0M")?;
         }
         for op in self.ops {
@@ -36,7 +36,7 @@ impl<'a> fmt::Display for flatgfa::Alignment<'a> {
 /// A wrapper for displaying components from FlatGFA.
 pub struct Display<'a, T>(pub &'a flatgfa::FlatGFA<'a>, pub T);
 
-impl<'a> fmt::Display for Display<'a, flatgfa::Handle> {
+impl fmt::Display for Display<'_, flatgfa::Handle> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let seg = self.0.get_handle_seg(self.1);
         let name = seg.name;
@@ -44,9 +44,9 @@ impl<'a> fmt::Display for Display<'a, flatgfa::Handle> {
     }
 }
 
-impl<'a> fmt::Display for Display<'a, &flatgfa::Path> {
+impl fmt::Display for Display<'_, &flatgfa::Path> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "P\t{}\t", self.0.get_path_name(&self.1))?;
+        write!(f, "P\t{}\t", self.0.get_path_name(self.1))?;
         let steps = &self.0.steps[self.1.steps];
         write!(f, "{}", Display(self.0, steps[0]))?;
         for step in steps[1..].iter() {
@@ -66,7 +66,7 @@ impl<'a> fmt::Display for Display<'a, &flatgfa::Path> {
     }
 }
 
-impl<'a> fmt::Display for Display<'a, &flatgfa::Link> {
+impl fmt::Display for Display<'_, &flatgfa::Link> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let from = self.1.from;
         let from_name = self.0.get_handle_seg(from).name;
@@ -84,7 +84,7 @@ impl<'a> fmt::Display for Display<'a, &flatgfa::Link> {
     }
 }
 
-impl<'a> fmt::Display for Display<'a, &flatgfa::Segment> {
+impl fmt::Display for Display<'_, &flatgfa::Segment> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = self.1.name;
         write!(f, "S\t{}\t{}", name, self.0.get_seq(self.1))?;
