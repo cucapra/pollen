@@ -1,7 +1,7 @@
 import argparse
 import sys
 import io
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List
 from collections.abc import Callable
 import mygfa
 
