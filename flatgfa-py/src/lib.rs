@@ -1,3 +1,4 @@
+use flatgfa::ops::gaf::ChunkEvent;
 use flatgfa::pool::Id;
 use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore};
 use pyo3::exceptions::PyIndexError;
@@ -125,6 +126,95 @@ impl PyFlatGFA {
         file::dump(&gfa, &mut mmap);
         mmap.flush()?;
         Ok(())
+    }
+
+    #[getter]
+    fn size(&self) -> usize {
+        let gfa = self.0.view();
+        file::size(&gfa)
+    }
+
+    fn print_gaf_lookup(&self, gaf: &str) {
+        let gfa = self.0.view();
+
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
+
+        let gaf_buf = flatgfa::memfile::map_file(gaf);
+        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
+
+        // Print the actual sequences for each chunk in the GAF.
+        for read in parser {
+            print!("{}\t", read.name);
+            for event in flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, read) {
+                event.print_seq(&gfa);
+            }
+            println!();
+        }
+    }
+
+    fn all_reads(&self, gaf: &str) -> Vec<Vec<PyChunkEvent>> {
+        let gfa = self.0.view();
+
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
+
+        let gaf_buf = flatgfa::memfile::map_file(gaf);
+        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
+
+        let r: Vec<Vec<PyChunkEvent>> = parser
+            .into_iter()
+            .map(|x| {
+                flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
+                    .map(|c| PyChunkEvent {
+                        chunk_event: c.into(),
+                        gfa: self.0.clone(),
+                    })
+                    .collect()
+            })
+            .collect();
+
+        r
+    }
+}
+
+#[pyclass(frozen)]
+#[pyo3(name = "ChunkEvent", module = "flatgfa")]
+struct PyChunkEvent {
+    chunk_event: Arc<ChunkEvent>,
+    gfa: Arc<Store>,
+}
+
+#[pymethods]
+impl PyChunkEvent {
+    #[getter]
+    fn handle(&self) -> PyHandle {
+        PyHandle {
+            store: self.gfa.clone(),
+            handle: self.chunk_event.handle,
+        }
+    }
+
+    #[getter]
+    fn range(&self) -> (usize, usize) {
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::None => (1, 0),
+            flatgfa::ops::gaf::ChunkRange::All => {
+                let inner_gfa = self.gfa.view();
+                let seg = inner_gfa.segs[self.chunk_event.handle.segment()];
+                (0, seg.len() - 1)
+            }
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
+        }
+    }
+
+    fn sequence(&self) -> String {
+        let inner_gfa = self.gfa.view();
+        let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
+
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
+            flatgfa::ops::gaf::ChunkRange::All => seq.to_string(),
+            flatgfa::ops::gaf::ChunkRange::None => "".to_string(),
+        }
     }
 }
 
@@ -694,5 +784,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PathList>()?;
     m.add_class::<LinkList>()?;
     m.add_class::<StepList>()?;
+    m.add_class::<PyChunkEvent>()?;
     Ok(())
 }
