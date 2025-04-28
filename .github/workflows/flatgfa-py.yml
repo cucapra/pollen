@@ -45,6 +45,8 @@ jobs:
       - name: pytest
         if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
         shell: bash
+        env:
+          RUST_BACKTRACE: 1
         run: |
           set -e
           pip install ./dist/flatgfa*.whl
@@ -78,6 +80,8 @@ jobs:
       - name: pytest
         if: ${{ !startsWith(matrix.platform.target, 'aarch64') }}
         shell: bash
+        env:
+          RUST_BACKTRACE: 1
         run: |
           set -e
           pip install ./dist/flatgfa*.whl
@@ -112,6 +116,8 @@ jobs:
       - name: pytest
         if: ${{ startsWith(matrix.platform.target, 'aarch64') }}
         shell: bash
+        env:
+          RUST_BACKTRACE: 1
         run: |
           set -e
           pip install ./dist/flatgfa*.whl
