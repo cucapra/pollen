@@ -3,12 +3,12 @@ import flatgfa
 import pathlib
 
 TEST_DIR = pathlib.Path(__file__).parent
-TEST_GFA = str(TEST_DIR / "tiny.gfa")
+TEST_GFA = TEST_DIR / "tiny.gfa"
 
 
 @pytest.fixture
 def gfa():
-    return flatgfa.parse(TEST_GFA)
+    return flatgfa.parse_bytes(TEST_GFA.read_bytes())
 
 
 def test_segs(gfa):
