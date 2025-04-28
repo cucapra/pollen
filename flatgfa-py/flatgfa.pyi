@@ -64,7 +64,7 @@ class LinkList:
 
 class ChunkEvent:
     handle: Handle
-    range: list[int]
+    range: tuple[int, int]
     def __sequence__(self) -> None: ...
 
 class GAFLine:

@@ -480,13 +480,15 @@ impl PyChunkEvent {
     }
 
     #[getter]
-    fn range(&self) -> String {
+    fn range(&self) -> (usize, usize) {
         match self.chunk_event.range {
-            flatgfa::ops::gaf::ChunkRange::None => "".to_string(),
-            flatgfa::ops::gaf::ChunkRange::All => "all".to_string(),
-            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => {
-                format!("[{}, {})", start, end)
+            flatgfa::ops::gaf::ChunkRange::None => (1, 0),
+            flatgfa::ops::gaf::ChunkRange::All => {
+                let inner_gfa = self.store.view();
+                let seg = inner_gfa.segs[self.chunk_event.handle.segment()];
+                (0, seg.len() - 1)
             }
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
         }
     }
     fn sequence(&self, gfa: &PyFlatGFA) -> String {
