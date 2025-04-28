@@ -34,7 +34,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --manifest-path flatgfa-py/Cargo.toml
+          args: --out dist --manifest-path flatgfa-py/Cargo.toml
           sccache: "true"
           manylinux: auto
       - name: Upload wheels
@@ -46,7 +46,7 @@ jobs:
         if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
         shell: bash
         env:
-          RUST_BACKTRACE: 1
+          RUST_BACKTRACE: full
         run: |
           set -e
           pip install ./dist/flatgfa*.whl
@@ -70,7 +70,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --manifest-path flatgfa-py/Cargo.toml
+          args: --out dist --manifest-path flatgfa-py/Cargo.toml
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -81,7 +81,7 @@ jobs:
         if: ${{ !startsWith(matrix.platform.target, 'aarch64') }}
         shell: bash
         env:
-          RUST_BACKTRACE: 1
+          RUST_BACKTRACE: full
         run: |
           set -e
           pip install ./dist/flatgfa*.whl
@@ -106,7 +106,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --manifest-path flatgfa-py/Cargo.toml
+          args: --out dist --manifest-path flatgfa-py/Cargo.toml
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -117,7 +117,7 @@ jobs:
         if: ${{ startsWith(matrix.platform.target, 'aarch64') }}
         shell: bash
         env:
-          RUST_BACKTRACE: 1
+          RUST_BACKTRACE: full
         run: |
           set -e
           pip install ./dist/flatgfa*.whl
