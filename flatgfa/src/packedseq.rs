@@ -243,7 +243,7 @@ fn test_vec_push() {
 #[test]
 fn test_slice() {
     let span = 1..4;
-    let mut vec = PackedVec::create(vec![
+    let vec = PackedVec::create(vec![
         Nucleotide::A,
         Nucleotide::C,
         Nucleotide::G,
@@ -251,7 +251,7 @@ fn test_slice() {
         Nucleotide::A,
         Nucleotide::G,
     ]);
-    let mut slice = create_slice(&vec, span);
+    let slice = create_slice(&vec, span);
     let arr = get_slice_seq(slice);
     assert_eq!(arr[0], Nucleotide::C);
     assert_eq!(arr[1], Nucleotide::G);
@@ -261,7 +261,7 @@ fn test_slice() {
 
 #[test]
 fn test_display_even() {
-    let mut vec = PackedVec::create(vec![
+    let vec = PackedVec::create(vec![
         Nucleotide::C,
         Nucleotide::A,
         Nucleotide::T,
@@ -274,13 +274,13 @@ fn test_display_even() {
 
 #[test]
 fn test_display_single() {
-    let mut vec = PackedVec::create(vec![Nucleotide::T.into()]);
+    let vec = PackedVec::create(vec![Nucleotide::T.into()]);
     assert_eq!("[T]", vec.to_string());
 }
 
 #[test]
 fn test_display_odd() {
-    let mut vec = PackedVec::create(vec![
+    let vec = PackedVec::create(vec![
         Nucleotide::C,
         Nucleotide::A,
         Nucleotide::T,
