@@ -66,8 +66,8 @@ impl PackedVec {
     /// Returns a compressed PackedVec given an uncompressed vector `arr`
     pub fn create(arr: Vec<Nucleotide>) -> Self {
         let mut new_vec = PackedVec::new();
-        for i in 0..arr.len() {
-            new_vec.push(arr[i]);
+        for item in arr {
+            new_vec.push(item);
         }
         new_vec
     }
@@ -81,7 +81,7 @@ impl PackedVec {
             self.high_nibble_end = false;
         } else {
             let last_index = self.data.len() - 1;
-            self.data[last_index] = (value << 4) | self.data[last_index];
+            self.data[last_index] |= value << 4;
             self.high_nibble_end = true;
         }
     }
@@ -92,6 +92,10 @@ impl PackedVec {
         } else {
             self.data.len() * 2 - 1
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
     /// Returns the element of this PackedVec at index `index`
@@ -117,7 +121,7 @@ impl PackedVec {
     }
 
     pub fn get_range(&self, span: std::ops::Range<usize>) -> Vec<Nucleotide> {
-        let mut arr: Vec<Nucleotide> = Vec::with_capacity((span.end - span.start).into());
+        let mut arr: Vec<Nucleotide> = Vec::with_capacity(span.end - span.start);
         for i in span.start..=span.end {
             arr.push(self.get(i));
         }
@@ -140,14 +144,13 @@ impl fmt::Display for PackedVec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         let mut i = 0;
-        for item in PackedVecIterator::new(&self) {
+        for item in PackedVecIterator::new(self) {
             if i == 0 {
                 i = 1;
             } else {
-                write!(f, ", ");
+                write!(f, ", ")?;
             }
-            let n: Nucleotide = item.into();
-            let c: char = n.into();
+            let c: char = item.into();
             write!(f, "{}", c)?;
         }
         write!(f, "]")
@@ -168,7 +171,7 @@ impl<'a> PackedVecIterator<'a> {
     }
 }
 
-impl<'a> Iterator for PackedVecIterator<'a> {
+impl Iterator for PackedVecIterator<'_> {
     type Item = Nucleotide;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -192,7 +195,7 @@ pub struct PackedSlice<'a> {
 
 /// Returns a PackedSlice given a compressed PackVec `vec` that acts as a reference
 /// to the section of `vec` contained within the index bounds of Span `s`.
-pub fn create_slice<'a>(vec: &'a PackedVec, s: std::ops::Range<usize>) -> PackedSlice<'a> {
+pub fn create_slice(vec: &PackedVec, s: std::ops::Range<usize>) -> PackedSlice<'_> {
     PackedSlice {
         vec_ref: vec,
         span: s,
@@ -200,7 +203,7 @@ pub fn create_slice<'a>(vec: &'a PackedVec, s: std::ops::Range<usize>) -> Packed
 }
 
 /// Returns a vector containing the base pairs referenced by `slice`
-pub fn get_slice_seq<'a>(slice: PackedSlice<'a>) -> Vec<Nucleotide> {
+pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
     slice.vec_ref.get_range(slice.span)
 }
 
