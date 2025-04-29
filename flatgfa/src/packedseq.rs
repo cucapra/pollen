@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-enum Nucleotide {
+pub enum Nucleotide {
     A,
     C,
     T,
@@ -45,7 +45,7 @@ impl From<Nucleotide> for char {
 /// A compressed vector-like structure for storing nucleotide sequences
 ///     - Two base pairs are stored per byte
 ///
-struct PackedVec {
+pub struct PackedVec {
     /// A vector that stores a compressed encoding of this PackedVec's sequence
     data: Vec<u8>,
 
@@ -64,7 +64,7 @@ impl PackedVec {
     }
 
     /// Returns a compressed PackedVec given an uncompressed vector `arr`
-    fn create(arr: Vec<Nucleotide>) -> Self {
+    pub fn create(arr: Vec<Nucleotide>) -> Self {
         let mut new_vec = PackedVec::new();
         for i in 0..arr.len() {
             new_vec.push(arr[i]);
@@ -105,7 +105,7 @@ impl PackedVec {
     }
 
     /// Sets the element of this PackedVec at index `index` to `elem`
-    fn set(&mut self, index: usize, input: Nucleotide) {
+    pub fn set(&mut self, index: usize, input: Nucleotide) {
         let elem: u8 = input.into();
         let i = index / 2;
         if index % 2 == 1 {
@@ -116,7 +116,7 @@ impl PackedVec {
         }
     }
 
-    fn get_range(&self, span: std::ops::Range<usize>) -> Vec<Nucleotide> {
+    pub fn get_range(&self, span: std::ops::Range<usize>) -> Vec<Nucleotide> {
         let mut arr: Vec<Nucleotide> = Vec::with_capacity((span.end - span.start).into());
         for i in span.start..=span.end {
             arr.push(self.get(i));
@@ -125,7 +125,7 @@ impl PackedVec {
     }
 
     /// Returns a uncompressed vector that contains the same sequence as this PackedVec
-    fn get_elements(&self) -> Vec<Nucleotide> {
+    pub fn get_elements(&self) -> Vec<Nucleotide> {
         return self.get_range(0..(self.len() - 1));
     }
 }
@@ -176,7 +176,7 @@ impl<'a> Iterator for PackedVecIterator<'a> {
 }
 
 /// A reference to a subsection of a nucleotide sequence stored in a PackedVec
-struct PackedSlice<'a> {
+pub struct PackedSlice<'a> {
     /// The underlying vector that stores the sequence referenced by this slice
     vec_ref: &'a PackedVec,
 
@@ -186,7 +186,7 @@ struct PackedSlice<'a> {
 
 /// Returns a PackedSlice given a compressed PackVec `vec` that acts as a reference
 /// to the section of `vec` contained within the index bounds of Span `s`.
-fn create_slice<'a>(vec: &'a PackedVec, s: std::ops::Range<usize>) -> PackedSlice<'a> {
+pub fn create_slice<'a>(vec: &'a PackedVec, s: std::ops::Range<usize>) -> PackedSlice<'a> {
     return PackedSlice {
         vec_ref: vec,
         span: s,
@@ -194,7 +194,7 @@ fn create_slice<'a>(vec: &'a PackedVec, s: std::ops::Range<usize>) -> PackedSlic
 }
 
 /// Returns a vector containing the base pairs referenced by `slice`
-fn get_slice_seq<'a>(slice: PackedSlice<'a>) -> Vec<Nucleotide> {
+pub fn get_slice_seq<'a>(slice: PackedSlice<'a>) -> Vec<Nucleotide> {
     return slice.vec_ref.get_range(slice.span);
 }
 
