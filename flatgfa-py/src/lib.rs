@@ -131,7 +131,7 @@ impl PyFlatGFA {
         mmap.flush()?;
         Ok(())
     }
-    fn load_gaf(&self, gaf: &str) -> PyGAFParser {
+    fn all_reads(&self, gaf: &str) -> PyGAFParser {
         let gfa = self.0.view();
         let name_map = flatgfa::namemap::NameMap::build(&gfa);
         let gaf_buf = Arc::new(flatgfa::memfile::map_file(gaf));
@@ -498,6 +498,29 @@ impl PyChunkEvent {
 }
 
 #[pyclass]
+struct PyGAFLineIter {
+    chunks: Vec<PyChunkEvent>,
+    index: usize,
+}
+
+#[pymethods]
+impl PyGAFLineIter {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyChunkEvent> {
+        if slf.index < slf.chunks.len() {
+            let item = slf.chunks[slf.index].clone();
+            slf.index += 1;
+            Some(item)
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
 #[pyo3(name = "GAFLine", module = "flatgfa")]
 
 struct PyGAFLine {
@@ -531,6 +554,12 @@ impl PyGAFLine {
             res = res + "\n" + &part.chunk_event.get_seg(&gfa);
         }
         res
+    }
+    fn __iter__(slf: PyRef<Self>) -> PyGAFLineIter {
+        PyGAFLineIter {
+            chunks: slf.chunks.clone(),
+            index: 0,
+        }
     }
 }
 struct OwnedGAFParser {
