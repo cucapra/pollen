@@ -10,5 +10,3 @@ for lines in gaf_parser:
     for element in lines:
         print(element.handle)
         print(element.range)
-
-
