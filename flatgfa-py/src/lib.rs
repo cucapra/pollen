@@ -550,7 +550,7 @@ impl PyGAFLine {
     fn segment_ranges(&self) -> String {
         let gfa = self.store.view();
         let mut res: String = "".to_string();
-        for part in self.chunks.clone() {
+        for part in self.chunks.iter() {
             res = res + "\n" + &part.chunk_event.get_seg(&gfa);
         }
         res
