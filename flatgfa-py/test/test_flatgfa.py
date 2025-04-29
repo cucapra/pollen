@@ -1,23 +1,14 @@
 import pytest
 import flatgfa
+import pathlib
 
-TINY_GFA = b"""H	VN:Z:1.0
-S	1	CAAATAAG
-S	2	AAATTTTCTGGAGTTCTAT
-S	3	TTG
-S	4	CCAACTCTCTG
-P	one	1+,2+,4-	*
-P	two	1+,2+,3+,4-	*
-L	1	+	2	+	0M
-L	2	+	4	-	0M
-L	2	+	3	+	0M
-L	3	+	4	-	0M
-"""
+TEST_DIR = pathlib.Path(__file__).parent
+TEST_GFA = TEST_DIR / "tiny.gfa"
 
 
 @pytest.fixture
 def gfa():
-    return flatgfa.parse_bytes(TINY_GFA)
+    return flatgfa.parse_bytes(TEST_GFA.read_bytes())
 
 
 def test_segs(gfa):
@@ -97,16 +88,20 @@ def test_links(gfa):
 
 
 def test_gfa_str(gfa):
+    with open(TEST_GFA, "r") as f:
+        orig_gfa = f.read()
+
     # You can serialize a graph as GFA text.
-    assert str(gfa) == TINY_GFA.decode()
+    assert str(gfa) == orig_gfa
 
 
 def test_read_write_gfa(gfa, tmp_path):
     # You can write FlatGFA objects as GFA text files.
     gfa_path = str(tmp_path / "tiny.gfa")
     gfa.write_gfa(gfa_path)
-    with open(gfa_path, "rb") as f:
-        assert f.read() == TINY_GFA
+    with open(TEST_GFA, "rb") as orig_f:
+        with open(gfa_path, "rb") as written_f:
+            assert orig_f.read() == written_f.read()
 
     # You can also parse GFA text files from the filesystem.
     new_gfa = flatgfa.parse(gfa_path)
