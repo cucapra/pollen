@@ -491,8 +491,8 @@ impl PyChunkEvent {
             flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
         }
     }
-    fn sequence(&self, gfa: &PyFlatGFA) -> String {
-        let inner_gfa = gfa.0.view();
+    fn sequence(&self) -> String {
+        let inner_gfa = self.store.view();
         self.chunk_event.get_seq_string(&inner_gfa)
     }
 }
