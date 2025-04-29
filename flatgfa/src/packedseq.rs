@@ -69,7 +69,7 @@ impl PackedVec {
         for i in 0..arr.len() {
             new_vec.push(arr[i]);
         }
-        return new_vec;
+        new_vec
     }
 
     /// Appends `input` to the end of this PackedVec
@@ -88,9 +88,9 @@ impl PackedVec {
 
     pub fn len(&self) -> usize {
         if self.high_nibble_end {
-            return self.data.len() * 2;
+            self.data.len() * 2
         } else {
-            return self.data.len() * 2 - 1;
+            self.data.len() * 2 - 1
         }
     }
 
@@ -98,9 +98,9 @@ impl PackedVec {
     pub fn get(&self, index: usize) -> Nucleotide {
         let i = index / 2;
         if index % 2 == 1 {
-            return ((self.data[i] & 0b11110000u8) >> 4).into();
+            ((self.data[i] & 0b11110000u8) >> 4).into()
         } else {
-            return (self.data[i] & 0b00001111u8).into();
+            (self.data[i] & 0b00001111u8).into()
         }
     }
 
@@ -121,12 +121,18 @@ impl PackedVec {
         for i in span.start..=span.end {
             arr.push(self.get(i));
         }
-        return arr;
+        arr
     }
 
     /// Returns a uncompressed vector that contains the same sequence as this PackedVec
     pub fn get_elements(&self) -> Vec<Nucleotide> {
-        return self.get_range(0..(self.len() - 1));
+        self.get_range(0..(self.len() - 1))
+    }
+}
+
+impl Default for PackedVec {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -170,7 +176,7 @@ impl<'a> Iterator for PackedVecIterator<'a> {
             self.cur_index += 1;
             Some(self.data.get(self.cur_index - 1))
         } else {
-            return None;
+            None
         }
     }
 }
@@ -187,15 +193,15 @@ pub struct PackedSlice<'a> {
 /// Returns a PackedSlice given a compressed PackVec `vec` that acts as a reference
 /// to the section of `vec` contained within the index bounds of Span `s`.
 pub fn create_slice<'a>(vec: &'a PackedVec, s: std::ops::Range<usize>) -> PackedSlice<'a> {
-    return PackedSlice {
+    PackedSlice {
         vec_ref: vec,
         span: s,
-    };
+    }
 }
 
 /// Returns a vector containing the base pairs referenced by `slice`
 pub fn get_slice_seq<'a>(slice: PackedSlice<'a>) -> Vec<Nucleotide> {
-    return slice.vec_ref.get_range(slice.span);
+    slice.vec_ref.get_range(slice.span)
 }
 
 #[test]
