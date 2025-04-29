@@ -6,7 +6,7 @@ use std::io::BufRead;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
-#[repr(packed)]
+#[repr(C, packed)]
 pub struct BEDEntry {
     pub name: Span<u8>,
     pub start: u64,
