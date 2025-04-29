@@ -1,3 +1,5 @@
+#![allow(clippy::repr_packed_without_abi)]
+
 use std::ops::{Add, Index, Sub};
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
@@ -195,7 +197,7 @@ impl<T> Default for HeapStore<T> {
 #[repr(transparent)]
 pub struct FixedStore<'a, T>(SliceVec<'a, T>);
 
-impl<'a, T: Clone> Store<T> for FixedStore<'a, T> {
+impl<T: Clone> Store<T> for FixedStore<'_, T> {
     fn as_ref(&self) -> Pool<T> {
         Pool(&self.0)
     }
@@ -223,7 +225,7 @@ impl<'a, T: Clone> Store<T> for FixedStore<'a, T> {
     }
 }
 
-impl<'a, T> FixedStore<'a, T> {
+impl<T> FixedStore<'_, T> {
     pub fn capacity(&self) -> usize {
         self.0.capacity()
     }

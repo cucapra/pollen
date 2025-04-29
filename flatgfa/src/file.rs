@@ -1,3 +1,5 @@
+#![allow(clippy::repr_packed_without_abi)]
+
 use crate::flatgfa;
 use crate::pool::{FixedStore, Pool, Span, Store};
 use std::mem::{size_of, size_of_val};

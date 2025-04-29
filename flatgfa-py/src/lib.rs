@@ -1,3 +1,4 @@
+use flatgfa::ops::gaf::ChunkEvent;
 use flatgfa::pool::Id;
 use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore};
 use pyo3::exceptions::PyIndexError;
@@ -126,6 +127,95 @@ impl PyFlatGFA {
         mmap.flush()?;
         Ok(())
     }
+
+    #[getter]
+    fn size(&self) -> usize {
+        let gfa = self.0.view();
+        file::size(&gfa)
+    }
+
+    fn print_gaf_lookup(&self, gaf: &str) {
+        let gfa = self.0.view();
+
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
+
+        let gaf_buf = flatgfa::memfile::map_file(gaf);
+        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
+
+        // Print the actual sequences for each chunk in the GAF.
+        for read in parser {
+            print!("{}\t", read.name);
+            for event in flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, read) {
+                event.print_seq(&gfa);
+            }
+            println!();
+        }
+    }
+
+    fn all_reads(&self, gaf: &str) -> Vec<Vec<PyChunkEvent>> {
+        let gfa = self.0.view();
+
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
+
+        let gaf_buf = flatgfa::memfile::map_file(gaf);
+        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
+
+        let r: Vec<Vec<PyChunkEvent>> = parser
+            .into_iter()
+            .map(|x| {
+                flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
+                    .map(|c| PyChunkEvent {
+                        chunk_event: c.into(),
+                        gfa: self.0.clone(),
+                    })
+                    .collect()
+            })
+            .collect();
+
+        r
+    }
+}
+
+#[pyclass(frozen)]
+#[pyo3(name = "ChunkEvent", module = "flatgfa")]
+struct PyChunkEvent {
+    chunk_event: Arc<ChunkEvent>,
+    gfa: Arc<Store>,
+}
+
+#[pymethods]
+impl PyChunkEvent {
+    #[getter]
+    fn handle(&self) -> PyHandle {
+        PyHandle {
+            store: self.gfa.clone(),
+            handle: self.chunk_event.handle,
+        }
+    }
+
+    #[getter]
+    fn range(&self) -> (usize, usize) {
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::None => (1, 0),
+            flatgfa::ops::gaf::ChunkRange::All => {
+                let inner_gfa = self.gfa.view();
+                let seg = inner_gfa.segs[self.chunk_event.handle.segment()];
+                (0, seg.len() - 1)
+            }
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
+        }
+    }
+
+    fn sequence(&self) -> String {
+        let inner_gfa = self.gfa.view();
+        let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
+
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
+            flatgfa::ops::gaf::ChunkRange::All => seq.to_string(),
+            flatgfa::ops::gaf::ChunkRange::None => "".to_string(),
+        }
+    }
 }
 
 /// A reference to a list of *any* type within a FlatGFA.
@@ -169,7 +259,7 @@ impl ListRef {
     {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.len().try_into().unwrap())?;
+                let indices = py_slice_indices(slice, self.len())?;
                 if indices.step == 1 {
                     Ok(L::from(self.slice(indices.start as u32, indices.stop as u32)).into_py(py))
                 } else {
@@ -525,6 +615,17 @@ impl PyHandle {
     }
 }
 
+/// Get the components of a Python slice object.
+///
+/// This wraps an underlying PyO3 utility but supports a `usize` length.
+fn py_slice_indices(slice: &PySlice, len: u32) -> PyResult<pyo3::types::PySliceIndices> {
+    // Depending on the size of a C `long`, this may or may not need a fallible
+    // conversion. This is a workaround to avoid either errors or Clippy
+    // warnings, depending on the platform.
+    #[allow(clippy::unnecessary_fallible_conversions)]
+    slice.indices(len.try_into().unwrap())
+}
+
 /// A list of :class:`Handle` objects, such as a sequence of path steps.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
@@ -547,7 +648,7 @@ impl StepList {
     fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
         match arg {
             SliceOrInt::Slice(slice) => {
-                let indices = slice.indices(self.0.len().try_into().unwrap())?;
+                let indices = py_slice_indices(slice, self.0.len())?;
                 if indices.step == 1 {
                     let list = self.0.slice(indices.start as u32, indices.stop as u32);
                     Ok(Self(list).into_py(py))
@@ -683,5 +784,6 @@ fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PathList>()?;
     m.add_class::<LinkList>()?;
     m.add_class::<StepList>()?;
+    m.add_class::<PyChunkEvent>()?;
     Ok(())
 }

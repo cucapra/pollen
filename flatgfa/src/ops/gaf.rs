@@ -42,7 +42,7 @@ impl<'a> GAFLineParser<'a> {
 
     fn int_field(&mut self) -> Option<usize> {
         let mut pos = 0;
-        let val = parse_int(&self.buf, &mut pos);
+        let val = parse_int(self.buf, &mut pos);
         assert!(matches!(self.buf[pos], b'\t' | b'\n'));
         self.advance(pos + 1);
         val
@@ -137,12 +137,12 @@ impl<'a, 'b> PathChunker<'a, 'b> {
 #[derive(Debug)]
 pub struct ChunkEvent {
     index: usize,
-    handle: flatgfa::Handle,
-    range: ChunkRange,
+    pub handle: flatgfa::Handle,
+    pub range: ChunkRange,
 }
 
 #[derive(Debug)]
-enum ChunkRange {
+pub enum ChunkRange {
     None,
     All,
     Partial(usize, usize),
@@ -193,7 +193,7 @@ impl ChunkEvent {
     }
 }
 
-impl<'a, 'b> Iterator for PathChunker<'a, 'b> {
+impl Iterator for PathChunker<'_, '_> {
     type Item = ChunkEvent;
 
     fn next(&mut self) -> Option<ChunkEvent> {
@@ -278,13 +278,13 @@ fn parse_int(bytes: &[u8], index: &mut usize) -> Option<usize> {
     }
 
     if first_digit {
-        return None;
+        None
     } else {
-        return Some(num);
+        Some(num)
     }
 }
 
-impl<'a> Iterator for PathParser<'a> {
+impl Iterator for PathParser<'_> {
     type Item = (usize, bool);
 
     fn next(&mut self) -> Option<(usize, bool)> {
@@ -303,7 +303,7 @@ impl<'a> Iterator for PathParser<'a> {
 
         // Parse the integer segment name.
         let seg_name = parse_int(self.str, &mut self.index)?;
-        return Some((seg_name, forward));
+        Some((seg_name, forward))
     }
 }
 
