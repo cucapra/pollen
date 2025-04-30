@@ -2,9 +2,9 @@ use crate::memfile::MemchrSplit;
 use crate::pool::{FixedStore, HeapStore, Id, Pool, Span, Store};
 use atoi::FromRadix10;
 use bstr::BStr;
-use std::io::BufRead;
 use zerocopy::{AsBytes, FromBytes, FromZeroes};
 
+/// A single interval from a BED file.
 #[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
 #[repr(C, packed)]
 pub struct BEDEntry {
@@ -13,36 +13,37 @@ pub struct BEDEntry {
     pub end: u64,
 }
 
+/// A flat representation of an entire BED file, i.e., a list of named intervals.
 pub struct FlatBED<'a> {
     pub name_data: Pool<'a, u8>,
     pub entries: Pool<'a, BEDEntry>,
 }
 
 impl FlatBED<'_> {
-    /// Get the base-pair sequence for a segment.
+    /// Get the number of entries in this BED file
     pub fn get_num_entries(&self) -> usize {
         self.entries.len()
     }
 
+    /// Get the name of a specific entry as a string
     pub fn get_name_of_entry(&self, entry: &BEDEntry) -> &BStr {
         self.name_data[entry.name].as_ref()
     }
 
+    /// Get a list of all BED entries from this file that intersect with `entry`.
+    /// `bed` is the the file that `entry` is located in, which need not be self.
     pub fn get_intersects(&self, bed: &FlatBED, entry: &BEDEntry) -> Vec<BEDEntry> {
         self.entries
-            .items()
+            .all()
+            .into_iter()
             .map(|x| BEDEntry {
-                name: x.1.name,
-                start: if x.1.start < entry.start {
+                name: x.name,
+                start: if x.start < entry.start {
                     entry.start
                 } else {
-                    x.1.start
+                    x.start
                 },
-                end: if entry.end < x.1.end {
-                    entry.end
-                } else {
-                    x.1.end
-                },
+                end: if entry.end < x.end { entry.end } else { x.end },
             })
             .filter(|x| {
                 bed.get_name_of_entry(entry).eq(self.get_name_of_entry(x)) && x.end > x.start
@@ -120,25 +121,7 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
         Self { flat: builder }
     }
 
-    /// Parse a GFA text file from an I/O stream.
-    pub fn parse_stream<R: BufRead>(mut self, stream: R) -> BEDStore<'a, P> {
-        for line in stream.split(b'\n') {
-            let line = line.unwrap();
-
-            let first_tab_index = line.iter().position(|&x| x == b'\t').unwrap();
-            let name_slice = &line[0..first_tab_index];
-
-            let rest_of_vec = &line[first_tab_index + 1..];
-            let (start_num, rest) = parse_num(rest_of_vec).unwrap();
-            let (end_num, _) = parse_num(&rest[1..]).unwrap();
-
-            self.flat.add_entry(name_slice, start_num, end_num);
-        }
-
-        self.flat
-    }
-
-    /// Parse a GFA text file from an in-memory buffer.
+    /// Parse a BED text file from an in-memory buffer.
     pub fn parse_mem(mut self, buf: &[u8]) -> BEDStore<'a, P> {
         for line in MemchrSplit::new(b'\n', buf) {
             let first_tab_index = line.iter().position(|&x| x == b'\t').unwrap();

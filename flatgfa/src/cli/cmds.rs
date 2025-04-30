@@ -317,6 +317,7 @@ pub struct BEDIntersect {
     second_bed_file_path: String,
 }
 
+/// find intersecting intervals between two BED files
 pub fn bed_intersect(args: BEDIntersect) {
     let bed_file_path = args.first_bed_file_path;
     let bed_file_path2 = args.second_bed_file_path;
