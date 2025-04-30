@@ -35,7 +35,7 @@ impl FlatBED<'_> {
     pub fn get_intersects(&self, bed: &FlatBED, entry: &BEDEntry) -> Vec<BEDEntry> {
         self.entries
             .all()
-            .into_iter()
+            .iter()
             .map(|x| BEDEntry {
                 name: x.name,
                 start: if x.start < entry.start {
