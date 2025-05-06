@@ -1,7 +1,11 @@
+import pathlib
 import flatgfa
 
-graph = flatgfa.parse("name-of-GFA-file")
-gaf = "name-of-GAF-file"
+TEST_DIR = pathlib.Path(__file__).parent
+TEST_GFA = TEST_DIR / "../test/tiny.gfa"
+TEST_GAF = TEST_DIR / "../test/tiny.gaf"
+graph = flatgfa.parse(str(TEST_GFA))
+gaf = str(TEST_GAF)
 gaf_parser = graph.all_reads(gaf)
 for lines in gaf_parser:
     print(lines.name)
