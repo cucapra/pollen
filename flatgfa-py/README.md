@@ -22,6 +22,16 @@ Or run the tests:
 
     $ uv run --package flatgfa pytest
 
+During development, you'll want to rebuild the module using [Maturin][].
+One way to do it is to install the necessary command-line tools into the virtualenv, like this:
+
+    $ . .venv/bin/activate
+    $ cd flatgfa-py
+    $ uv pip install maturin pip
+    $ maturin develop
+
+Then, just type `maturin develop` and `pytest` while you work.
+
 [maturin]: https://www.maturin.rs
 [flatgfa-py-docs]: https://cucapra.github.io/pollen/flatgfa/
 [flatgfa]: https://github.com/cucapra/pollen/tree/main/flatgfa
