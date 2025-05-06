@@ -166,9 +166,7 @@ impl PyFlatGFA {
             println!();
         }
     }
-
 }
-
 
 /// A reference to a list of *any* type within a FlatGFA.
 ///
