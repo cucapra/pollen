@@ -36,6 +36,9 @@ impl FlatBED<'_> {
         self.entries
             .all()
             .iter()
+            // To be compatible with bedtools, entries that partially overlap only
+            // report the overlapping portion, so we need to construct new entries
+            // here to only contain the overlap
             .map(|x| BEDEntry {
                 name: x.name,
                 start: if x.start < entry.start {
