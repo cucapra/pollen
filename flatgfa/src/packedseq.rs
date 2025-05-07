@@ -1,4 +1,11 @@
+use crate::file::*;
+use crate::flatgfa;
+use crate::pool::*;
 use std::fmt;
+
+use zerocopy::*;
+
+const MAGIC_NUMBER: u64 = 0x0000_0000;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Nucleotide {
@@ -45,8 +52,8 @@ impl From<Nucleotide> for char {
 /// A compressed vector-like structure for storing nucleotide sequences
 ///     - Two base pairs are stored per byte
 ///
-pub struct PackedVec {
-    /// A vector that stores a compressed encoding of this PackedVec's sequence
+pub struct PackedSeqStore {
+    /// A vector that stores a compressed encoding of this PackedSeqStore's sequence
     data: Vec<u8>,
 
     /// True if the final base pair in the sequence is stored at a
@@ -54,25 +61,63 @@ pub struct PackedVec {
     high_nibble_end: bool,
 }
 
-impl PackedVec {
-    /// Creates a new empty PackedVec
+#[derive(FromBytes, AsBytes, FromZeroes)]
+#[repr(packed)]
+pub struct PackedSeqView<'a> {
+    data: Pool<'a, u8>,
+
+    /// True if the final base pair in the sequence is stored at a
+    ///                   high nibble
+    high_nibble_end: bool,
+}
+
+#[derive(FromBytes, FromZeroes, AsBytes, Debug)]
+#[repr(packed)]
+pub struct PackedToc {
+    magic: u64,
+    size: Size,
+}
+
+fn read_packed_toc(data: &[u8]) -> (&PackedToc, &[u8]) {
+    let toc = PackedToc::ref_from_prefix(data).unwrap();
+    let rest = &data[size_of::<PackedToc>()..];
+    let magic = toc.magic;
+    assert_eq!(magic, MAGIC_NUMBER);
+    (toc, rest)
+}
+
+pub fn view(data: &[u8]) -> PackedSeqView {
+    let (toc, rest) = read_packed_toc(data);
+
+    let data = slice_prefix(rest, toc.size);
+
+    let high_nibble_end = slice_prefix(rest, 1);
+
+    PackedSeqView {
+        data: data.into(),
+        high_nibble_end: high_nibble_end.into(),
+    }
+}
+
+impl PackedSeqStore {
+    /// Creates a new empty PackedSeqStore
     pub fn new() -> Self {
-        PackedVec {
+        PackedSeqStore {
             data: Vec::new(),
             high_nibble_end: true,
         }
     }
 
-    /// Returns a compressed PackedVec given an uncompressed vector `arr`
+    /// Returns a compressed PackedSeqStore given an uncompressed vector `arr`
     pub fn create(arr: Vec<Nucleotide>) -> Self {
-        let mut new_vec = PackedVec::new();
+        let mut new_vec = PackedSeqStore::new();
         for item in arr {
             new_vec.push(item);
         }
         new_vec
     }
 
-    /// Appends `input` to the end of this PackedVec
+    /// Appends `input` to the end of this PackedSeqStore
     pub fn push(&mut self, input: Nucleotide) {
         let value = input.into();
         assert!(value <= 0xF);
@@ -98,7 +143,7 @@ impl PackedVec {
         self.data.is_empty()
     }
 
-    /// Returns the element of this PackedVec at index `index`
+    /// Returns the element of this PackedSeqStore at index `index`
     pub fn get(&self, index: usize) -> Nucleotide {
         let i = index / 2;
         if index % 2 == 1 {
@@ -108,7 +153,7 @@ impl PackedVec {
         }
     }
 
-    /// Sets the element of this PackedVec at index `index` to `elem`
+    /// Sets the element of this PackedSeqStore at index `index` to `elem`
     pub fn set(&mut self, index: usize, input: Nucleotide) {
         let elem: u8 = input.into();
         let i = index / 2;
@@ -128,23 +173,23 @@ impl PackedVec {
         arr
     }
 
-    /// Returns a uncompressed vector that contains the same sequence as this PackedVec
+    /// Returns a uncompressed vector that contains the same sequence as this PackedSeqStore
     pub fn get_elements(&self) -> Vec<Nucleotide> {
         self.get_range(0..(self.len() - 1))
     }
 }
 
-impl Default for PackedVec {
+impl Default for PackedSeqStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl fmt::Display for PackedVec {
+impl fmt::Display for PackedSeqStore {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         let mut i = 0;
-        for item in PackedVecIterator::new(self) {
+        for item in PackedSeqStoreIterator::new(self) {
             if i == 0 {
                 i = 1;
             } else {
@@ -157,13 +202,13 @@ impl fmt::Display for PackedVec {
     }
 }
 
-struct PackedVecIterator<'a> {
-    data: &'a PackedVec,
+struct PackedSeqStoreIterator<'a> {
+    data: &'a PackedSeqStore,
     cur_index: usize,
 }
 
-impl<'a> PackedVecIterator<'a> {
-    pub fn new(vec: &'a PackedVec) -> Self {
+impl<'a> PackedSeqStoreIterator<'a> {
+    pub fn new(vec: &'a PackedSeqStore) -> Self {
         Self {
             data: vec,
             cur_index: 0,
@@ -171,7 +216,7 @@ impl<'a> PackedVecIterator<'a> {
     }
 }
 
-impl Iterator for PackedVecIterator<'_> {
+impl Iterator for PackedSeqStoreIterator<'_> {
     type Item = Nucleotide;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -184,10 +229,10 @@ impl Iterator for PackedVecIterator<'_> {
     }
 }
 
-/// A reference to a subsection of a nucleotide sequence stored in a PackedVec
+/// A reference to a subsection of a nucleotide sequence stored in a PackedSeqStore
 pub struct PackedSlice<'a> {
     /// The underlying vector that stores the sequence referenced by this slice
-    vec_ref: &'a PackedVec,
+    vec_ref: &'a PackedSeqStore,
 
     /// The specific section of the sequence that this slice references
     span: std::ops::Range<usize>,
@@ -195,7 +240,7 @@ pub struct PackedSlice<'a> {
 
 /// Returns a PackedSlice given a compressed PackVec `vec` that acts as a reference
 /// to the section of `vec` contained within the index bounds of Span `s`.
-pub fn create_slice(vec: &PackedVec, s: std::ops::Range<usize>) -> PackedSlice<'_> {
+pub fn create_slice(vec: &PackedSeqStore, s: std::ops::Range<usize>) -> PackedSlice<'_> {
     PackedSlice {
         vec_ref: vec,
         span: s,
@@ -209,7 +254,7 @@ pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
 
 #[test]
 fn test_vec() {
-    let mut vec = PackedVec::create(vec![
+    let mut vec = PackedSeqStore::create(vec![
         Nucleotide::A,
         Nucleotide::C,
         Nucleotide::G,
@@ -228,7 +273,7 @@ fn test_vec() {
 
 #[test]
 fn test_vec_push() {
-    let mut vec = PackedVec::create(vec![
+    let mut vec = PackedSeqStore::create(vec![
         Nucleotide::A,
         Nucleotide::C,
         Nucleotide::G,
@@ -252,7 +297,7 @@ fn test_vec_push() {
 #[test]
 fn test_slice() {
     let span = 1..4;
-    let vec = PackedVec::create(vec![
+    let vec = PackedSeqStore::create(vec![
         Nucleotide::A,
         Nucleotide::C,
         Nucleotide::G,
@@ -270,7 +315,7 @@ fn test_slice() {
 
 #[test]
 fn test_display_even() {
-    let vec = PackedVec::create(vec![
+    let vec = PackedSeqStore::create(vec![
         Nucleotide::C,
         Nucleotide::A,
         Nucleotide::T,
@@ -283,13 +328,13 @@ fn test_display_even() {
 
 #[test]
 fn test_display_single() {
-    let vec = PackedVec::create(vec![Nucleotide::T.into()]);
+    let vec = PackedSeqStore::create(vec![Nucleotide::T.into()]);
     assert_eq!("[T]", vec.to_string());
 }
 
 #[test]
 fn test_display_odd() {
-    let vec = PackedVec::create(vec![
+    let vec = PackedSeqStore::create(vec![
         Nucleotide::C,
         Nucleotide::A,
         Nucleotide::T,
@@ -303,7 +348,7 @@ fn test_display_odd() {
 
 #[test]
 fn test_getter_setter() {
-    let mut vec = PackedVec::create(vec![
+    let mut vec = PackedSeqStore::create(vec![
         Nucleotide::A,
         Nucleotide::A,
         Nucleotide::T,
