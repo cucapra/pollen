@@ -6,6 +6,7 @@ pub mod memfile;
 pub mod namemap;
 pub mod ops;
 pub mod packedseq;
+pub mod packedseqcrumb;
 pub mod parse;
 pub mod pool;
 pub mod print;
