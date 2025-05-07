@@ -1,3 +1,4 @@
+use crate::gfaline::parse_field;
 use crate::memfile::MemchrSplit;
 use crate::pool::{FixedStore, HeapStore, Id, Pool, Span, Store};
 use atoi::FromRadix10;
@@ -127,11 +128,8 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
     /// Parse a BED text file from an in-memory buffer.
     pub fn parse_mem(mut self, buf: &[u8]) -> BEDStore<'a, P> {
         for line in MemchrSplit::new(b'\n', buf) {
-            let first_tab_index = line.iter().position(|&x| x == b'\t').unwrap();
-            let name_slice = &line[0..first_tab_index];
-
-            let rest_of_vec = &line[first_tab_index + 1..];
-            let (start_num, rest) = parse_num(rest_of_vec).unwrap();
+            let (name_slice, rest) = parse_field(line).unwrap();
+            let (start_num, rest) = parse_num(rest).unwrap();
             let (end_num, _) = parse_num(&rest[1..]).unwrap();
 
             self.flat.add_entry(name_slice, start_num, end_num);
