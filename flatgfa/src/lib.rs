@@ -6,8 +6,8 @@ pub mod memfile;
 pub mod namemap;
 pub mod ops;
 pub mod packedseqcrumb;
+pub mod packedseqnibble;
 pub mod parse;
 pub mod pool;
 pub mod print;
-
 pub use flatgfa::*;

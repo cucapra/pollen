@@ -1,4 +1,4 @@
-use std::{fmt, usize};
+use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Nucleotide {
@@ -43,14 +43,15 @@ impl From<Nucleotide> for char {
 }
 
 /// A compressed vector-like structure for storing nucleotide sequences
-///     - Four base pairs are stored per byte
+///     - Two base pairs are stored per byte
 ///
 pub struct PackedVec {
     /// A vector that stores a compressed encoding of this PackedVec's sequence
     data: Vec<u8>,
 
-    /// The highest crumb in the final byte that contains an element of the sequence
-    crumb_end: u8,
+    /// True if the final base pair in the sequence is stored at a
+    ///                   high nibble
+    high_nibble_end: bool,
 }
 
 impl PackedVec {
@@ -58,7 +59,7 @@ impl PackedVec {
     pub fn new() -> Self {
         PackedVec {
             data: Vec::new(),
-            crumb_end: 3,
+            high_nibble_end: true,
         }
     }
 
@@ -73,20 +74,24 @@ impl PackedVec {
 
     /// Appends `input` to the end of this PackedVec
     pub fn push(&mut self, input: Nucleotide) {
-        let value: u8 = input.into();
+        let value = input.into();
         assert!(value <= 0xF);
-        if self.crumb_end == 3 {
-            self.data.push(value << 6);
-            self.crumb_end = 0;
+        if self.high_nibble_end {
+            self.data.push(value);
+            self.high_nibble_end = false;
         } else {
             let last_index = self.data.len() - 1;
-            self.data[last_index] |= value << (4 - 2 * self.crumb_end);
-            self.crumb_end += 1;
+            self.data[last_index] |= value << 4;
+            self.high_nibble_end = true;
         }
     }
 
     pub fn len(&self) -> usize {
-        self.data.len() * 4 - (3 - self.crumb_end as usize)
+        if self.high_nibble_end {
+            self.data.len() * 2
+        } else {
+            self.data.len() * 2 - 1
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -95,24 +100,23 @@ impl PackedVec {
 
     /// Returns the element of this PackedVec at index `index`
     pub fn get(&self, index: usize) -> Nucleotide {
-        let i = index / 4;
-        let j = index % 4;
-        ((self.data[i] >> (6 - 2 * j)) & 0b00000011u8).into()
+        let i = index / 2;
+        if index % 2 == 1 {
+            ((self.data[i] & 0b11110000u8) >> 4).into()
+        } else {
+            (self.data[i] & 0b00001111u8).into()
+        }
     }
 
     /// Sets the element of this PackedVec at index `index` to `elem`
     pub fn set(&mut self, index: usize, input: Nucleotide) {
         let elem: u8 = input.into();
-        let i = index / 4;
-        let j = index % 4;
-        if j == 0 {
-            self.data[i] = (0b00111111u8 & self.data[i]) | (elem << 6);
-        } else if j == 1 {
-            self.data[i] = (0b11001111u8 & self.data[i]) | (elem << 4);
-        } else if j == 2 {
-            self.data[i] = (0b11110011u8 & self.data[i]) | (elem << 2);
-        } else if j == 3 {
-            self.data[i] = (0b11111100u8 & self.data[i]) | elem;
+        let i = index / 2;
+        if index % 2 == 1 {
+            println!("i: {}", i);
+            self.data[i] = (0b00001111u8 & self.data[i]) | (elem << 4);
+        } else {
+            self.data[i] = (0b11110000u8 & self.data[i]) | elem;
         }
     }
 
