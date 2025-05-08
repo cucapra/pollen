@@ -1,16 +1,20 @@
-use flatgfa::ops::gaf::ChunkEvent;
+use flatgfa::namemap::NameMap;
+use flatgfa::ops::gaf::{ChunkEvent, GAFParser};
 use flatgfa::pool::Id;
-use flatgfa::{self, file, memfile, print, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
+use memmap::Mmap;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
 use std::io::Write;
+use std::str;
 use std::sync::Arc;
 
 /// Storage for a FlatGFA.
 ///
 /// This may be either an in-memory data structure or a memory-mapped file. It exposes a
 /// uniform interface to the FlatGFA data via `view`.
+///
 enum Store {
     Heap(Box<HeapGFAStore>),
     File(memmap::Mmap),
@@ -127,6 +131,17 @@ impl PyFlatGFA {
         mmap.flush()?;
         Ok(())
     }
+    fn all_reads(&self, gaf: &str) -> PyGAFParser {
+        let gfa = self.0.view();
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
+        let gaf_buf = Arc::new(flatgfa::memfile::map_file(gaf));
+        PyGAFParser {
+            gaf_buf: OwnedGAFParser { mmap: gaf_buf },
+            store: self.0.clone(),
+            name_map,
+            pos: 0,
+        }
+    }
 
     #[getter]
     fn size(&self) -> usize {
@@ -149,71 +164,6 @@ impl PyFlatGFA {
                 event.print_seq(&gfa);
             }
             println!();
-        }
-    }
-
-    fn all_reads(&self, gaf: &str) -> Vec<Vec<PyChunkEvent>> {
-        let gfa = self.0.view();
-
-        let name_map = flatgfa::namemap::NameMap::build(&gfa);
-
-        let gaf_buf = flatgfa::memfile::map_file(gaf);
-        let parser = flatgfa::ops::gaf::GAFParser::new(&gaf_buf);
-
-        let r: Vec<Vec<PyChunkEvent>> = parser
-            .into_iter()
-            .map(|x| {
-                flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, x)
-                    .map(|c| PyChunkEvent {
-                        chunk_event: c.into(),
-                        gfa: self.0.clone(),
-                    })
-                    .collect()
-            })
-            .collect();
-
-        r
-    }
-}
-
-#[pyclass(frozen)]
-#[pyo3(name = "ChunkEvent", module = "flatgfa")]
-struct PyChunkEvent {
-    chunk_event: Arc<ChunkEvent>,
-    gfa: Arc<Store>,
-}
-
-#[pymethods]
-impl PyChunkEvent {
-    #[getter]
-    fn handle(&self) -> PyHandle {
-        PyHandle {
-            store: self.gfa.clone(),
-            handle: self.chunk_event.handle,
-        }
-    }
-
-    #[getter]
-    fn range(&self) -> (usize, usize) {
-        match self.chunk_event.range {
-            flatgfa::ops::gaf::ChunkRange::None => (1, 0),
-            flatgfa::ops::gaf::ChunkRange::All => {
-                let inner_gfa = self.gfa.view();
-                let seg = inner_gfa.segs[self.chunk_event.handle.segment()];
-                (0, seg.len() - 1)
-            }
-            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
-        }
-    }
-
-    fn sequence(&self) -> String {
-        let inner_gfa = self.gfa.view();
-        let seq = inner_gfa.get_seq_oriented(self.chunk_event.handle);
-
-        match self.chunk_event.range {
-            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
-            flatgfa::ops::gaf::ChunkRange::All => seq.to_string(),
-            flatgfa::ops::gaf::ChunkRange::None => "".to_string(),
         }
     }
 }
@@ -535,6 +485,162 @@ impl PyPath {
     }
 }
 
+#[derive(Clone)]
+#[pyclass(frozen)]
+#[pyo3(name = "ChunkEvent", module = "flatgfa")]
+struct PyChunkEvent {
+    chunk_event: ChunkEvent,
+    store: Arc<Store>,
+}
+
+#[pymethods]
+impl PyChunkEvent {
+    #[getter]
+    fn handle(&self) -> PyHandle {
+        let handle: Handle = self.chunk_event.handle;
+        PyHandle {
+            store: (self.store.clone()),
+            handle: (handle),
+        }
+    }
+
+    #[getter]
+    fn range(&self) -> (usize, usize) {
+        match self.chunk_event.range {
+            flatgfa::ops::gaf::ChunkRange::None => (1, 0),
+            flatgfa::ops::gaf::ChunkRange::All => {
+                let inner_gfa = self.store.view();
+                let seg = inner_gfa.segs[self.chunk_event.handle.segment()];
+                (0, seg.len() - 1)
+            }
+            flatgfa::ops::gaf::ChunkRange::Partial(start, end) => (start, end),
+        }
+    }
+    fn sequence(&self) -> String {
+        let inner_gfa = self.store.view();
+        self.chunk_event.get_seq_string(&inner_gfa)
+    }
+}
+
+#[pyclass]
+struct PyGAFLineIter {
+    chunks: Vec<PyChunkEvent>,
+    index: usize,
+}
+
+#[pymethods]
+impl PyGAFLineIter {
+    fn __iter__(slf: PyRef<Self>) -> PyRef<Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<Self>) -> Option<PyChunkEvent> {
+        if slf.index < slf.chunks.len() {
+            let item = slf.chunks[slf.index].clone();
+            slf.index += 1;
+            Some(item)
+        } else {
+            None
+        }
+    }
+}
+
+#[pyclass]
+#[pyo3(name = "GAFLine", module = "flatgfa")]
+struct PyGAFLine {
+    store: Arc<Store>,
+    chunks: Vec<PyChunkEvent>,
+    gaf: String,
+}
+
+#[pymethods]
+impl PyGAFLine {
+    #[getter]
+    fn name(&self) -> String {
+        self.gaf.clone()
+    }
+
+    #[getter]
+    fn chunks(&self) -> Vec<PyChunkEvent> {
+        self.chunks.clone()
+    }
+    fn sequence(&self) -> String {
+        let gfa = self.store.view();
+        let mut res: String = "".to_string();
+        for part in self.chunks.iter() {
+            res = res + &part.chunk_event.get_seq_string(&gfa);
+        }
+        res
+    }
+    fn segment_ranges(&self) -> String {
+        let gfa = self.store.view();
+        let mut res: String = "".to_string();
+        for part in self.chunks.iter() {
+            res = res + "\n" + &part.chunk_event.get_seg(&gfa);
+        }
+        res
+    }
+    fn __iter__(slf: PyRef<Self>) -> PyGAFLineIter {
+        PyGAFLineIter {
+            chunks: slf.chunks.clone(),
+            index: 0,
+        }
+    }
+}
+
+struct OwnedGAFParser {
+    mmap: Arc<Mmap>,
+}
+
+impl OwnedGAFParser {
+    fn view_gafparser(&self, position: usize) -> GAFParser<'_> {
+        let sub_slice = &self.mmap[position..];
+        flatgfa::ops::gaf::GAFParser::new(sub_slice)
+    }
+}
+
+#[pyclass]
+#[pyo3(name = "GAFParser", module = "flatgfa")]
+struct PyGAFParser {
+    gaf_buf: OwnedGAFParser,
+    store: Arc<Store>,
+    name_map: NameMap,
+    pos: usize,
+}
+
+#[pymethods]
+impl PyGAFParser {
+    fn __iter__(self_: Py<Self>) -> Py<Self> {
+        self_
+    }
+
+    fn __next__(&mut self) -> Option<PyGAFLine> {
+        let mut parser = self.gaf_buf.view_gafparser(self.pos);
+        match parser.next() {
+            Some(chunk) => {
+                let position = parser.split.pos;
+                self.pos += position;
+                let res = Some(PyGAFLine {
+                    store: self.store.clone(),
+                    gaf: chunk.name.to_string(),
+                    chunks: flatgfa::ops::gaf::PathChunker::new(
+                        &self.store.view(),
+                        &self.name_map,
+                        chunk,
+                    )
+                    .map(|c| PyChunkEvent {
+                        store: self.store.clone(),
+                        chunk_event: c,
+                    })
+                    .collect(),
+                });
+                res
+            }
+            None => None,
+        }
+    }
+}
+
 /// A sequence of :class:`Path` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
@@ -773,6 +879,9 @@ impl From<ListRef> for LinkList {
 #[pyo3(name = "flatgfa")]
 fn pymod(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyFlatGFA>()?;
+    m.add_class::<PyGAFParser>()?;
+    m.add_class::<PyGAFLine>()?;
+    m.add_class::<PyChunkEvent>()?;
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(parse_bytes, m)?)?;
     m.add_function(wrap_pyfunction!(load, m)?)?;

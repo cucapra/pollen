@@ -34,7 +34,7 @@ pub struct MemchrSplit<'a> {
     needle: u8,
     haystack: &'a [u8],
     memchr: memchr::Memchr<'a>,
-    pos: usize,
+    pub pos: usize,
 }
 
 impl MemchrSplit<'_> {

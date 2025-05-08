@@ -7,8 +7,7 @@ use rayon::iter::{plumbing::UnindexedConsumer, ParallelIterator};
 pub struct GAFLineParser<'a> {
     buf: &'a [u8],
 }
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GAFLine<'a> {
     pub name: &'a BStr,
     pub start: usize,
@@ -72,7 +71,7 @@ impl<'a> GAFLineParser<'a> {
 }
 
 pub struct GAFParser<'a> {
-    split: MemchrSplit<'a>,
+    pub split: MemchrSplit<'a>,
 }
 
 impl<'a> GAFParser<'a> {
@@ -134,14 +133,14 @@ impl<'a, 'b> PathChunker<'a, 'b> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChunkEvent {
     index: usize,
     pub handle: flatgfa::Handle,
     pub range: ChunkRange,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ChunkRange {
     None,
     All,
@@ -150,46 +149,51 @@ pub enum ChunkRange {
 
 impl ChunkEvent {
     pub fn print(&self, gfa: &flatgfa::FlatGFA) {
+        print!("{}", self.get_seg(gfa));
+    }
+
+    pub fn print_seq(&self, gfa: &flatgfa::FlatGFA) {
+        print!("{}", self.get_seq_string(gfa));
+    }
+    pub fn get_seq_string(&self, gfa: &flatgfa::FlatGFA) -> String {
+        let seq = gfa.get_seq_oriented(self.handle);
+
+        match self.range {
+            ChunkRange::Partial(start, end) => seq.slice(start..end).to_string(),
+            ChunkRange::All => seq.to_string(),
+            ChunkRange::None => String::new(),
+        }
+    }
+    pub fn get_seg(&self, gfa: &flatgfa::FlatGFA) -> String {
         let seg = gfa.segs[self.handle.segment()];
         let seg_name = seg.name;
+        let mut result = String::new();
+
         match self.range {
             ChunkRange::Partial(start, end) => {
-                println!(
+                result.push_str(&format!(
                     "{}: {}{}, {}-{}bp",
                     self.index,
                     seg_name,
                     self.handle.orient(),
                     start,
-                    end,
-                );
+                    end
+                ));
             }
             ChunkRange::All => {
-                println!(
+                result.push_str(&format!(
                     "{}: {}{}, {}bp",
                     self.index,
                     seg_name,
                     self.handle.orient(),
                     seg.len()
-                );
+                ));
             }
             ChunkRange::None => {
-                println!("{}: (skipped)", self.index);
+                result.push_str(&format!("{}: (skipped)", self.index));
             }
         }
-    }
-
-    pub fn print_seq(&self, gfa: &flatgfa::FlatGFA) {
-        let seq = gfa.get_seq_oriented(self.handle);
-
-        match self.range {
-            ChunkRange::Partial(start, end) => {
-                print!("{}", &seq.slice(start..end));
-            }
-            ChunkRange::All => {
-                print!("{}", seq);
-            }
-            ChunkRange::None => {}
-        }
+        result
     }
 }
 
