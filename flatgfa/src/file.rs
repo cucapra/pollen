@@ -161,7 +161,7 @@ impl Toc {
 /// Consume `size.len` items from a byte slice, skip the remainder of `size.capacity`
 /// elements, and return the items and the rest of the slice.
 fn slice_prefix<T: FromBytes + Immutable>(data: &[u8], size: Size) -> (&[T], &[u8]) {
-    let (prefix, rest) = T::slice_from_prefix(data, size.len).unwrap();
+    let (prefix, rest) = <[T]>::ref_from_prefix_with_elems(data, size.len).unwrap();
     let pad = size_of::<T>() * (size.capacity - size.len);
     (prefix, &rest[pad..])
 }
@@ -175,8 +175,7 @@ fn read_toc(data: &[u8]) -> (&Toc, &[u8]) {
 }
 
 fn read_toc_mut(data: &mut [u8]) -> (&mut Toc, &mut [u8]) {
-    let (toc_slice, rest) = Toc::mut_slice_from_prefix(data, 1).unwrap();
-    let toc = &mut toc_slice[0];
+    let (toc, rest) = Toc::mut_from_prefix(data).unwrap();
     let magic = toc.magic;
     assert_eq!(magic, MAGIC_NUMBER);
     (toc, rest)
@@ -218,7 +217,7 @@ fn slice_vec_prefix<T: FromBytes + IntoBytes>(
     data: &mut [u8],
     size: Size,
 ) -> (SliceVec<T>, &mut [u8]) {
-    let (prefix, rest) = T::mut_slice_from_prefix(data, size.capacity).unwrap();
+    let (prefix, rest) = <[T]>::mut_from_prefix_with_elems(data, size.capacity).unwrap();
     let vec = SliceVec::from_slice_len(prefix, size.len);
     (vec, rest)
 }
@@ -266,7 +265,7 @@ pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore) {
 
     // Get a mutable reference to the embedded TOC.
     let (toc_bytes, rest) = data.split_at_mut(size_of::<Toc>());
-    let toc_mut = Toc::mut_from(toc_bytes).unwrap();
+    let toc_mut = Toc::mut_from_bytes(toc_bytes).unwrap();
 
     // Extract a store from the remaining bytes.
     (toc_mut, slice_store(rest, &toc))
