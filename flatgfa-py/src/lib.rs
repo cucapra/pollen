@@ -6,6 +6,7 @@ use memmap::Mmap;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
+use pyo3::BoundObject;
 use std::io::Write;
 use std::str;
 use std::sync::Arc;
@@ -202,21 +203,33 @@ impl ListRef {
     }
 
     /// A suitable implementation of `__getitem__` for Python classes.
-    fn py_getitem<L, E>(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject>
+    fn py_getitem<'py, L, E>(&self, arg: SliceOrInt, py: Python<'py>) -> PyResult<PyObject>
     where
-        L: From<ListRef> + IntoPy<PyObject>,
-        E: From<EntityRef> + IntoPy<PyObject>,
+        L: From<ListRef> + IntoPyObject<'py>,
+        E: From<EntityRef> + IntoPyObject<'py>,
     {
         match arg {
             SliceOrInt::Slice(slice) => {
                 let indices = py_slice_indices(slice, self.len())?;
                 if indices.step == 1 {
-                    Ok(L::from(self.slice(indices.start as u32, indices.stop as u32)).into_py(py))
+                    Ok(
+                        L::from(self.slice(indices.start as u32, indices.stop as u32))
+                            .into_pyobject(py)
+                            .map_err(Into::into)?
+                            .into_any()
+                            .unbind(),
+                    )
                 } else {
                     Err(PyIndexError::new_err("only unit step is supported"))
                 }
             }
-            SliceOrInt::Int(int) => Ok(E::from(self.index(int as u32)).into_py(py)),
+            // The long chain of conversions here is a PyO3 recommendation:
+            // https://pyo3.rs/v0.23.0/conversions/traits#boundobject-for-conversions-that-may-be-bound-or-borrowed
+            SliceOrInt::Int(int) => Ok(E::from(self.index(int as u32))
+                .into_pyobject(py)
+                .map_err(Into::into)?
+                .into_any()
+                .unbind()),
         }
     }
 }
@@ -339,7 +352,7 @@ impl PySegment {
         let gfa = self.0.store.view();
         let seg = &gfa.segs[self.0.id()];
         let seq = gfa.get_seq(seg);
-        PyBytes::new_bound(py, seq)
+        PyBytes::new(py, seq)
     }
 
     /// The segment's name as declared in the GFA file, an `int`.
@@ -476,7 +489,7 @@ impl PyPath {
         self.steps().__iter__()
     }
 
-    fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
+    fn __getitem__<'py>(&self, arg: SliceOrInt, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         self.steps().__getitem__(arg, py)
     }
 
@@ -754,13 +767,13 @@ impl StepList {
         }
     }
 
-    fn __getitem__(&self, arg: SliceOrInt, py: Python) -> PyResult<PyObject> {
+    fn __getitem__<'py>(&self, arg: SliceOrInt, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         match arg {
             SliceOrInt::Slice(slice) => {
                 let indices = py_slice_indices(slice, self.0.len())?;
                 if indices.step == 1 {
                     let list = self.0.slice(indices.start as u32, indices.stop as u32);
-                    Ok(Self(list).into_py(py))
+                    Ok(Self(list).into_pyobject(py)?.into_any())
                 } else {
                     Err(PyIndexError::new_err("only unit step is supported"))
                 }
@@ -772,7 +785,8 @@ impl StepList {
                     store: self.0.store.clone(),
                     handle,
                 }
-                .into_py(py))
+                .into_pyobject(py)?
+                .into_any())
             }
         }
     }
