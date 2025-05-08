@@ -3,10 +3,10 @@
 use std::ops::{Add, Index, Sub};
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
-use zerocopy::{AsBytes, FromBytes, FromZeroes};
+use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 /// An index into a pool.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
+#[derive(Debug, Immutable, FromBytes, IntoBytes, Clone, Copy)]
 #[repr(transparent)]
 pub struct Id<T>(u32, PhantomData<T>);
 
@@ -69,7 +69,7 @@ impl<T> From<Id<T>> for u32 {
 ///
 /// TODO: Consider smaller indices for this, and possibly base/offset instead
 /// of start/end.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Immutable, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(packed)]
 pub struct Span<T> {
     pub start: Id<T>,
