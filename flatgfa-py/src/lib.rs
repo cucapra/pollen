@@ -484,6 +484,7 @@ impl PyPath {
         self.steps().__len__()
     }
 }
+
 #[derive(Clone)]
 #[pyclass(frozen)]
 #[pyo3(name = "ChunkEvent", module = "flatgfa")]
@@ -546,12 +547,12 @@ impl PyGAFLineIter {
 
 #[pyclass]
 #[pyo3(name = "GAFLine", module = "flatgfa")]
-
 struct PyGAFLine {
     store: Arc<Store>,
     chunks: Vec<PyChunkEvent>,
     gaf: String,
 }
+
 #[pymethods]
 impl PyGAFLine {
     #[getter]
@@ -586,9 +587,11 @@ impl PyGAFLine {
         }
     }
 }
+
 struct OwnedGAFParser {
     mmap: Arc<Mmap>,
 }
+
 impl OwnedGAFParser {
     fn view_gafparser(&self, position: usize) -> GAFParser<'_> {
         let sub_slice = &self.mmap[position..];
@@ -598,13 +601,13 @@ impl OwnedGAFParser {
 
 #[pyclass]
 #[pyo3(name = "GAFParser", module = "flatgfa")]
-
 struct PyGAFParser {
     gaf_buf: OwnedGAFParser,
     store: Arc<Store>,
     name_map: NameMap,
     pos: usize,
 }
+
 #[pymethods]
 impl PyGAFParser {
     fn __iter__(self_: Py<Self>) -> Py<Self> {
@@ -637,6 +640,7 @@ impl PyGAFParser {
         }
     }
 }
+
 /// A sequence of :class:`Path` objects.
 #[pyclass]
 #[pyo3(module = "flatgfa")]
