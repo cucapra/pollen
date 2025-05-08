@@ -29,7 +29,7 @@ pub struct Toc {
 /// A table-of-contents entry for a pool in the FlatGFA file.
 #[derive(FromBytes, FromZeroes, AsBytes, Clone, Copy, Debug)]
 #[repr(packed)]
-struct Size {
+pub struct Size {
     /// The number of actual elements in the pool.
     len: usize,
 
@@ -160,7 +160,7 @@ impl Toc {
 
 /// Consume `size.len` items from a byte slice, skip the remainder of `size.capacity`
 /// elements, and return the items and the rest of the slice.
-fn slice_prefix<T: FromBytes>(data: &[u8], size: Size) -> (&[T], &[u8]) {
+pub fn slice_prefix<T: FromBytes>(data: &[u8], size: Size) -> (&[T], &[u8]) {
     let (prefix, rest) = T::slice_from_prefix(data, size.len).unwrap();
     let pad = size_of::<T>() * (size.capacity - size.len);
     (prefix, &rest[pad..])
