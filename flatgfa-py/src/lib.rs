@@ -737,10 +737,7 @@ impl PyHandle {
 /// Get the components of a Python slice object.
 ///
 /// This wraps an underlying PyO3 utility but supports a `usize` length.
-fn py_slice_indices<'py>(
-    slice: Bound<'py, PySlice>,
-    len: u32,
-) -> PyResult<pyo3::types::PySliceIndices> {
+fn py_slice_indices(slice: Bound<'_, PySlice>, len: u32) -> PyResult<pyo3::types::PySliceIndices> {
     // Depending on the size of a C `long`, this may or may not need a fallible
     // conversion. This is a workaround to avoid either errors or Clippy
     // warnings, depending on the platform.
