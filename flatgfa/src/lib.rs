@@ -1,5 +1,6 @@
 pub mod cli;
 pub mod file;
+pub mod flatbed;
 pub mod flatgfa;
 pub mod gfaline;
 pub mod memfile;
