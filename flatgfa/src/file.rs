@@ -4,12 +4,12 @@ use crate::flatgfa;
 use crate::pool::{FixedStore, Pool, Span, Store};
 use std::mem::{size_of, size_of_val};
 use tinyvec::SliceVec;
-use zerocopy::{AsBytes, FromBytes, FromZeroes};
+use zerocopy::{FromBytes, Immutable, IntoBytes, KnownLayout};
 
 const MAGIC_NUMBER: u64 = 0xB101_1054;
 
 /// A table of contents for the FlatGFA file.
-#[derive(FromBytes, FromZeroes, AsBytes, Debug)]
+#[derive(FromBytes, IntoBytes, Debug, Immutable, KnownLayout)]
 #[repr(packed)]
 pub struct Toc {
     magic: u64,
@@ -27,7 +27,7 @@ pub struct Toc {
 }
 
 /// A table-of-contents entry for a pool in the FlatGFA file.
-#[derive(FromBytes, FromZeroes, AsBytes, Clone, Copy, Debug)]
+#[derive(FromBytes, IntoBytes, Clone, Copy, Debug, Immutable)]
 #[repr(packed)]
 struct Size {
     /// The number of actual elements in the pool.
@@ -160,24 +160,22 @@ impl Toc {
 
 /// Consume `size.len` items from a byte slice, skip the remainder of `size.capacity`
 /// elements, and return the items and the rest of the slice.
-fn slice_prefix<T: FromBytes>(data: &[u8], size: Size) -> (&[T], &[u8]) {
-    let (prefix, rest) = T::slice_from_prefix(data, size.len).unwrap();
+fn slice_prefix<T: FromBytes + Immutable>(data: &[u8], size: Size) -> (&[T], &[u8]) {
+    let (prefix, rest) = <[T]>::ref_from_prefix_with_elems(data, size.len).unwrap();
     let pad = size_of::<T>() * (size.capacity - size.len);
     (prefix, &rest[pad..])
 }
 
 /// Read the table of contents from a prefix of the byte buffer.
 fn read_toc(data: &[u8]) -> (&Toc, &[u8]) {
-    let toc = Toc::ref_from_prefix(data).unwrap();
-    let rest = &data[size_of::<Toc>()..];
+    let (toc, rest) = Toc::ref_from_prefix(data).unwrap();
     let magic = toc.magic;
     assert_eq!(magic, MAGIC_NUMBER);
     (toc, rest)
 }
 
 fn read_toc_mut(data: &mut [u8]) -> (&mut Toc, &mut [u8]) {
-    let (toc_slice, rest) = Toc::mut_slice_from_prefix(data, 1).unwrap();
-    let toc = &mut toc_slice[0];
+    let (toc, rest) = Toc::mut_from_prefix(data).unwrap();
     let magic = toc.magic;
     assert_eq!(magic, MAGIC_NUMBER);
     (toc, rest)
@@ -215,11 +213,11 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
 }
 
 /// Like `slice_prefix`, but produce a `SliceVec`.
-fn slice_vec_prefix<T: FromBytes + AsBytes>(
+fn slice_vec_prefix<T: FromBytes + IntoBytes>(
     data: &mut [u8],
     size: Size,
 ) -> (SliceVec<T>, &mut [u8]) {
-    let (prefix, rest) = T::mut_slice_from_prefix(data, size.capacity).unwrap();
+    let (prefix, rest) = <[T]>::mut_from_prefix_with_elems(data, size.capacity).unwrap();
     let vec = SliceVec::from_slice_len(prefix, size.len);
     (vec, rest)
 }
@@ -267,16 +265,19 @@ pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore) {
 
     // Get a mutable reference to the embedded TOC.
     let (toc_bytes, rest) = data.split_at_mut(size_of::<Toc>());
-    let toc_mut = Toc::mut_from(toc_bytes).unwrap();
+    let toc_mut = Toc::mut_from_bytes(toc_bytes).unwrap();
 
     // Extract a store from the remaining bytes.
     (toc_mut, slice_store(rest, &toc))
 }
 
-fn write_bump<'a, T: AsBytes + ?Sized>(buf: &'a mut [u8], data: &T) -> Option<&'a mut [u8]> {
+fn write_bump<'a, T: IntoBytes + Immutable + ?Sized>(
+    buf: &'a mut [u8],
+    data: &'a T,
+) -> Result<&'a mut [u8], zerocopy::SizeError<&'a T, &'a mut [u8]>> {
     let len = size_of_val(data);
     data.write_to_prefix(buf)?;
-    Some(&mut buf[len..])
+    Ok(&mut buf[len..])
 }
 
 fn write_bytes<'a>(buf: &'a mut [u8], data: &[u8]) -> Option<&'a mut [u8]> {

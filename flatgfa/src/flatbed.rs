@@ -3,10 +3,10 @@ use crate::memfile::MemchrSplit;
 use crate::pool::{FixedStore, HeapStore, Id, Pool, Span, Store};
 use atoi::FromRadix10;
 use bstr::BStr;
-use zerocopy::{AsBytes, FromBytes, FromZeroes};
+use zerocopy::{FromBytes, IntoBytes};
 
 /// A single interval from a BED file.
-#[derive(Debug, FromZeroes, FromBytes, AsBytes, Clone, Copy)]
+#[derive(Debug, FromBytes, IntoBytes, Clone, Copy)]
 #[repr(C, packed)]
 pub struct BEDEntry {
     pub name: Span<u8>,
