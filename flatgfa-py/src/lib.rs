@@ -167,6 +167,26 @@ impl PyFlatGFA {
             println!();
         }
     }
+    fn make_pangenotype_matrix(&self, gaf_files:Vec<String>) -> Vec<Vec<bool>>{
+        let num_segments = self.segments().__len__();
+        //Creation of the matrix, the assumption is the segments are ordered from 0 to 100, etc. 
+        let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
+        let current_gfa = self.0.view();
+        let name_map = flatgfa::namemap::NameMap::build(&current_gfa);
+        for (file_idx, gaf_file_name) in gaf_files.iter().enumerate(){
+            let fake_gaf = self.all_reads(gaf_file_name);
+            let real_gaf = fake_gaf.gaf_buf.view_gafparser(0);
+            for lines in real_gaf{
+                let path_chunker = flatgfa::ops::gaf::PathChunker::new(&current_gfa, &name_map, lines);
+                for event in path_chunker{
+                    let segment_id = event.handle.segment().index();
+                    matrix[file_idx][segment_id]= true;
+                }
+            }
+        }
+        matrix
+        
+    }
 }
 
 /// A reference to a list of *any* type within a FlatGFA.
