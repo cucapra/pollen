@@ -1,5 +1,6 @@
 use crate::file::*;
 use crate::flatgfa;
+use crate::memfile::map_new_file;
 use crate::pool::*;
 use crate::FixedFamily;
 use crate::HeapFamily;
@@ -8,7 +9,7 @@ use std::fmt;
 
 use zerocopy::*;
 
-const MAGIC_NUMBER: u64 = 0x0000_0000;
+const MAGIC_NUMBER: u8 = 0x12;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Nucleotide {
@@ -75,7 +76,7 @@ pub struct PackedSeqView<'a> {
 #[derive(FromBytes, FromZeroes, AsBytes, Debug)]
 #[repr(packed)]
 pub struct PackedToc {
-    magic: u64,
+    magic: u8,
     data: Size,
     high_nibble_end: Size,
 }
@@ -130,9 +131,9 @@ pub fn dump(seq: &PackedSeqView, buf: &mut [u8]) {
     let rest = write_bump(buf, &toc).unwrap();
     let rest = write_bytes(rest, seq.data).unwrap();
 
-    let slice: &[u8] = if seq.high_nibble_end { &[1] } else { &[0] };
+    let nibble: &[u8] = if seq.high_nibble_end { &[1] } else { &[0] };
 
-    write_bytes(rest, slice).unwrap();
+    write_bytes(rest, nibble).unwrap();
 }
 
 impl<'a> PackedSeqView<'a> {
@@ -295,6 +296,19 @@ pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
     slice.vec_ref.as_ref().get_range(slice.span)
 }
 
+pub fn total_bytes(num_elems: usize) -> usize {
+    let bytes = std::mem::size_of::<usize>();
+    let seq_size = 1 + if num_elems % 2 == 1 {
+        (num_elems / 2) + 1
+    } else {
+        num_elems / 2
+    }; // Sequence plus the nibble byte
+
+    let toc_size = bytes * 4 + 1; // 2 Size types each with two 8-byte
+                                  // usize types, plus the magic number
+    toc_size + seq_size
+}
+
 #[test]
 fn test_vec() {
     let mut vec = PackedSeqStore::create(vec![
@@ -404,4 +418,30 @@ fn test_getter_setter() {
     assert_eq!(vec.as_ref().get(1), Nucleotide::A);
     vec.set(1, Nucleotide::G);
     assert_eq!(vec.as_ref().get(1), Nucleotide::G);
+}
+
+#[test]
+fn test_export_import() {
+    let vec = PackedSeqStore::create(vec![
+        Nucleotide::A,
+        Nucleotide::C,
+        Nucleotide::T,
+        Nucleotide::G,
+    ]);
+    let input = vec.as_ref();
+    let filename = "capra_test_file";
+    let num_bytes = total_bytes(4);
+    let mut mem = map_new_file(filename, num_bytes as u64);
+    let mut buf = vec![0u8; num_bytes];
+    let buf_ref = &mut buf;
+    dump(&input, buf_ref);
+    mem[..buf_ref.len()].copy_from_slice(buf_ref);
+    let result: &[u8] = &mem;
+    let output = view(result);
+    assert_eq!(input.get(0), output.get(0));
+    assert_eq!(input.get(1), output.get(1));
+    assert_eq!(input.get(2), output.get(2));
+    assert_eq!(input.get(3), output.get(3));
+    std::mem::drop(mem);
+    let _ = std::fs::remove_file(filename);
 }
