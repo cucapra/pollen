@@ -136,7 +136,7 @@ impl<'a> SubgraphBuilder<'a> {
     /// Translate a handle from the source graph to this subgraph.
     fn tr_handle(&self, old_handle: flatgfa::Handle) -> flatgfa::Handle {
         // TODO: is this just generating the handle or should we add it to the new graph?
-        flatgfa::Handle::new(self.seg_map[&old_handle.segment()], old_handle.orient())
+        self.seg_map[&old_handle.segment()].handle(old_handle.orient())
     }
 
     /// Check whether a segment from the old graph is in the subgraph.

@@ -1,4 +1,4 @@
-use crate::flatgfa::{self, Handle, LineKind, Orientation};
+use crate::flatgfa::{self, LineKind, Orientation};
 use crate::gfaline;
 use crate::memfile::MemchrSplit;
 use crate::namemap::NameMap;
@@ -141,8 +141,8 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
     }
 
     fn add_link(&mut self, link: gfaline::Link) {
-        let from = Handle::new(self.seg_ids.get(link.from_seg), link.from_orient);
-        let to = Handle::new(self.seg_ids.get(link.to_seg), link.to_orient);
+        let from = self.seg_ids.get(link.from_seg).handle(link.from_orient);
+        let to = self.seg_ids.get(link.to_seg).handle(link.to_orient);
         self.flat.add_link(from, to, link.overlap);
     }
 
@@ -150,14 +150,11 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
         // Parse the steps.
         let mut step_parser = gfaline::StepsParser::new(path.steps);
         let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
-            Handle::new(
-                self.seg_ids.get(name),
-                if dir {
-                    Orientation::Forward
-                } else {
-                    Orientation::Backward
-                },
-            )
+            self.seg_ids.get(name).handle(if dir {
+                Orientation::Forward
+            } else {
+                Orientation::Backward
+            })
         }));
         assert!(step_parser.rest().is_empty());
 
