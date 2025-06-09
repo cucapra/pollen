@@ -1,4 +1,4 @@
-use crate::flatgfa::{self, LineKind, Orientation};
+use crate::flatgfa::{self, LineKind};
 use crate::gfaline;
 use crate::memfile::MemchrSplit;
 use crate::namemap::NameMap;
@@ -149,13 +149,9 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
     fn add_path(&mut self, path: gfaline::Path) {
         // Parse the steps.
         let mut step_parser = gfaline::StepsParser::new(path.steps);
-        let steps = self.flat.add_steps((&mut step_parser).map(|(name, dir)| {
-            self.seg_ids.get(name).handle(if dir {
-                Orientation::Forward
-            } else {
-                Orientation::Backward
-            })
-        }));
+        let steps = self.flat.add_steps(
+            (&mut step_parser).map(|(name, dir)| self.seg_ids.get(name).handle(dir.into())),
+        );
         assert!(step_parser.rest().is_empty());
 
         self.flat

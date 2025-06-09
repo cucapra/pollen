@@ -167,6 +167,17 @@ impl FromStr for Orientation {
     }
 }
 
+impl From<bool> for Orientation {
+    /// Convert a `bool` indicating forwardness to an `Orientation`.
+    fn from(fwd: bool) -> Self {
+        if fwd {
+            Orientation::Forward
+        } else {
+            Orientation::Backward
+        }
+    }
+}
+
 /// An oriented reference to a segment.
 ///
 /// A Handle refers to the forward (+) or backward (-) orientation for a given segment.
