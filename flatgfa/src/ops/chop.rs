@@ -118,7 +118,7 @@ pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgf
                     Orientation::Forward => chopped_segs.end - 1,
                     Orientation::Backward => chopped_segs.start,
                 };
-                Handle::new(seg_id, old_from.orient())
+                seg_id.handle(old_from.orient())
             };
             let new_to = {
                 let old_to = link.to;
@@ -127,7 +127,7 @@ pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgf
                     Orientation::Forward => chopped_segs.start,
                     Orientation::Backward => chopped_segs.end - 1,
                 };
-                Handle::new(seg_id, old_to.orient())
+                seg_id.handle(old_to.orient())
             };
             flat.add_link(new_from, new_to, vec![]);
         }

@@ -205,11 +205,7 @@ impl Iterator for PathChunker<'_, '_> {
 
         // Get the corresponding handle from the GFA.
         let seg_id = self.name_map.get(seg_name);
-        let dir = match forward {
-            true => flatgfa::Orientation::Forward,
-            false => flatgfa::Orientation::Backward,
-        };
-        let handle = flatgfa::Handle::new(seg_id, dir);
+        let handle = seg_id.handle(forward.into());
 
         // Accumulate the length to track our position in the path.
         let seg_len = self.gfa.segs[seg_id].len();
