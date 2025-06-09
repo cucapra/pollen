@@ -88,6 +88,13 @@ impl Segment {
     }
 }
 
+impl Id<Segment> {
+    /// A convenient way to construct a handle for a segment.
+    pub fn handle(self, orient: Orientation) -> Handle {
+        Handle::new(self, orient)
+    }
+}
+
 /// A path is a sequence of oriented references to segments.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, Immutable)]
 #[repr(packed)]
