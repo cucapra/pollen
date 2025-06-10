@@ -1,5 +1,6 @@
 use crate::file::*;
 use crate::flatgfa;
+use crate::memfile;
 use crate::memfile::map_new_file;
 use crate::pool::*;
 use crate::FixedFamily;
@@ -78,7 +79,7 @@ pub struct PackedSeqView<'a> {
 pub struct PackedToc {
     magic: u8,
     data: Size,
-    high_nibble_end: Size,
+    high_nibble_end: u8,
 }
 
 impl PackedToc {
@@ -93,10 +94,7 @@ impl PackedToc {
                 len: seq.data.len(),
                 capacity: seq.data.len(),
             },
-            high_nibble_end: Size {
-                len: 1,
-                capacity: 1,
-            },
+            high_nibble_end: if seq.high_nibble_end { 1u8 } else { 0u8 },
         }
     }
 }
@@ -109,34 +107,27 @@ fn read_packed_toc(data: &[u8]) -> (&PackedToc, &[u8]) {
     (toc, rest)
 }
 
-pub fn view(data: &[u8]) -> PackedSeqView {
-    let (toc, rest) = read_packed_toc(data);
-
-    let (data, rest) = slice_prefix(rest, toc.data);
-
-    let (high_nibble_end, _) = slice_prefix(rest, toc.high_nibble_end);
-
-    PackedSeqView {
-        data: data.into(),
-        high_nibble_end: match high_nibble_end {
-            [0u8] => false,
-            [1u8] => true,
-            _ => panic!("Invalid value in high_nibble_end"),
-        },
-    }
-}
-
-pub fn dump(seq: &PackedSeqView, buf: &mut [u8]) {
-    let toc = PackedToc::full(seq);
-    let rest = write_bump(buf, &toc).unwrap();
-    let rest = write_bytes(rest, seq.data).unwrap();
-
-    let nibble: &[u8] = if seq.high_nibble_end { &[1] } else { &[0] };
-
-    write_bytes(rest, nibble).unwrap();
-}
-
 impl<'a> PackedSeqView<'a> {
+    pub fn view(data: &'a [u8]) -> Self {
+        let (toc, rest) = read_packed_toc(data);
+
+        let (data, _) = slice_prefix(rest, toc.data);
+        Self {
+            data: data.into(),
+            high_nibble_end: match toc.high_nibble_end {
+                0u8 => false,
+                1u8 => true,
+                _ => panic!("Invalid value in high_nibble_end"),
+            },
+        }
+    }
+
+    pub fn dump(&self, buf: &mut [u8]) {
+        let toc = PackedToc::full(self);
+        let rest = write_bump(buf, &toc).unwrap();
+        write_bytes(rest, self.data).unwrap();
+    }
+
     pub fn len(&self) -> usize {
         if self.high_nibble_end {
             self.data.len() * 2
@@ -165,7 +156,7 @@ impl<'a> PackedSeqView<'a> {
         arr
     }
 
-    /// Returns a uncompressed vector that contains the same sequence as this PackedSeqStore
+    /// Returns a uncompressed vector that contains the same sequence as this PackedSeqView
     pub fn get_elements(&self) -> Vec<Nucleotide> {
         self.get_range(0..(self.len() - 1))
     }
@@ -296,17 +287,30 @@ pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
     slice.vec_ref.as_ref().get_range(slice.span)
 }
 
-pub fn total_bytes(num_elems: usize) -> usize {
-    let bytes = std::mem::size_of::<usize>();
-    let seq_size = 1 + if num_elems % 2 == 1 {
+pub fn total_bytes(seq: &PackedSeqView) -> usize {
+    let num_elems = seq.len();
+    let seq_size = if num_elems % 2 == 1 {
         (num_elems / 2) + 1
     } else {
         num_elems / 2
-    }; // Sequence plus the nibble byte
+    };
 
-    let toc_size = bytes * 4 + 1; // 2 Size types each with two 8-byte
-                                  // usize types, plus the magic number
+    let toc_size = std::mem::size_of::<PackedToc>();
     toc_size + seq_size
+}
+
+pub fn import(filename: &str) -> Vec<Nucleotide> {
+    let mmap = memfile::map_file(filename); // args[2] is the filename
+    PackedSeqView::view(&mmap).get_elements()
+}
+
+pub fn export(seq: PackedSeqView, filename: &str) {
+    let num_bytes = total_bytes(&seq);
+    let mut mem = map_new_file(filename, num_bytes as u64);
+    let mut buf = vec![0u8; num_bytes];
+    let buf_ref = &mut buf;
+    PackedSeqView::dump(&seq, buf_ref);
+    mem[..buf_ref.len()].copy_from_slice(buf_ref);
 }
 
 #[test]
@@ -430,14 +434,14 @@ fn test_export_import() {
     ]);
     let input = vec.as_ref();
     let filename = "capra_test_file";
-    let num_bytes = total_bytes(4);
+    let num_bytes = total_bytes(&input);
     let mut mem = map_new_file(filename, num_bytes as u64);
     let mut buf = vec![0u8; num_bytes];
     let buf_ref = &mut buf;
-    dump(&input, buf_ref);
+    input.dump(buf_ref);
     mem[..buf_ref.len()].copy_from_slice(buf_ref);
     let result: &[u8] = &mem;
-    let output = view(result);
+    let output = PackedSeqView::view(result);
     assert_eq!(input.get(0), output.get(0));
     assert_eq!(input.get(1), output.get(1));
     assert_eq!(input.get(2), output.get(2));

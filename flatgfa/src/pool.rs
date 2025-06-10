@@ -251,7 +251,7 @@ impl<'a, T> Pool<'a, T> {
         self.0.len()
     }
 
-    /// Check if th e pool is empty.
+    /// Check if the pool is empty.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
