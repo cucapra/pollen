@@ -17,4 +17,5 @@ memmap = "0.7.0"
 num_enum = "0.7.3"
 rayon = "1.10.0"
 tinyvec = "1.8.0"
+rand = "0.8"
 zerocopy = { version = "0.7.35", features = ["derive"] }

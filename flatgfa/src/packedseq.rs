@@ -6,6 +6,7 @@ use crate::pool::*;
 use crate::FixedFamily;
 use crate::HeapFamily;
 use crate::StoreFamily;
+use rand::Rng;
 use std::fmt;
 
 use zerocopy::*;
@@ -425,7 +426,7 @@ fn test_getter_setter() {
 }
 
 #[test]
-fn test_export_import() {
+fn test_export_import_simple() {
     let vec = PackedSeqStore::create(vec![
         Nucleotide::A,
         Nucleotide::C,
@@ -448,4 +449,32 @@ fn test_export_import() {
     assert_eq!(input.get(3), output.get(3));
     std::mem::drop(mem);
     let _ = std::fs::remove_file(filename);
+}
+
+#[test]
+fn test_export_import() {
+    let len = 10;
+    let num_trials = 10;
+    let mut rng = rand::thread_rng();
+    for _ in 0..num_trials {
+        let mut vec: Vec<Nucleotide> = Vec::new();
+        for _ in 0..len {
+            let rand_num = rng.gen_range(0..=3);
+            match rand_num {
+                0 => vec.push(Nucleotide::A),
+                1 => vec.push(Nucleotide::C),
+                2 => vec.push(Nucleotide::T),
+                3 => vec.push(Nucleotide::G),
+                _ => panic!("Incorrect item appended!"),
+            }
+        }
+        let old_vec = vec.clone();
+        let store = PackedSeqStore::create(vec);
+        let view = store.as_ref();
+        let filename = "capra_test_file";
+        export(view, filename);
+        let new_vec = import(filename);
+        let _ = std::fs::remove_file(filename);
+        assert_eq!(old_vec, new_vec);
+    }
 }
