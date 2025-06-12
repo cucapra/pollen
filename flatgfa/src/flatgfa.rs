@@ -269,12 +269,21 @@ pub enum LineKind {
     Link,
 }
 
+/// A reference to a base-pair sequence.
+///
+/// This is mostly a `&[u8]`, but it also has a flag to indicate that we're
+/// representing the reverse-complement of the underlying sequence data.
 pub struct Sequence<'a> {
     data: &'a [u8],
     revcmp: bool,
 }
 
 impl<'a> Sequence<'a> {
+    /// Create a sequence that refers to a range of base-pair data.
+    ///
+    /// `data` should be the "forward" version of the sequence. Use `ori` to
+    /// indicate whether this `Sequence` represents the forward or backward
+    /// (reverse complement) of that data.
     pub fn new(data: &'a [u8], ori: Orientation) -> Self {
         Self {
             data,
@@ -282,6 +291,7 @@ impl<'a> Sequence<'a> {
         }
     }
 
+    /// Look up a single base pair in the sequence.
     pub fn index(&self, idx: usize) -> u8 {
         if self.revcmp {
             nucleotide_complement(self.data[self.data.len() - idx - 1])
@@ -290,6 +300,7 @@ impl<'a> Sequence<'a> {
         }
     }
 
+    /// Get a sub-range of the sequence.
     pub fn slice(&self, range: Range<usize>) -> Self {
         let data = if self.revcmp {
             // The range starts at the end of the buffer:
@@ -304,7 +315,8 @@ impl<'a> Sequence<'a> {
         }
     }
 
-    pub fn as_vec(&self) -> Vec<u8> {
+    /// Allocate a new vector with the represented sequence data.
+    pub fn to_vec(&self) -> Vec<u8> {
         if self.revcmp {
             self.data
                 .iter()
@@ -317,6 +329,7 @@ impl<'a> Sequence<'a> {
     }
 }
 
+/// Given an ASCII character for a nucleotide, get its complement.
 fn nucleotide_complement(c: u8) -> u8 {
     match c {
         b'A' => b'T',
@@ -338,7 +351,7 @@ impl std::fmt::Display for Sequence<'_> {
             // string and write the whole buffer at once. For larger sequences, it
             // may be more efficient to do it one character at a time to avoid an
             // allocation? Not sure, but could be worth a try.
-            let bytes = self.as_vec();
+            let bytes = self.to_vec();
             write!(f, "{}", BStr::new(&bytes))?;
         } else {
             write!(f, "{}", BStr::new(self.data))?;
@@ -353,6 +366,10 @@ impl<'a> FlatGFA<'a> {
         self.seq_data[seg.seq].as_ref()
     }
 
+    /// Get the sequence that a *handle* refers to.
+    ///
+    /// A handle is a a forward or backward traversal of a specific segment. This method
+    /// gets the sequence in the orientation specified by the handle.
     pub fn get_seq_oriented(&self, handle: Handle) -> Sequence {
         let seg = self.get_handle_seg(handle);
         let seq_data = self.seq_data[seg.seq].as_ref();
