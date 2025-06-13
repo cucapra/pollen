@@ -43,8 +43,6 @@ enum Command {
     Chop(cmds::Chop),
     GafLookup(cmds::GAFLookup),
     Bench(cmds::Bench),
-    SeqImport(cmds::SeqImport),
-    SeqExport(cmds::SeqExport),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -136,12 +134,6 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Bench(sub_args)) => {
             cmds::bench(sub_args);
-        }
-        Some(Command::SeqImport(sub_args)) => {
-            cmds::seq_import(sub_args);
-        }
-        Some(Command::SeqExport(sub_args)) => {
-            cmds::seq_export(sub_args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
