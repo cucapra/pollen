@@ -43,6 +43,8 @@ enum Command {
     Chop(cmds::Chop),
     GafLookup(cmds::GAFLookup),
     Bench(cmds::Bench),
+    SeqExport(cmds::SeqExport),
+    SeqImport(cmds::SeqImport),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -54,6 +56,15 @@ fn main() -> Result<(), &'static str> {
             prealloc_translate(args.input_gfa.as_deref(), out_name, args.prealloc_factor);
             return Ok(());
         }
+    }
+
+    if let Some(Command::SeqExport(sub_args)) = args.command {
+        cmds::seq_export(sub_args);
+        return Ok(());
+    }
+    if let Some(Command::SeqImport(sub_args)) = args.command {
+        cmds::seq_import(sub_args);
+        return Ok(());
     }
 
     // Load the input from a file (binary) or stdin (text).
@@ -134,6 +145,12 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Bench(sub_args)) => {
             cmds::bench(sub_args);
+        }
+        Some(Command::SeqExport(_sub_args)) => {
+            panic!("Unreachable code");
+        }
+        Some(Command::SeqImport(_sub_args)) => {
+            panic!("Unreachable code");
         }
         None => {
             // Just emit the GFA or FlatGFA file.

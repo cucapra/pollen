@@ -302,51 +302,49 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     }
 }
 
-// ///
-// #[derive(FromArgs, PartialEq, Debug)]
-// #[argh(subcommand, name = "seq-import")]
-// pub struct SeqImport {
-//     #[argh(positional)]
-//     filename: String,
-// }
+///
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "seq-import")]
+pub struct SeqImport {
+    #[argh(positional)]
+    filename: String,
+}
 
-// pub fn seq_import(args: SeqImport) {
-//     let vec = packedseq::import(&args.filename);
-//     let _ = std::fs::remove_file(&args.filename);
-//     let store = PackedSeqStore::create(vec);
-//     let view = store.as_ref();
-//     print!("{}", view);
-// }
+pub fn seq_import(args: SeqImport) {
+    let vec = packedseq::import(&args.filename);
+    let _ = std::fs::remove_file(&args.filename);
+    let store = PackedSeqStore::create(vec);
+    let view = store.as_ref();
+    print!("{}", view);
+}
 
-// ///
-// #[derive(FromArgs, PartialEq, Debug)]
-// #[argh(subcommand, name = "seq-export")]
-// pub struct SeqExport {
-//     #[argh(positional)]
-//     filename: String,
-// }
+///
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "seq-export")]
+pub struct SeqExport {
+    #[argh(positional)]
+    filename: String,
+}
 
-// pub fn seq_export(args: SeqExport) {
-//     let mut input = String::new();
-//     std::io::stdin()
-//         .read_to_string(&mut input)
-//         .expect("Stdin read failure");
+pub fn seq_export(args: SeqExport) {
+    let mut input = String::new();
+    std::io::stdin()
+        .read_to_string(&mut input)
+        .expect("Stdin read failure");
 
-//     println!("Input read: {:?}", input);
+    let vec: Vec<packedseq::Nucleotide> = input
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .map(|c| match c {
+            'A' => packedseq::Nucleotide::A,
+            'C' => packedseq::Nucleotide::C,
+            'T' => packedseq::Nucleotide::T,
+            'G' => packedseq::Nucleotide::G,
+            _ => panic!("Invalid character in fle: {}", c),
+        })
+        .collect();
 
-//     let vec: Vec<packedseq::Nucleotide> = input
-//         .chars()
-//         .filter(|c| !c.is_whitespace())
-//         .map(|c| match c {
-//             'A' => packedseq::Nucleotide::A,
-//             'C' => packedseq::Nucleotide::C,
-//             'T' => packedseq::Nucleotide::T,
-//             'G' => packedseq::Nucleotide::G,
-//             _ => panic!("Invalid character in fle: {}", c),
-//         })
-//         .collect();
-
-//     let store = packedseq::PackedSeqStore::create(vec);
-//     let view = store.as_ref();
-//     packedseq::export(view, &args.filename);
-// }
+    let store = packedseq::PackedSeqStore::create(vec);
+    let view = store.as_ref();
+    packedseq::export(view, &args.filename);
+}
