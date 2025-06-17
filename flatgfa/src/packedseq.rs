@@ -73,6 +73,10 @@ pub struct PackedSeqView<'a> {
     /// True if the final base pair in the sequence is stored at a
     ///                   high nibble
     high_nibble_end: bool,
+
+    /// True if the first base pair in the sequence is stored at a
+    ///                   high nibble
+    high_nibble_begin: bool,
 }
 
 #[derive(FromBytes, FromZeroes, AsBytes, Debug)]
@@ -81,6 +85,7 @@ pub struct PackedToc {
     magic: u8,
     data: Size,
     high_nibble_end: u8,
+    high_nibble_begin: u8,
 }
 
 impl PackedToc {
@@ -96,6 +101,7 @@ impl PackedToc {
                 capacity: seq.data.len(),
             },
             high_nibble_end: if seq.high_nibble_end { 1u8 } else { 0u8 },
+            high_nibble_begin: if seq.high_nibble_begin { 1u8 } else { 0u8 },
         }
     }
 }
@@ -120,6 +126,11 @@ impl<'a> PackedSeqView<'a> {
                 1u8 => true,
                 _ => panic!("Invalid value in high_nibble_end"),
             },
+            high_nibble_begin: match toc.high_nibble_begin {
+                0u8 => false,
+                1u8 => true,
+                _ => panic!("Invalid value in high_nibble_begin"),
+            },
         }
     }
 
@@ -130,19 +141,23 @@ impl<'a> PackedSeqView<'a> {
     }
 
     pub fn len(&self) -> usize {
-        if self.high_nibble_end {
-            self.data.len() * 2
-        } else {
-            self.data.len() * 2 - 1
-        }
+        let begin = if self.high_nibble_begin { 1 } else { 0 };
+        let end = if self.high_nibble_end { 0 } else { 1 };
+        self.data.len() * 2 - begin - end
     }
+
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
     pub fn get(&self, index: usize) -> Nucleotide {
-        let i = index / 2;
-        if index % 2 == 1 {
+        let real_idx = if self.high_nibble_begin {
+            index + 1
+        } else {
+            index
+        };
+        let i = real_idx / 2;
+        if real_idx % 2 == 1 {
             ((self.data[i] & 0b11110000u8) >> 4).into()
         } else {
             (self.data[i] & 0b00001111u8).into()
@@ -160,6 +175,22 @@ impl<'a> PackedSeqView<'a> {
     /// Returns a uncompressed vector that contains the same sequence as this PackedSeqView
     pub fn get_elements(&self) -> Vec<Nucleotide> {
         self.get_range(0..(self.len() - 1))
+    }
+
+    /// `start` is inclusive, `end` is exclusive
+    pub fn slice(&self, start: usize, end: usize) -> Self {
+        assert!(start <= end && end <= self.len(), "Invalid slice range");
+
+        let byte_start = start / 2;
+        let byte_end = (end + 1) / 2;
+
+        let new_data = &self.data[byte_start..byte_end];
+
+        Self {
+            data: new_data,
+            high_nibble_end: end % 2 == 0,
+            high_nibble_begin: start % 2 == 1,
+        }
     }
 }
 
@@ -244,7 +275,6 @@ impl PackedSeqStore {
         let elem: u8 = input.into();
         let i = index / 2;
         if index % 2 == 1 {
-            println!("i: {}", i);
             self.data[i] = (0b00001111u8 & self.data[i]) | (elem << 4);
         } else {
             self.data[i] = (0b11110000u8 & self.data[i]) | elem;
@@ -255,6 +285,7 @@ impl PackedSeqStore {
         PackedSeqView {
             data: &self.data,
             high_nibble_end: self.high_nibble_end,
+            high_nibble_begin: false,
         }
     }
 }
@@ -477,4 +508,18 @@ fn test_export_import() {
         let _ = std::fs::remove_file(filename);
         assert_eq!(old_vec, new_vec);
     }
+}
+
+#[test]
+fn test_subslice() {
+    let store = PackedSeqStore::create(vec![
+        Nucleotide::A,
+        Nucleotide::C,
+        Nucleotide::T,
+        Nucleotide::G,
+    ]);
+    let view = store.as_ref();
+    let subslice = view.slice(1, 3);
+    assert_eq!(Nucleotide::C, subslice.get(0));
+    assert_eq!(Nucleotide::T, subslice.get(1));
 }
