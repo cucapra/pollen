@@ -11,7 +11,7 @@ use std::fmt;
 
 use zerocopy::*;
 
-const MAGIC_NUMBER: u8 = 0x12;
+const MAGIC_NUMBER: u64 = 0x12;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Nucleotide {
@@ -78,7 +78,7 @@ pub struct PackedSeqView<'a> {
 #[derive(FromBytes, FromZeroes, AsBytes, Debug)]
 #[repr(packed)]
 pub struct PackedToc {
-    magic: u8,
+    magic: u64,
     data: Size,
     high_nibble_end: u8,
 }
