@@ -1,8 +1,8 @@
 use crate::flatgfa::{self, Segment};
-use crate::memfile::map_file;
+use crate::memfile::{self, map_file};
 use crate::namemap::NameMap;
 use crate::ops;
-use crate::packedseq::{self, PackedSeqStore};
+use crate::packedseq::{self, PackedSeqStore, PackedSeqView};
 use crate::pool::Id;
 use argh::FromArgs;
 use rayon::iter::ParallelIterator;
@@ -302,26 +302,26 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
     }
 }
 
-///
+/// Print the contents of a compressed file of nucleotides
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "seq-import")]
 pub struct SeqImport {
+    /// the name of the file to import from
     #[argh(positional)]
     filename: String,
 }
 
 pub fn seq_import(args: SeqImport) {
-    let vec = packedseq::import(&args.filename);
-    let _ = std::fs::remove_file(&args.filename);
-    let store = PackedSeqStore::create(vec);
-    let view = store.as_ref();
+    let mmap = memfile::map_file(&args.filename);
+    let view = PackedSeqView::view(&mmap);
     print!("{}", view);
 }
 
-///
+/// Compresses a sequence of nucleotides and exports it to a file
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "seq-export")]
 pub struct SeqExport {
+    /// the name of the file to export to
     #[argh(positional)]
     filename: String,
 }

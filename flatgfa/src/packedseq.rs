@@ -299,18 +299,10 @@ pub fn total_bytes(seq: &PackedSeqView) -> usize {
     toc_size + seq_size
 }
 
-pub fn import(filename: &str) -> Vec<Nucleotide> {
-    let mmap = memfile::map_file(filename); // args[2] is the filename
-    PackedSeqView::view(&mmap).get_elements()
-}
-
 pub fn export(seq: PackedSeqView, filename: &str) {
     let num_bytes = total_bytes(&seq);
     let mut mem = map_new_file(filename, num_bytes as u64);
-    let mut buf = vec![0u8; num_bytes];
-    let buf_ref = &mut buf;
-    PackedSeqView::dump(&seq, buf_ref);
-    mem[..buf_ref.len()].copy_from_slice(buf_ref);
+    seq.dump(&mut mem);
 }
 
 #[cfg(test)]
@@ -430,32 +422,6 @@ mod tests {
     }
 
     #[test]
-    fn test_export_import_simple() {
-        let vec = PackedSeqStore::create(vec![
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::T,
-            Nucleotide::G,
-        ]);
-        let input = vec.as_ref();
-        let filename = "capra_test_file";
-        let num_bytes = total_bytes(&input);
-        let mut mem = map_new_file(filename, num_bytes as u64);
-        let mut buf = vec![0u8; num_bytes];
-        let buf_ref = &mut buf;
-        input.dump(buf_ref);
-        mem[..buf_ref.len()].copy_from_slice(buf_ref);
-        let result: &[u8] = &mem;
-        let output = PackedSeqView::view(result);
-        assert_eq!(input.get(0), output.get(0));
-        assert_eq!(input.get(1), output.get(1));
-        assert_eq!(input.get(2), output.get(2));
-        assert_eq!(input.get(3), output.get(3));
-        std::mem::drop(mem);
-        let _ = std::fs::remove_file(filename);
-    }
-
-    #[test]
     fn test_export_import() {
         let len = 10;
         let num_trials = 10;
@@ -464,21 +430,12 @@ mod tests {
             let mut vec: Vec<Nucleotide> = Vec::new();
             for _ in 0..len {
                 let rand_num = rng.gen_range(0..=3);
-                match rand_num {
-                    0 => vec.push(Nucleotide::A),
-                    1 => vec.push(Nucleotide::C),
-                    2 => vec.push(Nucleotide::T),
-                    3 => vec.push(Nucleotide::G),
-                    _ => panic!("Incorrect item appended!"),
-                }
+                vec.push(Nucleotide::from(rand_num));
             }
             let old_vec = vec.clone();
             let store = PackedSeqStore::create(vec);
             let view = store.as_ref();
-            let filename = "capra_test_file_2";
-            export(view, filename);
-            let new_vec = import(filename);
-            let _ = std::fs::remove_file(filename);
+            let new_vec = view.get_elements();
             assert_eq!(old_vec, new_vec);
         }
     }
