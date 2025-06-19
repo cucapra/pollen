@@ -471,7 +471,7 @@ fn test_export_import() {
         let old_vec = vec.clone();
         let store = PackedSeqStore::create(vec);
         let view = store.as_ref();
-        let filename = "capra_test_file";
+        let filename = "capra_test_file_2";
         export(view, filename);
         let new_vec = import(filename);
         let _ = std::fs::remove_file(filename);
