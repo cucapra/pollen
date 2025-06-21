@@ -313,7 +313,7 @@ pub struct SeqImport {
 
 pub fn seq_import(args: SeqImport) {
     let mmap = memfile::map_file(&args.filename);
-    let view = PackedSeqView::view(&mmap);
+    let view = PackedSeqView::read_file(&mmap);
     print!("{}", view);
 }
 
@@ -335,13 +335,7 @@ pub fn seq_export(args: SeqExport) {
     let vec: Vec<packedseq::Nucleotide> = input
         .chars()
         .filter(|c| !c.is_whitespace())
-        .map(|c| match c {
-            'A' => packedseq::Nucleotide::A,
-            'C' => packedseq::Nucleotide::C,
-            'T' => packedseq::Nucleotide::T,
-            'G' => packedseq::Nucleotide::G,
-            _ => panic!("Invalid character in fle: {}", c),
-        })
+        .map(|c| packedseq::Nucleotide::from(c))
         .collect();
 
     let store = packedseq::PackedSeqStore::create(vec);

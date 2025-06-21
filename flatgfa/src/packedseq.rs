@@ -20,6 +20,18 @@ pub enum Nucleotide {
     G,
 }
 
+impl From<char> for Nucleotide {
+    fn from(value: char) -> Self {
+        match value {
+            'A' => Self::A,
+            'C' => Self::C,
+            'T' => Self::T,
+            'G' => Self::G,
+            _ => panic!("Not a Nucleotide!"),
+        }
+    }
+}
+
 impl From<u8> for Nucleotide {
     fn from(value: u8) -> Self {
         match value {
@@ -97,37 +109,60 @@ impl PackedToc {
             high_nibble_end: if seq.high_nibble_end { 1u8 } else { 0u8 },
         }
     }
-}
 
-fn read_packed_toc(data: &[u8]) -> (&PackedToc, &[u8]) {
-    let toc = PackedToc::ref_from_prefix(data).unwrap();
-    let rest = &data[size_of::<PackedToc>()..];
-    let magic = toc.magic;
-    assert_eq!(magic, MAGIC_NUMBER);
-    (toc, rest)
+    fn get_nibble_end(nibble: u8) -> bool {
+        match nibble {
+            0u8 => false,
+            1u8 => true,
+            _ => panic!("Invalid high_nibble_end value"),
+        }
+    }
+
+    fn read(data: &[u8]) -> (&Self, &[u8]) {
+        let toc = PackedToc::ref_from_prefix(data).unwrap();
+        let rest = &data[size_of::<PackedToc>()..];
+        let magic = toc.magic;
+        assert_eq!(magic, MAGIC_NUMBER);
+        (toc, rest)
+    }
 }
 
 impl<'a> PackedSeqView<'a> {
-    pub fn view(data: &'a [u8]) -> Self {
-        let (toc, rest) = read_packed_toc(data);
+    /// Returns the necessary size of a file for storing the data (and associated PackedToc)
+    /// for this PackedSeqView
+    pub fn file_size(&self) -> usize {
+        let num_elems = self.len();
+        let seq_size = if num_elems % 2 == 1 {
+            (num_elems / 2) + 1
+        } else {
+            num_elems / 2
+        };
+
+        let toc_size = std::mem::size_of::<PackedToc>();
+        toc_size + seq_size
+    }
+
+    /// Given a reference to a memory-mapped file `data` containing a compressed
+    /// sequence of nucleotides, return a corresponding PackedSeqView
+    pub fn read_file(data: &'a [u8]) -> Self {
+        let (toc, rest) = PackedToc::read(data);
 
         let (data, _) = slice_prefix(rest, toc.data);
         Self {
             data: data.into(),
-            high_nibble_end: match toc.high_nibble_end {
-                0u8 => false,
-                1u8 => true,
-                _ => panic!("Invalid value in high_nibble_end"),
-            },
+            high_nibble_end: PackedToc::get_nibble_end(toc.high_nibble_end),
         }
     }
 
-    pub fn dump(&self, buf: &mut [u8]) {
+    /// Given a mutable reference to a memory-mapped file `buf`, write the compressed sequence
+    /// referenced by this PackedSeqView to `buf`
+    pub fn write_file(&self, buf: &mut [u8]) {
         let toc = PackedToc::full(self);
         let rest = write_bump(buf, &toc).unwrap();
         write_bytes(rest, self.data).unwrap();
     }
 
+    /// Returns the number of nucleotides in this PackedSeqView
     pub fn len(&self) -> usize {
         if self.high_nibble_end {
             self.data.len() * 2
@@ -135,10 +170,13 @@ impl<'a> PackedSeqView<'a> {
             self.data.len() * 2 - 1
         }
     }
+
+    /// Returns true if this PackedSeqView references an empty sequence, returns false otherwise
     pub fn is_empty(&self) -> bool {
         self.data.is_empty()
     }
 
+    /// Returns the element of this PackedSeqView at index `index`
     pub fn get(&self, index: usize) -> Nucleotide {
         let i = index / 2;
         if index % 2 == 1 {
@@ -148,6 +186,8 @@ impl<'a> PackedSeqView<'a> {
         }
     }
 
+    /// Returns an uncompressed vector that contains the same sequence as
+    /// this PackedSeqView, in range `span`
     pub fn get_range(&self, span: std::ops::Range<usize>) -> Vec<Nucleotide> {
         let mut arr: Vec<Nucleotide> = Vec::with_capacity(span.end - span.start);
         for i in span.start..=span.end {
@@ -156,7 +196,7 @@ impl<'a> PackedSeqView<'a> {
         arr
     }
 
-    /// Returns a uncompressed vector that contains the same sequence as this PackedSeqView
+    /// Returns an uncompressed vector that contains the same sequence as this PackedSeqView
     pub fn get_elements(&self) -> Vec<Nucleotide> {
         self.get_range(0..(self.len() - 1))
     }
@@ -287,22 +327,10 @@ pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
     slice.vec_ref.as_ref().get_range(slice.span)
 }
 
-pub fn total_bytes(seq: &PackedSeqView) -> usize {
-    let num_elems = seq.len();
-    let seq_size = if num_elems % 2 == 1 {
-        (num_elems / 2) + 1
-    } else {
-        num_elems / 2
-    };
-
-    let toc_size = std::mem::size_of::<PackedToc>();
-    toc_size + seq_size
-}
-
 pub fn export(seq: PackedSeqView, filename: &str) {
-    let num_bytes = total_bytes(&seq);
+    let num_bytes = seq.file_size();
     let mut mem = map_new_file(filename, num_bytes as u64);
-    seq.dump(&mut mem);
+    seq.write_file(&mut mem);
 }
 
 #[cfg(test)]
