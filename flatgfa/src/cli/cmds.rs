@@ -338,7 +338,7 @@ pub fn seq_export(args: SeqExport) {
         .map(|c| packedseq::Nucleotide::from(c))
         .collect();
 
-    let store = packedseq::PackedSeqStore::create(vec);
+    let store = packedseq::PackedSeqStore::create(&vec);
     let view = store.as_ref();
     packedseq::export(view, &args.filename);
 }

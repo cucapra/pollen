@@ -256,10 +256,10 @@ impl PackedSeqStore {
     }
 
     /// Returns a compressed PackedSeqStore given an uncompressed vector `arr`
-    pub fn create(arr: Vec<Nucleotide>) -> Self {
+    pub fn create(arr: &[Nucleotide]) -> Self {
         let mut new_vec = PackedSeqStore::new();
         for item in arr {
-            new_vec.push(item);
+            new_vec.push(*item);
         }
         new_vec
     }
@@ -340,7 +340,7 @@ mod tests {
 
     #[test]
     fn test_vec() {
-        let mut vec = PackedSeqStore::create(vec![
+        let mut vec = PackedSeqStore::create(&[
             Nucleotide::A,
             Nucleotide::C,
             Nucleotide::G,
@@ -359,12 +359,8 @@ mod tests {
 
     #[test]
     fn test_vec_push() {
-        let mut vec = PackedSeqStore::create(vec![
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::T,
-        ]);
+        let mut vec =
+            PackedSeqStore::create(&[Nucleotide::A, Nucleotide::C, Nucleotide::G, Nucleotide::T]);
         vec.push(Nucleotide::A);
         vec.push(Nucleotide::C);
         vec.push(Nucleotide::G);
@@ -383,7 +379,7 @@ mod tests {
     #[test]
     fn test_slice() {
         let span = 1..4;
-        let vec = PackedSeqStore::create(vec![
+        let vec = PackedSeqStore::create(&[
             Nucleotide::A,
             Nucleotide::C,
             Nucleotide::G,
@@ -401,7 +397,7 @@ mod tests {
 
     #[test]
     fn test_display_even() {
-        let vec = PackedSeqStore::create(vec![
+        let vec = PackedSeqStore::create(&[
             Nucleotide::C,
             Nucleotide::A,
             Nucleotide::T,
@@ -414,13 +410,13 @@ mod tests {
 
     #[test]
     fn test_display_single() {
-        let vec = PackedSeqStore::create(vec![Nucleotide::T.into()]);
+        let vec = PackedSeqStore::create(&[Nucleotide::T.into()]);
         assert_eq!("[T]", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_odd() {
-        let vec = PackedSeqStore::create(vec![
+        let vec = PackedSeqStore::create(&[
             Nucleotide::C,
             Nucleotide::A,
             Nucleotide::T,
@@ -434,7 +430,7 @@ mod tests {
 
     #[test]
     fn test_getter_setter() {
-        let mut vec = PackedSeqStore::create(vec![
+        let mut vec = PackedSeqStore::create(&[
             Nucleotide::A,
             Nucleotide::A,
             Nucleotide::T,
@@ -460,11 +456,10 @@ mod tests {
                 let rand_num = rng.gen_range(0..=3);
                 vec.push(Nucleotide::from(rand_num));
             }
-            let old_vec = vec.clone();
-            let store = PackedSeqStore::create(vec);
+            let store = PackedSeqStore::create(&vec);
             let view = store.as_ref();
             let new_vec = view.get_elements();
-            assert_eq!(old_vec, new_vec);
+            assert_eq!(vec, new_vec);
         }
     }
 }
