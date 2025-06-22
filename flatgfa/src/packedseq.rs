@@ -472,6 +472,8 @@ mod tests {
         }
     }
 
+    /// Test conversion to and from a byte buffer (which we use to read and
+    /// write files).
     #[test]
     fn test_bytes_export_import() {
         let len = 10;
