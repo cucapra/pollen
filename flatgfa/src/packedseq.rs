@@ -470,4 +470,34 @@ mod tests {
             assert_eq!(vec, new_vec);
         }
     }
+
+    #[test]
+    fn test_bytes_export_import() {
+        let len = 10;
+        let num_trials = 10;
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..num_trials {
+            // Create a random (uncompressed) nucleotide sequence.
+            let mut vec: Vec<Nucleotide> = Vec::new();
+            for _ in 0..len {
+                let rand_num = rng.gen_range(0..=3);
+                vec.push(Nucleotide::from(rand_num));
+            }
+
+            // Compress it.
+            let store = PackedSeqStore::create(&vec);
+
+            // Copy the compressed representation to a byte buffer.
+            let seq = store.as_ref();
+            let num_bytes = seq.file_size();
+            let mut mem = vec![0u8; num_bytes];
+            seq.write_file(&mut mem);
+
+            // "Reawaken" a sequence from this byte buffer.
+            let new_seq = PackedSeqView::read_file(&mem);
+
+            assert_eq!(vec, new_seq.get_elements());
+        }
+    }
 }
