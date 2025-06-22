@@ -336,7 +336,7 @@ pub fn export(seq: PackedSeqView, filename: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{thread_rng, Rng};
+    use rand::{rngs::ThreadRng, thread_rng, Rng};
 
     #[test]
     fn test_vec() {
@@ -445,27 +445,31 @@ mod tests {
         assert_eq!(vec.as_ref().get(1), Nucleotide::G);
     }
 
+    /// Randomly generate an uncompressed nucleotide sequence.
+    fn random_seq(rng: &mut ThreadRng, len: usize) -> Vec<Nucleotide> {
+        let mut vec: Vec<Nucleotide> = Vec::new();
+        for _ in 0..len {
+            let rand_num = rng.gen_range(0..=3);
+            vec.push(Nucleotide::from(rand_num));
+        }
+        vec
+    }
+
     /// Test the `get_elements` method that decompresses data to a
     /// `Vec<Nucleotide>` "in bulk."
     #[test]
     fn test_get_elements() {
         let len = 10;
         let num_trials = 10;
-        let mut rng = rand::thread_rng();
+        let mut rng = thread_rng();
 
         for _ in 0..num_trials {
-            // Create a random (uncompressed) nucleotide sequence.
-            let mut vec: Vec<Nucleotide> = Vec::new();
-            for _ in 0..len {
-                let rand_num = rng.gen_range(0..=3);
-                vec.push(Nucleotide::from(rand_num));
-            }
+            let vec = random_seq(&mut rng, len);
 
             // "Round trip" through a compressed representation, producing a new
             // decompressed vector.
             let store = PackedSeqStore::create(&vec);
-            let view = store.as_ref();
-            let new_vec = view.get_elements();
+            let new_vec = store.as_ref().get_elements();
 
             assert_eq!(vec, new_vec);
         }
@@ -478,14 +482,7 @@ mod tests {
         let mut rng = rand::thread_rng();
 
         for _ in 0..num_trials {
-            // Create a random (uncompressed) nucleotide sequence.
-            let mut vec: Vec<Nucleotide> = Vec::new();
-            for _ in 0..len {
-                let rand_num = rng.gen_range(0..=3);
-                vec.push(Nucleotide::from(rand_num));
-            }
-
-            // Compress it.
+            let vec = random_seq(&mut rng, len);
             let store = PackedSeqStore::create(&vec);
 
             // Copy the compressed representation to a byte buffer.
