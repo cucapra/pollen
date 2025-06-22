@@ -445,20 +445,28 @@ mod tests {
         assert_eq!(vec.as_ref().get(1), Nucleotide::G);
     }
 
+    /// Test the `get_elements` method that decompresses data to a
+    /// `Vec<Nucleotide>` "in bulk."
     #[test]
-    fn test_export_import() {
+    fn test_get_elements() {
         let len = 10;
         let num_trials = 10;
         let mut rng = rand::thread_rng();
+
         for _ in 0..num_trials {
+            // Create a random (uncompressed) nucleotide sequence.
             let mut vec: Vec<Nucleotide> = Vec::new();
             for _ in 0..len {
                 let rand_num = rng.gen_range(0..=3);
                 vec.push(Nucleotide::from(rand_num));
             }
+
+            // "Round trip" through a compressed representation, producing a new
+            // decompressed vector.
             let store = PackedSeqStore::create(&vec);
             let view = store.as_ref();
             let new_vec = view.get_elements();
+
             assert_eq!(vec, new_vec);
         }
     }
