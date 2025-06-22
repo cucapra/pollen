@@ -447,12 +447,9 @@ mod tests {
 
     /// Randomly generate an uncompressed nucleotide sequence.
     fn random_seq(rng: &mut ThreadRng, len: usize) -> Vec<Nucleotide> {
-        let mut vec: Vec<Nucleotide> = Vec::new();
-        for _ in 0..len {
-            let rand_num = rng.gen_range(0..=3);
-            vec.push(Nucleotide::from(rand_num));
-        }
-        vec
+        (0..len)
+            .map(|_| Nucleotide::from(rng.gen_range(0..=3)))
+            .collect()
     }
 
     /// Test the `get_elements` method that decompresses data to a
