@@ -2,7 +2,7 @@ use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
 use crate::namemap::NameMap;
 use crate::ops;
-use crate::packedseq::{self, PackedSeqStore, PackedSeqView};
+use crate::packedseq::{self, PackedSeqView};
 use crate::pool::Id;
 use argh::FromArgs;
 use rayon::iter::ParallelIterator;
