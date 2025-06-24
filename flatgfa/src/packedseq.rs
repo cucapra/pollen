@@ -1,7 +1,6 @@
 use crate::file::*;
 use crate::memfile::map_new_file;
 use std::fmt;
-
 use zerocopy::*;
 
 const MAGIC_NUMBER: u64 = 0x12;
