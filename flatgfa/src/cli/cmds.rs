@@ -2,12 +2,14 @@ use crate::flatbed::BEDParser;
 use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
 use crate::namemap::NameMap;
-use crate::ops;
+use crate::packedseq::PackedSeqView;
 use crate::pool::Id;
+use crate::{ops, packedseq};
 use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
+use std::io::Read;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -337,4 +339,45 @@ pub fn bed_intersect(args: BEDIntersect) {
             println!("{}\t{}\t{}", name, start, end);
         }
     }
+}
+
+/// Print the contents of a compressed file of nucleotides
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "seq-import")]
+pub struct SeqImport {
+    /// the name of the file to import from
+    #[argh(positional)]
+    filename: String,
+}
+
+pub fn seq_import(args: SeqImport) {
+    let mmap = memfile::map_file(&args.filename);
+    let view = PackedSeqView::read_file(&mmap);
+    print!("{}", view);
+}
+
+/// Compresses a sequence of nucleotides and exports it to a file
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "seq-export")]
+pub struct SeqExport {
+    /// the name of the file to export to
+    #[argh(positional)]
+    filename: String,
+}
+
+pub fn seq_export(args: SeqExport) {
+    let mut input = String::new();
+    std::io::stdin()
+        .read_to_string(&mut input)
+        .expect("Stdin read failure");
+
+    let vec: Vec<packedseq::Nucleotide> = input
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .map(|c| packedseq::Nucleotide::from(c))
+        .collect();
+
+    let store = packedseq::PackedSeqStore::create(&vec);
+    let view = store.as_ref();
+    packedseq::export(view, &args.filename);
 }

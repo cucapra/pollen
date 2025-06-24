@@ -29,34 +29,34 @@ pub struct Toc {
 /// A table-of-contents entry for a pool in the FlatGFA file.
 #[derive(FromBytes, IntoBytes, Clone, Copy, Debug, Immutable)]
 #[repr(packed)]
-struct Size {
+pub struct Size {
     /// The number of actual elements in the pool.
-    len: usize,
+    pub(crate) len: usize,
 
     // The allocated space for the pool. `capacity - len` slots are "empty."
-    capacity: usize,
+    pub(crate) capacity: usize,
 }
 
 impl Size {
-    fn of_pool<T>(pool: Pool<T>) -> Self {
+    pub fn of_pool<T>(pool: Pool<T>) -> Self {
         Size {
             len: pool.len(),
             capacity: pool.len(),
         }
     }
 
-    fn of_store<T: Clone>(store: &FixedStore<'_, T>) -> Self {
+    pub fn of_store<T: Clone>(store: &FixedStore<'_, T>) -> Self {
         Size {
             len: store.len(),
             capacity: store.capacity(),
         }
     }
 
-    fn bytes<T>(&self) -> usize {
+    pub fn bytes<T>(&self) -> usize {
         self.capacity * size_of::<T>()
     }
 
-    fn empty(capacity: usize) -> Self {
+    pub fn empty(capacity: usize) -> Self {
         Size { len: 0, capacity }
     }
 }
@@ -160,7 +160,7 @@ impl Toc {
 
 /// Consume `size.len` items from a byte slice, skip the remainder of `size.capacity`
 /// elements, and return the items and the rest of the slice.
-fn slice_prefix<T: FromBytes + Immutable>(data: &[u8], size: Size) -> (&[T], &[u8]) {
+pub fn slice_prefix<T: FromBytes + Immutable>(data: &[u8], size: Size) -> (&[T], &[u8]) {
     let (prefix, rest) = <[T]>::ref_from_prefix_with_elems(data, size.len).unwrap();
     let pad = size_of::<T>() * (size.capacity - size.len);
     (prefix, &rest[pad..])
@@ -271,7 +271,7 @@ pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore) {
     (toc_mut, slice_store(rest, &toc))
 }
 
-fn write_bump<'a, T: IntoBytes + Immutable + ?Sized>(
+pub fn write_bump<'a, T: IntoBytes + Immutable + ?Sized>(
     buf: &'a mut [u8],
     data: &'a T,
 ) -> Result<&'a mut [u8], zerocopy::SizeError<&'a T, &'a mut [u8]>> {
@@ -280,7 +280,7 @@ fn write_bump<'a, T: IntoBytes + Immutable + ?Sized>(
     Ok(&mut buf[len..])
 }
 
-fn write_bytes<'a>(buf: &'a mut [u8], data: &[u8]) -> Option<&'a mut [u8]> {
+pub fn write_bytes<'a>(buf: &'a mut [u8], data: &[u8]) -> Option<&'a mut [u8]> {
     let len = data.len();
     buf[0..len].copy_from_slice(data);
     Some(&mut buf[len..])
