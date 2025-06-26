@@ -366,7 +366,7 @@ impl std::fmt::Display for Sequence<'_> {
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> PackedSeqView {
-        self.seq_data.slice(seg.seq.start, seg.seq.end)
+        PackedSeqView::from_pool(self.seq_data, seg.seq)
     }
 
     /// Get the sequence that a *handle* refers to.
@@ -426,16 +426,27 @@ impl<'a> FlatGFA<'a> {
     }
 }
 
+/// A Span of a packed sequence.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
 #[repr(packed)]
 pub struct SeqSpan {
+    /// The index of the first byte of the sequence
     pub start: usize,
+
+    /// The index of the last byte of the sequence
     pub end: usize,
+
+    /// True if the first base pair in the sequence is stored at a
+    ///                   high nibble
     pub high_nibble_begin: u8,
+
+    /// True if the final base pair in the sequence is stored at a
+    ///                   high nibble
     pub high_nibble_end: u8,
 }
 
 impl SeqSpan {
+    /// The number of nucleotides in the range of this SeqSpan
     pub fn len(&self) -> usize {
         let begin = match self.high_nibble_begin {
             1 => 1,

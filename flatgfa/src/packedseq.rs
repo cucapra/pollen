@@ -1,5 +1,6 @@
-use crate::file::*;
 use crate::memfile::map_new_file;
+use crate::pool::Pool;
+use crate::{file::*, SeqSpan};
 use std::fmt;
 use zerocopy::*;
 
@@ -219,6 +220,23 @@ impl<'a> PackedSeqView<'a> {
             high_nibble_begin: start % 2 == 1,
         }
     }
+
+    pub fn from_pool(pool: Pool<'a, u8>, span: SeqSpan) -> Self {
+        let slice = &pool.all()[span.start..span.end];
+        Self {
+            data: slice,
+            high_nibble_begin: match span.high_nibble_begin {
+                0 => false,
+                1 => true,
+                _ => panic!("Invalid value for high_nibble_begin"),
+            },
+            high_nibble_end: match span.high_nibble_end {
+                0 => false,
+                1 => true,
+                _ => panic!("Invalid value for high_nibble_end"),
+            },
+        }
+    }
 }
 
 impl<'a> fmt::Display for PackedSeqView<'a> {
@@ -274,7 +292,7 @@ impl PackedSeqStore {
         }
     }
 
-    /// Returns a compressed PackedSeqStore given an uncompressed vector `arr`
+    /// Returns a compressed PackedSeqStore given an uncompressed slice `arr`
     pub fn create(arr: &[Nucleotide]) -> Self {
         let mut new_vec = PackedSeqStore::new();
         for item in arr {
@@ -523,7 +541,27 @@ mod tests {
             PackedSeqStore::create(&[Nucleotide::A, Nucleotide::C, Nucleotide::T, Nucleotide::G]);
         let view = store.as_ref();
         let subslice = view.slice(1, 3);
+        assert_eq!(2, subslice.len());
         assert_eq!(Nucleotide::C, subslice.get(0));
         assert_eq!(Nucleotide::T, subslice.get(1));
+    }
+
+    #[test]
+    fn test_from_pool() {
+        let store =
+            PackedSeqStore::create(&[Nucleotide::A, Nucleotide::C, Nucleotide::T, Nucleotide::G]);
+        let view = store.as_ref();
+        let pool = Pool::from(view.data);
+        let span = SeqSpan {
+            start: 0,
+            end: 1,
+            high_nibble_begin: 0,
+            high_nibble_end: 0,
+        };
+        let sub_view = PackedSeqView::from_pool(pool, span);
+        assert_eq!(3, sub_view.len());
+        assert_eq!(Nucleotide::A, sub_view.get(0));
+        assert_eq!(Nucleotide::C, sub_view.get(1));
+        assert_eq!(Nucleotide::T, sub_view.get(2));
     }
 }
