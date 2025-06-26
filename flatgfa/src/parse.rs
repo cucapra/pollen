@@ -136,6 +136,7 @@ impl<'a, P: flatgfa::StoreFamily<'a>> Parser<'a, P> {
     }
 
     fn add_seg(&mut self, seg: gfaline::Segment) {
+        //Maybe compress here?
         let seg_id = self.flat.add_seg(seg.name, seg.seq, seg.data);
         self.seg_ids.insert(seg.name, seg_id);
     }

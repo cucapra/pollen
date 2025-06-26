@@ -308,7 +308,10 @@ impl<'a> Sequence<'a> {
         let data = if self.revcmp {
             // The range starts at the end of the buffer:
             // [-----<end<******<start<------]
-            &self.data[(self.data.len() - range.end)..(self.data.len() - range.start)]
+
+            self.data.slice(SeqSpan::from_range(
+                (self.data.len() - range.end)..(self.data.len() - range.start),
+            ))
         } else {
             self.data.slice(SeqSpan::from_range(range))
         };
@@ -322,13 +325,12 @@ impl<'a> Sequence<'a> {
     pub fn to_vec(&self) -> Vec<u8> {
         if self.revcmp {
             self.data
-                .get_elements()
                 .iter()
                 .rev()
-                .map(|&c| c.into())
+                .map(|c| c.complement().into())
                 .collect()
         } else {
-            self.data.get_elements().iter().map(|&c| c.into()).collect()
+            self.data.iter().map(|c| c.into()).collect()
         }
     }
 }
@@ -358,7 +360,7 @@ impl std::fmt::Display for Sequence<'_> {
             let bytes = self.to_vec();
             write!(f, "{}", BStr::new(&bytes))?;
         } else {
-            write!(f, "{}", BStr::new(self.data))?;
+            write!(f, "{}", self.data)?;
         }
         Ok(())
     }
@@ -376,7 +378,7 @@ impl<'a> FlatGFA<'a> {
     /// gets the sequence in the orientation specified by the handle.
     pub fn get_seq_oriented(&self, handle: Handle) -> Sequence {
         let seg = self.get_handle_seg(handle);
-        let seq_data = self.seq_data[seg.seq].as_ref();
+        let seq_data = PackedSeqView::from_pool(self.seq_data, seg.seq);
         Sequence::new(seq_data, handle.orient())
     }
 
@@ -501,6 +503,7 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
 
     /// Add a new segment to the GFA file.
     pub fn add_seg(&mut self, name: usize, seq: PackedSeqView, optional: &[u8]) -> Id<Segment> {
+        //Maybe compress here?
         let byte_span = self.seq_data.add_slice(seq.data);
         self.segs.add(Segment {
             name,
