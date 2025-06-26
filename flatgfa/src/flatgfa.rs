@@ -277,7 +277,7 @@ pub enum LineKind {
 /// This is mostly a `&[u8]`, but it also has a flag to indicate that we're
 /// representing the reverse-complement of the underlying sequence data.
 pub struct Sequence<'a> {
-    data: &'a [u8],
+    data: PackedSeqView<'a>,
     revcmp: bool,
 }
 
@@ -287,7 +287,7 @@ impl<'a> Sequence<'a> {
     /// `data` should be the "forward" version of the sequence. Use `ori` to
     /// indicate whether this `Sequence` represents the forward or backward
     /// (reverse complement) of that data.
-    pub fn new(data: &'a [u8], ori: Orientation) -> Self {
+    pub fn new(data: PackedSeqView<'a>, ori: Orientation) -> Self {
         Self {
             data,
             revcmp: ori == Orientation::Backward,
@@ -297,9 +297,9 @@ impl<'a> Sequence<'a> {
     /// Look up a single base pair in the sequence.
     pub fn index(&self, idx: usize) -> u8 {
         if self.revcmp {
-            nucleotide_complement(self.data[self.data.len() - idx - 1])
+            self.data.get(self.data.len() - idx - 1).complement().into()
         } else {
-            self.data[idx]
+            self.data.get(idx).into()
         }
     }
 
@@ -310,7 +310,7 @@ impl<'a> Sequence<'a> {
             // [-----<end<******<start<------]
             &self.data[(self.data.len() - range.end)..(self.data.len() - range.start)]
         } else {
-            &self.data[range]
+            self.data.slice(SeqSpan::from_range(range))
         };
         Self {
             data,
@@ -322,12 +322,13 @@ impl<'a> Sequence<'a> {
     pub fn to_vec(&self) -> Vec<u8> {
         if self.revcmp {
             self.data
+                .get_elements()
                 .iter()
                 .rev()
-                .map(|&c| nucleotide_complement(c))
+                .map(|&c| c.into())
                 .collect()
         } else {
-            self.data.to_vec()
+            self.data.get_elements().iter().map(|&c| c.into()).collect()
         }
     }
 }
@@ -459,6 +460,19 @@ impl SeqSpan {
             _ => panic!("invalid value in high_nibble_end"),
         };
         (self.end - self.start) * 2 - begin - end
+    }
+
+    pub fn from_range(range: Range<usize>) -> Self {
+        Self {
+            start: range.start / 2,
+            end: range.end / 2,
+            high_nibble_begin: (range.start % 2) as u8,
+            high_nibble_end: match range.end % 2 {
+                1 => 0,
+                0 => 1,
+                _ => panic!("nibble offset out of scope"),
+            },
+        }
     }
 }
 

@@ -14,6 +14,17 @@ pub enum Nucleotide {
     G,
 }
 
+impl Nucleotide {
+    pub fn complement(&self) -> Nucleotide {
+        match self {
+            Nucleotide::A => Nucleotide::T,
+            Nucleotide::T => Nucleotide::A,
+            Nucleotide::C => Nucleotide::G,
+            Nucleotide::G => Nucleotide::C,
+        }
+    }
+}
+
 impl From<char> for Nucleotide {
     fn from(value: char) -> Self {
         match value {
@@ -205,19 +216,13 @@ impl<'a> PackedSeqView<'a> {
         self.get_range(0..(self.len() - 1))
     }
 
-    /// `start` is inclusive, `end` is exclusive
-    pub fn slice(&self, start: usize, end: usize) -> Self {
-        assert!(start <= end && end <= self.len(), "Invalid slice range");
-
-        let byte_start = start / 2;
-        let byte_end = (end + 1) / 2;
-
-        let new_data = &self.data[byte_start..byte_end];
+    pub fn slice(&self, span: SeqSpan) -> Self {
+        let new_data = &self.data[span.start..span.end + 1];
 
         Self {
             data: new_data,
-            high_nibble_end: end % 2 == 0,
-            high_nibble_begin: start % 2 == 1,
+            high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),
+            high_nibble_end: PackedToc::get_nibble_bool(span.high_nibble_end),
         }
     }
 
@@ -225,16 +230,8 @@ impl<'a> PackedSeqView<'a> {
         let slice = &pool.all()[span.start..span.end];
         Self {
             data: slice,
-            high_nibble_begin: match span.high_nibble_begin {
-                0 => false,
-                1 => true,
-                _ => panic!("Invalid value for high_nibble_begin"),
-            },
-            high_nibble_end: match span.high_nibble_end {
-                0 => false,
-                1 => true,
-                _ => panic!("Invalid value for high_nibble_end"),
-            },
+            high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),
+            high_nibble_end: PackedToc::get_nibble_bool(span.high_nibble_end),
         }
     }
 }
@@ -540,7 +537,12 @@ mod tests {
         let store =
             PackedSeqStore::create(&[Nucleotide::A, Nucleotide::C, Nucleotide::T, Nucleotide::G]);
         let view = store.as_ref();
-        let subslice = view.slice(1, 3);
+        let subslice = view.slice(SeqSpan {
+            start: 0,
+            end: 1,
+            high_nibble_begin: 1,
+            high_nibble_end: 0,
+        });
         assert_eq!(2, subslice.len());
         assert_eq!(Nucleotide::C, subslice.get(0));
         assert_eq!(Nucleotide::T, subslice.get(1));
