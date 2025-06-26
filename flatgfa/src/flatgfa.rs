@@ -3,7 +3,10 @@
 use std::ops::Range;
 use std::str::FromStr;
 
-use crate::pool::{self, Id, Pool, Span, Store};
+use crate::{
+    packedseq::PackedSeqView,
+    pool::{self, Id, Pool, Span, Store},
+};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
@@ -75,7 +78,7 @@ pub struct Segment {
     pub name: usize,
 
     /// The base-pair sequence for the segment. This is a range in the `seq_data` pool.
-    pub seq: Span<u8>,
+    pub seq: SeqSpan,
 
     /// Segments can have optional fields. This is a range in the `optional_data` pool.
     pub optional: Span<u8>,
@@ -362,8 +365,8 @@ impl std::fmt::Display for Sequence<'_> {
 
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
-    pub fn get_seq(&self, seg: &Segment) -> &BStr {
-        self.seq_data[seg.seq].as_ref()
+    pub fn get_seq(&self, seg: &Segment) -> PackedSeqView {
+        self.seq_data.slice(seg.seq.start, seg.seq.end)
     }
 
     /// Get the sequence that a *handle* refers to.
@@ -423,6 +426,31 @@ impl<'a> FlatGFA<'a> {
     }
 }
 
+#[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
+#[repr(packed)]
+pub struct SeqSpan {
+    pub start: usize,
+    pub end: usize,
+    pub high_nibble_begin: u8,
+    pub high_nibble_end: u8,
+}
+
+impl SeqSpan {
+    pub fn len(&self) -> usize {
+        let begin = match self.high_nibble_begin {
+            1 => 1,
+            0 => 0,
+            _ => panic!("invalid value in high_nibble_begin"),
+        };
+        let end = match self.high_nibble_end {
+            1 => 0,
+            0 => 1,
+            _ => panic!("invalid value in high_nibble_end"),
+        };
+        (self.end - self.start) * 2 - begin - end
+    }
+}
+
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
 pub struct GFAStore<'a, P: StoreFamily<'a>> {
@@ -447,10 +475,16 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
+    pub fn add_seg(&mut self, name: usize, seq: PackedSeqView, optional: &[u8]) -> Id<Segment> {
+        let byte_span = self.seq_data.add_slice(seq.data);
         self.segs.add(Segment {
             name,
-            seq: self.seq_data.add_slice(seq),
+            seq: SeqSpan {
+                start: byte_span.start.index() as usize,
+                end: byte_span.end.index() as usize,
+                high_nibble_begin: seq.high_nibble_begin as u8,
+                high_nibble_end: seq.high_nibble_end as u8,
+            },
             optional: self.optional_data.add_slice(optional),
         })
     }

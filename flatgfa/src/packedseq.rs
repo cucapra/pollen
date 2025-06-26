@@ -72,15 +72,15 @@ pub struct PackedSeqStore {
 }
 
 pub struct PackedSeqView<'a> {
-    data: &'a [u8],
+    pub data: &'a [u8],
 
     /// True if the final base pair in the sequence is stored at a
     ///                   high nibble
-    high_nibble_end: bool,
+    pub high_nibble_end: bool,
 
     /// True if the first base pair in the sequence is stored at a
     ///                   high nibble
-    high_nibble_begin: bool,
+    pub high_nibble_begin: bool,
 }
 
 #[derive(FromBytes, IntoBytes, Debug, KnownLayout, Immutable)]
