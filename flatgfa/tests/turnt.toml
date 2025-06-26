@@ -1,0 +1,2 @@
+command = "cat packedtest.txt | cargo run seq-export packed.seq | cargo run seq-import packed.seq"
+output = "-"
