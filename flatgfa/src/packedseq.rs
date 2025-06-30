@@ -319,8 +319,6 @@ impl PackedSeqStore {
         new_vec
     }
 
-    //pub fn append_from_bytes(&mut self, arr: &[u8]) {}
-
     /// Appends `input` to the end of this PackedSeqStore
     pub fn push(&mut self, input: Nucleotide) {
         let value = input.into();
@@ -389,6 +387,21 @@ pub fn export(seq: PackedSeqView, filename: &str) {
     let num_bytes = seq.file_size();
     let mut mem = map_new_file(filename, num_bytes as u64);
     seq.write_file(&mut mem);
+}
+
+pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
+    let mut high_nibble_end = true;
+    for item in input {
+        if high_nibble_end {
+            output.push(*item);
+            high_nibble_end = false;
+        } else {
+            let last_index = output.len() - 1;
+            output[last_index] |= item << 4;
+            high_nibble_end = true;
+        }
+    }
+    high_nibble_end
 }
 
 #[cfg(test)]

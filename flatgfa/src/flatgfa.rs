@@ -4,7 +4,7 @@ use std::ops::Range;
 use std::str::FromStr;
 
 use crate::{
-    packedseq::PackedSeqView,
+    packedseq::{compress_into_buffer, PackedSeqView},
     pool::{self, Id, Pool, Span, Store},
 };
 use bstr::BStr;
@@ -502,16 +502,17 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: PackedSeqView, optional: &[u8]) -> Id<Segment> {
-        //Maybe compress here?
-        let byte_span = self.seq_data.add_slice(seq.data);
+    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
+        let mut compressed: Vec<u8> = Vec::new();
+        let end = compress_into_buffer(seq, &mut compressed);
+        let byte_span = self.seq_data.add_slice(&compressed);
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
                 start: byte_span.start.index() as usize,
                 end: byte_span.end.index() as usize,
-                high_nibble_begin: seq.high_nibble_begin as u8,
-                high_nibble_end: seq.high_nibble_end as u8,
+                high_nibble_begin: 0u8, // potentially a nibble of space is wasted every time a slice is pushed
+                high_nibble_end: end as u8,
             },
             optional: self.optional_data.add_slice(optional),
         })
