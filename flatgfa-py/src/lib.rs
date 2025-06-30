@@ -352,7 +352,7 @@ impl PySegment {
         let gfa = self.0.store.view();
         let seg = &gfa.segs[self.0.id()];
         let seq = gfa.get_seq(seg);
-        PyBytes::new(py, seq)
+        PyBytes::new(py, seq.data) // TODO: Should this be compressed or not?
     }
 
     /// The segment's name as declared in the GFA file, an `int`.

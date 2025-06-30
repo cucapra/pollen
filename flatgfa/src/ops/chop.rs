@@ -1,6 +1,6 @@
 use crate::flatgfa::{self, Handle, Link, Orientation, Path, Segment};
 use crate::pool::{Id, Span, Store};
-use crate::{GFAStore, HeapFamily};
+use crate::{GFAStore, HeapFamily, SeqSpan};
 
 pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgfa::HeapGFAStore {
     let mut flat = flatgfa::HeapGFAStore::default();
@@ -35,16 +35,19 @@ pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgf
             seg_map.push(Span::new(id, flat.segs.next_id()));
         } else {
             let seq_end = seg.seq.end;
-            let mut offset = seg.seq.start.index();
+            let mut offset = seg.seq.start;
             let segs_start = flat.segs.next_id();
             // Could also generate end_id by setting it equal to the start_id and
             // updating it for each segment that is added - only benefits us if we
             // don't unroll the last iteration of this loop
-            while offset < seq_end.index() - max_size {
+            while offset < seq_end - max_size {
                 // Generate a new segment of length c
                 flat.segs.add(Segment {
                     name: max_node_id,
-                    seq: Span::new(Id::new(offset), Id::new(offset + max_size)),
+                    seq: SeqSpan::from_range(std::ops::Range {
+                        start: offset,
+                        end: offset + max_size,
+                    }),
                     optional: Span::new_empty(),
                 });
                 offset += max_size;
@@ -53,7 +56,10 @@ pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgf
             // Generate the last segment
             flat.segs.add(Segment {
                 name: max_node_id,
-                seq: Span::new(Id::new(offset), seq_end),
+                seq: SeqSpan::from_range(std::ops::Range {
+                    start: offset,
+                    end: seq_end,
+                }),
                 optional: Span::new_empty(),
             });
             max_node_id += 1;

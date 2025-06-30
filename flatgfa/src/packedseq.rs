@@ -261,7 +261,7 @@ impl<'a> fmt::Display for PackedSeqView<'a> {
     }
 }
 
-struct PackedSeqViewIterator<'a> {
+pub struct PackedSeqViewIterator<'a> {
     data: &'a PackedSeqView<'a>,
     cur_index: usize,
     back_index: usize,
