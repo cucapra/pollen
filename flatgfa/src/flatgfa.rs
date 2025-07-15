@@ -1,3 +1,5 @@
+#![allow(clippy::repr_packed_without_abi)]
+
 use std::ops::Range;
 use std::str::FromStr;
 

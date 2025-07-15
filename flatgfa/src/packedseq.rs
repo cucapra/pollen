@@ -1,3 +1,5 @@
+#![allow(clippy::repr_packed_without_abi)]
+
 use crate::file::*;
 use crate::memfile::map_new_file;
 use std::fmt;
