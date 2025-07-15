@@ -374,7 +374,7 @@ pub fn seq_export(args: SeqExport) {
     let vec: Vec<packedseq::Nucleotide> = input
         .chars()
         .filter(|c| !c.is_whitespace())
-        .map(|c| packedseq::Nucleotide::from(c))
+        .map(packedseq::Nucleotide::from)
         .collect();
 
     let store = packedseq::PackedSeqStore::create(&vec);

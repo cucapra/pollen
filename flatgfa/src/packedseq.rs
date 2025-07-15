@@ -142,7 +142,7 @@ impl<'a> PackedSeqView<'a> {
 
         let (data, _) = slice_prefix(rest, toc.data);
         Self {
-            data: data.into(),
+            data,
             high_nibble_end: PackedToc::get_nibble_end(toc.high_nibble_end),
         }
     }
@@ -195,7 +195,7 @@ impl<'a> PackedSeqView<'a> {
     }
 }
 
-impl<'a> fmt::Display for PackedSeqView<'a> {
+impl fmt::Display for PackedSeqView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         let mut i = 0;

@@ -1,5 +1,3 @@
-#![allow(clippy::repr_packed_without_abi)]
-
 use std::ops::{Add, Index, Sub};
 use std::{hash::Hash, marker::PhantomData};
 use tinyvec::SliceVec;
