@@ -208,7 +208,7 @@ impl fmt::Display for PackedSeqView<'_> {
                 write!(f, ", ")?;
             }
             let c: char = item.into();
-            write!(f, "{}", c)?;
+            write!(f, "{c}")?;
         }
         write!(f, "]")
     }
@@ -278,7 +278,6 @@ impl PackedSeqStore {
         let elem: u8 = input.into();
         let i = index / 2;
         if index % 2 == 1 {
-            println!("i: {}", i);
             self.data[i] = (0b00001111u8 & self.data[i]) | (elem << 4);
         } else {
             self.data[i] = (0b11110000u8 & self.data[i]) | elem;
