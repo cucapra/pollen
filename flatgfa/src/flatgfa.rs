@@ -446,6 +446,9 @@ pub struct SeqSpan {
     /// True if the final base pair in the sequence is stored at a
     ///                   high nibble
     pub high_nibble_end: u8,
+
+    /// The number of Nucleotide elements stored per byte of data
+    pub elems_per_byte: u8,
 }
 
 impl SeqSpan {
@@ -474,6 +477,7 @@ impl SeqSpan {
                 0 => 1,
                 _ => panic!("nibble offset out of scope"),
             },
+            elems_per_byte: 2,
         }
     }
 }
@@ -513,6 +517,7 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
                 end: byte_span.end.index() as usize,
                 high_nibble_begin: 0u8, // potentially a nibble of space is wasted every time a slice is pushed
                 high_nibble_end: end as u8,
+                elems_per_byte: 2, // TODO
             },
             optional: self.optional_data.add_slice(optional),
         })
@@ -533,6 +538,7 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
                 end: byte_span.end.index() as usize,
                 high_nibble_begin: seq.high_nibble_begin as u8,
                 high_nibble_end: seq.high_nibble_end as u8,
+                elems_per_byte: 2, // TODO
             },
             optional: self.optional_data.add_slice(optional),
         })

@@ -1,5 +1,5 @@
 use crate::memfile::map_new_file;
-use crate::pool::Pool;
+use crate::pool::{Pool, Span};
 use crate::{file::*, SeqSpan};
 use std::fmt;
 use zerocopy::*;
@@ -78,21 +78,24 @@ pub struct PackedSeqStore {
     /// A vector that stores a compressed encoding of this PackedSeqStore's sequence
     data: Vec<u8>,
 
-    /// True if the final base pair in the sequence is stored at a
-    ///                   high nibble
-    high_nibble_end: bool,
+    /// The final bit of the final byte that contains Nucleotide data
+    high_nibble_end: u8,
+
+    /// The number of Nucleotide elements stored per byte of data
+    pub elems_per_byte: u8,
 }
 
 pub struct PackedSeqView<'a> {
     pub data: &'a [u8],
 
-    /// True if the final base pair in the sequence is stored at a
-    ///                   high nibble
-    pub high_nibble_end: bool,
+    /// The final bit of the final byte that contains Nucleotide data
+    pub high_nibble_end: u8,
 
-    /// True if the first base pair in the sequence is stored at a
-    ///                   high nibble
-    pub high_nibble_begin: bool,
+    /// The first bit of the first byte that contains Nucleotide data
+    pub high_nibble_begin: u8,
+
+    /// The number of Nucleotide elements stored per byte of data
+    pub elems_per_byte: u8,
 }
 
 #[derive(FromBytes, IntoBytes, Debug, KnownLayout, Immutable)]
@@ -102,6 +105,7 @@ pub struct PackedToc {
     data: Size,
     high_nibble_end: u8,
     high_nibble_begin: u8,
+    elems_per_byte: u8,
 }
 
 impl PackedToc {
@@ -116,16 +120,9 @@ impl PackedToc {
                 len: seq.data.len(),
                 capacity: seq.data.len(),
             },
-            high_nibble_end: if seq.high_nibble_end { 1u8 } else { 0u8 },
-            high_nibble_begin: if seq.high_nibble_begin { 1u8 } else { 0u8 },
-        }
-    }
-
-    fn get_nibble_bool(nibble: u8) -> bool {
-        match nibble {
-            0u8 => false,
-            1u8 => true,
-            _ => panic!("Invalid high_nibble_bool value"),
+            high_nibble_end: seq.high_nibble_end,
+            high_nibble_begin: seq.high_nibble_begin,
+            elems_per_byte: seq.elems_per_byte,
         }
     }
 
@@ -161,8 +158,9 @@ impl<'a> PackedSeqView<'a> {
         let (data, _) = slice_prefix(rest, toc.data);
         Self {
             data: data.into(),
-            high_nibble_end: PackedToc::get_nibble_bool(toc.high_nibble_end),
-            high_nibble_begin: PackedToc::get_nibble_bool(toc.high_nibble_begin),
+            high_nibble_end: toc.high_nibble_end,
+            high_nibble_begin: toc.high_nibble_begin,
+            elems_per_byte: toc.elems_per_byte,
         }
     }
 
@@ -176,9 +174,17 @@ impl<'a> PackedSeqView<'a> {
 
     /// Returns the number of nucleotides in this PackedSeqView
     pub fn len(&self) -> usize {
-        let begin = if self.high_nibble_begin { 1 } else { 0 };
-        let end = if self.high_nibble_end { 0 } else { 1 };
-        self.data.len() * 2 - begin - end
+        if self.elems_per_byte == 2 {
+            let begin = if self.high_nibble_begin == 4 { 1 } else { 0 };
+            let end = if self.high_nibble_end == 7 { 0 } else { 1 };
+            self.data.len() * 2 - begin - end
+        } else if self.elems_per_byte == 4 {
+            let begin = (self.high_nibble_begin / 2) as usize;
+            let end = ((7 - self.high_nibble_end) / 2) as usize;
+            self.data.len() * 4 - begin - end
+        } else {
+            panic!("Invalid number of elems per byte");
+        }
     }
 
     /// Returns true if this PackedSeqView references an empty sequence, returns false otherwise
@@ -188,16 +194,21 @@ impl<'a> PackedSeqView<'a> {
 
     /// Returns the element of this PackedSeqView at index `index`
     pub fn get(&self, index: usize) -> Nucleotide {
-        let real_idx = if self.high_nibble_begin {
-            index + 1
+        if self.elems_per_byte == 2 {
+            let real_idx = index + (self.high_nibble_begin as usize / 4); // Add 1 to index if first data is at a high nibble
+            let i = real_idx / 2;
+            if real_idx % 2 == 1 {
+                ((self.data[i] & 0b11110000u8) >> 4).into()
+            } else {
+                (self.data[i] & 0b00001111u8).into()
+            }
+        } else if self.elems_per_byte == 4 {
+            let real_idx = index + (self.high_nibble_begin as usize / 2);
+            let i = real_idx / 4;
+            let j = real_idx % 4;
+            ((self.data[i] >> (6 - 2 * j)) & 0b00000011u8).into()
         } else {
-            index
-        };
-        let i = real_idx / 2;
-        if real_idx % 2 == 1 {
-            ((self.data[i] & 0b11110000u8) >> 4).into()
-        } else {
-            (self.data[i] & 0b00001111u8).into()
+            panic!("Invalid number of elems per byte");
         }
     }
 
@@ -221,8 +232,9 @@ impl<'a> PackedSeqView<'a> {
 
         Self {
             data: new_data,
-            high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),
-            high_nibble_end: PackedToc::get_nibble_bool(span.high_nibble_end),
+            high_nibble_begin: span.high_nibble_begin,
+            high_nibble_end: span.high_nibble_end,
+            elems_per_byte: span.elems_per_byte,
         }
     }
 
@@ -230,8 +242,9 @@ impl<'a> PackedSeqView<'a> {
         let slice = &pool.all()[span.start..span.end];
         Self {
             data: slice,
-            high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),
-            high_nibble_end: PackedToc::get_nibble_bool(span.high_nibble_end),
+            high_nibble_begin: span.high_nibble_begin,
+            high_nibble_end: span.high_nibble_end,
+            elems_per_byte: span.elems_per_byte, // TODO!!!
         }
     }
 
@@ -303,16 +316,18 @@ impl<'a> DoubleEndedIterator for PackedSeqViewIterator<'a> {
 
 impl PackedSeqStore {
     /// Creates a new empty PackedSeqStore
-    pub fn new() -> Self {
+    pub fn new(compression_val: u8) -> Self {
+        assert!(compression_val == 2 || compression_val == 4);
         PackedSeqStore {
             data: Vec::new(),
-            high_nibble_end: true,
+            high_nibble_end: 7,
+            elems_per_byte: compression_val,
         }
     }
 
     /// Returns a compressed PackedSeqStore given an uncompressed slice `arr`
-    pub fn create_from_nucleotides(arr: &[Nucleotide]) -> Self {
-        let mut new_vec = PackedSeqStore::new();
+    pub fn create_from_nucleotides(arr: &[Nucleotide], compression_val: u8) -> Self {
+        let mut new_vec = PackedSeqStore::new(compression_val);
         for item in arr {
             new_vec.push(*item);
         }
@@ -322,26 +337,53 @@ impl PackedSeqStore {
     /// Appends `input` to the end of this PackedSeqStore
     pub fn push(&mut self, input: Nucleotide) {
         let value = input.into();
-        assert!(value <= 0xF);
-        if self.high_nibble_end {
-            self.data.push(value);
-            self.high_nibble_end = false;
+        if self.elems_per_byte == 2 {
+            if self.high_nibble_end == 7 {
+                self.data.push(value);
+                self.high_nibble_end = 4;
+            } else {
+                // self.high_nibble_end == 3
+                let last_index = self.data.len() - 1;
+                self.data[last_index] |= value << 4;
+                self.high_nibble_end = 7;
+            }
         } else {
-            let last_index = self.data.len() - 1;
-            self.data[last_index] |= value << 4;
-            self.high_nibble_end = true;
+            // self.elems_per_byte == 4
+            if self.high_nibble_end == 7 {
+                self.data.push(value << 6);
+                self.high_nibble_end = 1;
+            } else {
+                // self.high_nibble_end == 3
+                let last_index = self.data.len() - 1;
+                self.data[last_index] |= value << (5 - self.high_nibble_end);
+                self.high_nibble_end += 2;
+            }
         }
     }
 
     /// Sets the element of this PackedSeqStore at index `index` to `elem`
     pub fn set(&mut self, index: usize, input: Nucleotide) {
         let elem: u8 = input.into();
-        let i = index / 2;
-        if index % 2 == 1 {
-            println!("i: {}", i);
-            self.data[i] = (0b00001111u8 & self.data[i]) | (elem << 4);
+        if self.elems_per_byte == 2 {
+            let i = index / 2;
+            if index % 2 == 1 {
+                self.data[i] = (0b00001111u8 & self.data[i]) | (elem << 4);
+            } else {
+                self.data[i] = (0b11110000u8 & self.data[i]) | elem;
+            }
         } else {
-            self.data[i] = (0b11110000u8 & self.data[i]) | elem;
+            // self.elems_per_byte == 4
+            let i = index / 4;
+            let j = index % 4;
+            if j == 0 {
+                self.data[i] = (0b00111111u8 & self.data[i]) | (elem << 6);
+            } else if j == 1 {
+                self.data[i] = (0b11001111u8 & self.data[i]) | (elem << 4);
+            } else if j == 2 {
+                self.data[i] = (0b11110011u8 & self.data[i]) | (elem << 2);
+            } else if j == 3 {
+                self.data[i] = (0b11111100u8 & self.data[i]) | elem;
+            }
         }
     }
 
@@ -349,14 +391,9 @@ impl PackedSeqStore {
         PackedSeqView {
             data: &self.data,
             high_nibble_end: self.high_nibble_end,
-            high_nibble_begin: false,
+            high_nibble_begin: 0,
+            elems_per_byte: self.elems_per_byte,
         }
-    }
-}
-
-impl Default for PackedSeqStore {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -411,13 +448,16 @@ mod tests {
 
     #[test]
     fn test_vec() {
-        let mut vec = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::T,
-            Nucleotide::A,
-        ]);
+        let mut vec = PackedSeqStore::create_from_nucleotides(
+            &[
+                Nucleotide::A,
+                Nucleotide::C,
+                Nucleotide::G,
+                Nucleotide::T,
+                Nucleotide::A,
+            ],
+            2,
+        );
         vec.push(Nucleotide::A);
         let arr = vec.as_ref().get_elements();
         assert_eq!(arr[0], Nucleotide::A);
@@ -430,12 +470,10 @@ mod tests {
 
     #[test]
     fn test_vec_push() {
-        let mut vec = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::T,
-        ]);
+        let mut vec = PackedSeqStore::create_from_nucleotides(
+            &[Nucleotide::A, Nucleotide::C, Nucleotide::G, Nucleotide::T],
+            2,
+        );
         vec.push(Nucleotide::A);
         vec.push(Nucleotide::C);
         vec.push(Nucleotide::G);
@@ -454,14 +492,17 @@ mod tests {
     #[test]
     fn test_slice() {
         let span = 1..4;
-        let vec = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::T,
-            Nucleotide::A,
-            Nucleotide::G,
-        ]);
+        let vec = PackedSeqStore::create_from_nucleotides(
+            &[
+                Nucleotide::A,
+                Nucleotide::C,
+                Nucleotide::G,
+                Nucleotide::T,
+                Nucleotide::A,
+                Nucleotide::G,
+            ],
+            2,
+        );
         let slice = create_slice(&vec, span);
         let arr = get_slice_seq(slice);
         assert_eq!(arr[0], Nucleotide::C);
@@ -472,48 +513,57 @@ mod tests {
 
     #[test]
     fn test_display_even() {
-        let vec = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::C,
-            Nucleotide::A,
-            Nucleotide::T,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::C,
-        ]);
+        let vec = PackedSeqStore::create_from_nucleotides(
+            &[
+                Nucleotide::C,
+                Nucleotide::A,
+                Nucleotide::T,
+                Nucleotide::C,
+                Nucleotide::G,
+                Nucleotide::C,
+            ],
+            2,
+        );
         assert_eq!("[C, A, T, C, G, C]", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_single() {
-        let vec = PackedSeqStore::create_from_nucleotides(&[Nucleotide::T.into()]);
+        let vec = PackedSeqStore::create_from_nucleotides(&[Nucleotide::T.into()], 2);
         assert_eq!("[T]", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_odd() {
-        let vec = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::C,
-            Nucleotide::A,
-            Nucleotide::T,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::C,
-            Nucleotide::C,
-        ]);
+        let vec = PackedSeqStore::create_from_nucleotides(
+            &[
+                Nucleotide::C,
+                Nucleotide::A,
+                Nucleotide::T,
+                Nucleotide::C,
+                Nucleotide::G,
+                Nucleotide::C,
+                Nucleotide::C,
+            ],
+            2,
+        );
         assert_eq!("[C, A, T, C, G, C, C]", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_getter_setter() {
-        let mut vec = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::A,
-            Nucleotide::A,
-            Nucleotide::T,
-            Nucleotide::C,
-            Nucleotide::G,
-            Nucleotide::C,
-            Nucleotide::C,
-        ]);
+        let mut vec = PackedSeqStore::create_from_nucleotides(
+            &[
+                Nucleotide::A,
+                Nucleotide::A,
+                Nucleotide::T,
+                Nucleotide::C,
+                Nucleotide::G,
+                Nucleotide::C,
+                Nucleotide::C,
+            ],
+            2,
+        );
         assert_eq!(vec.as_ref().get(0), Nucleotide::A);
         assert_eq!(vec.as_ref().get(1), Nucleotide::A);
         vec.set(1, Nucleotide::G);
@@ -540,7 +590,7 @@ mod tests {
 
             // "Round trip" through a compressed representation, producing a new
             // decompressed vector.
-            let store = PackedSeqStore::create_from_nucleotides(&vec);
+            let store = PackedSeqStore::create_from_nucleotides(&vec, 2);
             let new_vec = store.as_ref().get_elements();
 
             assert_eq!(vec, new_vec);
@@ -557,7 +607,7 @@ mod tests {
 
         for _ in 0..num_trials {
             let vec = random_seq(&mut rng, len);
-            let store = PackedSeqStore::create_from_nucleotides(&vec);
+            let store = PackedSeqStore::create_from_nucleotides(&vec, 2);
 
             // Copy the compressed representation to a byte buffer.
             let seq = store.as_ref();
@@ -574,18 +624,17 @@ mod tests {
 
     #[test]
     fn test_subslice() {
-        let store = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::T,
-            Nucleotide::G,
-        ]);
+        let store = PackedSeqStore::create_from_nucleotides(
+            &[Nucleotide::A, Nucleotide::C, Nucleotide::T, Nucleotide::G],
+            2,
+        );
         let view = store.as_ref();
         let subslice = view.slice(SeqSpan {
             start: 0,
             end: 1,
-            high_nibble_begin: 1,
-            high_nibble_end: 0,
+            high_nibble_begin: 4,
+            high_nibble_end: 3,
+            elems_per_byte: 2,
         });
         assert_eq!(2, subslice.len());
         assert_eq!(Nucleotide::C, subslice.get(0));
@@ -594,19 +643,18 @@ mod tests {
 
     #[test]
     fn test_from_pool() {
-        let store = PackedSeqStore::create_from_nucleotides(&[
-            Nucleotide::A,
-            Nucleotide::C,
-            Nucleotide::T,
-            Nucleotide::G,
-        ]);
+        let store = PackedSeqStore::create_from_nucleotides(
+            &[Nucleotide::A, Nucleotide::C, Nucleotide::T, Nucleotide::G],
+            2,
+        );
         let view = store.as_ref();
         let pool = Pool::from(view.data);
         let span = SeqSpan {
             start: 0,
             end: 1,
             high_nibble_begin: 0,
-            high_nibble_end: 0,
+            high_nibble_end: 3,
+            elems_per_byte: 2,
         };
         let sub_view = PackedSeqView::from_pool(pool, span);
         assert_eq!(3, sub_view.len());
