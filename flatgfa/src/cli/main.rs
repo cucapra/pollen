@@ -44,6 +44,8 @@ enum Command {
     GafLookup(cmds::GAFLookup),
     Bench(cmds::Bench),
     BedIntersect(cmds::BEDIntersect),
+    SeqExport(cmds::SeqExport),
+    SeqImport(cmds::SeqImport),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -61,6 +63,16 @@ fn main() -> Result<(), &'static str> {
     // since we do not parse a GFA file for that.
     if let Some(Command::BedIntersect(sub_args)) = args.command {
         cmds::bed_intersect(sub_args);
+        return Ok(());
+    }
+
+    if let Some(Command::SeqExport(sub_args)) = args.command {
+        cmds::seq_export(sub_args);
+        return Ok(());
+    }
+
+    if let Some(Command::SeqImport(sub_args)) = args.command {
+        cmds::seq_import(sub_args);
         return Ok(());
     }
 
@@ -146,6 +158,12 @@ fn main() -> Result<(), &'static str> {
         Some(Command::BedIntersect(_sub_args)) => {
             panic!("Unreachable code");
         }
+        Some(Command::SeqExport(_sub_args)) => {
+            panic!("Unreachable code");
+        }
+        Some(Command::SeqImport(_sub_args)) => {
+            panic!("Unreachable code");
+        }
         None => {
             // Just emit the GFA or FlatGFA file.
             dump(&gfa, &args.output);
@@ -165,7 +183,7 @@ fn dump(gfa: &FlatGFA, output: &Option<String>) {
             mmap.flush().unwrap();
         }
         None => {
-            print!("{}", gfa);
+            print!("{gfa}");
         }
     }
 }
