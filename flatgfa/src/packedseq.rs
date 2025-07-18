@@ -64,7 +64,7 @@ impl From<Nucleotide> for char {
 impl Nucleotide {
     /// Get a nucleotide from an ASCII byte. This is separate from the
     /// `From<u8>` impl, which converts to and from compact values.
-    fn from_ascii(value: u8) -> Self {
+    pub fn from_ascii(value: u8) -> Self {
         match value {
             b'A' => Self::A,
             b'C' => Self::C,
@@ -75,7 +75,7 @@ impl Nucleotide {
     }
 
     /// Get the ASCII character for this nucleotide.
-    fn to_ascii(&self) -> u8 {
+    pub fn to_ascii(&self) -> u8 {
         match self {
             Nucleotide::A => b'A',
             Nucleotide::C => b'C',
@@ -219,18 +219,23 @@ impl<'a> PackedSeqView<'a> {
     pub fn get_elements(&self) -> Vec<Nucleotide> {
         self.get_range(0..(self.len() - 1))
     }
+
+    /// Iterate over the nucleotides in this sequence.
+    pub fn iter(&self) -> PackedSeqViewIterator<'_> {
+        PackedSeqViewIterator::new(self)
+    }
 }
 
 impl fmt::Display for PackedSeqView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for item in PackedSeqViewIterator::new(self) {
+        for item in self.iter() {
             f.write_char(item.into())?;
         }
         Ok(())
     }
 }
 
-struct PackedSeqViewIterator<'a> {
+pub struct PackedSeqViewIterator<'a> {
     data: &'a PackedSeqView<'a>,
     cur_index: usize,
 }

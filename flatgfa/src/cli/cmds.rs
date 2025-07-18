@@ -9,6 +9,7 @@ use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
+use std::io::Write;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -352,7 +353,9 @@ pub struct SeqImport {
 pub fn seq_import(args: SeqImport) {
     let mmap = memfile::map_file(&args.filename);
     let view = PackedSeqView::read_file(&mmap);
-    println!("{view}");
+    let bytes: Vec<u8> = view.iter().map(|n| n.to_ascii()).collect();
+    std::io::stdout().write_all(&bytes).unwrap();
+    println!();
 }
 
 /// Compresses a sequence of nucleotides and exports it to a file
