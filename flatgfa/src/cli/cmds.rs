@@ -374,10 +374,7 @@ pub struct SeqExport {
 pub fn seq_export(args: SeqExport) {
     let input = memfile::map_file(&args.input);
     let store = packedseq::PackedSeqStore::from_ascii(
-        input
-            .into_iter()
-            .map(|c| *c)
-            .filter(|c| !c.is_ascii_whitespace()),
+        input.iter().copied().filter(|c| !c.is_ascii_whitespace()),
     );
     let view = store.as_ref();
     packedseq::export(view, &args.output);
