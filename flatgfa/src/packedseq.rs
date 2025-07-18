@@ -61,6 +61,30 @@ impl From<Nucleotide> for char {
     }
 }
 
+impl Nucleotide {
+    /// Get a nucleotide from an ASCII byte. This is separate from the
+    /// `From<u8>` impl, which converts to and from compact values.
+    fn from_ascii(value: u8) -> Self {
+        match value {
+            b'A' => Self::A,
+            b'C' => Self::C,
+            b'T' => Self::T,
+            b'G' => Self::G,
+            _ => panic!("Not a Nucleotide!"),
+        }
+    }
+
+    /// Get the ASCII character for this nucleotide.
+    fn to_ascii(&self) -> u8 {
+        match self {
+            Nucleotide::A => b'A',
+            Nucleotide::C => b'C',
+            Nucleotide::T => b'T',
+            Nucleotide::G => b'G',
+        }
+    }
+}
+
 /// A compressed vector-like structure for storing nucleotide sequences
 ///     - Two base pairs are stored per byte
 ///
@@ -258,6 +282,14 @@ impl PackedSeqStore {
         let mut new_vec = Self::new();
         for c in chars {
             new_vec.push(c.into());
+        }
+        new_vec
+    }
+
+    pub fn from_ascii<T: Iterator<Item = u8>>(bytes: T) -> Self {
+        let mut new_vec = Self::new();
+        for b in bytes {
+            new_vec.push(Nucleotide::from_ascii(b));
         }
         new_vec
     }

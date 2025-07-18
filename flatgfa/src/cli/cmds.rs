@@ -366,12 +366,14 @@ pub struct SeqExport {
 }
 
 pub fn seq_export(args: SeqExport) {
-    let mut input = String::new();
+    let mut input: Vec<u8> = vec![];
     std::io::stdin()
-        .read_to_string(&mut input)
+        .read_to_end(&mut input)
         .expect("Stdin read failure");
 
-    let store = packedseq::PackedSeqStore::from_iter(input.chars().filter(|c| !c.is_whitespace()));
+    let store = packedseq::PackedSeqStore::from_ascii(
+        input.into_iter().filter(|c| !c.is_ascii_whitespace()),
+    );
     let view = store.as_ref();
     packedseq::export(view, &args.filename);
 }
