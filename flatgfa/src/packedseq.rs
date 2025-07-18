@@ -2,7 +2,7 @@
 
 use crate::file::*;
 use crate::memfile::map_new_file;
-use std::fmt;
+use std::fmt::{self, Write};
 use zerocopy::*;
 
 const MAGIC_NUMBER: u64 = 0x12;
@@ -199,18 +199,10 @@ impl<'a> PackedSeqView<'a> {
 
 impl fmt::Display for PackedSeqView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[")?;
-        let mut i = 0;
         for item in PackedSeqViewIterator::new(self) {
-            if i == 0 {
-                i = 1;
-            } else {
-                write!(f, ", ")?;
-            }
-            let c: char = item.into();
-            write!(f, "{c}")?;
+            f.write_char(item.into())?;
         }
-        write!(f, "]")
+        Ok(())
     }
 }
 
@@ -399,13 +391,13 @@ mod tests {
             Nucleotide::G,
             Nucleotide::C,
         ]);
-        assert_eq!("[C, A, T, C, G, C]", vec.as_ref().to_string());
+        assert_eq!("CATCGC", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_single() {
         let vec = PackedSeqStore::create(&[Nucleotide::T.into()]);
-        assert_eq!("[T]", vec.as_ref().to_string());
+        assert_eq!("T", vec.as_ref().to_string());
     }
 
     #[test]
@@ -419,7 +411,7 @@ mod tests {
             Nucleotide::C,
             Nucleotide::C,
         ]);
-        assert_eq!("[C, A, T, C, G, C, C]", vec.as_ref().to_string());
+        assert_eq!("CATCGCC", vec.as_ref().to_string());
     }
 
     #[test]
