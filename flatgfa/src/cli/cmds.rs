@@ -353,7 +353,7 @@ pub struct SeqImport {
 pub fn seq_import(args: SeqImport) {
     let mmap = memfile::map_file(&args.filename);
     let view = PackedSeqView::read_file(&mmap);
-    print!("{view}");
+    println!("{view}");
 }
 
 /// Compresses a sequence of nucleotides and exports it to a file
