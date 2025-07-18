@@ -371,13 +371,7 @@ pub fn seq_export(args: SeqExport) {
         .read_to_string(&mut input)
         .expect("Stdin read failure");
 
-    let vec: Vec<packedseq::Nucleotide> = input
-        .chars()
-        .filter(|c| !c.is_whitespace())
-        .map(packedseq::Nucleotide::from)
-        .collect();
-
-    let store = packedseq::PackedSeqStore::create(&vec);
+    let store = packedseq::PackedSeqStore::from_iter(input.chars().filter(|c| !c.is_whitespace()));
     let view = store.as_ref();
     packedseq::export(view, &args.filename);
 }

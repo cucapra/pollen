@@ -242,11 +242,22 @@ impl PackedSeqStore {
         }
     }
 
-    /// Returns a compressed PackedSeqStore given an uncompressed vector `arr`
-    pub fn create(arr: &[Nucleotide]) -> Self {
-        let mut new_vec = PackedSeqStore::new();
+    /// Create a compressed PackedSeqStore given an uncompressed nucleotide
+    /// sequence `arr`.
+    pub fn from_slice(arr: &[Nucleotide]) -> Self {
+        let mut new_vec = Self::new();
         for item in arr {
             new_vec.push(*item);
+        }
+        new_vec
+    }
+
+    /// Create a new compressed sequence from any iterator that produces
+    /// individual nucleotides.
+    pub fn from_iter<T: Iterator<Item: Into<Nucleotide>>>(chars: T) -> Self {
+        let mut new_vec = Self::new();
+        for c in chars {
+            new_vec.push(c.into());
         }
         new_vec
     }
@@ -326,7 +337,7 @@ mod tests {
 
     #[test]
     fn test_vec() {
-        let mut vec = PackedSeqStore::create(&[
+        let mut vec = PackedSeqStore::from_slice(&[
             Nucleotide::A,
             Nucleotide::C,
             Nucleotide::G,
@@ -345,8 +356,12 @@ mod tests {
 
     #[test]
     fn test_vec_push() {
-        let mut vec =
-            PackedSeqStore::create(&[Nucleotide::A, Nucleotide::C, Nucleotide::G, Nucleotide::T]);
+        let mut vec = PackedSeqStore::from_slice(&[
+            Nucleotide::A,
+            Nucleotide::C,
+            Nucleotide::G,
+            Nucleotide::T,
+        ]);
         vec.push(Nucleotide::A);
         vec.push(Nucleotide::C);
         vec.push(Nucleotide::G);
@@ -365,7 +380,7 @@ mod tests {
     #[test]
     fn test_slice() {
         let span = 1..4;
-        let vec = PackedSeqStore::create(&[
+        let vec = PackedSeqStore::from_slice(&[
             Nucleotide::A,
             Nucleotide::C,
             Nucleotide::G,
@@ -383,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_display_even() {
-        let vec = PackedSeqStore::create(&[
+        let vec = PackedSeqStore::from_slice(&[
             Nucleotide::C,
             Nucleotide::A,
             Nucleotide::T,
@@ -396,13 +411,13 @@ mod tests {
 
     #[test]
     fn test_display_single() {
-        let vec = PackedSeqStore::create(&[Nucleotide::T.into()]);
+        let vec = PackedSeqStore::from_slice(&[Nucleotide::T.into()]);
         assert_eq!("T", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_odd() {
-        let vec = PackedSeqStore::create(&[
+        let vec = PackedSeqStore::from_slice(&[
             Nucleotide::C,
             Nucleotide::A,
             Nucleotide::T,
@@ -416,7 +431,7 @@ mod tests {
 
     #[test]
     fn test_getter_setter() {
-        let mut vec = PackedSeqStore::create(&[
+        let mut vec = PackedSeqStore::from_slice(&[
             Nucleotide::A,
             Nucleotide::A,
             Nucleotide::T,
@@ -451,7 +466,7 @@ mod tests {
 
             // "Round trip" through a compressed representation, producing a new
             // decompressed vector.
-            let store = PackedSeqStore::create(&vec);
+            let store = PackedSeqStore::from_slice(&vec);
             let new_vec = store.as_ref().get_elements();
 
             assert_eq!(vec, new_vec);
@@ -468,7 +483,7 @@ mod tests {
 
         for _ in 0..num_trials {
             let vec = random_seq(&mut rng, len);
-            let store = PackedSeqStore::create(&vec);
+            let store = PackedSeqStore::from_slice(&vec);
 
             // Copy the compressed representation to a byte buffer.
             let seq = store.as_ref();
