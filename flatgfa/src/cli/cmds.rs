@@ -9,7 +9,6 @@ use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
-use std::io::Read;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -360,20 +359,23 @@ pub fn seq_import(args: SeqImport) {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "seq-export")]
 pub struct SeqExport {
-    /// the name of the file to export to
+    /// the input text file
     #[argh(positional)]
-    filename: String,
+    input: String,
+
+    /// the output compressed file
+    #[argh(positional)]
+    output: String,
 }
 
 pub fn seq_export(args: SeqExport) {
-    let mut input: Vec<u8> = vec![];
-    std::io::stdin()
-        .read_to_end(&mut input)
-        .expect("Stdin read failure");
-
+    let input = memfile::map_file(&args.input);
     let store = packedseq::PackedSeqStore::from_ascii(
-        input.into_iter().filter(|c| !c.is_ascii_whitespace()),
+        input
+            .into_iter()
+            .map(|c| *c)
+            .filter(|c| !c.is_ascii_whitespace()),
     );
     let view = store.as_ref();
-    packedseq::export(view, &args.filename);
+    packedseq::export(view, &args.output);
 }
