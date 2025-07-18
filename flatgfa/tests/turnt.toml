@@ -1,2 +1,2 @@
-command = "cat {filename} | cargo run seq-export packed.seq ; cargo run seq-import packed.seq ; rm packed.seq"
+command = "cat {filename} | ../../target/debug/fgfa seq-export packed.seq ; cargo run seq-import packed.seq ; rm packed.seq"
 output.txt = "-"
