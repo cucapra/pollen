@@ -281,16 +281,6 @@ impl PackedSeqStore {
         new_vec
     }
 
-    /// Create a new compressed sequence from any iterator that produces
-    /// individual nucleotides.
-    pub fn from_iter<T: Iterator<Item: Into<Nucleotide>>>(chars: T) -> Self {
-        let mut new_vec = Self::new();
-        for c in chars {
-            new_vec.push(c.into());
-        }
-        new_vec
-    }
-
     pub fn from_ascii<T: Iterator<Item = u8>>(bytes: T) -> Self {
         let mut new_vec = Self::new();
         for b in bytes {
@@ -329,6 +319,18 @@ impl PackedSeqStore {
             data: &self.data,
             high_nibble_end: self.high_nibble_end,
         }
+    }
+}
+
+impl std::iter::FromIterator<Nucleotide> for PackedSeqStore {
+    /// Create a new compressed sequence from any iterator that produces
+    /// individual nucleotides.
+    fn from_iter<I: IntoIterator<Item = Nucleotide>>(iter: I) -> Self {
+        let mut new_vec = Self::new();
+        for n in iter {
+            new_vec.push(n);
+        }
+        new_vec
     }
 }
 
