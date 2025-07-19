@@ -335,21 +335,6 @@ impl<'a> Sequence<'a> {
     }
 }
 
-/// Given an ASCII character for a nucleotide, get its complement.
-fn nucleotide_complement(c: u8) -> u8 {
-    match c {
-        b'A' => b'T',
-        b'T' => b'A',
-        b'C' => b'G',
-        b'G' => b'C',
-        b'a' => b't',
-        b't' => b'a',
-        b'c' => b'g',
-        b'g' => b'c',
-        x => x,
-    }
-}
-
 impl std::fmt::Display for Sequence<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.revcmp {
@@ -464,6 +449,11 @@ impl SeqSpan {
         (self.end - self.start) * 2 - begin - end
     }
 
+    /// Returns true if this SeqSpan is empty, else return false
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn from_range(range: Range<usize>) -> Self {
         Self {
             start: range.start / 2,
@@ -509,8 +499,8 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: byte_span.start.index() as usize,
-                end: byte_span.end.index() as usize,
+                start: byte_span.start.index(),
+                end: byte_span.end.index(),
                 high_nibble_begin: 0u8, // potentially a nibble of space is wasted every time a slice is pushed
                 high_nibble_end: end as u8,
             },
@@ -529,8 +519,8 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: byte_span.start.index() as usize,
-                end: byte_span.end.index() as usize,
+                start: byte_span.start.index(),
+                end: byte_span.end.index(),
                 high_nibble_begin: seq.high_nibble_begin as u8,
                 high_nibble_end: seq.high_nibble_end as u8,
             },

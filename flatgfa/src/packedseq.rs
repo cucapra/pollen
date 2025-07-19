@@ -1,3 +1,5 @@
+#![allow(clippy::repr_packed_without_abi)]
+
 use crate::memfile::map_new_file;
 use crate::pool::Pool;
 use crate::{file::*, SeqSpan};
@@ -160,7 +162,7 @@ impl<'a> PackedSeqView<'a> {
 
         let (data, _) = slice_prefix(rest, toc.data);
         Self {
-            data: data.into(),
+            data,
             high_nibble_end: PackedToc::get_nibble_bool(toc.high_nibble_end),
             high_nibble_begin: PackedToc::get_nibble_bool(toc.high_nibble_begin),
         }
@@ -255,7 +257,7 @@ impl<'a> fmt::Display for PackedSeqView<'a> {
                 write!(f, ", ")?;
             }
             let c: char = item.into();
-            write!(f, "{}", c)?;
+            write!(f, "{c}")?;
         }
         write!(f, "]")
     }
@@ -338,7 +340,6 @@ impl PackedSeqStore {
         let elem: u8 = input.into();
         let i = index / 2;
         if index % 2 == 1 {
-            println!("i: {}", i);
             self.data[i] = (0b00001111u8 & self.data[i]) | (elem << 4);
         } else {
             self.data[i] = (0b11110000u8 & self.data[i]) | elem;

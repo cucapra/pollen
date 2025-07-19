@@ -76,7 +76,7 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
             }
         }
         println!("#type\tnum");
-        println!("total\t{}", total);
+        println!("total\t{total}");
         println!("unique\t{}", counts.len());
     }
 }
@@ -271,7 +271,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
                 ops::gaf::PathChunker::new(gfa, &name_map, read).count()
             })
             .reduce(|| 0, |a, b| a + b);
-            println!("{}", count);
+            println!("{count}");
         } else {
             unimplemented!("only the no-op mode is parallel")
         }
@@ -292,7 +292,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
                 count += 1;
             }
         }
-        println!("{}", count);
+        println!("{count}");
     } else {
         // Just print some info about the offsets in the segments.
         for read in parser {
@@ -336,7 +336,7 @@ pub fn bed_intersect(args: BEDIntersect) {
             let name: &BStr = bed2.get_name_of_entry(val);
             let start = val.start;
             let end = val.end;
-            println!("{}\t{}\t{}", name, start, end);
+            println!("{name}\t{start}\t{end}");
         }
     }
 }
@@ -353,7 +353,7 @@ pub struct SeqImport {
 pub fn seq_import(args: SeqImport) {
     let mmap = memfile::map_file(&args.filename);
     let view = PackedSeqView::read_file(&mmap);
-    print!("{}", view);
+    print!("{view}");
 }
 
 /// Compresses a sequence of nucleotides and exports it to a file
@@ -374,7 +374,7 @@ pub fn seq_export(args: SeqExport) {
     let vec: Vec<packedseq::Nucleotide> = input
         .chars()
         .filter(|c| !c.is_whitespace())
-        .map(|c| packedseq::Nucleotide::from(c))
+        .map(packedseq::Nucleotide::from)
         .collect();
 
     let store = packedseq::PackedSeqStore::create_from_nucleotides(&vec);

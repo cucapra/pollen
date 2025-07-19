@@ -183,7 +183,7 @@ fn dump(gfa: &FlatGFA, output: &Option<String>) {
             mmap.flush().unwrap();
         }
         None => {
-            print!("{}", gfa);
+            print!("{gfa}");
         }
     }
 }
