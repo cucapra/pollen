@@ -227,7 +227,7 @@ impl<'a> PackedSeqView<'a> {
     }
 
     pub fn from_pool(pool: Pool<'a, u8>, span: SeqSpan) -> Self {
-        let slice = &pool.all()[span.start..span.end];
+        let slice = &pool.all()[span.start..span.end + 1];
         Self {
             data: slice,
             high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),
@@ -261,7 +261,7 @@ impl<'a> fmt::Display for PackedSeqView<'a> {
     }
 }
 
-struct PackedSeqViewIterator<'a> {
+pub struct PackedSeqViewIterator<'a> {
     data: &'a PackedSeqView<'a>,
     cur_index: usize,
     back_index: usize,
@@ -389,6 +389,7 @@ pub fn export(seq: PackedSeqView, filename: &str) {
     seq.write_file(&mut mem);
 }
 
+/// Takes a slice of uncompressed base pairs, compresses them and pushes them into `output`
 pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
     let mut high_nibble_end = true;
     for item in input {
@@ -402,6 +403,22 @@ pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
         }
     }
     high_nibble_end
+}
+
+/// Takes a slice of compressed base pairs, decompresses them and pushes them into `output`
+pub fn decompress_into_buffer(input: PackedSeqView, output: &mut Vec<u8>) {
+    if !input.high_nibble_begin {
+        output.push(input.data[0] & 0b00001111u8);
+    }
+    output.push((input.data[0] & 0b11110000u8) >> 4);
+    for item in &input.data[1..input.data.len() - 1] {
+        output.push(item & 0b00001111u8);
+        output.push((item & 0b11110000u8) >> 4);
+    }
+    output.push(input.data[input.data.len() - 1] & 0b00001111u8);
+    if input.high_nibble_end {
+        output.push((input.data[input.data.len() - 1] & 0b11110000u8) >> 4);
+    }
 }
 
 #[cfg(test)]

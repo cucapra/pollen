@@ -518,6 +518,26 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         })
     }
 
+    /// Add a new segment with already compressed data
+    pub fn add_seg_already_compressed(
+        &mut self,
+        name: usize,
+        seq: PackedSeqView,
+        optional: &[u8],
+    ) -> Id<Segment> {
+        let byte_span = self.seq_data.add_slice(seq.data);
+        self.segs.add(Segment {
+            name,
+            seq: SeqSpan {
+                start: byte_span.start.index() as usize,
+                end: byte_span.end.index() as usize,
+                high_nibble_begin: seq.high_nibble_begin as u8,
+                high_nibble_end: seq.high_nibble_end as u8,
+            },
+            optional: self.optional_data.add_slice(optional),
+        })
+    }
+
     /// Add a new path.
     pub fn add_path(
         &mut self,
