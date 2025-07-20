@@ -28,18 +28,6 @@ impl From<char> for Nucleotide {
     }
 }
 
-impl From<char> for Nucleotide {
-    fn from(value: char) -> Self {
-        match value {
-            'A' => Self::A,
-            'C' => Self::C,
-            'T' => Self::T,
-            'G' => Self::G,
-            _ => panic!("Not a Nucleotide!"),
-        }
-    }
-}
-
 impl From<u8> for Nucleotide {
     fn from(value: u8) -> Self {
         match value {
@@ -425,7 +413,6 @@ pub fn create_slice(vec: &PackedSeqStore, s: std::ops::Range<usize>) -> PackedSl
 
 /// Returns a vector containing the base pairs referenced by `slice`
 pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
-    slice.vec_ref.as_ref().get_range(slice.span)
     slice.vec_ref.as_ref().get_range(slice.span)
 }
 
