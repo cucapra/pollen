@@ -9,7 +9,7 @@ use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
-use std::io::Read;
+use std::io::Write;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
@@ -353,31 +353,29 @@ pub struct SeqImport {
 pub fn seq_import(args: SeqImport) {
     let mmap = memfile::map_file(&args.filename);
     let view = PackedSeqView::read_file(&mmap);
-    print!("{view}");
+    let bytes: Vec<u8> = view.iter().map(|n| n.to_ascii()).collect();
+    std::io::stdout().write_all(&bytes).unwrap();
+    println!();
 }
 
 /// Compresses a sequence of nucleotides and exports it to a file
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "seq-export")]
 pub struct SeqExport {
-    /// the name of the file to export to
+    /// the input text file
     #[argh(positional)]
-    filename: String,
+    input: String,
+
+    /// the output compressed file
+    #[argh(positional)]
+    output: String,
 }
 
 pub fn seq_export(args: SeqExport) {
-    let mut input = String::new();
-    std::io::stdin()
-        .read_to_string(&mut input)
-        .expect("Stdin read failure");
-
-    let vec: Vec<packedseq::Nucleotide> = input
-        .chars()
-        .filter(|c| !c.is_whitespace())
-        .map(packedseq::Nucleotide::from)
-        .collect();
-
-    let store = packedseq::PackedSeqStore::create(&vec);
+    let input = memfile::map_file(&args.input);
+    let store = packedseq::PackedSeqStore::from_ascii(
+        input.iter().copied().filter(|c| !c.is_ascii_whitespace()),
+    );
     let view = store.as_ref();
-    packedseq::export(view, &args.filename);
+    packedseq::export(view, &args.output);
 }

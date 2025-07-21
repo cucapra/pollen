@@ -2,7 +2,7 @@
 
 use crate::file::*;
 use crate::memfile::map_new_file;
-use std::fmt;
+use std::fmt::{self, Write};
 use zerocopy::*;
 
 const MAGIC_NUMBER: u64 = 0x12;
@@ -57,6 +57,30 @@ impl From<Nucleotide> for char {
             Nucleotide::C => 'C',
             Nucleotide::G => 'G',
             Nucleotide::T => 'T',
+        }
+    }
+}
+
+impl Nucleotide {
+    /// Get a nucleotide from an ASCII byte. This is separate from the
+    /// `From<u8>` impl, which converts to and from compact values.
+    pub fn from_ascii(value: u8) -> Self {
+        match value {
+            b'A' => Self::A,
+            b'C' => Self::C,
+            b'T' => Self::T,
+            b'G' => Self::G,
+            _ => panic!("Not a Nucleotide!"),
+        }
+    }
+
+    /// Get the ASCII character for this nucleotide.
+    pub fn to_ascii(&self) -> u8 {
+        match self {
+            Nucleotide::A => b'A',
+            Nucleotide::C => b'C',
+            Nucleotide::T => b'T',
+            Nucleotide::G => b'G',
         }
     }
 }
@@ -195,26 +219,23 @@ impl<'a> PackedSeqView<'a> {
     pub fn get_elements(&self) -> Vec<Nucleotide> {
         self.get_range(0..(self.len() - 1))
     }
+
+    /// Iterate over the nucleotides in this sequence.
+    pub fn iter(&self) -> PackedSeqViewIterator<'_> {
+        PackedSeqViewIterator::new(self)
+    }
 }
 
 impl fmt::Display for PackedSeqView<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[")?;
-        let mut i = 0;
-        for item in PackedSeqViewIterator::new(self) {
-            if i == 0 {
-                i = 1;
-            } else {
-                write!(f, ", ")?;
-            }
-            let c: char = item.into();
-            write!(f, "{c}")?;
+        for item in self.iter() {
+            f.write_char(item.into())?;
         }
-        write!(f, "]")
+        Ok(())
     }
 }
 
-struct PackedSeqViewIterator<'a> {
+pub struct PackedSeqViewIterator<'a> {
     data: &'a PackedSeqView<'a>,
     cur_index: usize,
 }
@@ -250,11 +271,20 @@ impl PackedSeqStore {
         }
     }
 
-    /// Returns a compressed PackedSeqStore given an uncompressed vector `arr`
-    pub fn create(arr: &[Nucleotide]) -> Self {
-        let mut new_vec = PackedSeqStore::new();
+    /// Create a compressed PackedSeqStore given an uncompressed nucleotide
+    /// sequence `arr`.
+    pub fn from_slice(arr: &[Nucleotide]) -> Self {
+        let mut new_vec = Self::new();
         for item in arr {
             new_vec.push(*item);
+        }
+        new_vec
+    }
+
+    pub fn from_ascii<T: Iterator<Item = u8>>(bytes: T) -> Self {
+        let mut new_vec = Self::new();
+        for b in bytes {
+            new_vec.push(Nucleotide::from_ascii(b));
         }
         new_vec
     }
@@ -289,6 +319,18 @@ impl PackedSeqStore {
             data: &self.data,
             high_nibble_end: self.high_nibble_end,
         }
+    }
+}
+
+impl std::iter::FromIterator<Nucleotide> for PackedSeqStore {
+    /// Create a new compressed sequence from any iterator that produces
+    /// individual nucleotides.
+    fn from_iter<I: IntoIterator<Item = Nucleotide>>(iter: I) -> Self {
+        let mut new_vec = Self::new();
+        for n in iter {
+            new_vec.push(n);
+        }
+        new_vec
     }
 }
 
@@ -334,7 +376,7 @@ mod tests {
 
     #[test]
     fn test_vec() {
-        let mut vec = PackedSeqStore::create(&[
+        let mut vec = PackedSeqStore::from_slice(&[
             Nucleotide::A,
             Nucleotide::C,
             Nucleotide::G,
@@ -353,8 +395,12 @@ mod tests {
 
     #[test]
     fn test_vec_push() {
-        let mut vec =
-            PackedSeqStore::create(&[Nucleotide::A, Nucleotide::C, Nucleotide::G, Nucleotide::T]);
+        let mut vec = PackedSeqStore::from_slice(&[
+            Nucleotide::A,
+            Nucleotide::C,
+            Nucleotide::G,
+            Nucleotide::T,
+        ]);
         vec.push(Nucleotide::A);
         vec.push(Nucleotide::C);
         vec.push(Nucleotide::G);
@@ -373,7 +419,7 @@ mod tests {
     #[test]
     fn test_slice() {
         let span = 1..4;
-        let vec = PackedSeqStore::create(&[
+        let vec = PackedSeqStore::from_slice(&[
             Nucleotide::A,
             Nucleotide::C,
             Nucleotide::G,
@@ -391,7 +437,7 @@ mod tests {
 
     #[test]
     fn test_display_even() {
-        let vec = PackedSeqStore::create(&[
+        let vec = PackedSeqStore::from_slice(&[
             Nucleotide::C,
             Nucleotide::A,
             Nucleotide::T,
@@ -399,18 +445,18 @@ mod tests {
             Nucleotide::G,
             Nucleotide::C,
         ]);
-        assert_eq!("[C, A, T, C, G, C]", vec.as_ref().to_string());
+        assert_eq!("CATCGC", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_single() {
-        let vec = PackedSeqStore::create(&[Nucleotide::T.into()]);
-        assert_eq!("[T]", vec.as_ref().to_string());
+        let vec = PackedSeqStore::from_slice(&[Nucleotide::T.into()]);
+        assert_eq!("T", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_display_odd() {
-        let vec = PackedSeqStore::create(&[
+        let vec = PackedSeqStore::from_slice(&[
             Nucleotide::C,
             Nucleotide::A,
             Nucleotide::T,
@@ -419,12 +465,12 @@ mod tests {
             Nucleotide::C,
             Nucleotide::C,
         ]);
-        assert_eq!("[C, A, T, C, G, C, C]", vec.as_ref().to_string());
+        assert_eq!("CATCGCC", vec.as_ref().to_string());
     }
 
     #[test]
     fn test_getter_setter() {
-        let mut vec = PackedSeqStore::create(&[
+        let mut vec = PackedSeqStore::from_slice(&[
             Nucleotide::A,
             Nucleotide::A,
             Nucleotide::T,
@@ -459,7 +505,7 @@ mod tests {
 
             // "Round trip" through a compressed representation, producing a new
             // decompressed vector.
-            let store = PackedSeqStore::create(&vec);
+            let store = PackedSeqStore::from_slice(&vec);
             let new_vec = store.as_ref().get_elements();
 
             assert_eq!(vec, new_vec);
@@ -476,7 +522,7 @@ mod tests {
 
         for _ in 0..num_trials {
             let vec = random_seq(&mut rng, len);
-            let store = PackedSeqStore::create(&vec);
+            let store = PackedSeqStore::from_slice(&vec);
 
             // Copy the compressed representation to a byte buffer.
             let seq = store.as_ref();

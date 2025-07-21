@@ -66,6 +66,8 @@ fn main() -> Result<(), &'static str> {
         return Ok(());
     }
 
+    // Yet more special cases for sequence compression/decompression, which only
+    // deal with raw sequence data and not GFA files.
     if let Some(Command::SeqExport(sub_args)) = args.command {
         cmds::seq_export(sub_args);
         return Ok(());
