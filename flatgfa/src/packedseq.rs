@@ -35,7 +35,7 @@ impl From<u8> for Nucleotide {
             1 => Self::C,
             2 => Self::T,
             3 => Self::G,
-            _ => panic!("Not a Nucleotide!"),
+            _ => panic!("Not a Nucleotide! {}", value),
         }
     }
 }
