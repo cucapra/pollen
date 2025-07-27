@@ -35,7 +35,7 @@ impl From<u8> for Nucleotide {
             1 => Self::C,
             2 => Self::T,
             3 => Self::G,
-            _ => panic!("Not a Nucleotide! {}", value),
+            _ => panic!("Not a Nucleotide!"),
         }
     }
 }
@@ -133,6 +133,7 @@ impl PackedToc {
         size_of::<Self>() + self.data.bytes::<u8>()
     }
 
+    /// Returns a PackededToc with data corresponding to `seq`
     fn full(seq: &PackedSeqView) -> Self {
         Self {
             magic: MAGIC_NUMBER,
@@ -145,6 +146,7 @@ impl PackedToc {
         }
     }
 
+    /// Returns whether `nibble` represents a high or low nibble
     fn get_nibble_bool(nibble: u8) -> bool {
         match nibble {
             0u8 => false,
@@ -153,6 +155,8 @@ impl PackedToc {
         }
     }
 
+    /// Given a reference to a memory-mapped file `data` containing a compressed
+    /// sequence of nucleotides, return a PackedToc along with the rest of the data
     fn read(data: &[u8]) -> (&Self, &[u8]) {
         let toc = PackedToc::ref_from_prefix(data).unwrap().0;
         let rest = &data[size_of::<PackedToc>()..];
@@ -240,6 +244,7 @@ impl<'a> PackedSeqView<'a> {
         self.get_range(0..(self.len() - 1))
     }
 
+    /// Creates a subslice of this PackedSeqView in the range of `span`
     pub fn slice(&self, span: SeqSpan) -> Self {
         let new_data = &self.data[span.start..span.end + 1];
 
@@ -250,6 +255,7 @@ impl<'a> PackedSeqView<'a> {
         }
     }
 
+    /// Given a pool of compressed data (`pool`), create a PackedSeqView in the range of `span`
     pub fn from_pool(pool: Pool<'a, u8>, span: SeqSpan) -> Self {
         let slice = &pool.all()[span.start..span.end];
         Self {
@@ -366,6 +372,7 @@ impl PackedSeqStore {
         }
     }
 
+    /// Creates a PackedSeqView with the same data as this PackedSeqStore
     pub fn as_ref(&self) -> PackedSeqView {
         PackedSeqView {
             data: &self.data,
@@ -416,6 +423,7 @@ pub fn get_slice_seq(slice: PackedSlice<'_>) -> Vec<Nucleotide> {
     slice.vec_ref.as_ref().get_range(slice.span)
 }
 
+/// Writes `seq` into a file with name `filename`
 pub fn export(seq: PackedSeqView, filename: &str) {
     let num_bytes = seq.file_size();
     let mut mem = map_new_file(filename, num_bytes as u64);
