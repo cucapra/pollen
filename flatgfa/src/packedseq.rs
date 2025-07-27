@@ -251,7 +251,7 @@ impl<'a> PackedSeqView<'a> {
     }
 
     pub fn from_pool(pool: Pool<'a, u8>, span: SeqSpan) -> Self {
-        let slice = &pool.all()[span.start..span.end + 1];
+        let slice = &pool.all()[span.start..span.end];
         Self {
             data: slice,
             high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),
@@ -422,16 +422,23 @@ pub fn export(seq: PackedSeqView, filename: &str) {
     seq.write_file(&mut mem);
 }
 
-/// Takes a slice of uncompressed base pairs, compresses them and pushes them into `output`
+/// Takes a slice of uncompressed ASCII-encoded base pairs, compresses them and pushes them into `output`
 pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
     let mut high_nibble_end = true;
     for item in input {
+        let converted: u8 = match item {
+            65 => 0,
+            67 => 1,
+            84 => 2,
+            71 => 3,
+            _ => panic!("Not a Nucleotide!"),
+        };
         if high_nibble_end {
-            output.push(*item);
+            output.push(converted);
             high_nibble_end = false;
         } else {
             let last_index = output.len() - 1;
-            output[last_index] |= item << 4;
+            output[last_index] |= converted << 4;
             high_nibble_end = true;
         }
     }
