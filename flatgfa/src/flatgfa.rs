@@ -455,7 +455,11 @@ impl SeqSpan {
     }
 
     pub fn from_range(range: Range<usize>) -> Self {
-        let true_end = range.end - 1;
+        let true_end = if range.end > 0 {
+            range.end - 1
+        } else {
+            range.end
+        };
         Self {
             start: range.start / 2,
             end: true_end / 2,
