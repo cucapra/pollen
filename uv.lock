@@ -67,7 +67,6 @@ wheels = [
 
 [[package]]
 name = "mygfa"
-version = "0.1"
 source = { editable = "mygfa" }
 
 [[package]]
@@ -90,12 +89,10 @@ wheels = [
 
 [[package]]
 name = "pollen"
-version = "1"
 source = { editable = "pollen_py" }
 
 [[package]]
 name = "pollen-data-gen"
-version = "0.1"
 source = { editable = "pollen_data_gen" }
 dependencies = [
     { name = "mygfa" },
@@ -144,7 +141,6 @@ wheels = [
 
 [[package]]
 name = "slow-odgi"
-version = "0.1"
 source = { editable = "slow_odgi" }
 dependencies = [
     { name = "mygfa" },

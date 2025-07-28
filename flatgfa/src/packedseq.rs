@@ -14,6 +14,7 @@ pub enum Nucleotide {
     C,
     T,
     G,
+    N,
 }
 
 impl From<char> for Nucleotide {
@@ -23,6 +24,7 @@ impl From<char> for Nucleotide {
             'C' => Self::C,
             'T' => Self::T,
             'G' => Self::G,
+            'N' => Self::N,
             _ => panic!("Not a Nucleotide!"),
         }
     }
@@ -35,6 +37,7 @@ impl From<u8> for Nucleotide {
             1 => Self::C,
             2 => Self::T,
             3 => Self::G,
+            4 => Self::N,
             _ => panic!("Not a Nucleotide!"),
         }
     }
@@ -47,6 +50,7 @@ impl From<Nucleotide> for u8 {
             Nucleotide::C => 1,
             Nucleotide::T => 2,
             Nucleotide::G => 3,
+            Nucleotide::N => 4,
         }
     }
 }
@@ -58,6 +62,7 @@ impl From<Nucleotide> for char {
             Nucleotide::C => 'C',
             Nucleotide::G => 'G',
             Nucleotide::T => 'T',
+            Nucleotide::N => 'N',
         }
     }
 }
@@ -71,6 +76,7 @@ impl Nucleotide {
             b'C' => Self::C,
             b'T' => Self::T,
             b'G' => Self::G,
+            b'N' => Self::N,
             _ => panic!("Not a Nucleotide!"),
         }
     }
@@ -82,6 +88,7 @@ impl Nucleotide {
             Nucleotide::C => b'C',
             Nucleotide::T => b'T',
             Nucleotide::G => b'G',
+            Nucleotide::N => b'N',
         }
     }
 
@@ -91,6 +98,7 @@ impl Nucleotide {
             Nucleotide::T => Nucleotide::A,
             Nucleotide::C => Nucleotide::G,
             Nucleotide::G => Nucleotide::C,
+            Nucleotide::N => Nucleotide::N,
         }
     }
 }
@@ -439,6 +447,7 @@ pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
             67 => 1,
             84 => 2,
             71 => 3,
+            78 => 4,
             _ => panic!("Not a Nucleotide!"),
         };
         if high_nibble_end {
