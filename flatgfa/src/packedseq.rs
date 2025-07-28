@@ -254,7 +254,7 @@ impl<'a> PackedSeqView<'a> {
 
     /// Creates a subslice of this PackedSeqView in the range of `span`
     pub fn slice(&self, span: SeqSpan) -> Self {
-        let new_data = &self.data[span.start..span.end + 1];
+        let new_data = &self.data[span.start..span.end];
 
         Self {
             data: new_data,
