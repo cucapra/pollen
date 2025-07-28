@@ -455,11 +455,12 @@ impl SeqSpan {
     }
 
     pub fn from_range(range: Range<usize>) -> Self {
+        let true_end = range.end - 1;
         Self {
             start: range.start / 2,
-            end: range.end / 2,
+            end: true_end / 2,
             high_nibble_begin: (range.start % 2) as u8,
-            high_nibble_end: match range.end % 2 {
+            high_nibble_end: match true_end % 2 {
                 1 => 0,
                 0 => 1,
                 _ => panic!("nibble offset out of scope"),
