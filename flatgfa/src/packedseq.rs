@@ -465,16 +465,31 @@ pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
 /// Takes a slice of compressed base pairs, decompresses them and pushes them into `output`
 pub fn decompress_into_buffer(input: PackedSeqView, output: &mut Vec<u8>) {
     if !input.high_nibble_begin {
-        output.push(input.data[0] & 0b00001111u8);
+        output.push(convert_to_ascii(input.data[0] & 0b00001111u8));
     }
-    output.push((input.data[0] & 0b11110000u8) >> 4);
+    output.push(convert_to_ascii((input.data[0] & 0b11110000u8) >> 4));
     for item in &input.data[1..input.data.len() - 1] {
-        output.push(item & 0b00001111u8);
-        output.push((item & 0b11110000u8) >> 4);
+        output.push(convert_to_ascii(item & 0b00001111u8));
+        output.push(convert_to_ascii((item & 0b11110000u8) >> 4));
     }
-    output.push(input.data[input.data.len() - 1] & 0b00001111u8);
+    output.push(convert_to_ascii(
+        input.data[input.data.len() - 1] & 0b00001111u8,
+    ));
     if input.high_nibble_end {
-        output.push((input.data[input.data.len() - 1] & 0b11110000u8) >> 4);
+        output.push(convert_to_ascii(
+            (input.data[input.data.len() - 1] & 0b11110000u8) >> 4,
+        ));
+    }
+}
+
+fn convert_to_ascii(elem: u8) -> u8 {
+    match elem {
+        0 => 65,
+        1 => 67,
+        2 => 84,
+        3 => 71,
+        4 => 78,
+        _ => panic!("Not a Nucleotide!"),
     }
 }
 
