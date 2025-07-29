@@ -308,7 +308,6 @@ impl<'a> Sequence<'a> {
         let data = if self.revcmp {
             // The range starts at the end of the buffer:
             // [-----<end<******<start<------]
-
             self.data.slice(SeqSpan::from_range(
                 (self.data.len() - range.end)..(self.data.len() - range.start),
             ))
@@ -421,7 +420,8 @@ pub struct SeqSpan {
     /// The index of the first byte of the sequence
     pub start: usize,
 
-    /// The index of the last byte of the sequence
+    /// One greater than the index of the last byte of the sequence.
+    /// Note: if both indices in a SeqSpan are equal, then its length is 0
     pub end: usize,
 
     /// True if the first base pair in the sequence is stored at a
@@ -436,17 +436,21 @@ pub struct SeqSpan {
 impl SeqSpan {
     /// The number of nucleotides in the range of this SeqSpan
     pub fn len(&self) -> usize {
-        let begin = match self.high_nibble_begin {
-            1 => 1,
-            0 => 0,
-            _ => panic!("invalid value in high_nibble_begin"),
-        };
-        let end = match self.high_nibble_end {
-            1 => 0,
-            0 => 1,
-            _ => panic!("invalid value in high_nibble_end"),
-        };
-        (self.end - self.start) * 2 - begin - end
+        if self.end == self.start {
+            0
+        } else {
+            let begin = match self.high_nibble_begin {
+                1 => 1,
+                0 => 0,
+                _ => panic!("invalid value in high_nibble_begin"),
+            };
+            let end = match self.high_nibble_end {
+                1 => 0,
+                0 => 1,
+                _ => panic!("invalid value in high_nibble_end"),
+            };
+            (self.end - self.start) * 2 - begin - end
+        }
     }
 
     /// Returns true if this SeqSpan is empty, else return false
@@ -454,17 +458,13 @@ impl SeqSpan {
         self.len() == 0
     }
 
+    /// Given `range`, returns the equivalent SeqSpan
     pub fn from_range(range: Range<usize>) -> Self {
-        let true_end = if range.end > 0 {
-            range.end - 1
-        } else {
-            range.end
-        };
         Self {
             start: range.start / 2,
-            end: true_end / 2,
+            end: range.end / 2,
             high_nibble_begin: (range.start % 2) as u8,
-            high_nibble_end: (true_end % 2) as u8,
+            high_nibble_end: (range.end % 2) as u8,
         }
     }
 }

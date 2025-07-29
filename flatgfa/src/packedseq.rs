@@ -212,9 +212,13 @@ impl<'a> PackedSeqView<'a> {
 
     /// Returns the number of nucleotides in this PackedSeqView
     pub fn len(&self) -> usize {
-        let begin = if self.high_nibble_begin { 1 } else { 0 };
-        let end = if self.high_nibble_end { 0 } else { 1 };
-        self.data.len() * 2 - begin - end
+        if self.data.len() == 0 {
+            0
+        } else {
+            let begin = if self.high_nibble_begin { 1 } else { 0 };
+            let end = if self.high_nibble_end { 0 } else { 1 };
+            self.data.len() * 2 - begin - end
+        }
     }
 
     /// Returns true if this PackedSeqView references an empty sequence, returns false otherwise
@@ -254,7 +258,7 @@ impl<'a> PackedSeqView<'a> {
 
     /// Creates a subslice of this PackedSeqView in the range of `span`
     pub fn slice(&self, span: SeqSpan) -> Self {
-        let new_data = &self.data[span.start..span.end + 1];
+        let new_data = &self.data[span.start..span.end];
 
         Self {
             data: new_data,
@@ -319,7 +323,7 @@ impl Iterator for PackedSeqViewIterator<'_> {
 
 impl<'a> DoubleEndedIterator for PackedSeqViewIterator<'a> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.cur_index < self.back_index {
+        if self.cur_index < self.back_index && self.back_index > 0 {
             self.back_index -= 1;
             Some(self.data.get(self.back_index))
         } else {
