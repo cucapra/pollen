@@ -7,7 +7,7 @@ TEST_GAF = TEST_DIR / "tiny.gaf"
 
 
 def test_gaf_seqs():
-    gfa = flatgfa.parse_bytes(TEST_GFA.read_bytes())
+    gfa = flatgfa.parse_bytes(TEST_GFA.read_bytes()) 
     gaf = gfa.all_reads(str(TEST_GAF))
     seqs = ["".join(e.sequence() for e in line) for line in gaf]
     assert seqs == [
