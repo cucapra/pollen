@@ -212,7 +212,7 @@ impl<'a> PackedSeqView<'a> {
 
     /// Returns the number of nucleotides in this PackedSeqView
     pub fn len(&self) -> usize {
-        if self.data.len() == 0 {
+        if self.data.is_empty() {
             0
         } else {
             let begin = if self.high_nibble_begin { 1 } else { 0 };

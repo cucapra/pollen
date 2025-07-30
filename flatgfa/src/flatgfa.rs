@@ -460,11 +460,20 @@ impl SeqSpan {
 
     /// Given `range`, returns the equivalent SeqSpan
     pub fn from_range(range: Range<usize>) -> Self {
+        if range.end == 0 {
+            return Self {
+                start: 0,
+                end: 0,
+                high_nibble_begin: 0,
+                high_nibble_end: 0,
+            };
+        }
+        let true_start = if range.start == 1 { 0 } else { range.start };
         Self {
-            start: range.start / 2,
-            end: range.end / 2,
+            start: true_start / 2,
+            end: ((range.end - 1) / 2) + 1,
             high_nibble_begin: (range.start % 2) as u8,
-            high_nibble_end: (range.end % 2) as u8,
+            high_nibble_end: ((range.end - 1) % 2) as u8,
         }
     }
 }
