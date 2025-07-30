@@ -1,21 +1,21 @@
 [envs.chop_oracle]
 binary = true 
-command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | slow_odgi norm --nl"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | uv run slow_odgi norm --nl"
 output.chop = "-"
 
 [envs.chop_test]
 binary = true
-command = "slow_odgi chop {filename} -n 3"
+command = "uv run slow_odgi chop {filename} -n 3"
 output.chop = "-"
 
 [envs.crush_oracle]
 binary = true
-command = "odgi crush -i {filename} -o - | odgi view -g -i - | slow_odgi norm"
+command = "odgi crush -i {filename} -o - | odgi view -g -i - | uv run slow_odgi norm"
 output.crush = "-"
 
 [envs.crush_test]
 binary = true
-command = "slow_odgi crush {filename}"
+command = "uv run slow_odgi crush {filename}"
 output.crush = "-"
 
 [envs.degree_oracle]
@@ -25,12 +25,12 @@ output.degree = "-"
 
 [envs.degree_test]
 binary = true
-command = "slow_odgi degree {filename}"
+command = "uv run slow_odgi degree {filename}"
 output.degree = "-"
 
 [envs.depth_setup]
 binary = true
-command = "slow_odgi somepaths --drop 50 {filename}"
+command = "uv run slow_odgi somepaths --drop 50 {filename}"
 output.depthpaths = "-"
 
 [envs.depth_oracle]
@@ -40,7 +40,7 @@ output.depth = "-"
 
 [envs.depth_test]
 binary = true
-command = "slow_odgi depth --paths {base}.depthpaths {filename}"
+command = "uv run slow_odgi depth --paths {base}.depthpaths {filename}"
 output.depth = "-"
 
 [envs.flatten_oracle]
@@ -50,32 +50,32 @@ output.flatten = "-"
 
 [envs.flatten_test]
 binary = true
-command = "slow_odgi flatten {filename}"
+command = "uv run slow_odgi flatten {filename}"
 output.flatten = "-"
 
 [envs.flip_oracle]
 binary = true
-command = "odgi flip -i {filename} -o - | odgi view -g -i - | slow_odgi norm"
+command = "odgi flip -i {filename} -o - | odgi view -g -i - | uv run slow_odgi norm"
 output.flip = "-"
 
 [envs.flip_test]
 binary = true
-command = "slow_odgi flip {filename}"
+command = "uv run slow_odgi flip {filename}"
 output.flip = "-"
 
 [envs.inject_setup]
 binary = true
-command = "slow_odgi inject_setup < {filename}"
+command = "uv run slow_odgi inject_setup < {filename}"
 output.bed = "-"
 
 [envs.inject_oracle]
 binary = true
-command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | slow_odgi norm --nl"
+command = "odgi inject -i {filename} -b {base}.bed -o - | odgi view -g -i - | uv run slow_odgi norm --nl"
 output.inj = "-"
 
 [envs.inject_test]
 binary = true
-command = "slow_odgi inject --bed {base}.bed {filename}"
+command = "uv run slow_odgi inject --bed {base}.bed {filename}"
 output.inj = "-"
 
 [envs.matrix_oracle]
@@ -85,22 +85,22 @@ output.matrix = "-"
 
 [envs.matrix_test]
 binary = true
-command = "slow_odgi matrix {filename} | sort"
+command = "uv run slow_odgi matrix {filename} | sort"
 output.matrix = "-"
 
 [envs.norm_oracle]
 binary = true
-command = "odgi view -g -i {filename} | slow_odgi norm"
+command = "odgi view -g -i {filename} | uv run slow_odgi norm"
 output.norm = "-"
 
 [envs.norm_test]
 binary = true
-command = "slow_odgi norm {filename}"
+command = "uv run slow_odgi norm {filename}"
 output.norm = "-"
 
 [envs.overlap_setup]
 binary = true
-command = "slow_odgi somepaths --drop 50 {filename}"
+command = "uv run slow_odgi somepaths --drop 50 {filename}"
 output.overlappaths = "-"
 
 [envs.overlap_oracle]
@@ -110,7 +110,7 @@ output.overlap = "-"
 
 [envs.overlap_test]
 binary = true
-command = "slow_odgi overlap --paths {base}.overlappaths {filename}"
+command = "uv run slow_odgi overlap --paths {base}.overlappaths {filename}"
 output.overlap = "-"
 
 [envs.paths_oracle]
@@ -120,7 +120,7 @@ output.paths = "-"
 
 [envs.paths_test]
 binary = true
-command = "slow_odgi paths {filename}"
+command = "uv run slow_odgi paths {filename}"
 output.paths = "-"
 
 # Drop some links in the "real" input graphs to produce invalid graphs, in the
@@ -128,7 +128,7 @@ output.paths = "-"
 # validation.
 [envs.validate_setup]
 binary = true
-command = "slow_odgi validate_setup < {filename}"
+command = "uv run slow_odgi validate_setup < {filename}"
 output.gfa = "-"
 out_dir = "invalid"
 
@@ -146,7 +146,7 @@ return_code = 1
 
 [envs.validate_test]
 binary = true
-command = "slow_odgi validate {filename}"
+command = "uv run slow_odgi validate {filename}"
 output.validate = "-"
 
 [envs.pollen_data_gen_depth_oracle]
@@ -182,18 +182,18 @@ output.depth = "-"
 
 [envs.chop_oracle_fgfa]
 binary = true
-command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | slow_odgi norm"
+command = "odgi chop -i {filename} -c 3 -o - | odgi view -g -i - | uv run slow_odgi norm"
 output.chop = "-"
 
 [envs.flatgfa_chop]
-command = "../target/debug/fgfa -I {filename} chop -l -c 3 | slow_odgi norm"
+command = "../target/debug/fgfa -I {filename} chop -l -c 3 | uv run slow_odgi norm"
 output.chop = "-"
 
 [envs.odgi_extract]
 binary = true
-command = "odgi extract -i {filename} -n 3 -c 3 -o - | odgi view -g -i - | slow_odgi norm"
+command = "odgi extract -i {filename} -n 3 -c 3 -o - | odgi view -g -i - | uv run slow_odgi norm"
 output.extract = "-"
 
 [envs.flatgfa_extract]
-command = "../target/debug/fgfa -I {filename} extract -n 3 -c 3 | slow_odgi norm"
+command = "../target/debug/fgfa -I {filename} extract -n 3 -c 3 | uv run slow_odgi norm"
 output.extract = "-"
