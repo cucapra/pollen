@@ -664,4 +664,24 @@ mod tests {
             assert_eq!(vec, new_seq.get_elements());
         }
     }
+
+    /// Test the len() method for PackedSeqView
+    #[test]
+    fn test_len() {
+        let store = PackedSeqStore::from_slice(&[
+            Nucleotide::A,
+            Nucleotide::A,
+            Nucleotide::T,
+            Nucleotide::C,
+            Nucleotide::G,
+            Nucleotide::C,
+            Nucleotide::C,
+        ]);
+        let view = store.as_ref();
+        assert_eq!(7, view.len());
+
+        let store = PackedSeqStore::from_slice(&[]);
+        let view = store.as_ref();
+        assert_eq!(0, view.len());
+    }
 }

@@ -477,6 +477,7 @@ impl SeqSpan {
         }
     }
 
+    /// Returns the range that is equivalent to this SeqSpan
     pub fn to_range(&self) -> Range<usize> {
         let true_start = self.start * 2 + ((self.high_nibble_begin % 2) as usize);
         let mut true_end = (self.end - 1) * 2 + ((self.high_nibble_end % 2) as usize) + 1;
