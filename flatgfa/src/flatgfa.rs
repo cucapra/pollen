@@ -476,6 +476,18 @@ impl SeqSpan {
             high_nibble_end: ((range.end - 1) % 2) as u8,
         }
     }
+
+    pub fn to_range(&self) -> Range<usize> {
+        let true_start = self.start * 2 + ((self.high_nibble_begin % 2) as usize);
+        let mut true_end = (self.end - 1) * 2 + ((self.high_nibble_end % 2) as usize) + 1;
+        if self.start == self.end {
+            true_end = true_start;
+        }
+        Range {
+            start: true_start,
+            end: true_end,
+        }
+    }
 }
 
 /// The data storage pools for a `FlatGFA`.

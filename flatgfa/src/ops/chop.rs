@@ -34,8 +34,9 @@ pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgf
             max_node_id += 1;
             seg_map.push(Span::new(id, flat.segs.next_id()));
         } else {
-            let seq_end = seg.seq.end;
-            let mut offset = seg.seq.start;
+            let seq_range = seg.seq.to_range();
+            let seq_end = seq_range.end;
+            let mut offset = seq_range.start;
             let segs_start = flat.segs.next_id();
             // Could also generate end_id by setting it equal to the start_id and
             // updating it for each segment that is added - only benefits us if we
