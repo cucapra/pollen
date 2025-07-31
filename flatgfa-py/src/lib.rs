@@ -1,5 +1,6 @@
 use flatgfa::namemap::NameMap;
 use flatgfa::ops::gaf::{ChunkEvent, GAFParser};
+use flatgfa::packedseq::decompress_into_buffer;
 use flatgfa::pool::Id;
 use flatgfa::{self, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
 use memmap::Mmap;
@@ -352,7 +353,9 @@ impl PySegment {
         let gfa = self.0.store.view();
         let seg = &gfa.segs[self.0.id()];
         let seq = gfa.get_seq(seg);
-        PyBytes::new(py, seq)
+        let mut buffer: Vec<u8> = Vec::new();
+        decompress_into_buffer(seq, &mut buffer);
+        PyBytes::new(py, &buffer) // Note: data is decompressed here
     }
 
     /// The segment's name as declared in the GFA file, an `int`.

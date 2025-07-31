@@ -168,7 +168,6 @@ impl ChunkEvent {
         let seg = gfa.segs[self.handle.segment()];
         let seg_name = seg.name;
         let mut result = String::new();
-
         match self.range {
             ChunkRange::Partial(start, end) => {
                 result.push_str(&format!(
