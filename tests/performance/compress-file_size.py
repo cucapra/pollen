@@ -2,7 +2,7 @@ import subprocess
 import sys
 
 def main():
-  with open("compress-file_size-output.txt", "w") as f:
+  with open("performance-output.txt", "w") as f:
     main_file_size = 0
     for i, arg in enumerate(sys.argv, start = 0):
       if i == 0:

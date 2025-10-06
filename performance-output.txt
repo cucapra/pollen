@@ -1,0 +1,7 @@
+Testing conversion to GFA: main
+Runtime: 0.0030570342000000015 ms
+
+Testing conversion to GFA: john-zerocopy
+Runtime: 0.00317983003 ms
+
+john-zerocopy ran for 1.04 times as long as main

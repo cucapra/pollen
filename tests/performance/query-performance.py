@@ -1,6 +1,10 @@
 import subprocess
 import sys
 import re
+import tempfile
+import json
+from bench.bench import hyperfine, HyperfineResult
+
 
 def main():
   with open("performance-output.txt", "w") as f:
@@ -8,13 +12,10 @@ def main():
     for i, arg in enumerate(sys.argv, start = 0):
       if i == 0:
          arg = "main"
-      f.write(f"Testing compression: {arg}\n")
-      command = f"git switch -q {arg} ; hyperfine -w3 -N 'fgfa -I tests/DRB1-3123.gfa extract -n 3 -c 3'"
-      result = subprocess.run(command, shell=True, capture_output=True, text=True)
-      runtime = 0.0
-      runtime_search = re.search(r"Time \(mean ± σ\):\s+([0-9.]+)", result.stdout)
-      if runtime_search:
-        runtime = float(runtime_search.group(1))
+      f.write(f"Testing query: {arg}\n")
+      subprocess.run(["git", "switch", "-q", arg])
+      results = hyperfine(["fgfa -i DRB1-3123.flatgfa paths | head "])
+      runtime = results[0].mean
       f.write(f"Runtime: {runtime} ms\n\n")
       if i == 0:
         main_runtime = runtime
