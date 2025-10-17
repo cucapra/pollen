@@ -12,9 +12,9 @@ def main():
     for i, arg in enumerate(sys.argv, start = 0):
       if i == 0:
          arg = "main"
-      f.write(f"Testing conversion to GFA: {arg}\n")
+      f.write(f"Testing chop: {arg}\n")
       subprocess.run(["git", "switch", "-q", arg])
-      results = hyperfine(["fgfa -i DRB1-3123.flatgfa | less "])
+      results = hyperfine(["fgfa -i tests/DRB1-3123.flatgfa chop -l -c 3"])
       runtime = results[0].mean
       f.write(f"Runtime: {runtime} ms\n\n")
       if i == 0:
