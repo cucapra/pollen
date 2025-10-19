@@ -521,19 +521,7 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
         let mut compressed: Vec<u8> = Vec::new();
         let end = compress_into_buffer(seq, &mut compressed);
-        // println!("");
-        // println!("start");
-        // println!("{}", seq.len());
         let byte_span = self.seq_data.add_slice(&compressed);
-        // println!("{}", compressed.len());
-        // unsafe {
-        //     uncompressed_bytes += seq.len();
-        //     compressed_bytes += compressed.len();
-        //     println!("");
-        //     println!("start");
-        //     println!("{}", uncompressed_bytes);
-        //     println!("{}", compressed_bytes);
-        // }
 
         self.segs.add(Segment {
             name,
