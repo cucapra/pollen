@@ -258,7 +258,7 @@ impl<'a> PackedSeqView<'a> {
 
     /// Creates a subslice of this PackedSeqView in the range of `span`
     pub fn slice(&self, span: SeqSpan) -> Self {
-        let new_data = &self.data[span.start..span.end];
+        let new_data = &self.data[span.start as usize..span.end as usize];
 
         Self {
             data: new_data,
@@ -269,7 +269,7 @@ impl<'a> PackedSeqView<'a> {
 
     /// Given a pool of compressed data (`pool`), create a PackedSeqView in the range of `span`
     pub fn from_pool(pool: Pool<'a, u8>, span: SeqSpan) -> Self {
-        let slice = &pool.all()[span.start..span.end];
+        let slice = &pool.all()[span.start as usize..span.end as usize];
         Self {
             data: slice,
             high_nibble_begin: PackedToc::get_nibble_bool(span.high_nibble_begin),

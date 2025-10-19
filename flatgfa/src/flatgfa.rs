@@ -87,7 +87,7 @@ pub struct Segment {
 impl Segment {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
-        self.seq.len()
+        self.seq.len() as usize
     }
 }
 
@@ -418,11 +418,11 @@ impl<'a> FlatGFA<'a> {
 #[repr(packed)]
 pub struct SeqSpan {
     /// The index of the first byte of the sequence
-    pub start: usize,
+    pub start: u32,
 
     /// One greater than the index of the last byte of the sequence.
     /// Note: if both indices in a SeqSpan are equal, then its length is 0
-    pub end: usize,
+    pub end: u32,
 
     /// True if the first base pair in the sequence is stored at a
     ///                   high nibble
@@ -435,7 +435,7 @@ pub struct SeqSpan {
 
 impl SeqSpan {
     /// The number of nucleotides in the range of this SeqSpan
-    pub fn len(&self) -> usize {
+    pub fn len(&self) -> u32 {
         if self.end == self.start {
             0
         } else {
@@ -470,8 +470,8 @@ impl SeqSpan {
         }
         let true_start = if range.start == 1 { 0 } else { range.start };
         Self {
-            start: true_start / 2,
-            end: ((range.end - 1) / 2) + 1,
+            start: (true_start / 2) as u32,
+            end: (((range.end - 1) / 2) + 1) as u32,
             high_nibble_begin: (range.start % 2) as u8,
             high_nibble_end: ((range.end - 1) % 2) as u8,
         }
@@ -479,20 +479,17 @@ impl SeqSpan {
 
     /// Returns the range that is equivalent to this SeqSpan
     pub fn to_range(&self) -> Range<usize> {
-        let true_start = self.start * 2 + ((self.high_nibble_begin % 2) as usize);
-        let mut true_end = (self.end - 1) * 2 + ((self.high_nibble_end % 2) as usize) + 1;
+        let true_start = self.start * 2 + ((self.high_nibble_begin % 2) as u32);
+        let mut true_end = (self.end - 1) * 2 + ((self.high_nibble_end % 2) as u32) + 1;
         if self.start == self.end {
             true_end = true_start;
         }
         Range {
-            start: true_start,
-            end: true_end,
+            start: true_start as usize,
+            end: true_end as usize,
         }
     }
 }
-
-static mut uncompressed_bytes: usize = 0;
-static mut compressed_bytes: usize = 0;
 
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
@@ -526,8 +523,8 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: byte_span.start.index(),
-                end: byte_span.end.index(),
+                start: byte_span.start.index() as u32,
+                end: byte_span.end.index() as u32,
                 high_nibble_begin: 0u8, // potentially a nibble of space is wasted every time a slice is pushed
                 high_nibble_end: end as u8,
             },
@@ -546,8 +543,8 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: byte_span.start.index(),
-                end: byte_span.end.index(),
+                start: byte_span.start.index() as u32,
+                end: byte_span.end.index() as u32,
                 high_nibble_begin: seq.high_nibble_begin as u8,
                 high_nibble_end: seq.high_nibble_end as u8,
             },
