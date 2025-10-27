@@ -69,7 +69,7 @@ impl<'a, P: StoreFamily<'a>> BEDStore<'a, P> {
         self.entries.add(BEDEntry { name, start, end })
     }
 
-    pub fn as_ref(&self) -> FlatBED {
+    pub fn as_ref(&self) -> FlatBED<'_> {
         FlatBED {
             name_data: self.name_data.as_ref(),
             entries: self.entries.as_ref(),
@@ -108,7 +108,7 @@ pub type HeapBEDStore = BEDStore<'static, HeapFamily>;
 
 type ParseResult<T> = Result<T, &'static str>;
 type PartialParseResult<'a, T> = ParseResult<(T, &'a [u8])>;
-fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<T> {
+fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<'_, T> {
     match T::from_radix_10(s) {
         (_, 0) => Err("expected number"),
         (num, used) => Ok((num, &s[used..])),
