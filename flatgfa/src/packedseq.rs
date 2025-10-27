@@ -314,7 +314,7 @@ impl PackedSeqStore {
         }
     }
 
-    pub fn as_ref(&self) -> PackedSeqView {
+    pub fn as_ref(&self) -> PackedSeqView<'_> {
         PackedSeqView {
             data: &self.data,
             high_nibble_end: self.high_nibble_end,
