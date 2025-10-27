@@ -69,7 +69,7 @@ pub struct FlatGFA<'a> {
 /// GFA graphs consist of "segment" nodes, which are fragments of base-pair sequences
 /// that can be strung together into paths.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, Immutable)]
-#[repr(packed)]
+
 pub struct Segment {
     /// The segment's name. We assume all names are just plain numbers.
     pub name: usize,
@@ -97,7 +97,6 @@ impl Id<Segment> {
 
 /// A path is a sequence of oriented references to segments.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, Immutable)]
-#[repr(packed)]
 pub struct Path {
     /// The path's name. This can be an arbitrary string. It is a range in the
     /// `name_data` pool.
@@ -119,7 +118,6 @@ impl Path {
 
 /// An allowed edge between two oriented segments.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, Immutable)]
-#[repr(packed)]
 pub struct Link {
     /// The source of the edge.
     pub from: Handle,
@@ -184,7 +182,6 @@ impl From<bool> for Orientation {
 /// So, logically, it consists of a pair of a segment reference (usize) and an
 /// orientation (1 bit). We pack the two values into a single word.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
-#[repr(packed)]
 pub struct Handle(u32);
 
 impl Handle {
@@ -223,7 +220,6 @@ pub enum AlignOpcode {
 /// Logically, this is a pair of a number and an `AlignOpcode`. We pack the two
 /// into a single u32.
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, Immutable)]
-#[repr(packed)]
 pub struct AlignOp(u32);
 
 impl AlignOp {
