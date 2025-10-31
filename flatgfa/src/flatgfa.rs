@@ -417,40 +417,17 @@ impl<'a> FlatGFA<'a> {
 #[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
 #[repr(packed)]
 pub struct SeqSpan {
-    /// The index of the first byte of the sequence
+    /// The logical index of the first element of the sequence
     pub start: u32,
 
-    /// One greater than the index of the last byte of the sequence.
-    /// Note: if both indices in a SeqSpan are equal, then its length is 0
+    /// The logical index of the last element of the sequence.
     pub end: u32,
-
-    /// True if the first base pair in the sequence is stored at a
-    ///                   high nibble
-    pub high_nibble_begin: u8,
-
-    /// True if the final base pair in the sequence is stored at a
-    ///                   high nibble
-    pub high_nibble_end: u8,
 }
 
 impl SeqSpan {
     /// The number of nucleotides in the range of this SeqSpan
     pub fn len(&self) -> u32 {
-        if self.end == self.start {
-            0
-        } else {
-            let begin = match self.high_nibble_begin {
-                1 => 1,
-                0 => 0,
-                _ => panic!("invalid value in high_nibble_begin"),
-            };
-            let end = match self.high_nibble_end {
-                1 => 0,
-                0 => 1,
-                _ => panic!("invalid value in high_nibble_end"),
-            };
-            (self.end - self.start) * 2 - begin - end
-        }
+        self.end - self.start
     }
 
     /// Returns true if this SeqSpan is empty, else return false
@@ -460,34 +437,46 @@ impl SeqSpan {
 
     /// Given `range`, returns the equivalent SeqSpan
     pub fn from_range(range: Range<usize>) -> Self {
-        if range.end == 0 {
-            return Self {
-                start: 0,
-                end: 0,
-                high_nibble_begin: 0,
-                high_nibble_end: 0,
-            };
-        }
-        let true_start = if range.start == 1 { 0 } else { range.start };
         Self {
-            start: (true_start / 2) as u32,
-            end: (((range.end - 1) / 2) + 1) as u32,
-            high_nibble_begin: (range.start % 2) as u8,
-            high_nibble_end: ((range.end - 1) % 2) as u8,
+            start: range.start as u32,
+            end: range.end as u32,
         }
     }
 
     /// Returns the range that is equivalent to this SeqSpan
     pub fn to_range(&self) -> Range<usize> {
-        let true_start = self.start * 2 + ((self.high_nibble_begin % 2) as u32);
-        let mut true_end = (self.end - 1) * 2 + ((self.high_nibble_end % 2) as u32) + 1;
-        if self.start == self.end {
-            true_end = true_start;
-        }
         Range {
-            start: true_start as usize,
-            end: true_end as usize,
+            start: self.start as usize,
+            end: self.end as usize,
         }
+    }
+
+    pub fn to_logical(byte_index: usize, end: bool) -> u32 {
+        (byte_index * 2 + end as usize) as u32
+    }
+
+    pub fn start_byte_index(&self) -> usize {
+        if self.start == 1 {
+            0
+        } else {
+            (self.start / 2) as usize
+        }
+    }
+
+    pub fn end_byte_index(&self) -> usize {
+        if self.end == 1 {
+            0
+        } else {
+            (self.end / 2) as usize
+        }
+    }
+
+    pub fn get_nibble_begin(&self) -> bool {
+        (self.start % 2) != 0
+    }
+
+    pub fn get_nibble_end(&self) -> bool {
+        (self.end % 2) != 0
     }
 }
 
@@ -523,10 +512,8 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: byte_span.start.index() as u32,
-                end: byte_span.end.index() as u32,
-                high_nibble_begin: 0u8, // potentially a nibble of space is wasted every time a slice is pushed
-                high_nibble_end: end as u8,
+                start: SeqSpan::to_logical(byte_span.end.index(), false),
+                end: SeqSpan::to_logical(byte_span.end.index(), end),
             },
             optional: self.optional_data.add_slice(optional),
         })
@@ -543,10 +530,8 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: byte_span.start.index() as u32,
-                end: byte_span.end.index() as u32,
-                high_nibble_begin: seq.high_nibble_begin as u8,
-                high_nibble_end: seq.high_nibble_end as u8,
+                start: SeqSpan::to_logical(byte_span.start.index(), seq.high_nibble_begin),
+                end: SeqSpan::to_logical(byte_span.end.index(), seq.high_nibble_end),
             },
             optional: self.optional_data.add_slice(optional),
         })
