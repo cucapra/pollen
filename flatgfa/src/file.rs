@@ -292,6 +292,24 @@ pub fn dump(gfa: &flatgfa::FlatGFA, buf: &mut [u8]) {
     let toc = Toc::full(gfa);
     let rest = write_bump(buf, &toc).unwrap();
 
+    println!("header: {} bytes", toc.header.bytes::<u8>());
+    println!("segs: {} bytes", toc.segs.bytes::<flatgfa::Segment>());
+    println!("paths: {} bytes", toc.paths.bytes::<flatgfa::Path>());
+    println!("links: {} bytes", toc.links.bytes::<flatgfa::Link>());
+    println!("steps: {} bytes", toc.steps.bytes::<flatgfa::Handle>());
+    println!("seq_data: {} bytes", toc.seq_data.bytes::<u8>());
+    println!(
+        "overlaps: {} bytes",
+        toc.overlaps.bytes::<Span<flatgfa::AlignOp>>()
+    );
+    println!(
+        "alignment: {} bytes",
+        toc.alignment.bytes::<flatgfa::AlignOp>()
+    );
+    println!("name_data: {} bytes", toc.name_data.bytes::<u8>());
+    println!("optional_data: {} bytes", toc.optional_data.bytes::<u8>());
+    println!("line_order: {} bytes", toc.line_order.bytes::<u8>());
+
     // All the slices.
     let rest = write_bytes(rest, gfa.header.all()).unwrap();
     let rest = write_bump(rest, gfa.segs.all()).unwrap();

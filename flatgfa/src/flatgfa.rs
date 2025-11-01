@@ -1,7 +1,7 @@
 #![allow(clippy::repr_packed_without_abi)]
 
-use std::ops::Range;
 use std::str::FromStr;
+use std::{arch::aarch64::uint8x16x3_t, ops::Range};
 
 use crate::{
     packedseq::{compress_into_buffer, PackedSeqView},
@@ -87,7 +87,7 @@ pub struct Segment {
 impl Segment {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
-        self.seq.len() as usize
+        self.seq.len as usize
     }
 }
 
@@ -420,26 +420,21 @@ pub struct SeqSpan {
     /// The logical index of the first element of the sequence
     pub start: u32,
 
-    /// The logical index of the last element of the sequence.
-    pub end: u32,
+    /// The length of the sequence
+    pub len: u16,
 }
 
 impl SeqSpan {
-    /// The number of nucleotides in the range of this SeqSpan
-    pub fn len(&self) -> u32 {
-        self.end - self.start
-    }
-
     /// Returns true if this SeqSpan is empty, else return false
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.len == 0
     }
 
     /// Given `range`, returns the equivalent SeqSpan
     pub fn from_range(range: Range<usize>) -> Self {
         Self {
             start: range.start as u32,
-            end: range.end as u32,
+            len: (range.start - range.end) as u16,
         }
     }
 
@@ -447,12 +442,16 @@ impl SeqSpan {
     pub fn to_range(&self) -> Range<usize> {
         Range {
             start: self.start as usize,
-            end: self.end as usize,
+            end: self.end() as usize,
         }
     }
 
     pub fn to_logical(byte_index: usize, end: bool) -> u32 {
         (byte_index * 2 + end as usize) as u32
+    }
+
+    pub fn end(&self) -> u32 {
+        self.start + self.len as u32
     }
 
     pub fn start_byte_index(&self) -> usize {
@@ -464,10 +463,10 @@ impl SeqSpan {
     }
 
     pub fn end_byte_index(&self) -> usize {
-        if self.end == 1 {
+        if self.end() == 1 {
             0
         } else {
-            (self.end / 2) as usize
+            (self.end() / 2) as usize
         }
     }
 
@@ -476,7 +475,7 @@ impl SeqSpan {
     }
 
     pub fn get_nibble_end(&self) -> bool {
-        (self.end % 2) != 0
+        (self.end() % 2) != 0
     }
 }
 
@@ -508,12 +507,13 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         let mut compressed: Vec<u8> = Vec::new();
         let end = compress_into_buffer(seq, &mut compressed);
         let byte_span = self.seq_data.add_slice(&compressed);
+        let start = SeqSpan::to_logical(byte_span.end.index(), false);
 
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: SeqSpan::to_logical(byte_span.end.index(), false),
-                end: SeqSpan::to_logical(byte_span.end.index(), end),
+                start: start,
+                len: (SeqSpan::to_logical(byte_span.end.index(), end) - start) as u16,
             },
             optional: self.optional_data.add_slice(optional),
         })
@@ -527,11 +527,13 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         optional: &[u8],
     ) -> Id<Segment> {
         let byte_span = self.seq_data.add_slice(seq.data);
+        let start = SeqSpan::to_logical(byte_span.start.index(), seq.high_nibble_begin);
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
-                start: SeqSpan::to_logical(byte_span.start.index(), seq.high_nibble_begin),
-                end: SeqSpan::to_logical(byte_span.end.index(), seq.high_nibble_end),
+                start: start,
+                len: (SeqSpan::to_logical(byte_span.end.index(), seq.high_nibble_end) - start)
+                    as u16,
             },
             optional: self.optional_data.add_slice(optional),
         })
