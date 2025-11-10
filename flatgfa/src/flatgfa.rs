@@ -1,7 +1,9 @@
 #![allow(clippy::repr_packed_without_abi)]
 
 use std::str::FromStr;
-use std::{arch::aarch64::uint8x16x3_t, ops::Range};
+//use std::{arch::aarch64::uint8x16x3_t}
+
+use std::ops::Range;
 
 use crate::{
     packedseq::{compress_into_buffer, PackedSeqView},
