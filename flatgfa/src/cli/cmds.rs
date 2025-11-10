@@ -3,7 +3,7 @@ use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
 use crate::namemap::NameMap;
 use crate::packedseq::PackedSeqView;
-use crate::pool::Id;
+use crate::pool::{Id, Span};
 use crate::{ops, packedseq};
 use argh::FromArgs;
 use bstr::BStr;
@@ -378,4 +378,47 @@ pub fn seq_export(args: SeqExport) {
     );
     let view = store.as_ref();
     packedseq::export(view, &args.output);
+}
+
+/// print file size statistics
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "stats-filesize")]
+pub struct StatsFileSize {}
+
+pub fn stats_filesize(gfa: &flatgfa::FlatGFA) {
+    eprintln!("File size statistics:");
+    eprintln!(
+        "segs: {} bytes",
+        gfa.segs.len() * size_of::<flatgfa::Segment>()
+    );
+    eprintln!(
+        "paths: {} bytes",
+        gfa.paths.len() * size_of::<flatgfa::Path>()
+    );
+    eprintln!(
+        "links: {} bytes",
+        gfa.links.len() * size_of::<flatgfa::Link>()
+    );
+    eprintln!(
+        "steps: {} bytes",
+        gfa.steps.len() * size_of::<flatgfa::Handle>()
+    );
+    eprintln!("seq_data: {} bytes", gfa.seq_data.len() * size_of::<u8>());
+    eprintln!(
+        "overlaps: {} bytes",
+        gfa.overlaps.len() * size_of::<Span<flatgfa::AlignOp>>()
+    );
+    eprintln!(
+        "alignment: {} bytes",
+        gfa.alignment.len() * size_of::<flatgfa::AlignOp>()
+    );
+    eprintln!("name_data: {} bytes", gfa.name_data.len() * size_of::<u8>());
+    eprintln!(
+        "optional_data: {} bytes",
+        gfa.optional_data.len() * size_of::<u8>()
+    );
+    eprintln!(
+        "line_order: {} bytes",
+        gfa.line_order.len() * size_of::<u8>()
+    );
 }
