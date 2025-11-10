@@ -434,7 +434,7 @@ impl SeqSpan {
     pub fn from_range(range: Range<usize>) -> Self {
         Self {
             start: range.start as u32,
-            len: (range.start - range.end) as u16,
+            len: (range.end - range.start) as u16,
         }
     }
 
@@ -442,7 +442,7 @@ impl SeqSpan {
     pub fn to_range(&self) -> Range<usize> {
         Range {
             start: self.start as usize,
-            end: self.end() as usize,
+            end: (self.end() + 1) as usize,
         }
     }
 
@@ -451,7 +451,7 @@ impl SeqSpan {
     }
 
     pub fn end(&self) -> u32 {
-        self.start + self.len as u32
+        self.start + (self.len - 1) as u32
     }
 
     pub fn start_byte_index(&self) -> usize {
