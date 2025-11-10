@@ -550,3 +550,47 @@ pub type FixedGFAStore<'a> = GFAStore<'a, FixedFamily>;
 /// `FlatGFA`. It exposes an API for building up a GFA data structure, so it is
 /// useful for creating new ones from scratch.
 pub type HeapGFAStore = GFAStore<'static, HeapFamily>;
+
+
+struct StepRef {
+    path: Id<Path>,
+    offset: u32
+}
+
+pub struct StepsBySegIndex {
+    
+    steps: Vec<StepRef>,
+    segment_steps: Vec<Span<StepRef>>
+}
+
+
+impl StepsBySegIndex {
+
+    pub fn new(fgfa: &FlatGFA) {
+        
+        // will be our `steps` vector that contains all steprefs
+        let mut all_steps = Vec::new();
+
+        // build the vector of all the steprefs, by iterating over each path, so we can construct using a path id an doffset
+        for (path_id, path) in fgfa.paths.items() {
+            for (offset, &handle) in fgfa.get_path_steps(path).enumerate() {
+                all_steps.push(StepRef {
+                    path: path_id,
+                    offset: offset as u32,
+                });
+            }
+        }
+        
+        // organize by the index of the segment in the segment pool
+        all_steps.sort_by_key(|a| {
+            let path = &fgfa.paths[a.path];
+
+            let step_span = path.steps;
+
+            let step_slice = &fgfa.steps[step_span];
+
+            step_slice[a.offset as usize].segment().index()
+        });
+
+    }
+}
