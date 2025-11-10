@@ -566,7 +566,7 @@ pub struct StepsBySegIndex {
 
 impl StepsBySegIndex {
 
-    pub fn new(fgfa: &FlatGFA) {
+    pub fn new(fgfa: &FlatGFA)  -> Self{
         
         // will be our `steps` vector that contains all steprefs
         let mut all_steps = Vec::new();
@@ -591,6 +591,11 @@ impl StepsBySegIndex {
 
             step_slice[a.offset as usize].segment().index()
         });
+        
 
+        Self {
+            steps: all_steps,
+            segment_steps: Vec::new()
+        }
     }
 }
