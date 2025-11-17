@@ -19,6 +19,8 @@ bencher_json = {
   }
 }
 
+print(json.dumps(bencher_json))
+
 
 
 
