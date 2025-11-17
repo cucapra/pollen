@@ -26,4 +26,4 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python filesize_benchmark.py
+          python filesize_benchmark.py 
