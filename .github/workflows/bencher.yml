@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bencherdev/bencher@main
+      - name: Add fgfa to PATH
+        run: echo "$PWD/target/release" >> $GITHUB_PATH
       - name: Track base branch benchmarks with Bencher
         run: |
           bencher run \
