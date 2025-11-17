@@ -6,6 +6,7 @@ jobs:
   benchmark_base_branch:
     name: Continuous Benchmarking with Bencher
     permissions:
+      contents: read
       checks: write
     runs-on: ubuntu-latest
     steps:
