@@ -13,12 +13,8 @@ bencher_json = {
     "benchmarks": [
         {
             "name": "filesize",
-            "measurements": [
-                {
-                    "value": size_bytes,
-                    "unit": "bytes"
-                }
-            ]
+            "value": size_bytes,
+            "unit": "bytes"
         }
     ]
 }
