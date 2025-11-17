@@ -452,8 +452,13 @@ impl SeqSpan {
         (byte_index * 2 + end as usize) as u32
     }
 
+    /// Returns index of the final element in this SeqSpan
     pub fn end(&self) -> u32 {
-        self.start + (self.len - 1) as u32
+        if self.len == 0 {
+            self.start
+        } else {
+            self.start + (self.len - 1) as u32
+        }
     }
 
     pub fn start_byte_index(&self) -> usize {
@@ -465,6 +470,7 @@ impl SeqSpan {
     }
 
     pub fn end_byte_index(&self) -> usize {
+        eprintln!("end/2: {} ; len: {}", self.end() / 2, self.len + 0);
         if self.end() == 1 {
             0
         } else {
