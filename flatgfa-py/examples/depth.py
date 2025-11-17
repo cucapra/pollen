@@ -1,7 +1,7 @@
 import flatgfa
 from collections import Counter
 
-graph = flatgfa.parse("../tests/k.gfa")
+graph = flatgfa.parse("../test/tiny.gfa")
 depths = Counter()
 for path in graph.paths:
     for step in path:
