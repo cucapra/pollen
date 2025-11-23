@@ -130,7 +130,6 @@ name = "flatgfa-py"
 version = "0.1.0"
 dependencies = [
  "flatgfa",
- "memchr",
  "memmap",
  "pyo3",
 ]

@@ -11,4 +11,3 @@ crate-type = ["cdylib"]
 pyo3 = { version = "0.24.2", features = ["abi3-py38", "multiple-pymethods"] }
 flatgfa = { path = "../flatgfa" }
 memmap = "0.7.0"
-memchr = "2.7"
