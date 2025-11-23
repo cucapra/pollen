@@ -2,20 +2,16 @@ use flatgfa::namemap::NameMap;
 use flatgfa::ops::gaf::{ChunkEvent, GAFParser};
 use flatgfa::pool::Id;
 use flatgfa::{self, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
+use memchr::memchr;
 use memmap::Mmap;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PySlice};
 use pyo3::BoundObject;
+use std::fs::File;
 use std::io::Write;
 use std::str;
 use std::sync::Arc;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use flate2::read::GzDecoder;  
-use bstr::{BStr, ByteSlice};
-use memchr::memchr;
-use flatgfa::ops::gaf::GAFLine;
 
 /// Storage for a FlatGFA.
 ///
@@ -175,7 +171,7 @@ impl PyFlatGFA {
     }
     // fn make_pangenotype_matrix(&self, gaf_files:Vec<String>) -> Vec<Vec<bool>>{
     //     let num_segments = self.segments().__len__();
-    //     //Creation of the matrix, the assumption is the segments are ordered from 0 to 100, etc. 
+    //     //Creation of the matrix, the assumption is the segments are ordered from 0 to 100, etc.
     //     let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
     //     let current_gfa = self.0.view();
     //     let name_map = flatgfa::namemap::NameMap::build(&current_gfa);
@@ -191,143 +187,142 @@ impl PyFlatGFA {
     //         }
     //     }
     //     matrix
-        
+
     // }
-// pub fn make_pangenotype_matrix(&self, gaf_files: Vec<String>) -> Vec<Vec<bool>> {
-//     let num_segments = self.segments().__len__();
-//     let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
+    // pub fn make_pangenotype_matrix(&self, gaf_files: Vec<String>) -> Vec<Vec<bool>> {
+    //     let num_segments = self.segments().__len__();
+    //     let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
 
-//     let gfa = self.0.view();
-//     let name_map = flatgfa::namemap::NameMap::build(&gfa);
+    //     let gfa = self.0.view();
+    //     let name_map = flatgfa::namemap::NameMap::build(&gfa);
 
-//     for (file_idx, gaf_path) in gaf_files.iter().enumerate() {
-//         eprintln!("Processing {}", gaf_path);
+    //     for (file_idx, gaf_path) in gaf_files.iter().enumerate() {
+    //         eprintln!("Processing {}", gaf_path);
 
-//         // === 1. Open gzipped file for streaming ===
-//         let file = File::open(gaf_path)
-//             .unwrap_or_else(|_| panic!("Cannot open GAF file: {}", gaf_path));
-//         let decoder = GzDecoder::new(file);
+    //         // === 1. Open gzipped file for streaming ===
+    //         let file = File::open(gaf_path)
+    //             .unwrap_or_else(|_| panic!("Cannot open GAF file: {}", gaf_path));
+    //         let decoder = GzDecoder::new(file);
 
-//         // Use a large buffer (1MB) to minimize syscall and decompression overhead
-//         let mut reader = BufReader::with_capacity(1 << 20, decoder);
+    //         // Use a large buffer (1MB) to minimize syscall and decompression overhead
+    //         let mut reader = BufReader::with_capacity(1 << 20, decoder);
 
-//         // === 2. Stream and process in-place ===
-//         loop {
-//             let buf = reader.fill_buf().unwrap();
-//             if buf.is_empty() {
-//                 break; // EOF
-//             }
+    //         // === 2. Stream and process in-place ===
+    //         loop {
+    //             let buf = reader.fill_buf().unwrap();
+    //             if buf.is_empty() {
+    //                 break; // EOF
+    //             }
 
-//             let mut start = 0;
-//             while let Some(pos) = memchr(b'\n', &buf[start..]) {
-//                 let line_end = start + pos;
-//                 let line = &buf[start..line_end];
+    //             let mut start = 0;
+    //             while let Some(pos) = memchr(b'\n', &buf[start..]) {
+    //                 let line_end = start + pos;
+    //                 let line = &buf[start..line_end];
 
-//                 if !line.is_empty() && line[0] != b'#' {
-//                     // === Inline process_line ===
-//                     // Split once by tabs, no allocations
-//                     let mut fields = line.split(|&b| b == b'\t');
+    //                 if !line.is_empty() && line[0] != b'#' {
+    //                     // === Inline process_line ===
+    //                     // Split once by tabs, no allocations
+    //                     let mut fields = line.split(|&b| b == b'\t');
 
-//                     // Skip first 5 fields
-//                     for _ in 0..5 {
-//                         fields.next();
-//                     }
+    //                     // Skip first 5 fields
+    //                     for _ in 0..5 {
+    //                         fields.next();
+    //                     }
 
-//                     // 6th field: path
-//                     if let Some(path_field) = fields.next() {
-//                         let gaf_line = flatgfa::ops::gaf::GAFLine {
-//                             name: BStr::new(b"streamed"),
-//                             start: 0,
-//                             end: 0,
-//                             path: path_field,
-//                         };
+    //                     // 6th field: path
+    //                     if let Some(path_field) = fields.next() {
+    //                         let gaf_line = flatgfa::ops::gaf::GAFLine {
+    //                             name: BStr::new(b"streamed"),
+    //                             start: 0,
+    //                             end: 0,
+    //                             path: path_field,
+    //                         };
 
-//                         // Iterate through segments in this path
-//                         let path_chunker =
-//                             flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, gaf_line);
+    //                         // Iterate through segments in this path
+    //                         let path_chunker =
+    //                             flatgfa::ops::gaf::PathChunker::new(&gfa, &name_map, gaf_line);
 
-//                         for event in path_chunker {
-//                             let seg_id = event.handle.segment().index();
-//                             matrix[file_idx][seg_id] = true;
-//                         }
-//                     }
-//                 }
+    //                         for event in path_chunker {
+    //                             let seg_id = event.handle.segment().index();
+    //                             matrix[file_idx][seg_id] = true;
+    //                         }
+    //                     }
+    //                 }
 
-//                 start = line_end + 1; // skip past newline
-//             }
+    //                 start = line_end + 1; // skip past newline
+    //             }
 
-//             // Tell BufReader we processed 'start' bytes
-//             reader.consume(start);
-//         }
+    //             // Tell BufReader we processed 'start' bytes
+    //             reader.consume(start);
+    //         }
 
-//         eprintln!("Finished {}", gaf_path);
-//     }
+    //         eprintln!("Finished {}", gaf_path);
+    //     }
 
-//     matrix
-// }
-pub fn make_pangenotype_matrix(&self, gaf_files: Vec<String>) -> Vec<Vec<bool>> {
-    let num_segments = self.segments().__len__();
-    let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
+    //     matrix
+    // }
+    pub fn make_pangenotype_matrix(&self, gaf_files: Vec<String>) -> Vec<Vec<bool>> {
+        let num_segments = self.segments().__len__();
+        let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
 
-    let gfa = self.0.view();
-    let name_map = flatgfa::namemap::NameMap::build(&gfa);
+        let gfa = self.0.view();
+        let name_map = flatgfa::namemap::NameMap::build(&gfa);
 
-    for (file_idx, gaf_path) in gaf_files.iter().enumerate() {
-        let file = File::open(gaf_path).expect("Cannot open GAF file");
-        let mmap = unsafe { Mmap::map(&file).expect("mmap failed") };
-        let mut start = 0;
+        for (file_idx, gaf_path) in gaf_files.iter().enumerate() {
+            let file = File::open(gaf_path).expect("Cannot open GAF file");
+            let mmap = unsafe { Mmap::map(&file).expect("mmap failed") };
+            let mut start = 0;
 
-        while let Some(pos) = memchr(b'\n', &mmap[start..]) {
-            let line_end = start + pos;
-            let line = &mmap[start..line_end];
-            start = line_end + 1;
+            while let Some(pos) = memchr(b'\n', &mmap[start..]) {
+                let line_end = start + pos;
+                let line = &mmap[start..line_end];
+                start = line_end + 1;
 
-            if line.is_empty() || line[0] == b'#' {
-                continue;
-            }
-
-            let mut tab_count = 0;
-            let mut idx = 0;
-            while idx < line.len() && tab_count < 5 {
-                if line[idx] == b'\t' {
-                    tab_count += 1;
+                if line.is_empty() || line[0] == b'#' {
+                    continue;
                 }
-                idx += 1;
-            }
 
-            if tab_count < 5 || idx >= line.len() {
-                continue;
-            }
-            //The path data is in the 5th field only.
-            let mut end_idx = idx;
-            while end_idx < line.len() && line[end_idx] != b'\t' {
-                end_idx += 1;
-            }
-            let path_field = &line[idx..end_idx];
+                let mut tab_count = 0;
+                let mut idx = 0;
+                while idx < line.len() && tab_count < 5 {
+                    if line[idx] == b'\t' {
+                        tab_count += 1;
+                    }
+                    idx += 1;
+                }
 
-            // === Parse path field like >12<34>56 ===
-            let mut p = 0;
-            while p < path_field.len() {
-                let byte = path_field[p];
-                if byte == b'>' || byte == b'<' {
-                    p += 1;
-                    let mut num = 0usize;
-                    while p < path_field.len() && path_field[p].is_ascii_digit() {
-                        num = num * 10 + (path_field[p] - b'0') as usize;
+                if tab_count < 5 || idx >= line.len() {
+                    continue;
+                }
+                //The path data is in the 5th field only.
+                let mut end_idx = idx;
+                while end_idx < line.len() && line[end_idx] != b'\t' {
+                    end_idx += 1;
+                }
+                let path_field = &line[idx..end_idx];
+
+                // === Parse path field like >12<34>56 ===
+                let mut p = 0;
+                while p < path_field.len() {
+                    let byte = path_field[p];
+                    if byte == b'>' || byte == b'<' {
+                        p += 1;
+                        let mut num = 0usize;
+                        while p < path_field.len() && path_field[p].is_ascii_digit() {
+                            num = num * 10 + (path_field[p] - b'0') as usize;
+                            p += 1;
+                        }
+                        let seg_id = name_map.get(num);
+                        matrix[file_idx][u32::from(seg_id) as usize] = true;
+                    } else {
                         p += 1;
                     }
-                    let seg_id = name_map.get(num);
-                        matrix[file_idx][u32::from(seg_id) as usize] = true;
-            
-                } else {
-                    p += 1;
                 }
             }
         }
-    }
 
-    matrix
-}
+        matrix
+    }
 }
 
 /// A reference to a list of *any* type within a FlatGFA.
