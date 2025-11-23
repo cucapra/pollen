@@ -382,10 +382,10 @@ pub fn seq_export(args: SeqExport) {
 
 /// print file size statistics
 #[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "stats-filesize")]
-pub struct StatsFileSize {}
+#[argh(subcommand, name = "size")]
+pub struct SizeStats {}
 
-pub fn stats_filesize(gfa: &flatgfa::FlatGFA) {
+pub fn size_stats(gfa: &flatgfa::FlatGFA) {
     eprintln!("File size statistics:");
     eprintln!(
         "segs: {} bytes",
