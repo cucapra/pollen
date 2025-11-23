@@ -1,6 +1,9 @@
 import pathlib
-import flatgfa
 from itertools import islice
+
+import flatgfa
+
+
 def iter_bits_ones_dash(path, chunk_bytes: int = 64 * 1024):
     ws = b" \t\r\n\v\f"
     with open(path, "rb") as f:
@@ -11,12 +14,15 @@ def iter_bits_ones_dash(path, chunk_bytes: int = 64 * 1024):
             for b in chunk:
                 if b in ws:
                     continue
-                if b == ord('1'):
+                if b == ord("1"):
                     yield True
-                elif b == ord('0'):
+                elif b == ord("0"):
                     yield False
                 else:
-                    raise ValueError(f"Invalid character in file: {chr(b)!r} (expected '1' or '0')")
+                    raise ValueError(
+                        f"Invalid character in file: {chr(b)!r} (expected '1' or '0')"
+                    )
+
 
 def compare_row_to_file(row_bits, path) -> tuple[bool, int | None]:
     n = len(row_bits)
@@ -34,6 +40,7 @@ def compare_row_to_file(row_bits, path) -> tuple[bool, int | None]:
         raise ValueError(f"File ended early: got {i} bits, expected {n}.")
     return True, None
 
+
 TEST_DIR = pathlib.Path(__file__).parent
 TEST_GFA = TEST_DIR / "./matrix_gaf_folder/Chr3.gfa"
 GAF_DIR = (TEST_DIR / "./matrix_gaf_folder").resolve()
@@ -48,7 +55,7 @@ pangenotype_matrix = graph.make_pangenotype_matrix(gaf)
 # print("OK (all columns match)" if ok else f"Mismatch at column {where}")
 FIRST_N = 100
 for gaf_path, row in zip(gaf, pangenotype_matrix):
-    row01 = [int(b) for b in row]   
+    row01 = [int(b) for b in row]
     # print(pathlib.Path(gaf_path).name, *row01)
     first_bits = islice(row, FIRST_N)
     print(pathlib.Path(gaf_path).name, *map(int, first_bits))

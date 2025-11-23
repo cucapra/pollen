@@ -1,6 +1,8 @@
 import pathlib
-import flatgfa
+
 import numpy as np
+
+import flatgfa
 
 TEST_DIR = pathlib.Path(__file__).parent
 TEST_GFA = TEST_DIR / "tiny.gfa"
@@ -26,10 +28,12 @@ def test_gaf_ranges():
         [(7, 8), (0, 18), (0, 0)],
     ]
 
+
 def test_construct_pangenotype_matrix():
     gfa = flatgfa.parse_bytes(TEST_GFA.read_bytes())
     pangenotype_matrix = gfa.make_pangenotype_matrix([(str(TEST_GAF))])
-    assert pangenotype_matrix == [[True, True,True,True]]
+    assert pangenotype_matrix == [[True, True, True, True]]
+
 
 def test_pangenotype_regression():
     gfa = flatgfa.parse_bytes(TEST_GFA.read_bytes())
