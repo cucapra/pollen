@@ -338,3 +338,26 @@ pub fn bed_intersect(args: BEDIntersect) {
         }
     }
 }
+
+/// construct a pangenotype matrix
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "matrix")]
+pub struct PangenotypeMatrix {
+    /// the GAF file to use for genotyping
+    #[argh(positional)]
+    gaf_file: String,
+}
+
+pub fn pangenotype_matrix(gfa: &flatgfa::FlatGFA, args: PangenotypeMatrix) {
+    let matrix = ops::pangenotype::make_pangenotype_matrix(gfa, vec![args.gaf_file]);
+    for row in matrix {
+        for col in row {
+            if col {
+                print!("1");
+            } else {
+                print!("0");
+            }
+        }
+        println!();
+    }
+}

@@ -44,6 +44,7 @@ enum Command {
     GafLookup(cmds::GAFLookup),
     Bench(cmds::Bench),
     BedIntersect(cmds::BEDIntersect),
+    PangenotypeMatrix(cmds::PangenotypeMatrix),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -145,6 +146,9 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::BedIntersect(_sub_args)) => {
             panic!("Unreachable code");
+        }
+        Some(Command::PangenotypeMatrix(sub_args)) => {
+            cmds::pangenotype_matrix(&gfa, sub_args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
