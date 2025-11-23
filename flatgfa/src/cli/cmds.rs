@@ -386,6 +386,7 @@ pub fn seq_export(args: SeqExport) {
 pub struct SizeStats {}
 
 pub fn size_stats(gfa: &flatgfa::FlatGFA) {
+    println!("header: {}", gfa.header.size());
     println!("segs: {}", gfa.segs.size());
     println!("paths: {}", gfa.paths.size());
     println!("links: {}", gfa.links.size());
