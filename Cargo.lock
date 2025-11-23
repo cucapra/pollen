@@ -129,7 +129,6 @@ dependencies = [
 name = "flatgfa-py"
 version = "0.1.0"
 dependencies = [
- "bstr",
  "flatgfa",
  "memchr",
  "memmap",
