@@ -380,45 +380,29 @@ pub fn seq_export(args: SeqExport) {
     packedseq::export(view, &args.output);
 }
 
-/// print file size statistics
+/// get the sizes of GFA components, in bytes
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "size")]
 pub struct SizeStats {}
 
 pub fn size_stats(gfa: &flatgfa::FlatGFA) {
-    eprintln!("File size statistics:");
-    eprintln!(
-        "segs: {} bytes",
-        gfa.segs.len() * size_of::<flatgfa::Segment>()
-    );
-    eprintln!(
-        "paths: {} bytes",
-        gfa.paths.len() * size_of::<flatgfa::Path>()
-    );
-    eprintln!(
-        "links: {} bytes",
-        gfa.links.len() * size_of::<flatgfa::Link>()
-    );
-    eprintln!(
-        "steps: {} bytes",
-        gfa.steps.len() * size_of::<flatgfa::Handle>()
-    );
-    eprintln!("seq_data: {} bytes", gfa.seq_data.len() * size_of::<u8>());
-    eprintln!(
-        "overlaps: {} bytes",
+    println!("segs: {}", gfa.segs.len() * size_of::<flatgfa::Segment>());
+    println!("paths: {}", gfa.paths.len() * size_of::<flatgfa::Path>());
+    println!("links: {}", gfa.links.len() * size_of::<flatgfa::Link>());
+    println!("steps: {}", gfa.steps.len() * size_of::<flatgfa::Handle>());
+    println!("seq_data: {}", gfa.seq_data.len() * size_of::<u8>());
+    println!(
+        "overlaps: {}",
         gfa.overlaps.len() * size_of::<Span<flatgfa::AlignOp>>()
     );
-    eprintln!(
-        "alignment: {} bytes",
+    println!(
+        "alignment: {}",
         gfa.alignment.len() * size_of::<flatgfa::AlignOp>()
     );
-    eprintln!("name_data: {} bytes", gfa.name_data.len() * size_of::<u8>());
-    eprintln!(
-        "optional_data: {} bytes",
+    println!("name_data: {}", gfa.name_data.len() * size_of::<u8>());
+    println!(
+        "optional_data: {}",
         gfa.optional_data.len() * size_of::<u8>()
     );
-    eprintln!(
-        "line_order: {} bytes",
-        gfa.line_order.len() * size_of::<u8>()
-    );
+    println!("line_order: {}", gfa.line_order.len() * size_of::<u8>());
 }
