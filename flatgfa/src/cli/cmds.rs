@@ -3,7 +3,7 @@ use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
 use crate::namemap::NameMap;
 use crate::packedseq::PackedSeqView;
-use crate::pool::{Id, Span};
+use crate::pool::Id;
 use crate::{ops, packedseq};
 use argh::FromArgs;
 use bstr::BStr;
@@ -386,23 +386,14 @@ pub fn seq_export(args: SeqExport) {
 pub struct SizeStats {}
 
 pub fn size_stats(gfa: &flatgfa::FlatGFA) {
-    println!("segs: {}", gfa.segs.len() * size_of::<flatgfa::Segment>());
-    println!("paths: {}", gfa.paths.len() * size_of::<flatgfa::Path>());
-    println!("links: {}", gfa.links.len() * size_of::<flatgfa::Link>());
-    println!("steps: {}", gfa.steps.len() * size_of::<flatgfa::Handle>());
-    println!("seq_data: {}", gfa.seq_data.len() * size_of::<u8>());
-    println!(
-        "overlaps: {}",
-        gfa.overlaps.len() * size_of::<Span<flatgfa::AlignOp>>()
-    );
-    println!(
-        "alignment: {}",
-        gfa.alignment.len() * size_of::<flatgfa::AlignOp>()
-    );
-    println!("name_data: {}", gfa.name_data.len() * size_of::<u8>());
-    println!(
-        "optional_data: {}",
-        gfa.optional_data.len() * size_of::<u8>()
-    );
-    println!("line_order: {}", gfa.line_order.len() * size_of::<u8>());
+    println!("segs: {}", gfa.segs.size());
+    println!("paths: {}", gfa.paths.size());
+    println!("links: {}", gfa.links.size());
+    println!("steps: {}", gfa.steps.size());
+    println!("seq_data: {}", gfa.seq_data.size());
+    println!("overlaps: {}", gfa.overlaps.size());
+    println!("alignment: {}", gfa.alignment.size());
+    println!("name_data: {}", gfa.name_data.size());
+    println!("optional_data: {}", gfa.optional_data.size());
+    println!("line_order: {}", gfa.line_order.size());
 }
