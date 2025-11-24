@@ -27,7 +27,6 @@ jobs:
           --threshold-test percentage \
           --threshold-max-sample-size 64 \
           --threshold-upper-boundary 5 \
-          --thresholds-reset \
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
@@ -45,7 +44,6 @@ jobs:
           --threshold-test percentage \
           --threshold-max-sample-size 64 \
           --threshold-upper-boundary 5 \
-          --thresholds-reset \
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
