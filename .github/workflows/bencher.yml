@@ -24,9 +24,9 @@ jobs:
           --branch main \
           --testbed ubuntu-latest \
           --threshold-measure file-size \
-          --threshold-test percentage \
+          --threshold-test absolue \
           --threshold-max-sample-size 64 \
-          --threshold-upper-boundary 5 \
+          --threshold-upper-boundary 50 \
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
@@ -41,9 +41,9 @@ jobs:
           --branch main \
           --testbed ubuntu-latest \
           --threshold-measure latency \
-          --threshold-test percentage \
+          --threshold-test absolute \
           --threshold-max-sample-size 64 \
-          --threshold-upper-boundary 5 \
+          --threshold-upper-boundary 50 \
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
