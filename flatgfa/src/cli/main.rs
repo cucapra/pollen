@@ -111,8 +111,8 @@ fn main() -> Result<(), &'static str> {
     };
 
     match args.command {
-        Some(Command::Toc(_)) => {
-            cmds::toc(&gfa);
+        Some(Command::Toc(sub_args)) => {
+            cmds::toc(&gfa, sub_args);
         }
         Some(Command::Paths(_)) => {
             cmds::paths(&gfa);
