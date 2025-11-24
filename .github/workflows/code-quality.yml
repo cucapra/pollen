@@ -1,49 +1,49 @@
-# name: quality
-# on:
-#   push:
-#   pull_request:
-#     branches: [main]
+name: quality
+on:
+  push:
+  pull_request:
+    branches: [main]
 
-# jobs:
-#   python:
-#     runs-on: ubuntu-latest
-#     name: Python
-#     steps:
-#     - uses: actions/checkout@v4
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    name: Python
+    steps:
+    - uses: actions/checkout@v4
 
-#     - name: ruff check
-#       uses: astral-sh/ruff-action@v3
-#       with:
-#         src: >-
-#           mygfa
-#           slow_odgi
-#           pollen_data_gen
-#           flatgfa-py
+    - name: ruff check
+      uses: astral-sh/ruff-action@v3
+      with:
+        src: >-
+          mygfa
+          slow_odgi
+          pollen_data_gen
+          flatgfa-py
 
-#     - name: ruff format
-#       uses: astral-sh/ruff-action@v3
-#       with:
-#         args: "format --check --diff"
-#         src: >-
-#           mygfa
-#           slow_odgi
-#           pollen_data_gen
-#           flatgfa-py
+    - name: ruff format
+      uses: astral-sh/ruff-action@v3
+      with:
+        args: "format --check --diff"
+        src: >-
+          mygfa
+          slow_odgi
+          pollen_data_gen
+          flatgfa-py
 
-#     - name: Install uv
-#       uses: astral-sh/setup-uv@v5
-#     - name: mypy
-#       run: MYPYPATH=mygfa uv tool run mypy --no-namespace-packages --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+    - name: mypy
+      run: MYPYPATH=mygfa uv tool run mypy --no-namespace-packages --disallow-untyped-defs mygfa slow_odgi pollen_data_gen
 
-#   rust:
-#     runs-on: ubuntu-latest
-#     name: Rust
-#     env:
-#       RUSTFLAGS: "-Dwarnings"
-#     steps:
-#     - uses: actions/checkout@v4
-#     - run: rustup toolchain install stable --no-self-update
-#     - uses: Swatinem/rust-cache@v2
-#     - run: cargo check
-#     - run: cargo clippy
-#     - run: cargo fmt --check
+  rust:
+    runs-on: ubuntu-latest
+    name: Rust
+    env:
+      RUSTFLAGS: "-Dwarnings"
+    steps:
+    - uses: actions/checkout@v4
+    - run: rustup toolchain install stable --no-self-update
+    - uses: Swatinem/rust-cache@v2
+    - run: cargo check
+    - run: cargo clippy
+    - run: cargo fmt --check
