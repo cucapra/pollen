@@ -15,7 +15,7 @@ for i in range(10):
 
   start_time = time.time()
 
-  subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa", "extract", "-n", "-c", "3"], check = True) 
+  subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa", "extract", "-n", "3", "-c", "3"], check = True) 
 
   end_time = time.time()
 
