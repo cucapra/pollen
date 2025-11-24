@@ -5,7 +5,7 @@ import json
 import subprocess
 
 
-subprocess.run(["cargo", "build", "--release"])
+subprocess.run(["cargo", "build", "--release"], check = True)
 
 start_time = 0.0
 end_time = 0.0
@@ -15,7 +15,7 @@ for i in range(10):
 
   start_time = time.time()
 
-  subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa", "extract", "-n", "3", "-c", "3"]) 
+  subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa", "extract", "-n", "3", "-c", "3"], check = True) 
 
   end_time = time.time()
 

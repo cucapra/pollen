@@ -32,6 +32,8 @@ jobs:
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           python filesize_benchmark.py 
+        env:
+          RUST_BACKTRACE: 1
 
         # Performance (latency) benchmark
       - name: Track latency benchmarks with Bencher
@@ -50,3 +52,5 @@ jobs:
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           python latency_benchmark.py 
+        env:
+          RUST_BACKTRACE: 1
