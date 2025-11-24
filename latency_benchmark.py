@@ -14,8 +14,10 @@ avg_time = 0.0
 for i in range(10):
 
   start_time = time.time()
-
-  subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa", "extract", "-n", "3", "-c", "3"], check = True) 
+  with open(os.devnull, "w") as devnull:
+    subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa", "extract", "-n", "3", "-c", "3"], stdout=devnull,
+        stderr=devnull,
+        check=True) 
 
   end_time = time.time()
 
