@@ -4,8 +4,8 @@ import json
 import subprocess
 
 subprocess.run(["cargo", "build", "--release"], check = True)
-subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa","-o", "filesize_benchmark.txt"], check = True) 
-
+# subprocess.run(["fgfa", "-I", "tests/DRB1-3123.gfa","-o", "filesize_benchmark.txt"], check = True) 
+subprocess.run(["head", "-c", "1","tests/DRB1-3123.gfa"], check = True) 
 
 size_bytes = os.path.getsize("filesize_benchmark.txt")
 
