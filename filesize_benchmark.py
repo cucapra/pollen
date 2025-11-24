@@ -11,10 +11,8 @@ size_bytes = os.path.getsize("filesize_benchmark.txt")
 
 bencher_json = {
   "benchmark_name": {
-    "latency": {
-      "value": size_bytes ,
-      "lower_value": size_bytes ,
-      "upper_value": size_bytes 
+    "file-size": {
+      "value": size_bytes, 
     }
   }
 }
