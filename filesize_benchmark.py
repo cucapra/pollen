@@ -11,17 +11,17 @@ def benchmark(test_file):
   subprocess.run(["rm", "-rf", "filesize_benchmark.txt"], check = True) 
   return size_bytes
 
-size_bytes_1 = benchmark("tests/chr6.C4.gfa")
-size_bytes_2 = benchmark("tests/DRB1-3123.gfa")
-size_bytes_3 = benchmark("tests/LPA.gfa")
-size_bytes_avg = (size_bytes_1 + size_bytes_2 + size_bytes_3) / 3
+size_bytes_1 = float(benchmark("tests/chr6.C4.gfa")) / 1000.0
+size_bytes_2 = float(benchmark("tests/DRB1-3123.gfa")) / 1000.0
+size_bytes_3 = float(benchmark("tests/LPA.gfa")) / 1000.0
+size_bytes_avg = (size_bytes_1 + size_bytes_2 + size_bytes_3) / 3.0
 
 bencher_json = {
   "FlatGFA File Size": {
-    "chr6.C4 (File Size)": {"value": size_bytes_1}, 
-    "DRB1-3123 (File Size)": {"value": size_bytes_2}, 
-    "LPA (File Size)": {"value": size_bytes_3}, 
-    "Average (File Size)": {"value": size_bytes_avg}
+    "chr6.C4 (File Size)": {"value": round(size_bytes_1, 2)}, 
+    "DRB1-3123 (File Size)": {"value": round(size_bytes_2, 2)}, 
+    "LPA (File Size)": {"value": round(size_bytes_3, 2)}, 
+    "Average (File Size)": {"value": round(size_bytes_avg, 2)}
   }
 }
 
