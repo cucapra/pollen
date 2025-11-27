@@ -18,12 +18,10 @@ size_bytes_avg = (size_bytes_1 + size_bytes_2 + size_bytes_3) / 3
 
 bencher_json = {
   "FlatGFA File Size": {
-    "file-size": {
-      "chr6.C4": {"value": size_bytes_1}, 
-      "DRB1-3123": {"value": size_bytes_2}, 
-      "LPA": {"value": size_bytes_3}, 
-      "Average": {"value": size_bytes_avg}
-    }
+    "chr6.C4": {"value": size_bytes_1}, 
+    "DRB1-3123": {"value": size_bytes_2}, 
+    "LPA": {"value": size_bytes_3}, 
+    "Average": {"value": size_bytes_avg}
   }
 }
 
