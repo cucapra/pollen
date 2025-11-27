@@ -30,6 +30,7 @@ time_3 = benchmark("tests/LPA.gfa", 10)
 avg_time = (time_1 + time_2 + time_3) / 3
 
 
+
 bencher_json = {
   "FlatGFA Extract Latency": {
     "chr6.C4 (Running Time)": {"value": round(time_1, 2)}, 
