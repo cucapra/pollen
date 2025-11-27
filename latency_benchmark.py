@@ -32,10 +32,10 @@ avg_time = (time_1 + time_2 + time_3) / 3
 
 bencher_json = {
   "FlatGFA Extract Latency": {
-    "chr6.C4": {"value": round(time_1, 2)}, 
-    "DRB1-3123": {"value": round(time_2, 2)}, 
-    "LPA": {"value": round(time_3, 2)}, 
-    "Average": {"value": round(avg_time, 2)}
+    "chr6.C4 (Running Time)": {"value": round(time_1, 2)}, 
+    "DRB1-3123 (Running Time)": {"value": round(time_2, 2)}, 
+    "LPA (Running Time)": {"value": round(time_3, 2)}, 
+    "Average (Running Time)": {"value": round(avg_time, 2)}
   }
 }
 
