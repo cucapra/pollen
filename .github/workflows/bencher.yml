@@ -15,7 +15,7 @@ jobs:
       - name: Add fgfa to PATH
         run: echo "$PWD/target/release" >> $GITHUB_PATH
       - name: Fetch test data
-        run: make fetch SMALL=1
+        run: make fetch
 
         # File size benchmark 
       - name: Track file size benchmarks with Bencher
