@@ -1,5 +1,4 @@
 *.gfa
-!DRB1-3123.gfa
 *.og
 *.bed
 *.out
