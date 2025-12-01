@@ -343,13 +343,37 @@ pub fn bed_intersect(args: BEDIntersect) {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "matrix")]
 pub struct PangenotypeMatrix {
-    /// the GAF file to use for genotyping
-    #[argh(positional)]
-    gaf_file: String,
+    /// the GAF file to use for genotyping (use `-f <file>`)
+    #[argh(option, short = 'f')]
+    file: Option<String>,
+
+    /// read from stdin
+    #[argh(switch)]
+    stdin: bool,
 }
 
 pub fn pangenotype_matrix(gfa: &flatgfa::FlatGFA, args: PangenotypeMatrix) {
-    let matrix = ops::pangenotype::make_pangenotype_matrix(gfa, vec![args.gaf_file]);
+    use std::io::{self, BufRead};
+
+    let matrix = if args.stdin {
+        // Read from stdin stream
+        let stdin = io::stdin();
+        let reader: Box<dyn BufRead> = Box::new(stdin.lock());
+        match ops::pangenotype::make_pangenotype_matrix_from_stream(gfa, reader) {
+            Ok(row) => vec![row],
+            Err(e) => {
+                eprintln!("Error reading from stdin: {}", e);
+                return;
+            }
+        }
+    } else if let Some(file_path) = args.file {
+        // For files (plain or .gz) the existing file-based API handles mmap and gzip
+        ops::pangenotype::make_pangenotype_matrix(gfa, vec![file_path])
+    } else {
+        eprintln!("Please provide a GAF file with -f <file> or use --stdin");
+        return;
+    };
+
     for row in matrix {
         for col in row {
             if col {
