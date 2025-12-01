@@ -355,6 +355,7 @@ impl std::fmt::Display for Sequence<'_> {
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> PackedSeqView {
+        // println!("end {}", seg.seq.end());
         PackedSeqView::from_pool(self.seq_data, seg.seq)
     }
 
@@ -444,7 +445,7 @@ impl SeqSpan {
     pub fn to_range(&self) -> Range<usize> {
         Range {
             start: self.start as usize,
-            end: (self.end() + 1) as usize,
+            end: self.end() as usize,
         }
     }
 
@@ -452,15 +453,16 @@ impl SeqSpan {
         (byte_index * 2 + end as usize) as u32
     }
 
-    /// Returns index of the final element in this SeqSpan
+    /// Returns one greater than the index of the final element in this SeqSpan
     pub fn end(&self) -> u32 {
         if self.len == 0 {
             self.start
         } else {
-            self.start + (self.len - 1) as u32
+            self.start + self.len as u32
         }
     }
 
+    // the index of the starting byte
     pub fn start_byte_index(&self) -> usize {
         if self.start == 1 {
             0
@@ -469,13 +471,9 @@ impl SeqSpan {
         }
     }
 
+    // one greater than the end byte index
     pub fn end_byte_index(&self) -> usize {
-        eprintln!("end/2: {} ; len: {}", self.end() / 2, self.len + 0);
-        if self.end() == 1 {
-            0
-        } else {
-            (self.end() / 2) as usize
-        }
+        ((self.end() + 1) / 2) as usize
     }
 
     pub fn get_nibble_begin(&self) -> bool {
@@ -515,7 +513,7 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         let mut compressed: Vec<u8> = Vec::new();
         let end = compress_into_buffer(seq, &mut compressed);
         let byte_span = self.seq_data.add_slice(&compressed);
-        let start = SeqSpan::to_logical(byte_span.end.index(), false);
+        let start = SeqSpan::to_logical(byte_span.start.index(), false);
 
         self.segs.add(Segment {
             name,
