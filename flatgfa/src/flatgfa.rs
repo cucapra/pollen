@@ -354,7 +354,7 @@ impl std::fmt::Display for Sequence<'_> {
 
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
-    pub fn get_seq(&self, seg: &Segment) -> PackedSeqView {
+    pub fn get_seq(&self, seg: &Segment) -> PackedSeqView<'_> {
         // println!("end {}", seg.seq.end());
         PackedSeqView::from_pool(self.seq_data, seg.seq)
     }

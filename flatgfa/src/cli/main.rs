@@ -46,7 +46,6 @@ enum Command {
     BedIntersect(cmds::BEDIntersect),
     SeqExport(cmds::SeqExport),
     SeqImport(cmds::SeqImport),
-    StatsFileSize(cmds::StatsFileSize),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -112,16 +111,8 @@ fn main() -> Result<(), &'static str> {
     };
 
     match args.command {
-<<<<<<< HEAD
-        Some(Command::StatsFileSize(_)) => {
-            cmds::stats_filesize(&gfa);
-        }
-        Some(Command::Toc(_)) => {
-            cmds::toc(&gfa);
-=======
         Some(Command::Toc(sub_args)) => {
             cmds::toc(&gfa, sub_args);
->>>>>>> main
         }
         Some(Command::Paths(_)) => {
             cmds::paths(&gfa);
