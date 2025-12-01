@@ -471,7 +471,7 @@ impl SeqSpan {
 
     // Returns the nibble offset of the beginning of the sequence
     pub fn get_nibble_begin(&self) -> bool {
-        (self.start % 2) != 0
+        !self.start.is_multiple_of(2)
     }
 
     // Returns the nibble offset of the ending of the sequence
