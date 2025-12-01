@@ -123,7 +123,7 @@ impl<T> Span<T> {
 /// access to the current set of objects (but not addition of new objects).
 pub trait Store<T: Clone> {
     /// Get a fixed-size view of the arena.
-    fn as_ref(&self) -> Pool<T>;
+    fn as_ref(&self) -> Pool<'_, T>;
 
     /// Add an item to the pool and get the new id.
     fn add(&mut self, item: T) -> Id<T>;
@@ -156,7 +156,7 @@ pub trait Store<T: Clone> {
 pub struct HeapStore<T>(Vec<T>);
 
 impl<T: Clone> Store<T> for HeapStore<T> {
-    fn as_ref(&self) -> Pool<T> {
+    fn as_ref(&self) -> Pool<'_, T> {
         Pool(&self.0)
     }
 
@@ -198,7 +198,7 @@ impl<T> Default for HeapStore<T> {
 pub struct FixedStore<'a, T>(SliceVec<'a, T>);
 
 impl<T: Clone> Store<T> for FixedStore<'_, T> {
-    fn as_ref(&self) -> Pool<T> {
+    fn as_ref(&self) -> Pool<'_, T> {
         Pool(&self.0)
     }
 
@@ -277,6 +277,11 @@ impl<'a, T> Pool<'a, T> {
             .iter()
             .enumerate()
             .map(|(i, item)| (Id::new(i), item))
+    }
+
+    /// Get the in-memory size of the pool in bytes.
+    pub fn size(&self) -> usize {
+        std::mem::size_of_val(self.0)
     }
 }
 

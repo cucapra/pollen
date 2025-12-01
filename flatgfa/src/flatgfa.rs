@@ -363,7 +363,7 @@ impl<'a> FlatGFA<'a> {
     ///
     /// A handle is a a forward or backward traversal of a specific segment. This method
     /// gets the sequence in the orientation specified by the handle.
-    pub fn get_seq_oriented(&self, handle: Handle) -> Sequence {
+    pub fn get_seq_oriented(&self, handle: Handle) -> Sequence<'_> {
         let seg = self.get_handle_seg(handle);
         let seq_data = PackedSeqView::from_pool(self.seq_data, seg.seq);
         Sequence::new(seq_data, handle.orient())
@@ -401,7 +401,7 @@ impl<'a> FlatGFA<'a> {
     }
 
     /// Look up a CIGAR alignment.
-    pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment {
+    pub fn get_alignment(&self, overlap: Span<AlignOp>) -> Alignment<'_> {
         Alignment {
             ops: &self.alignment[overlap],
         }
@@ -584,7 +584,7 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Borrow a FlatGFA view of this data store.
-    pub fn as_ref(&self) -> FlatGFA {
+    pub fn as_ref(&self) -> FlatGFA<'_> {
         FlatGFA {
             header: self.header.as_ref(),
             segs: self.segs.as_ref(),

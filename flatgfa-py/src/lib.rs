@@ -42,7 +42,7 @@ impl Store {
     }
 
     /// Get the FlatGFA stored here.
-    fn view(&self) -> FlatGFA {
+    fn view(&self) -> FlatGFA<'_> {
         // TK It seems wasteful to check the type of store every time... and to construct
         // the view every time. It's probably possible to fix this with a self-reference,
         // e.g., with the `owning_ref` crate.

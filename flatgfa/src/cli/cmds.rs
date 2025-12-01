@@ -14,20 +14,40 @@ use std::io::Write;
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "toc")]
-pub struct Toc {}
+pub struct Toc {
+    /// show sizes in bytes instead of element counts
+    #[argh(switch, short = 'b')]
+    bytes: bool,
+}
 
-pub fn toc(gfa: &flatgfa::FlatGFA) {
-    eprintln!("header: {}", gfa.header.len());
-    eprintln!("segs: {}", gfa.segs.len());
-    eprintln!("paths: {}", gfa.paths.len());
-    eprintln!("links: {}", gfa.links.len());
-    eprintln!("steps: {}", gfa.steps.len());
-    eprintln!("seq_data: {}", gfa.seq_data.len());
-    eprintln!("overlaps: {}", gfa.overlaps.len());
-    eprintln!("alignment: {}", gfa.alignment.len());
-    eprintln!("name_data: {}", gfa.name_data.len());
-    eprintln!("optional_data: {}", gfa.optional_data.len());
-    eprintln!("line_order: {}", gfa.line_order.len());
+pub fn toc(gfa: &flatgfa::FlatGFA, args: Toc) {
+    if args.bytes {
+        // Show sizes in bytes.
+        println!("header: {}", gfa.header.size());
+        println!("segs: {}", gfa.segs.size());
+        println!("paths: {}", gfa.paths.size());
+        println!("links: {}", gfa.links.size());
+        println!("steps: {}", gfa.steps.size());
+        println!("seq_data: {}", gfa.seq_data.size());
+        println!("overlaps: {}", gfa.overlaps.size());
+        println!("alignment: {}", gfa.alignment.size());
+        println!("name_data: {}", gfa.name_data.size());
+        println!("optional_data: {}", gfa.optional_data.size());
+        println!("line_order: {}", gfa.line_order.size());
+    } else {
+        // Show element counts (which is what we record physically in the TOC).
+        println!("header: {}", gfa.header.len());
+        println!("segs: {}", gfa.segs.len());
+        println!("paths: {}", gfa.paths.len());
+        println!("links: {}", gfa.links.len());
+        println!("steps: {}", gfa.steps.len());
+        println!("seq_data: {}", gfa.seq_data.len());
+        println!("overlaps: {}", gfa.overlaps.len());
+        println!("alignment: {}", gfa.alignment.len());
+        println!("name_data: {}", gfa.name_data.len());
+        println!("optional_data: {}", gfa.optional_data.len());
+        println!("line_order: {}", gfa.line_order.len());
+    }
 }
 
 /// list the paths

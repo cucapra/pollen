@@ -385,8 +385,7 @@ impl PackedSeqStore {
         }
     }
 
-    /// Creates a PackedSeqView with the same data as this PackedSeqStore
-    pub fn as_ref(&self) -> PackedSeqView {
+    pub fn as_ref(&self) -> PackedSeqView<'_> {
         PackedSeqView {
             data: &self.data,
             high_nibble_end: self.high_nibble_end,
