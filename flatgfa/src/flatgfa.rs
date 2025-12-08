@@ -445,7 +445,7 @@ impl SeqSpan {
     pub fn to_range(&self) -> Range<usize> {
         Range {
             start: self.start as usize,
-            end: self.end() as usize,
+            end: self.end(),
         }
     }
 
@@ -461,7 +461,7 @@ impl SeqSpan {
 
     // Returns the index one greater than the end byte index
     pub fn end_byte_index(&self) -> usize {
-        self.end().div_ceil(2) as usize
+        self.end().div_ceil(2)
     }
 
     // Returns the nibble offset of the beginning of the sequence
