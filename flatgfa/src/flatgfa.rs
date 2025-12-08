@@ -1,9 +1,14 @@
 #![allow(clippy::repr_packed_without_abi)]
 
-use std::ops::Range;
 use std::str::FromStr;
+//use std::{arch::aarch64::uint8x16x3_t}
 
-use crate::pool::{self, Id, Pool, Span, Store};
+use std::ops::Range;
+
+use crate::{
+    packedseq::{compress_into_buffer, PackedSeqView},
+    pool::{self, Id, Pool, Span, Store},
+};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
@@ -75,7 +80,7 @@ pub struct Segment {
     pub name: usize,
 
     /// The base-pair sequence for the segment. This is a range in the `seq_data` pool.
-    pub seq: Span<u8>,
+    pub seq: SeqSpan,
 
     /// Segments can have optional fields. This is a range in the `optional_data` pool.
     pub optional: Span<u8>,
@@ -84,7 +89,7 @@ pub struct Segment {
 impl Segment {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
-        self.seq.len()
+        self.seq.len as usize
     }
 }
 
@@ -274,7 +279,7 @@ pub enum LineKind {
 /// This is mostly a `&[u8]`, but it also has a flag to indicate that we're
 /// representing the reverse-complement of the underlying sequence data.
 pub struct Sequence<'a> {
-    data: &'a [u8],
+    data: PackedSeqView<'a>,
     revcmp: bool,
 }
 
@@ -284,7 +289,7 @@ impl<'a> Sequence<'a> {
     /// `data` should be the "forward" version of the sequence. Use `ori` to
     /// indicate whether this `Sequence` represents the forward or backward
     /// (reverse complement) of that data.
-    pub fn new(data: &'a [u8], ori: Orientation) -> Self {
+    pub fn new(data: PackedSeqView<'a>, ori: Orientation) -> Self {
         Self {
             data,
             revcmp: ori == Orientation::Backward,
@@ -294,9 +299,9 @@ impl<'a> Sequence<'a> {
     /// Look up a single base pair in the sequence.
     pub fn index(&self, idx: usize) -> u8 {
         if self.revcmp {
-            nucleotide_complement(self.data[self.data.len() - idx - 1])
+            self.data.get(self.data.len() - idx - 1).complement().into()
         } else {
-            self.data[idx]
+            self.data.get(idx).into()
         }
     }
 
@@ -305,9 +310,11 @@ impl<'a> Sequence<'a> {
         let data = if self.revcmp {
             // The range starts at the end of the buffer:
             // [-----<end<******<start<------]
-            &self.data[(self.data.len() - range.end)..(self.data.len() - range.start)]
+            self.data.slice(SeqSpan::from_range(
+                (self.data.len() - range.end)..(self.data.len() - range.start),
+            ))
         } else {
-            &self.data[range]
+            self.data.slice(SeqSpan::from_range(range))
         };
         Self {
             data,
@@ -321,26 +328,11 @@ impl<'a> Sequence<'a> {
             self.data
                 .iter()
                 .rev()
-                .map(|&c| nucleotide_complement(c))
+                .map(|c| c.complement().into())
                 .collect()
         } else {
-            self.data.to_vec()
+            self.data.iter().map(|c| c.into()).collect()
         }
-    }
-}
-
-/// Given an ASCII character for a nucleotide, get its complement.
-fn nucleotide_complement(c: u8) -> u8 {
-    match c {
-        b'A' => b'T',
-        b'T' => b'A',
-        b'C' => b'G',
-        b'G' => b'C',
-        b'a' => b't',
-        b't' => b'a',
-        b'c' => b'g',
-        b'g' => b'c',
-        x => x,
     }
 }
 
@@ -354,7 +346,7 @@ impl std::fmt::Display for Sequence<'_> {
             let bytes = self.to_vec();
             write!(f, "{}", BStr::new(&bytes))?;
         } else {
-            write!(f, "{}", BStr::new(self.data))?;
+            write!(f, "{}", self.data)?;
         }
         Ok(())
     }
@@ -362,8 +354,9 @@ impl std::fmt::Display for Sequence<'_> {
 
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
-    pub fn get_seq(&self, seg: &Segment) -> &BStr {
-        self.seq_data[seg.seq].as_ref()
+    pub fn get_seq(&self, seg: &Segment) -> PackedSeqView<'_> {
+        // println!("end {}", seg.seq.end());
+        PackedSeqView::from_pool(self.seq_data, seg.seq)
     }
 
     /// Get the sequence that a *handle* refers to.
@@ -372,7 +365,7 @@ impl<'a> FlatGFA<'a> {
     /// gets the sequence in the orientation specified by the handle.
     pub fn get_seq_oriented(&self, handle: Handle) -> Sequence<'_> {
         let seg = self.get_handle_seg(handle);
-        let seq_data = self.seq_data[seg.seq].as_ref();
+        let seq_data = PackedSeqView::from_pool(self.seq_data, seg.seq);
         Sequence::new(seq_data, handle.orient())
     }
 
@@ -423,6 +416,71 @@ impl<'a> FlatGFA<'a> {
     }
 }
 
+/// A Span of a packed sequence.
+#[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
+#[repr(packed)]
+pub struct SeqSpan {
+    /// The logical index of the first element of the sequence
+    pub start: u32,
+
+    /// The length of the sequence
+    pub len: u16,
+}
+
+impl SeqSpan {
+    /// Returns true if this SeqSpan is empty, else return false
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    /// Given `range`, returns the equivalent SeqSpan
+    pub fn from_range(range: Range<usize>) -> Self {
+        Self {
+            start: range.start as u32,
+            len: (range.end - range.start) as u16,
+        }
+    }
+
+    /// Returns the range that is equivalent to this SeqSpan
+    pub fn to_range(&self) -> Range<usize> {
+        Range {
+            start: self.start as usize,
+            end: self.end(),
+        }
+    }
+
+    // Returns the logical index of the element given the byte index and nibble offset
+    pub fn to_logical(byte_index: usize, end_offset: bool) -> u32 {
+        (byte_index * 2 + end_offset as usize) as u32
+    }
+
+    // Returns the index of the starting byte
+    pub fn start_byte_index(&self) -> usize {
+        (self.start / 2) as usize
+    }
+
+    // Returns the index one greater than the end byte index
+    pub fn end_byte_index(&self) -> usize {
+        self.end().div_ceil(2)
+    }
+
+    // Returns the nibble offset of the beginning of the sequence
+    pub fn get_nibble_begin(&self) -> bool {
+        !self.start.is_multiple_of(2)
+    }
+
+    // Returns the nibble offset of the ending of the sequence
+    pub fn get_nibble_end(&self) -> bool {
+        (self.end() % 2) != 1
+    }
+    pub fn len_from_end(&self, end: usize) -> u16 {
+        ((end as u32) - self.start) as u16
+    }
+    pub fn end(&self) -> usize {
+        (self.start as usize) + (self.len as usize)
+    }
+}
+
 /// The data storage pools for a `FlatGFA`.
 #[derive(Default)]
 pub struct GFAStore<'a, P: StoreFamily<'a>> {
@@ -448,9 +506,37 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
 
     /// Add a new segment to the GFA file.
     pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
+        let mut compressed: Vec<u8> = Vec::new();
+        let end_offset = compress_into_buffer(seq, &mut compressed);
+        let byte_span = self.seq_data.add_slice(&compressed);
+        let start = SeqSpan::to_logical(byte_span.start.index(), false);
+        let end = SeqSpan::to_logical(byte_span.end.index() - 1, end_offset) + 1;
         self.segs.add(Segment {
             name,
-            seq: self.seq_data.add_slice(seq),
+            seq: SeqSpan {
+                start,
+                len: (end - start) as u16,
+            },
+            optional: self.optional_data.add_slice(optional),
+        })
+    }
+
+    /// Add a new segment with already compressed data
+    pub fn add_seg_already_compressed(
+        &mut self,
+        name: usize,
+        seq: PackedSeqView,
+        optional: &[u8],
+    ) -> Id<Segment> {
+        let byte_span = self.seq_data.add_slice(seq.data);
+        let start = SeqSpan::to_logical(byte_span.start.index(), seq.high_nibble_begin);
+        let end = SeqSpan::to_logical(byte_span.end.index() - 1, seq.high_nibble_end) + 1;
+        self.segs.add(Segment {
+            name,
+            seq: SeqSpan {
+                start,
+                len: (end - start) as u16,
+            },
             optional: self.optional_data.add_slice(optional),
         })
     }

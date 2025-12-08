@@ -104,7 +104,7 @@ def test_read_write_gfa(gfa, tmp_path):
             assert orig_f.read() == written_f.read()
 
     # You can also parse GFA text files from the filesystem.
-    new_gfa = flatgfa.parse(gfa_path)
+    new_gfa = flatgfa.parse(gfa_path)  # type: ignore
     assert len(new_gfa.segments) == len(gfa.segments)
 
 
@@ -114,7 +114,7 @@ def test_read_write_flatgfa(gfa, tmp_path):
     gfa.write_flatgfa(flatgfa_path)
 
     # And read them back, which should be very fast indeed.
-    new_gfa = flatgfa.load(flatgfa_path)
+    new_gfa = flatgfa.load(flatgfa_path)  # type: ignore
     assert len(new_gfa.segments) == len(gfa.segments)
 
 

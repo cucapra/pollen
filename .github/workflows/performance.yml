@@ -1,0 +1,103 @@
+name: performance
+
+
+on:
+  push:
+    branches:
+      - john-performance
+
+jobs:
+  test-py:
+    name: test Python tools
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Set up and use uv.
+      - uses: actions/cache@v4
+        id: cache-uv
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-uv
+      - name: uv sync and activate
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
+          echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
+      # Set up for tests.
+      - name: Problem matcher
+        run: echo '::add-matcher::.github/tap-matcher.json'
+      - name: Fetch test data
+        run: make fetch SMALL=1
+
+      - name: Pull odgi container
+        run: |
+          docker pull quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1
+          docker tag quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1 odgi
+      - name: Install odgi alias
+        run: |
+          mkdir -p $HOME/.local/bin
+          cp .github/odgi.sh $HOME/.local/bin/odgi
+          chmod a+x $HOME/.local/bin/odgi
+
+      # Test slow_odgi.
+      - name: Set up for slow_odgi tests
+        run: make -C slow_odgi setup oracles SMALL=1
+      - name: Test slow_odgi
+        run: make -C slow_odgi test SMALL=1
+
+  test-flatgfa:
+    name: test FlatGFA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --no-self-update
+
+      # Install slow-odgi.
+      - uses: actions/cache@v4
+        id: cache-uv
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-python-${{ matrix.python-version }}-uv
+      - name: uv sync and activate
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
+          echo "VIRTUAL_ENV=.venv" >> $GITHUB_ENV
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
+      # Install odgi
+      - name: Pull odgi container
+        run: |
+          docker pull quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1
+          docker tag quay.io/biocontainers/odgi:0.8.6--py310hdf79db3_1 odgi
+      - name: Install odgi alias
+        run: |
+          mkdir -p $HOME/.local/bin
+          cp .github/odgi.sh $HOME/.local/bin/odgi
+          chmod a+x $HOME/.local/bin/odgi
+
+      # Install Turnt.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Turnt
+        run: pip install turnt
+      - name: Problem matcher
+        run: echo '::add-matcher::.github/tap-matcher.json'
+
+      # We need the test data.
+      - name: Fetch test data
+        run: make fetch SMALL=1
+
+      # Build and test.
+      - run: cargo build
+        working-directory: ./flatgfa
+      - run: cargo test
+        working-directory: ./flatgfa
+      - run: make test-flatgfa
