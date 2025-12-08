@@ -89,7 +89,7 @@ pub struct Segment {
 impl Segment {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
-        self.seq.len()
+        self.seq.len as usize
     }
 }
 
@@ -423,26 +423,21 @@ pub struct SeqSpan {
     /// The logical index of the first element of the sequence
     pub start: u32,
 
-    /// One greater than the logical index of the final element of the sequence
-    pub end: u32,
+    /// The length of the sequence
+    pub len: u16,
 }
 
 impl SeqSpan {
-    // Returns the length of this SeqSpan
-    pub fn len(&self) -> usize {
-        (self.end - self.start) as usize
-    }
-
     /// Returns true if this SeqSpan is empty, else return false
     pub fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.len == 0
     }
 
     /// Given `range`, returns the equivalent SeqSpan
     pub fn from_range(range: Range<usize>) -> Self {
         Self {
             start: range.start as u32,
-            end: range.end as u32,
+            len: (range.end - range.start) as u16,
         }
     }
 
@@ -450,7 +445,7 @@ impl SeqSpan {
     pub fn to_range(&self) -> Range<usize> {
         Range {
             start: self.start as usize,
-            end: self.end as usize,
+            end: self.end() as usize,
         }
     }
 
@@ -466,7 +461,7 @@ impl SeqSpan {
 
     // Returns the index one greater than the end byte index
     pub fn end_byte_index(&self) -> usize {
-        self.end.div_ceil(2) as usize
+        self.end().div_ceil(2) as usize
     }
 
     // Returns the nibble offset of the beginning of the sequence
@@ -476,7 +471,13 @@ impl SeqSpan {
 
     // Returns the nibble offset of the ending of the sequence
     pub fn get_nibble_end(&self) -> bool {
-        (self.end % 2) != 1
+        (self.end() % 2) != 1
+    }
+    pub fn len_from_end(&self, end: usize) -> u16 {
+        ((end as u32) - self.start) as u16
+    }
+    pub fn end(&self) -> usize {
+        (self.start as usize) + (self.len as usize)
     }
 }
 
@@ -512,7 +513,10 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         let end = SeqSpan::to_logical(byte_span.end.index() - 1, end_offset) + 1;
         self.segs.add(Segment {
             name,
-            seq: SeqSpan { start, end },
+            seq: SeqSpan {
+                start,
+                len: (end - start) as u16,
+            },
             optional: self.optional_data.add_slice(optional),
         })
     }
@@ -529,7 +533,10 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         let end = SeqSpan::to_logical(byte_span.end.index() - 1, seq.high_nibble_end) + 1;
         self.segs.add(Segment {
             name,
-            seq: SeqSpan { start, end },
+            seq: SeqSpan {
+                start,
+                len: (end - start) as u16,
+            },
             optional: self.optional_data.add_slice(optional),
         })
     }
