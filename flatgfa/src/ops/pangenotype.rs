@@ -103,7 +103,12 @@ pub fn make_pangenotype_matrix_from_stream(
     Ok(matrix.remove(0))
 }
 
-fn process_gaf_line(line: &str, matrix: &mut Vec<Vec<bool>>, file_idx: usize, name_map: &crate::namemap::NameMap) {
+fn process_gaf_line(
+    line: &str,
+    matrix: &mut Vec<Vec<bool>>,
+    file_idx: usize,
+    name_map: &crate::namemap::NameMap,
+) {
     let bytes = line.as_bytes();
     let mut tab_count = 0;
     let mut idx = 0;
@@ -127,7 +132,12 @@ fn process_gaf_line(line: &str, matrix: &mut Vec<Vec<bool>>, file_idx: usize, na
     parse_path_field(path_field, matrix, file_idx, name_map);
 }
 
-fn process_gaf_line_bytes(line: &[u8], matrix: &mut Vec<Vec<bool>>, file_idx: usize, name_map: &crate::namemap::NameMap) {
+fn process_gaf_line_bytes(
+    line: &[u8],
+    matrix: &mut Vec<Vec<bool>>,
+    file_idx: usize,
+    name_map: &crate::namemap::NameMap,
+) {
     let mut tab_count = 0;
     let mut idx = 0;
     while idx < line.len() && tab_count < 5 {
@@ -150,8 +160,12 @@ fn process_gaf_line_bytes(line: &[u8], matrix: &mut Vec<Vec<bool>>, file_idx: us
     parse_path_field(path_field, matrix, file_idx, name_map);
 }
 
-
-fn parse_path_field(path_field: &[u8], matrix: &mut Vec<Vec<bool>>, file_idx: usize, name_map: &crate::namemap::NameMap) {
+fn parse_path_field(
+    path_field: &[u8],
+    matrix: &mut Vec<Vec<bool>>,
+    file_idx: usize,
+    name_map: &crate::namemap::NameMap,
+) {
     let mut p = 0;
     while p < path_field.len() {
         let byte = path_field[p];
