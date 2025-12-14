@@ -4,7 +4,7 @@ use crate::namemap::NameMap;
 use flate2::read::GzDecoder;
 use memchr::memchr;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Read};
+use std::io::{self, BufRead, BufReader};
 
 /// Open a GAF file reader for gzip-compressed files.
 ///
