@@ -34,7 +34,7 @@ pub struct Path<'a> {
 }
 
 /// Parse a single line of a GFA file.
-pub fn parse_line(line: &[u8]) -> LineResult {
+pub fn parse_line(line: &[u8]) -> LineResult<'_> {
     if line.len() < 2 || line[1] != b'\t' {
         return Err("expected marker and tab");
     }
@@ -49,12 +49,12 @@ pub fn parse_line(line: &[u8]) -> LineResult {
 }
 
 /// Parse a header line, which looks like `H <data>`.
-fn parse_header(line: &[u8]) -> LineResult {
+fn parse_header(line: &[u8]) -> LineResult<'_> {
     Ok(Line::Header(line))
 }
 
 /// Parse a segment line, which looks like `S <name> <seq> <data>`.
-fn parse_seg(line: &[u8]) -> LineResult {
+fn parse_seg(line: &[u8]) -> LineResult<'_> {
     let (name, rest) = parse_num(line)?;
     let rest = parse_byte(rest, b'\t')?;
     let (seq, data) = parse_field(rest)?;
@@ -62,7 +62,7 @@ fn parse_seg(line: &[u8]) -> LineResult {
 }
 
 /// Parse a link line, which looks like `L <from> <+-> <to> <+-> <CIGAR>`.
-fn parse_link(line: &[u8]) -> LineResult {
+fn parse_link(line: &[u8]) -> LineResult<'_> {
     let (from_seg, rest) = parse_num(line)?;
     let rest = parse_byte(rest, b'\t')?;
     let (from_orient, rest) = parse_orient(rest)?;
@@ -85,7 +85,7 @@ fn parse_link(line: &[u8]) -> LineResult {
 }
 
 /// Parse a path line, which looks like `P <name> <steps> <*|CIGARs>`.
-fn parse_path(line: &[u8]) -> LineResult {
+fn parse_path(line: &[u8]) -> LineResult<'_> {
     let (name, rest) = parse_field(line)?;
     let (steps, rest) = parse_field(rest)?;
     let (overlaps, rest) = parse_maybe_overlap_list(rest)?;
@@ -100,7 +100,7 @@ fn parse_path(line: &[u8]) -> LineResult {
 }
 
 /// Parse a *possible* overlap list, which may be `*` (empty).
-pub fn parse_maybe_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>>> {
+pub fn parse_maybe_overlap_list(s: &[u8]) -> PartialParseResult<'_, Vec<Vec<AlignOp>>> {
     if s == b"*" {
         Ok((vec![], &s[1..]))
     } else {
@@ -111,7 +111,7 @@ pub fn parse_maybe_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>
 /// Parse a comma-separated list of CIGAR strings.
 ///
 /// TODO: This could be optimized to avoid accumulating into a vector.
-fn parse_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>>> {
+fn parse_overlap_list(s: &[u8]) -> PartialParseResult<'_, Vec<Vec<AlignOp>>> {
     let mut rest = s;
     let mut overlaps = vec![];
     while !rest.is_empty() {
@@ -126,7 +126,7 @@ fn parse_overlap_list(s: &[u8]) -> PartialParseResult<Vec<Vec<AlignOp>>> {
 }
 
 /// Consume a chunk of a string up to a given marker byte.
-fn parse_until(line: &[u8], marker: u8) -> PartialParseResult<&[u8]> {
+fn parse_until(line: &[u8], marker: u8) -> PartialParseResult<'_, &[u8]> {
     let end = memchr::memchr(marker, line).unwrap_or(line.len());
     let rest = if end == line.len() {
         &[]
@@ -137,7 +137,7 @@ fn parse_until(line: &[u8], marker: u8) -> PartialParseResult<&[u8]> {
 }
 
 /// Consume a string from the line, until a tab (or the end of the line).
-pub fn parse_field(line: &[u8]) -> PartialParseResult<&[u8]> {
+pub fn parse_field(line: &[u8]) -> PartialParseResult<'_, &[u8]> {
     parse_until(line, b'\t')
 }
 
@@ -150,7 +150,7 @@ fn parse_byte(s: &[u8], byte: u8) -> ParseResult<&[u8]> {
 }
 
 /// Parse a single integer.
-fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<T> {
+fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<'_, T> {
     match T::from_radix_10(s) {
         (_, 0) => Err("expected number"),
         (num, used) => Ok((num, &s[used..])),
@@ -158,7 +158,7 @@ fn parse_num<T: FromRadix10>(s: &[u8]) -> PartialParseResult<T> {
 }
 
 /// Parse a segment orientation (+ or -).
-fn parse_orient(line: &[u8]) -> PartialParseResult<Orientation> {
+fn parse_orient(line: &[u8]) -> PartialParseResult<'_, Orientation> {
     if line.is_empty() {
         return Err("expected orientation");
     }
@@ -171,7 +171,7 @@ fn parse_orient(line: &[u8]) -> PartialParseResult<Orientation> {
 }
 
 /// Parse a single CIGAR alignment operation (like `4D`).
-fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
+fn parse_align_op(s: &[u8]) -> PartialParseResult<'_, AlignOp> {
     let (len, rest) = parse_num::<u32>(s)?;
     let op = match rest[0] {
         b'M' => crate::flatgfa::AlignOpcode::Match,
@@ -186,7 +186,7 @@ fn parse_align_op(s: &[u8]) -> PartialParseResult<AlignOp> {
 /// Parse a complete CIGAR alignment string (like `3M2I`).
 ///
 /// TODO This could be optimized to avoid collecting into a vector.
-fn parse_align(s: &[u8]) -> PartialParseResult<Vec<AlignOp>> {
+fn parse_align(s: &[u8]) -> PartialParseResult<'_, Vec<AlignOp>> {
     let mut rest = s;
     let mut align = vec![];
     while !rest.is_empty() && rest[0].is_ascii_digit() {

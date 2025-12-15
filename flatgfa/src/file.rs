@@ -182,7 +182,7 @@ fn read_toc_mut(data: &mut [u8]) -> (&mut Toc, &mut [u8]) {
 }
 
 /// Get a FlatGFA backed by the data in a byte buffer.
-pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
+pub fn view(data: &[u8]) -> flatgfa::FlatGFA<'_> {
     let (toc, rest) = read_toc(data);
 
     let (header, rest) = slice_prefix(rest, toc.header);
@@ -216,7 +216,7 @@ pub fn view(data: &[u8]) -> flatgfa::FlatGFA {
 fn slice_vec_prefix<T: FromBytes + IntoBytes>(
     data: &mut [u8],
     size: Size,
-) -> (SliceVec<T>, &mut [u8]) {
+) -> (SliceVec<'_, T>, &mut [u8]) {
     let (prefix, rest) = <[T]>::mut_from_prefix_with_elems(data, size.capacity).unwrap();
     let vec = SliceVec::from_slice_len(prefix, size.len);
     (vec, rest)
@@ -252,13 +252,13 @@ fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::FixedGFAStore<'a> 
 }
 
 /// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
-pub fn view_store(data: &mut [u8]) -> flatgfa::FixedGFAStore {
+pub fn view_store(data: &mut [u8]) -> flatgfa::FixedGFAStore<'_> {
     let (toc, rest) = read_toc_mut(data);
     slice_store(rest, toc)
 }
 
 /// Initialize a buffer with an empty FlatGFA store.
-pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore) {
+pub fn init(data: &mut [u8], toc: Toc) -> (&mut Toc, flatgfa::FixedGFAStore<'_>) {
     // Write the table of contents.
     assert!(data.len() == toc.size());
     toc.write_to_prefix(data).unwrap();
