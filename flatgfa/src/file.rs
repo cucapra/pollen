@@ -252,7 +252,7 @@ fn slice_store<'a>(data: &'a mut [u8], toc: &Toc) -> flatgfa::FixedGFAStore<'a> 
 }
 
 /// Get a mutable FlatGFA `SliceStore` backed by a byte buffer.
-pub fn view_store(data: &mut [u8]) -> flatgfa::FixedGFAStore<'_> {
+pub fn view_store<'a>(data: &'a mut [u8]) -> flatgfa::FixedGFAStore<'a> {
     let (toc, rest) = read_toc_mut(data);
     slice_store(rest, toc)
 }

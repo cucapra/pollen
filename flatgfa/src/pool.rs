@@ -278,6 +278,11 @@ impl<'a, T> Pool<'a, T> {
             .enumerate()
             .map(|(i, item)| (Id::new(i), item))
     }
+
+    /// Get the in-memory size of the pool in bytes.
+    pub fn size(&self) -> usize {
+        std::mem::size_of_val(self.0)
+    }
 }
 
 impl<T> Index<Id<T>> for Pool<'_, T> {
