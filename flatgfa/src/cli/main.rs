@@ -19,6 +19,10 @@ struct PolBin {
     #[argh(option, short = 'o')]
     output: Option<String>,
 
+    /// write to a text GFA file
+    #[argh(option, short = 'O')]
+    output_gfa: Option<String>,
+
     /// mutate the input file in place
     #[argh(switch, short = 'm')]
     mutate: bool,
@@ -125,7 +129,7 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::Extract(sub_args)) => {
             let store = cmds::extract(&gfa, sub_args)?;
-            dump(&store.as_ref(), &args.output);
+            dump(&store.as_ref(), &args.output, &args.output_gfa);
         }
         Some(Command::Depth(_)) => {
             cmds::depth(&gfa);
@@ -149,7 +153,7 @@ fn main() -> Result<(), &'static str> {
                 optional_data: store.optional_data.as_ref(),
                 line_order: store.line_order.as_ref(),
             };
-            dump(&flat, &args.output);
+            dump(&flat, &args.output, &args.output_gfa);
         }
         Some(Command::GafLookup(sub_args)) => {
             cmds::gaf_lookup(&gfa, sub_args);
@@ -168,7 +172,7 @@ fn main() -> Result<(), &'static str> {
         }
         None => {
             // Just emit the GFA or FlatGFA file.
-            dump(&gfa, &args.output);
+            dump(&gfa, &args.output, &args.output_gfa);
         }
     }
 
@@ -177,14 +181,23 @@ fn main() -> Result<(), &'static str> {
 
 /// Write a FlatGFA either to a GFA text file to stdout or a binary FlatGFA file given
 /// with a name.
-fn dump(gfa: &FlatGFA, output: &Option<String>) {
-    match output {
-        Some(name) => {
+fn dump(gfa: &FlatGFA, output_flat: &Option<String>, output_text: &Option<String>) {
+    match (output_flat, output_text) {
+        // Flat file output.
+        (Some(name), _) => {
             let mut mmap = memfile::map_new_file(name, file::size(gfa) as u64);
             file::dump(gfa, &mut mmap);
             mmap.flush().unwrap();
         }
-        None => {
+        // Text file output.
+        (None, Some(name)) => {
+            use std::fs::File;
+            use std::io::Write;
+            let mut file = File::create(name).unwrap();
+            write!(file, "{gfa}").unwrap();
+        }
+        // Output to stdout.
+        (None, None) => {
             print!("{gfa}");
         }
     }
