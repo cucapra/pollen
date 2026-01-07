@@ -3,6 +3,11 @@ use crate::memfile;
 use crate::namemap::NameMap;
 use memchr::memchr;
 
+// TODO: This function currently combines a "specialized" GAF text parser with
+// the matrix construction. It would be nice to disentangle these as much as
+// possible, even if we can't reuse the more general GAF parser logic in
+// `gaf.rs`.
+
 pub fn make_pangenotype_matrix(gfa: &FlatGFA, gaf_files: Vec<String>) -> Vec<Vec<bool>> {
     let num_segments = gfa.segs.len();
     let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
