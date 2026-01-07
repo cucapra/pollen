@@ -2,30 +2,52 @@ use crate::flatbed::BEDParser;
 use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
 use crate::namemap::NameMap;
-use crate::ops;
+use crate::packedseq::PackedSeqView;
 use crate::pool::Id;
+use crate::{ops, packedseq};
 use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
+use std::io::Write;
 
 /// print the FlatGFA table of contents
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "toc")]
-pub struct Toc {}
+pub struct Toc {
+    /// show sizes in bytes instead of element counts
+    #[argh(switch, short = 'b')]
+    bytes: bool,
+}
 
-pub fn toc(gfa: &flatgfa::FlatGFA) {
-    eprintln!("header: {}", gfa.header.len());
-    eprintln!("segs: {}", gfa.segs.len());
-    eprintln!("paths: {}", gfa.paths.len());
-    eprintln!("links: {}", gfa.links.len());
-    eprintln!("steps: {}", gfa.steps.len());
-    eprintln!("seq_data: {}", gfa.seq_data.len());
-    eprintln!("overlaps: {}", gfa.overlaps.len());
-    eprintln!("alignment: {}", gfa.alignment.len());
-    eprintln!("name_data: {}", gfa.name_data.len());
-    eprintln!("optional_data: {}", gfa.optional_data.len());
-    eprintln!("line_order: {}", gfa.line_order.len());
+pub fn toc(gfa: &flatgfa::FlatGFA, args: Toc) {
+    if args.bytes {
+        // Show sizes in bytes.
+        println!("header: {}", gfa.header.size());
+        println!("segs: {}", gfa.segs.size());
+        println!("paths: {}", gfa.paths.size());
+        println!("links: {}", gfa.links.size());
+        println!("steps: {}", gfa.steps.size());
+        println!("seq_data: {}", gfa.seq_data.size());
+        println!("overlaps: {}", gfa.overlaps.size());
+        println!("alignment: {}", gfa.alignment.size());
+        println!("name_data: {}", gfa.name_data.size());
+        println!("optional_data: {}", gfa.optional_data.size());
+        println!("line_order: {}", gfa.line_order.size());
+    } else {
+        // Show element counts (which is what we record physically in the TOC).
+        println!("header: {}", gfa.header.len());
+        println!("segs: {}", gfa.segs.len());
+        println!("paths: {}", gfa.paths.len());
+        println!("links: {}", gfa.links.len());
+        println!("steps: {}", gfa.steps.len());
+        println!("seq_data: {}", gfa.seq_data.len());
+        println!("overlaps: {}", gfa.overlaps.len());
+        println!("alignment: {}", gfa.alignment.len());
+        println!("name_data: {}", gfa.name_data.len());
+        println!("optional_data: {}", gfa.optional_data.len());
+        println!("line_order: {}", gfa.line_order.len());
+    }
 }
 
 /// list the paths
@@ -74,7 +96,7 @@ pub fn stats(gfa: &flatgfa::FlatGFA, args: Stats) {
             }
         }
         println!("#type\tnum");
-        println!("total\t{}", total);
+        println!("total\t{total}");
         println!("unique\t{}", counts.len());
     }
 }
@@ -269,7 +291,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
                 ops::gaf::PathChunker::new(gfa, &name_map, read).count()
             })
             .reduce(|| 0, |a, b| a + b);
-            println!("{}", count);
+            println!("{count}");
         } else {
             unimplemented!("only the no-op mode is parallel")
         }
@@ -290,7 +312,7 @@ pub fn gaf_lookup(gfa: &flatgfa::FlatGFA, args: GAFLookup) {
                 count += 1;
             }
         }
-        println!("{}", count);
+        println!("{count}");
     } else {
         // Just print some info about the offsets in the segments.
         for read in parser {
@@ -334,9 +356,48 @@ pub fn bed_intersect(args: BEDIntersect) {
             let name: &BStr = bed2.get_name_of_entry(val);
             let start = val.start;
             let end = val.end;
-            println!("{}\t{}\t{}", name, start, end);
+            println!("{name}\t{start}\t{end}");
         }
     }
+}
+
+/// Print the contents of a compressed file of nucleotides
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "seq-import")]
+pub struct SeqImport {
+    /// the name of the file to import from
+    #[argh(positional)]
+    filename: String,
+}
+
+pub fn seq_import(args: SeqImport) {
+    let mmap = memfile::map_file(&args.filename);
+    let view = PackedSeqView::read_file(&mmap);
+    let bytes: Vec<u8> = view.iter().map(|n| n.to_ascii()).collect();
+    std::io::stdout().write_all(&bytes).unwrap();
+    println!();
+}
+
+/// Compresses a sequence of nucleotides and exports it to a file
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "seq-export")]
+pub struct SeqExport {
+    /// the input text file
+    #[argh(positional)]
+    input: String,
+
+    /// the output compressed file
+    #[argh(positional)]
+    output: String,
+}
+
+pub fn seq_export(args: SeqExport) {
+    let input = memfile::map_file(&args.input);
+    let store = packedseq::PackedSeqStore::from_ascii(
+        input.iter().copied().filter(|c| !c.is_ascii_whitespace()),
+    );
+    let view = store.as_ref();
+    packedseq::export(view, &args.output);
 }
 
 /// construct a pangenotype matrix

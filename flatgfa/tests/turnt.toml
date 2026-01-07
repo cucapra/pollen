@@ -1,0 +1,2 @@
+command = "../../target/debug/fgfa seq-export {filename} packed.seq ; cargo run seq-import packed.seq ; rm packed.seq"
+output.t = "-"

@@ -38,7 +38,7 @@ pub struct MemchrSplit<'a> {
 }
 
 impl MemchrSplit<'_> {
-    pub fn new(needle: u8, haystack: &[u8]) -> MemchrSplit {
+    pub fn new(needle: u8, haystack: &[u8]) -> MemchrSplit<'_> {
         MemchrSplit {
             needle,
             haystack,
