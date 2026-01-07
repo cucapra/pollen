@@ -7,7 +7,7 @@ pub fn make_pangenotype_matrix(gfa: &FlatGFA, gaf_files: Vec<String>) -> Vec<Vec
     let num_segments = gfa.segs.len();
     let mut matrix = vec![vec![false; num_segments]; gaf_files.len()];
 
-    let name_map = NameMap::build(&gfa);
+    let name_map = NameMap::build(gfa);
 
     for (file_idx, gaf_path) in gaf_files.iter().enumerate() {
         let mmap = memfile::map_file(gaf_path);
