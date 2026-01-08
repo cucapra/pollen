@@ -1,0 +1,44 @@
+on:
+  push:
+    branches: john-benchmark
+
+jobs:
+  benchmark_base_branch:
+    name: Continuous Benchmarking with Bencher
+    permissions:
+      contents: read
+      checks: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bencherdev/bencher@main
+      - name: Add fgfa to PATH
+        run: echo "$PWD/target/release" >> $GITHUB_PATH
+      - name: Fetch test data
+        run: make fetch
+
+        # File size benchmark 
+      - name: Track file size benchmarks with Bencher
+        run: |
+          bencher run \
+          --project flatgfa \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch main \
+          --testbed ubuntu-latest \
+          --err \
+          --adapter json \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          python filesize_benchmark.py 
+
+        # Performance (latency) benchmark
+      - name: Track latency benchmarks with Bencher
+        run: |
+          bencher run \
+          --project flatgfa \
+          --token '${{ secrets.BENCHER_API_TOKEN }}' \
+          --branch main \
+          --testbed ubuntu-latest \
+          --err \
+          --adapter json \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          python latency_benchmark.py 
