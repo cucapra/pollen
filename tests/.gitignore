@@ -28,5 +28,3 @@ subset-paths/*.out
 depth/*.out
 depth/basic/*.out
 depth/subset-paths/*.out
-
-

@@ -4,9 +4,6 @@ import os
 import json
 import subprocess
 
-
-subprocess.run(["cargo", "build", "--release"], check = True)
-
 def benchmark(test_file, num_iter):
   total_time = 0.0
   for i in range(num_iter):
@@ -40,7 +37,7 @@ bencher_json = {
   }
 }
 
-print(json.dumps(bencher_json))
+json.dump(bencher_json, sys.stdout)
 
 
 
