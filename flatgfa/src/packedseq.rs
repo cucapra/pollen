@@ -1,9 +1,10 @@
 #![allow(clippy::repr_packed_without_abi)]
 
+use crate::file::*;
 use crate::memfile::map_new_file;
 use crate::pool::Pool;
-use crate::{file::*, SeqSpan};
 use std::fmt::{self, Write};
+use std::ops::Range;
 use zerocopy::*;
 
 const MAGIC_NUMBER: u64 = 0x12;
@@ -258,12 +259,25 @@ impl<'a> PackedSeqView<'a> {
 
     /// Creates a subslice of this PackedSeqView in the range of `span`
     pub fn slice(&self, span: SeqSpan) -> Self {
-        let new_data = &self.data[span.start_byte_index()..span.end_byte_index()];
+        let new_data = &self.data[span.byte_range()];
 
         Self {
             data: new_data,
             high_nibble_begin: span.get_nibble_begin(),
             high_nibble_end: span.get_nibble_end(),
+        }
+    }
+
+    /// Creates a subslice of this PackedSeqView in the range of `range`
+    pub fn range_slice(&self, range: Range<usize>) -> Self {
+        let start = range.start;
+        let end = range.end;
+        let new_data = &self.data[range];
+
+        Self {
+            data: new_data,
+            high_nibble_begin: !start.is_multiple_of(2),
+            high_nibble_end: (end % 2) != 1,
         }
     }
 
@@ -409,6 +423,99 @@ impl std::iter::FromIterator<Nucleotide> for PackedSeqStore {
 impl Default for PackedSeqStore {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// A Span of a packed nucleotide sequence.
+#[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
+#[repr(packed)]
+pub struct SeqSpan {
+    /// The logical index of the first element of the sequence
+    pub start: u32,
+
+    /// The length of the sequence
+    pub len: u16,
+}
+
+impl SeqSpan {
+    /// Returns true if this SeqSpan is empty, else return false
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    /// Given `range`, returns the equivalent SeqSpan
+    pub fn from_range(range: Range<usize>) -> Self {
+        Self {
+            start: range.start as u32,
+            len: (range.end - range.start) as u16,
+        }
+    }
+
+    /// Returns the range that is equivalent to this SeqSpan
+    pub fn to_range(&self) -> Range<usize> {
+        Range {
+            start: self.start as usize,
+            end: self.end(),
+        }
+    }
+
+    // Returns the logical index of the element given the byte index and nibble offset
+    pub fn to_logical(byte_index: usize, end_offset: bool) -> u32 {
+        (byte_index * 2 + end_offset as usize) as u32
+    }
+
+    // Returns the index of the starting byte
+    pub fn start_byte_index(&self) -> usize {
+        (self.start / 2) as usize
+    }
+
+    // Returns the index one greater than the end byte index
+    pub fn end_byte_index(&self) -> usize {
+        self.end().div_ceil(2)
+    }
+
+    pub fn byte_range(&self) -> Range<usize> {
+        Range {
+            start: (self.start / 2) as usize,
+            end: self.end().div_ceil(2),
+        }
+    }
+
+    // Returns the nibble offset of the beginning of the sequence
+    pub fn get_nibble_begin(&self) -> bool {
+        !self.start.is_multiple_of(2)
+    }
+
+    // Returns the nibble offset of the ending of the sequence
+    pub fn get_nibble_end(&self) -> bool {
+        (self.end() % 2) != 1
+    }
+    pub fn len_from_end(&self, end: usize) -> u16 {
+        ((end as u32) - self.start) as u16
+    }
+    pub fn end(&self) -> usize {
+        (self.start as usize) + self.len()
+    }
+    pub fn len(&self) -> usize {
+        self.len as usize
+    }
+}
+
+impl From<Range<usize>> for SeqSpan {
+    fn from(range: Range<usize>) -> Self {
+        Self {
+            start: range.start as u32,
+            len: (range.end - range.start) as u16,
+        }
+    }
+}
+
+impl From<SeqSpan> for Range<usize> {
+    fn from(span: SeqSpan) -> Self {
+        Range {
+            start: span.start as usize,
+            end: span.end(),
+        }
     }
 }
 

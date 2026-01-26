@@ -1,12 +1,10 @@
 #![allow(clippy::repr_packed_without_abi)]
 
-use std::str::FromStr;
-//use std::{arch::aarch64::uint8x16x3_t}
-
 use std::ops::Range;
+use std::str::FromStr;
 
 use crate::{
-    packedseq::{compress_into_buffer, PackedSeqView},
+    packedseq::{compress_into_buffer, PackedSeqView, SeqSpan},
     pool::{self, Id, Pool, Span, Store},
 };
 use bstr::BStr;
@@ -89,7 +87,7 @@ pub struct Segment {
 impl Segment {
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
-        self.seq.len as usize
+        self.seq.len()
     }
 }
 
@@ -310,11 +308,10 @@ impl<'a> Sequence<'a> {
         let data = if self.revcmp {
             // The range starts at the end of the buffer:
             // [-----<end<******<start<------]
-            self.data.slice(SeqSpan::from_range(
-                (self.data.len() - range.end)..(self.data.len() - range.start),
-            ))
+            self.data
+                .range_slice((self.data.len() - range.end)..(self.data.len() - range.start))
         } else {
-            self.data.slice(SeqSpan::from_range(range))
+            self.data.range_slice(range)
         };
         Self {
             data,
@@ -355,7 +352,6 @@ impl std::fmt::Display for Sequence<'_> {
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
     pub fn get_seq(&self, seg: &Segment) -> PackedSeqView<'_> {
-        // println!("end {}", seg.seq.end());
         PackedSeqView::from_pool(self.seq_data, seg.seq)
     }
 
@@ -413,71 +409,6 @@ impl<'a> FlatGFA<'a> {
             .all()
             .iter()
             .map(|b| (*b).try_into().unwrap())
-    }
-}
-
-/// A Span of a packed sequence.
-#[derive(Debug, FromBytes, IntoBytes, Clone, Copy, PartialEq, Eq, Hash, Immutable)]
-#[repr(packed)]
-pub struct SeqSpan {
-    /// The logical index of the first element of the sequence
-    pub start: u32,
-
-    /// The length of the sequence
-    pub len: u16,
-}
-
-impl SeqSpan {
-    /// Returns true if this SeqSpan is empty, else return false
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
-    /// Given `range`, returns the equivalent SeqSpan
-    pub fn from_range(range: Range<usize>) -> Self {
-        Self {
-            start: range.start as u32,
-            len: (range.end - range.start) as u16,
-        }
-    }
-
-    /// Returns the range that is equivalent to this SeqSpan
-    pub fn to_range(&self) -> Range<usize> {
-        Range {
-            start: self.start as usize,
-            end: self.end(),
-        }
-    }
-
-    // Returns the logical index of the element given the byte index and nibble offset
-    pub fn to_logical(byte_index: usize, end_offset: bool) -> u32 {
-        (byte_index * 2 + end_offset as usize) as u32
-    }
-
-    // Returns the index of the starting byte
-    pub fn start_byte_index(&self) -> usize {
-        (self.start / 2) as usize
-    }
-
-    // Returns the index one greater than the end byte index
-    pub fn end_byte_index(&self) -> usize {
-        self.end().div_ceil(2)
-    }
-
-    // Returns the nibble offset of the beginning of the sequence
-    pub fn get_nibble_begin(&self) -> bool {
-        !self.start.is_multiple_of(2)
-    }
-
-    // Returns the nibble offset of the ending of the sequence
-    pub fn get_nibble_end(&self) -> bool {
-        (self.end() % 2) != 1
-    }
-    pub fn len_from_end(&self, end: usize) -> u16 {
-        ((end as u32) - self.start) as u16
-    }
-    pub fn end(&self) -> usize {
-        (self.start as usize) + (self.len as usize)
     }
 }
 

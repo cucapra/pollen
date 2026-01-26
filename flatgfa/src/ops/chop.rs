@@ -1,6 +1,7 @@
 use crate::flatgfa::{self, Handle, Link, Orientation, Path, Segment};
+use crate::packedseq::SeqSpan;
 use crate::pool::{Id, Span, Store};
-use crate::{GFAStore, HeapFamily, SeqSpan};
+use crate::{GFAStore, HeapFamily};
 
 pub fn chop(gfa: &flatgfa::FlatGFA, max_size: usize, incl_links: bool) -> flatgfa::HeapGFAStore {
     let mut flat = flatgfa::HeapGFAStore::default();
