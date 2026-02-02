@@ -551,23 +551,18 @@ pub type FixedGFAStore<'a> = GFAStore<'a, FixedFamily>;
 /// useful for creating new ones from scratch.
 pub type HeapGFAStore = GFAStore<'static, HeapFamily>;
 
-
 pub struct StepRef {
     path: Id<Path>,
-    offset: u32
+    offset: u32,
 }
 
 pub struct StepsBySegIndex {
     steps: Vec<StepRef>,
-    segment_steps: Vec<Span<StepRef>>
+    segment_steps: Vec<Span<StepRef>>,
 }
 
-
 impl StepsBySegIndex {
-
-    pub fn new(fgfa: &FlatGFA)  -> Self{
-
-
+    pub fn new(fgfa: &FlatGFA) -> Self {
         /// helper to extract the segment index from the stepref
         fn segment_of_step(fgfa: &FlatGFA, step: &StepRef) -> usize {
             let path = &fgfa.paths[step.path];
@@ -575,7 +570,7 @@ impl StepsBySegIndex {
             let step_slice = &fgfa.steps[step_span];
             step_slice[step.offset as usize].segment().index()
         }
-        
+
         // will be our `steps` vector that contains all steprefs
         let mut all_steps = Vec::new();
 
@@ -588,22 +583,18 @@ impl StepsBySegIndex {
                 });
             }
         }
-        
+
         // organize by the index of the segment in the segment pool
-        all_steps.sort_by_key(|a| {
-            segment_of_step(fgfa, a)
-        });
+        all_steps.sort_by_key(|a| segment_of_step(fgfa, a));
 
         // the working segment's index
         let mut seg_ind: usize = segment_of_step(fgfa, &all_steps[0]);
 
         // the working start of the span of StepRefs
         let mut span_start: usize = 0;
-        
+
         // the vector of spans of step refs that will act as our index
         let mut segment_steps: Vec<Span<StepRef>> = Vec::new();
-
-
 
         for (i, step_ref) in all_steps.iter().enumerate() {
             let curr_seg_ind: usize = segment_of_step(fgfa, step_ref);
@@ -617,18 +608,15 @@ impl StepsBySegIndex {
 
                 // update the working seg_ind and range_start variables to reflect the new segment/range
                 seg_ind = curr_seg_ind;
-                span_start = i;       
+                span_start = i;
             }
-
         }
-        
 
         Self {
             steps: all_steps,
-            segment_steps: segment_steps
+            segment_steps,
         }
     }
-
 
     /// Returns a slice of StepRefs that cross over the given segment
     pub fn get_steps_slice(&self, segment: Id<Segment>) -> &[StepRef] {
@@ -640,5 +628,4 @@ impl StepsBySegIndex {
     pub fn get_num_steps(&self, segment: Id<Segment>) -> usize {
         self.segment_steps[segment.index()].len()
     }
-
 }
