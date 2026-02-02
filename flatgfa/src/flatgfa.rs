@@ -457,12 +457,12 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
                 _ => panic!("Not a Nucleotide!"),
             };
             if high_nibble_end {
+                high_nibble_end = false;
                 if i == seq.len() - 1 {
                     self.seq_data.add(converted);
                     break;
                 }
                 combined_item = converted;
-                high_nibble_end = false;
             } else {
                 combined_item |= converted << 4;
                 self.seq_data.add(combined_item);
