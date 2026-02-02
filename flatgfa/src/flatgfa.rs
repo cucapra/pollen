@@ -4,7 +4,7 @@ use std::ops::Range;
 use std::str::FromStr;
 
 use crate::{
-    packedseq::{compress_into_buffer, PackedSeqView, SeqSpan},
+    packedseq::{PackedSeqView, SeqSpan},
     pool::{self, Id, Pool, Span, Store},
 };
 use bstr::BStr;
@@ -435,13 +435,44 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.header.add_slice(version);
     }
 
-    /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
-        let mut compressed: Vec<u8> = Vec::new();
-        let end_offset = compress_into_buffer(seq, &mut compressed);
-        let byte_span = self.seq_data.add_slice(&compressed);
+    /// Add a new segment to the GFA file, compressing the data in `seq`
+    pub fn compress_and_add_seg(
+        &mut self,
+        name: usize,
+        seq: &[u8],
+        optional: &[u8],
+    ) -> Id<Segment> {
+        self.seq_data.reserve(seq.len());
+        let mut high_nibble_end = true;
+        let mut combined_item = 0;
+        let start_id = self.seq_data.next_id();
+        for i in 0..seq.len() {
+            let item = seq[i];
+            let converted: u8 = match item {
+                65 => 0,
+                67 => 1,
+                84 => 2,
+                71 => 3,
+                78 => 4,
+                _ => panic!("Not a Nucleotide!"),
+            };
+            if high_nibble_end {
+                if i == seq.len() - 1 {
+                    self.seq_data.add(converted);
+                    break;
+                }
+                combined_item = converted;
+                high_nibble_end = false;
+            } else {
+                combined_item |= converted << 4;
+                self.seq_data.add(combined_item);
+                high_nibble_end = true;
+            }
+        }
+        let end_id = self.seq_data.next_id();
+        let byte_span = Span::new(start_id, end_id);
         let start = SeqSpan::to_logical(byte_span.start.index(), false);
-        let end = SeqSpan::to_logical(byte_span.end.index() - 1, end_offset) + 1;
+        let end = SeqSpan::to_logical(byte_span.end.index() - 1, high_nibble_end) + 1;
         self.segs.add(Segment {
             name,
             seq: SeqSpan {
@@ -453,21 +484,13 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
     }
 
     /// Add a new segment with already compressed data
-    pub fn add_seg_already_compressed(
-        &mut self,
-        name: usize,
-        seq: PackedSeqView,
-        optional: &[u8],
-    ) -> Id<Segment> {
+    pub fn add_seg(&mut self, name: usize, seq: PackedSeqView, optional: &[u8]) -> Id<Segment> {
         let byte_span = self.seq_data.add_slice(seq.data);
         let start = SeqSpan::to_logical(byte_span.start.index(), seq.high_nibble_begin);
         let end = SeqSpan::to_logical(byte_span.end.index() - 1, seq.high_nibble_end) + 1;
         self.segs.add(Segment {
             name,
-            seq: SeqSpan {
-                start,
-                len: (end - start) as u16,
-            },
+            seq: (start as usize..end as usize).into(),
             optional: self.optional_data.add_slice(optional),
         })
     }

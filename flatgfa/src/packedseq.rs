@@ -284,7 +284,7 @@ impl<'a> PackedSeqView<'a> {
     /// Given a pool of compressed data (`pool`), create a PackedSeqView in the range of `span`
     ///
     pub fn from_pool(pool: Pool<'a, u8>, span: SeqSpan) -> Self {
-        let slice = &pool.all()[span.start_byte_index()..span.end_byte_index()];
+        let slice = &pool.all()[span.byte_range()];
         Self {
             data: slice,
             high_nibble_begin: span.get_nibble_begin(),
@@ -443,37 +443,12 @@ impl SeqSpan {
         self.len == 0
     }
 
-    /// Given `range`, returns the equivalent SeqSpan
-    pub fn from_range(range: Range<usize>) -> Self {
-        Self {
-            start: range.start as u32,
-            len: (range.end - range.start) as u16,
-        }
-    }
-
-    /// Returns the range that is equivalent to this SeqSpan
-    pub fn to_range(&self) -> Range<usize> {
-        Range {
-            start: self.start as usize,
-            end: self.end(),
-        }
-    }
-
     // Returns the logical index of the element given the byte index and nibble offset
     pub fn to_logical(byte_index: usize, end_offset: bool) -> u32 {
         (byte_index * 2 + end_offset as usize) as u32
     }
 
-    // Returns the index of the starting byte
-    pub fn start_byte_index(&self) -> usize {
-        (self.start / 2) as usize
-    }
-
-    // Returns the index one greater than the end byte index
-    pub fn end_byte_index(&self) -> usize {
-        self.end().div_ceil(2)
-    }
-
+    // Returns a range of the bytes covered by this SeqSpan
     pub fn byte_range(&self) -> Range<usize> {
         Range {
             start: (self.start / 2) as usize,
@@ -547,30 +522,6 @@ pub fn export(seq: PackedSeqView, filename: &str) {
     let num_bytes = seq.file_size();
     let mut mem = map_new_file(filename, num_bytes as u64);
     seq.write_file(&mut mem);
-}
-
-/// Takes a slice of uncompressed ASCII-encoded base pairs, compresses them and pushes them into `output`
-pub fn compress_into_buffer(input: &[u8], output: &mut Vec<u8>) -> bool {
-    let mut high_nibble_end = true;
-    for item in input {
-        let converted: u8 = match item {
-            65 => 0,
-            67 => 1,
-            84 => 2,
-            71 => 3,
-            78 => 4,
-            _ => panic!("Not a Nucleotide!"),
-        };
-        if high_nibble_end {
-            output.push(converted);
-            high_nibble_end = false;
-        } else {
-            let last_index = output.len() - 1;
-            output[last_index] |= converted << 4;
-            high_nibble_end = true;
-        }
-    }
-    high_nibble_end
 }
 
 /// Takes a slice of compressed base pairs, decompresses them and pushes them into `output`
