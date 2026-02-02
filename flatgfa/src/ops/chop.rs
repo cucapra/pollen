@@ -1,7 +1,6 @@
 use std::ops::Range;
 
 use crate::flatgfa::{self, Handle, Link, Orientation, Path, Segment};
-use crate::packedseq::SeqSpan;
 use crate::pool::{Id, Span, Store};
 use crate::{GFAStore, HeapFamily};
 
