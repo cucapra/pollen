@@ -100,9 +100,6 @@ impl StepsBySegIndex {
 
     /// Returns the number of steps that cross over this segment
     pub fn get_num_steps(&self, segment: Id<Segment>) -> usize {
-        let vec_length = self.segment_steps.len();
-
-        println!("segment_steps length = {}", vec_length);
         self.segment_steps[segment.index()].len()
     }
 }
