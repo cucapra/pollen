@@ -80,6 +80,11 @@ impl StepsBySegIndex {
             }
         }
 
+        // because we've only pushed a new span whenever we move onto a new segment
+        // we will need to push the final span after iterating
+        let new_seg = Span::new(Id::new(span_start), Id::new(all_steps.len()));
+        segment_steps.push(new_seg);
+
         Self {
             steps: all_steps,
             segment_steps,
@@ -95,6 +100,9 @@ impl StepsBySegIndex {
 
     /// Returns the number of steps that cross over this segment
     pub fn get_num_steps(&self, segment: Id<Segment>) -> usize {
+        let vec_length = self.segment_steps.len();
+
+        println!("segment_steps length = {}", vec_length);
         self.segment_steps[segment.index()].len()
     }
 }
