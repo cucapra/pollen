@@ -15,11 +15,13 @@ hprc_dict = dict(toml_graphs["hprc"])
 test_dict = dict(toml_graphs["test"]) 
 
 gont_dict = dict(toml_graphs["1000gont"])
+
+smoke_files = [test_dict["k"]]
  
 mini_files = [test_dict["lpa"], test_dict["chr6c4"], hprc_dict["chrM"]]
 
 med_files = [hprc_dict["chr20"], hprc_dict["chrX"], gont_dict["chr16"]]
-
+ 
 big_files = [hprc_dict["chrY"], hprc_dict["chr1"], hprc_dict["chr10"]]
 
 results = "filesize_benchmark.txt"
@@ -44,23 +46,19 @@ def download_file(target_name, web_file):
       subprocess.run(["curl", "-o", target_name, web_file],
               check = True) 
   
-def benchmark():
-  test_config = ""
+def benchmark(test_config):
   test_cond = ""
-  if len(sys.argv) >= 2:
-    test_config = sys.argv[1] #Can be either "mini", "med", or "big"
-  else:
-    raise ValueError("No arguments provided")
-  
   if len(sys.argv) >= 3:
     test_cond = sys.argv[2] # Can be "del", or not provided
 
   test_files = []
-  if test_config == "mini":
+  if "smoke" in test_config:
+    test_files = smoke_files
+  elif "mini" in test_config:
     test_files = mini_files
-  elif test_config == "med":
+  elif "med" in test_config:
      test_files = med_files
-  elif test_config == "big":
+  elif "big" in test_config:
     test_files = big_files
   else:
     raise ValueError("Incorrect test config provided")
@@ -81,10 +79,20 @@ def benchmark():
   size_bytes_avg /= len(test_files)
   return size_bytes_avg / 1000.0 
 
-bencher_json = {
-  "FlatGFA File Size Avg": {
-    "File": {"value": f"{round(benchmark(), 2)} KB"}, 
-  }
-}
+test_config = ""
+if len(sys.argv) >= 2:
+  test_config = sys.argv[1] # Can be either "smoke", "mini", "med", or "big"
+else:
+  raise ValueError("No arguments provided")
 
-json.dump(bencher_json, sys.stdout)
+
+
+if "bencher" in test_config:
+  bencher_json = {
+    "FlatGFA File Size Avg": {
+      "File": {"value": round(benchmark(test_config), 2)}, 
+    }
+  }
+  json.dump(bencher_json, sys.stdout)
+else:
+  print(f"File Size Average: {round(benchmark(test_config), 2)} KB")

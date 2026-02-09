@@ -7,6 +7,7 @@ import time
 import tomllib
 import gzip
 import shutil
+from typing import Iterable
 
 with open("bench/graphs.toml", "rb") as f:
     toml_graphs = tomllib.load(f)
@@ -16,6 +17,8 @@ hprc_dict = dict(toml_graphs["hprc"])
 test_dict = dict(toml_graphs["test"]) 
 
 gont_dict = dict(toml_graphs["1000gont"])
+
+smoke_files = [test_dict["k"]]
  
 mini_files = [test_dict["lpa"], test_dict["chr6c4"], hprc_dict["chrM"]]
 
@@ -45,32 +48,36 @@ def download_file(target_name, web_file):
       subprocess.run(["curl", "-o", target_name, web_file],
               check = True) 
   
-def benchmark():
-  test_config = ""
+def benchmark(test_config):
   test_cond = ""
   num_iter = 0
-  if len(sys.argv) >= 2:
-    test_config = sys.argv[1] #Can be either "mini", "med", or "big"
-  else:
-    raise ValueError("No arguments provided")
+  iter_count = -1
   
   if len(sys.argv) >= 3:
-    test_cond = sys.argv[2] # Can be "del", or not provided
+    iter_count = int(sys.argv[2]) # Can be any integer
+  
+  if len(sys.argv) >= 4:
+    test_cond = sys.argv[3] # Can be "del", or not provided
 
   test_files = []
-  if test_config == "mini":
+  if "smoke" in test_config:
+    test_files = smoke_files
+    num_iter = 2
+  elif "mini" in test_config:
     test_files = mini_files
     num_iter = 10
-  elif test_config == "med":
+  elif "med" in test_config:
     test_files = med_files
     num_iter = 5
-  elif test_config == "big":
+  elif "big" in test_config:
     test_files = big_files
     num_iter = 2
   else:
     raise ValueError("Incorrect test config provided")
-
-  size_bytes_avg = 0
+  
+  if not iter_count == -1:
+   num_iter = iter_count
+  
   i = 0
   total_time = 0.0
   for file in test_files:
@@ -90,10 +97,19 @@ def benchmark():
     i += 1
   return total_time / (num_iter * len(test_files))
 
-bencher_json = {
-  "FlatGFA File Size Avg": {
-    "File": {"value": f"{round(benchmark(), 2)} ms"}, 
-  }
-}
 
-json.dump(bencher_json, sys.stdout)
+test_config = ""
+if len(sys.argv) >= 2:
+  test_config = sys.argv[1] # Can be either "smoke", "mini", "med", or "big"
+else:
+  raise ValueError("No arguments provided")
+
+if "bencher" in test_config:
+  bencher_json = {
+    "FlatGFA File Size Avg": {
+      "File": {"value": round(benchmark(test_config), 2)}, 
+    }
+  }
+  json.dump(bencher_json, sys.stdout)
+else:
+  print(f"Average latency: {round(benchmark(test_config), 2)} ms")
