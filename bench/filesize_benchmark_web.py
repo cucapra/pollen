@@ -96,3 +96,6 @@ if "bencher" in test_config:
   json.dump(bencher_json, sys.stdout)
 else:
   print(f"File Size Average: {round(benchmark(test_config), 2)} KB")
+
+# Command format: python latency_benchmark_web.py [size](_bencher) (del) 
+# () = optional, [] = replace with value

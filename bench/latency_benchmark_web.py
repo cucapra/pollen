@@ -17,7 +17,7 @@ hprc_dict = dict(toml_graphs["hprc"])
 test_dict = dict(toml_graphs["test"]) 
 
 gont_dict = dict(toml_graphs["1000gont"])
-
+ 
 smoke_files = [test_dict["k"]]
  
 mini_files = [test_dict["lpa"], test_dict["chr6c4"], hprc_dict["chrM"]]
@@ -113,3 +113,6 @@ if "bencher" in test_config:
   json.dump(bencher_json, sys.stdout)
 else:
   print(f"Average latency: {round(benchmark(test_config), 2)} ms")
+
+# Command format: python latency_benchmark_web.py [size](_bencher) -[run_count] (del) 
+# () = optional, [] = replace with value 
