@@ -86,7 +86,7 @@ def benchmark(test_config):
     for _ in range(num_iter):
       start_time = time.time()
       with open(os.devnull, "w") as devnull:
-        subprocess.run(["target/release/fgfa", "-I", test_file_name, "extract", "-n", "3", "-c", "3"], stdout=devnull,
+        subprocess.run(["fgfa", "-I", test_file_name, "extract", "-n", "3", "-c", "3"], stdout=devnull,
             stderr=devnull,
             check=True) 
       end_time = time.time()
