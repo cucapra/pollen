@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: bencherdev/bencher@main
+      - name: Build release binary
+        run: cargo build --release
       - name: Add fgfa to PATH
         run: echo "$PWD/target/release" >> $GITHUB_PATH
       - name: Fetch test data
