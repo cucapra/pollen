@@ -23,14 +23,37 @@ pub fn depth(gfa: &flatgfa::FlatGFA, use_index: bool) -> (Vec<usize>, Vec<usize>
         // Build the index
         let step_seg_index = index::StepsBySegIndex::new(gfa);
 
+        // This bit vector keeps track of whether the current *path* has already been seen
+        // by the current working *segment*. A reverse approach to the non-indexed option
+        let mut path_seen: BitVec = BitVec::from_elem(gfa.paths.len(), false);
+
         // iterate over each segment and populate the output vectors
-        for (id, _) in gfa.segs.items() {
+        for (seg_id, _) in gfa.segs.items() {
+            // clear the path_seen vector, since all paths should be unseen
+            path_seen.clear();
+
             // get the actual offset of the id of thesegment
-            let ind = id.index();
+            let ind = seg_id.index();
+
+            // get the span of StepRefs for this segment
+            let span = step_seg_index.get_steps_slice(seg_id);
 
             // use that offset to directly modify the depths vector
-            depths[ind] = step_seg_index.get_num_steps(id);
-            uniq_depths[ind] = step_seg_index.get_num_steps(id);
+            depths[ind] = span.len();
+
+            // iterate over the span to populate the uniq_depths vector
+            for stepref in span.iter() {
+                // extract the path index
+                let path_id = stepref.path.index();
+
+                // if the path has not been seen, increment the unique depth
+                if !path_seen[path_id] {
+                    uniq_depths[ind] += 1;
+
+                    // set the path to seen in the path_seen bitvec
+                    path_seen.set(path_id, true);
+                }
+            }
         }
     } else {
         for path in gfa.paths.all().iter() {
