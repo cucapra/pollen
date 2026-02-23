@@ -114,4 +114,4 @@ else:
   print(f"Average latency: {round(benchmark(test_config), 2)} ms")
 
 # Command format: python latency_benchmark_web.py [size](_bencher) -[run_count] (del) 
-# () = optional, [] = replace with value 
+# () = optional, [] = replace with value  
