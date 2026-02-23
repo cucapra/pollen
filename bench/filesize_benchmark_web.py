@@ -89,7 +89,7 @@ else:
 
 if "bencher" in test_config:
   bencher_json = {
-    "FlatGFA File Size Avg": {
+    "FlatGFA File Size Average": {
       "Average File Size": {"value": round(benchmark(test_config), 2)}, 
     }
   }
