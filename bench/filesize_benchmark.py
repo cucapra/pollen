@@ -4,6 +4,8 @@ import json
 import subprocess
 import tomllib
 
+subprocess.run(["cargo", "build", "--release"], check = True)
+
 def benchmark(test_file):
   subprocess.run(["fgfa", "-I", test_file, "-o", "filesize_benchmark.txt"], 
                  check = True) 
