@@ -42,4 +42,4 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python bench/latency_benchmark_web.py mini_bencher -1 del
+          python bench/latency_benchmark_web.py mini_bencher 10 del

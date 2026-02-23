@@ -88,6 +88,12 @@ def benchmark(test_config):
         subprocess.run(["fgfa", "-I", test_file_name, "extract", "-n", "3", "-c", "3"], stdout=devnull,
             stderr=devnull,
             check=True) 
+        subprocess.run(["fgfa", "-I", test_file_name, "chop", "-c", "3", "-l"], stdout=devnull,
+            stderr=devnull,
+            check=True) 
+        subprocess.run(["fgfa", "-I", test_file_name, "depth"], stdout=devnull,
+            stderr=devnull,
+            check=True) 
       end_time = time.time()
       total_time += (end_time - start_time) * 1000
     subprocess.run(["rm", "-rf", results], check = True) 
@@ -113,5 +119,5 @@ if "bencher" in test_config:
 else:
   print(f"Average latency: {round(benchmark(test_config), 2)} ms")
 
-# Command format: python latency_benchmark_web.py [size](_bencher) -[run_count] (del) 
+# Command format: python latency_benchmark_web.py [size](_bencher) [run_count] (del) 
 # () = optional, [] = replace with value  
