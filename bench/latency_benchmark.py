@@ -4,7 +4,7 @@ import os
 import json
 import subprocess
 
-subprocess.run(["cargo", "build", "--release"], check = True)
+
 
 def benchmark(test_file, num_iter):
   total_time = 0.0

@@ -7,6 +7,8 @@ import tomllib
 import gzip
 import shutil
 
+subprocess.run(["cargo", "build", "--release"], check = True)
+
 with open("bench/graphs.toml", "rb") as f:
     toml_graphs = tomllib.load(f)
 

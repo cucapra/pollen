@@ -27,7 +27,7 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python bench/filesize_benchmark.py  
+          python bench/filesize_benchmark_web.py mini_bencher del
 
         # Performance (latency) benchmark
       - name: Track latency benchmarks with Bencher
@@ -40,4 +40,4 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python bench/latency_benchmark.py
+          python bench/latency_benchmark_web.py mini_bencher -1 del
