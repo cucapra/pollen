@@ -7,7 +7,6 @@ import time
 import tomllib
 import gzip
 import shutil
-from typing import Iterable
 
 with open("bench/graphs.toml", "rb") as f:
     toml_graphs = tomllib.load(f)

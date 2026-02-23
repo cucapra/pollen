@@ -68,7 +68,7 @@ def benchmark(test_config):
   for file in test_files:
     test_file_name = f"tests/{test_config}_{i}.gfa"
     download_file(test_file_name, file)
-    subprocess.run(["fgfa", "-I", test_file_name, "-o", results], 
+    subprocess.run(["fgfa", "-I", test_file_name, "-o", results],
                   check = True) 
     size_bytes = os.path.getsize(results)
     subprocess.run(["rm", "-rf", results], check = True) 
