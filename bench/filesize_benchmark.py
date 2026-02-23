@@ -5,7 +5,7 @@ import subprocess
 import tomllib
 
 def benchmark(test_file):
-  subprocess.run(["target/release/fgfa", "-I", test_file, "-o", "filesize_benchmark.txt"], 
+  subprocess.run(["fgfa", "-I", test_file, "-o", "filesize_benchmark.txt"], 
                  check = True) 
   size_bytes = os.path.getsize("filesize_benchmark.txt")
   subprocess.run(["rm", "-rf", "filesize_benchmark.txt"], check = True) 
