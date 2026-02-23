@@ -105,8 +105,8 @@ else:
 
 if "bencher" in test_config:
   bencher_json = {
-    "FlatGFA File Size Avg": {
-      "File": {"value": round(benchmark(test_config), 2)}, 
+    "FlatGFA Execution Latency Average": {
+      "Average Execution Latency": {"value": round(benchmark(test_config), 2)}, 
     }
   }
   json.dump(bencher_json, sys.stdout)
