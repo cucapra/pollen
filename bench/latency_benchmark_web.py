@@ -8,6 +8,7 @@ import tomllib
 import gzip
 import shutil
 
+# Parse the GFA URLs from graphs.toml
 with open("bench/graphs.toml", "rb") as f:
     toml_graphs = tomllib.load(f)
 
@@ -27,6 +28,7 @@ big_files = [hprc_dict["chrY"], hprc_dict["chr1"], hprc_dict["chr10"]]
 
 results = "filesize_benchmark.txt"
 
+# Download a GFA file from the internet
 def download_file(target_name, web_file):
   gzipped = False
   temp_name = ""
@@ -46,18 +48,58 @@ def download_file(target_name, web_file):
     else:
       subprocess.run(["curl", "-o", target_name, web_file],
               check = True) 
+
+# Run a single test      
+def test(command, test_file_name, num_iter):
+  if command == "extract":
+    with open(os.devnull, "w") as devnull:
+      start_time = time.time()
+      for _ in range(num_iter):
+        subprocess.run(["fgfa", "-I", test_file_name, "extract", "-n", "3", "-c", "3"], stdout=devnull,
+            stderr=devnull,
+            check=True) 
+      end_time = time.time()
+      return ((end_time - start_time) * 1000) / num_iter
+        
+  elif command == "chop":
+    with open(os.devnull, "w") as devnull:
+      start_time = time.time()
+      for _ in range(num_iter):
+        subprocess.run(["fgfa", "-I", test_file_name, "chop", "-c", "3", "-l"], stdout=devnull,
+            stderr=devnull,
+            check=True) 
+      end_time = time.time()
+      return ((end_time - start_time) * 1000) / num_iter
+
+  elif command == "depth":
+    with open(os.devnull, "w") as devnull:
+      start_time = time.time()
+      for _ in range(num_iter):
+        subprocess.run(["fgfa", "-I", test_file_name, "depth"], stdout=devnull,
+            stderr=devnull,
+            check=True) 
+      end_time = time.time()
+      return ((end_time - start_time) * 1000) / num_iter
+  return 0.0
   
+# Run the latency benchmark across all test files
 def benchmark(test_config):
-  test_cond = ""
+  del_cond = ""
+  norm_cond = ""
   num_iter = 0
   iter_count = -1
   
+  # Read command-line arguments
   if len(sys.argv) >= 3:
     iter_count = int(sys.argv[2]) # Can be any integer
   
   if len(sys.argv) >= 4:
-    test_cond = sys.argv[3] # Can be "del", or not provided
+    del_cond = sys.argv[3] # Can be "del", "_", or not provided
 
+  if len(sys.argv) >= 5:
+    norm_cond = sys.argv[4] # Can be "norm", or not provided
+
+  # Choose test file set
   test_files = []
   if "smoke" in test_config:
     test_files = smoke_files
@@ -74,41 +116,60 @@ def benchmark(test_config):
   else:
     raise ValueError("Incorrect test config provided")
   
+  # Set number of test iterations
   if not iter_count == -1:
    num_iter = iter_count
   
   i = 0
   total_time = 0.0
+  extract_time = 0.0
+  chop_time = 0.0
+  depth_time = 0.0
+
+  # Run a test for each file in the set
   for file in test_files:
     test_file_name = f"tests/{test_config}_{i}.gfa"
     download_file(test_file_name, file)
-    for _ in range(num_iter):
-      start_time = time.time()
-      with open(os.devnull, "w") as devnull:
-        subprocess.run(["fgfa", "-I", test_file_name, "extract", "-n", "3", "-c", "3"], stdout=devnull,
-            stderr=devnull,
-            check=True) 
-        subprocess.run(["fgfa", "-I", test_file_name, "chop", "-c", "3", "-l"], stdout=devnull,
-            stderr=devnull,
-            check=True) 
-        subprocess.run(["fgfa", "-I", test_file_name, "depth"], stdout=devnull,
-            stderr=devnull,
-            check=True) 
-      end_time = time.time()
-      total_time += (end_time - start_time) * 1000
+    extract_time += test("extract", test_file_name, num_iter)
+    chop_time += test("chop", test_file_name, num_iter)
+    depth_time += test("depth", test_file_name, num_iter)
     subprocess.run(["rm", "-rf", results], check = True) 
-    if test_cond == "del":
+    if del_cond == "del":
       subprocess.run(["rm", "-rf", test_file_name], check = True) 
     i += 1
-  return total_time / (num_iter * len(test_files))
+  if (norm_cond == "norm"):
+    # Write new normalization values
+    with open("bench/normalization.toml", "w") as f:
+      f.write("[normalization_factors]\n")
+      f.write(f"extract = {extract_time}\n")
+      f.write(f"chop = {chop_time}\n")
+      f.write(f"depth = {depth_time}\n")
+    return 1.0
+  else:
+    # Read normalization values
+    with open("bench/normalization.toml", "rb") as f:
+      data = tomllib.load(f)
+    extract_norm = data["normalization_factors"]["extract"]
+    chop_norm = data["normalization_factors"]["chop"]
+    depth_norm = data["normalization_factors"]["depth"]
 
+    # Normalize values
+    extract_time /= extract_norm
+    chop_time /= chop_norm
+    depth_time /= depth_norm
 
+    # Return the harmonic mean
+    return 3 / ((1 / extract_time) + (1 / chop_time) + (1 / depth_time)) 
+
+# Read the desired test file set from command-line input
 test_config = ""
 if len(sys.argv) >= 2:
   test_config = sys.argv[1] # Can be either "smoke", "mini", "med", or "big"
 else:
   raise ValueError("No arguments provided")
 
+# Output the benchmark results, either in a Bencher JSON format, or a standard 
+# command-line format
 if "bencher" in test_config:
   bencher_json = {
     "FlatGFA Execution Latency Average": {
@@ -119,5 +180,5 @@ if "bencher" in test_config:
 else:
   print(f"Average latency: {round(benchmark(test_config), 2)} ms")
 
-# Command format: python latency_benchmark_web.py [size](_bencher) [run_count] (del) 
+# Command format: python bench/latency_benchmark_web.py [size](_bencher) [run_count] (del/_) (norm)
 # () = optional, [] = replace with value  

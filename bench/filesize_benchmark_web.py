@@ -7,6 +7,7 @@ import tomllib
 import gzip
 import shutil
 
+# Parse the GFA URLs from graphs.toml
 with open("bench/graphs.toml", "rb") as f:
     toml_graphs = tomllib.load(f)
 
@@ -26,6 +27,7 @@ big_files = [hprc_dict["chrY"], hprc_dict["chr1"], hprc_dict["chr10"]]
 
 results = "filesize_benchmark.txt"
 
+# Download a GFA file from the internet
 def download_file(target_name, web_file):
   gzipped = False
   temp_name = ""
@@ -46,11 +48,13 @@ def download_file(target_name, web_file):
       subprocess.run(["curl", "-o", target_name, web_file],
               check = True) 
   
+# Run the file size benchmark across all files
 def benchmark(test_config):
   test_cond = ""
   if len(sys.argv) >= 3:
     test_cond = sys.argv[2] # Can be "del", or not provided
 
+  # Choose test file set
   test_files = []
   if "smoke" in test_config:
     test_files = smoke_files
@@ -65,6 +69,8 @@ def benchmark(test_config):
 
   size_bytes_avg = 0
   i = 0
+
+  # Run a test for each file in the set
   for file in test_files:
     test_file_name = f"tests/{test_config}_{i}.gfa"
     download_file(test_file_name, file)
@@ -79,6 +85,7 @@ def benchmark(test_config):
   size_bytes_avg /= len(test_files)
   return size_bytes_avg / 1000.0 
 
+# Read the desired test file set from command-line input
 test_config = ""
 if len(sys.argv) >= 2:
   test_config = sys.argv[1] # Can be either "smoke", "mini", "med", or "big"
@@ -86,7 +93,8 @@ else:
   raise ValueError("No arguments provided")
 
 
-
+# Output the benchmark results, either in a Bencher JSON format, or a standard 
+# command-line format
 if "bencher" in test_config:
   bencher_json = {
     "FlatGFA File Size Average": {
@@ -97,5 +105,5 @@ if "bencher" in test_config:
 else:
   print(f"File Size Average: {round(benchmark(test_config), 2)} KB")
 
-# Command format: python latency_benchmark_web.py [size](_bencher) (del) 
+# Command format: python bench/filesize_benchmark_web.py [size](_bencher) (del) 
 # () = optional, [] = replace with value
