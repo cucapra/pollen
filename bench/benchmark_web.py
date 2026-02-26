@@ -125,27 +125,35 @@ def benchmark(test_config):
   extract_time = 0.0
   chop_time = 0.0
   depth_time = 0.0
+  size_bytes_avg = 0
 
   # Run a test for each file in the set
   for file in test_files:
     test_file_name = f"tests/{test_config}_{i}.gfa"
     download_file(test_file_name, file)
+    subprocess.run(["fgfa", "-I", test_file_name, "-o", results],
+                  check = True) 
+    size_bytes_avg += os.path.getsize(results)
     extract_time += test("extract", test_file_name, num_iter)
     chop_time += test("chop", test_file_name, num_iter)
     depth_time += test("depth", test_file_name, num_iter)
     subprocess.run(["rm", "-rf", results], check = True) 
+
+    # Delete test files if flag set
     if del_cond == "del":
       subprocess.run(["rm", "-rf", test_file_name], check = True) 
     i += 1
   if (norm_cond == "norm"):
+
     # Write new normalization values
     with open("bench/normalization.toml", "w") as f:
       f.write("[normalization_factors]\n")
       f.write(f"extract = {extract_time}\n")
       f.write(f"chop = {chop_time}\n")
       f.write(f"depth = {depth_time}\n")
-    return 1.0
+    return (1.0, size_bytes_avg)
   else:
+
     # Read normalization values
     with open("bench/normalization.toml", "rb") as f:
       data = tomllib.load(f)
@@ -159,7 +167,8 @@ def benchmark(test_config):
     depth_time /= depth_norm
 
     # Return the harmonic mean
-    return 3 / ((1 / extract_time) + (1 / chop_time) + (1 / depth_time)) 
+    size_bytes_avg /= len(test_files)
+    return (3 / ((1 / extract_time) + (1 / chop_time) + (1 / depth_time)), size_bytes_avg / 1000.0)
 
 # Read the desired test file set from command-line input
 test_config = ""
@@ -168,17 +177,32 @@ if len(sys.argv) >= 2:
 else:
   raise ValueError("No arguments provided")
 
+bench_results = benchmark(test_config)
+          
+
 # Output the benchmark results, either in a Bencher JSON format, or a standard 
 # command-line format
 if "bencher" in test_config:
   bencher_json = {
-    "FlatGFA Execution Latency Average": {
-      "Average Execution Latency": {"value": round(benchmark(test_config), 2)}, 
+    "FlatGFA Benchmark Results": {
+      "Average Execution Latency": {"value": round(bench_results[0], 2)}, 
+      "Average File Size": {"value": round(bench_results[1], 2)},
     }
   }
   json.dump(bencher_json, sys.stdout)
 else:
-  print(f"Average latency: {round(benchmark(test_config), 2)} ms")
 
-# Command format: python bench/latency_benchmark_web.py [size](_bencher) [run_count] (del/_) (norm)
+  # Only print latency info if flag set
+  if "latency" in test_config:
+    print(f"Average Execution Latency: {round(bench_results[0], 2)} ms")
+
+  # Only print filesize info if flag set
+  elif "filesize" in test_config:
+    print(f"Average File Size: {round(bench_results[1], 2)} KB")
+  else:
+    print(f"Average Execution Latency: {round(bench_results[0], 2)} ms")
+    print(f"Average File Size: {round(bench_results[1], 2)} KB")
+  
+
+# Command format: python bench/latency_benchmark_web.py [size](_bencher/_latency/_filesize) [run_count] (del/_) (norm)
 # () = optional, [] = replace with value  

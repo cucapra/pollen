@@ -18,7 +18,7 @@ jobs:
       - name: Fetch test data
         run: make fetch
 
-        # File size benchmark 
+        # FlatGFA Benchmarks 
       - name: Track file size benchmarks with Bencher
         run: |
           bencher run \
@@ -29,17 +29,4 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python bench/filesize_benchmark_web.py mini_bencher del
-
-        # Performance (latency) benchmark
-      - name: Track latency benchmarks with Bencher
-        run: |
-          bencher run \
-          --project flatgfa \
-          --token '${{ secrets.BENCHER_API_TOKEN }}' \
-          --branch main \
-          --testbed ubuntu-latest \
-          --err \
-          --adapter json \
-          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python bench/latency_benchmark_web.py mini_bencher 10 del
+          python bench/benchmark_web.py mini_bencher 10 del 
