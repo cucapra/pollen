@@ -50,3 +50,18 @@ bool flatgfa_get_step(const struct FlatGFAHandle *gfa,
                       uintptr_t path_index,
                       uintptr_t step_index,
                       struct CStep *out);
+
+/**
+ * Get number of DNA sequences in GFA file
+ */
+uintptr_t flatgfa_get_segment_count(const struct FlatGFAHandle *gfa);
+
+/**
+ * Get the DNA sequence for a segment. Returns a pointer to the raw bytes (not
+ * null-terminated) and sets `*len`. The pointer is valid as long as the
+ * FlatGFAHandle is alive. Returns null if segment_id is out of bounds.
+ * Note: always returns the forward-strand sequence regardless of orientation.
+ */
+const uint8_t *flatgfa_get_segment_seq(const struct FlatGFAHandle *gfa,
+                                       uint32_t segment_id,
+                                       uintptr_t *len);

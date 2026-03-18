@@ -1,5 +1,5 @@
 use std::ffi::CStr;
-use flatgfa::{self, file, flatgfa::Orientation, memfile, FlatGFA, HeapGFAStore};
+use flatgfa::{self, file, flatgfa::{Orientation, Segment}, memfile, pool::Id, FlatGFA, HeapGFAStore};
 
 #[no_mangle]
 pub extern "C" fn hello_world() {
@@ -144,5 +144,35 @@ pub extern "C" fn flatgfa_get_step(
         (*out).is_forward = handle.orient() == Orientation::Forward;
     }
     true
+}
+
+/// Get number of DNA sequences in GFA file
+#[no_mangle]
+pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFAHandle) -> usize {
+    let gfa = unsafe { &*gfa };
+    let view = gfa.store.view();
+    view.segs.all().len()
+}
+
+/// Get the DNA sequence for a segment. Returns a pointer to the raw bytes (not
+/// null-terminated) and sets `*len`. The pointer is valid as long as the
+/// FlatGFAHandle is alive. Returns null if segment_id is out of bounds.
+/// Note: always returns the forward-strand sequence regardless of orientation.
+#[no_mangle]
+pub extern "C" fn flatgfa_get_segment_seq(
+    gfa: *const FlatGFAHandle,
+    segment_id: u32,
+    len: *mut usize,
+) -> *const u8 {
+    let gfa = unsafe { &*gfa };
+    let view = gfa.store.view();
+    let segs = view.segs.all();
+    if segment_id as usize >= segs.len() {
+        return std::ptr::null();
+    }
+    let id: Id<Segment> = segment_id.into();
+    let seq = view.get_seq(&view.segs[id]);
+    unsafe { *len = seq.len() };
+    seq.as_ptr()
 }
 
