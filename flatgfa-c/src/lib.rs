@@ -1,19 +1,13 @@
 use std::ffi::CStr;
-use flatgfa::{self, file, flatgfa::{Orientation, Segment}, memfile, pool::Id, FlatGFA, HeapGFAStore};
+use flatgfa::{self, flatgfa::{Orientation, Segment}, memfile, pool::Id, FlatGFA, HeapGFAStore};
 
 pub struct FlatGFAHandle {
     store: Store,
 }
 
-/// From flatgfa-py
-/// Storage for a FlatGFA.
-///
-/// This may be either an in-memory data structure or a memory-mapped file. It exposes a
-/// uniform interface to the FlatGFA data via `view`.
-///
+/// Functionality to parse GFA file and afterwards interact with it in flatGFA format (from flatgfa-py)
 enum Store {
     Heap(Box<HeapGFAStore>),
-    File(memmap::Mmap),
 }
 
 impl Store {
@@ -31,13 +25,8 @@ impl Store {
 
     /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA<'_> {
-        // TK It seems wasteful to check the type of store every time... and to construct
-        // the view every time. It's probably possible to fix this with a self-reference,
-        // e.g., with the `owning_ref` crate.
-        match self {
-            Store::Heap(ref store) => (**store).as_ref(),
-            Store::File(ref mmap) => file::view(mmap),
-        }
+        let Store::Heap(ref store) = self;
+        (**store).as_ref()
     }
 }
 
