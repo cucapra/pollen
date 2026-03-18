@@ -5,7 +5,7 @@ pub struct FlatGFAHandle {
     store: Store,
 }
 
-/// Functionality to parse GFA file and afterwards interact with it in flatGFA format (from flatgfa-py)
+/// Functionality to parse GFA file and afterwards interact with it in flatGFA format (from flatgfa-py).
 enum Store {
     Heap(Box<HeapGFAStore>),
 }
@@ -30,8 +30,6 @@ impl Store {
     }
 }
 
-
-
 /// Parse a GFA file and return an opaque handle.
 /// Caller must free with flatgfa_free().
 #[no_mangle]
@@ -49,6 +47,37 @@ pub extern "C" fn flatgfa_free(gfa: *mut FlatGFAHandle) {
     }
 }
 
+/// Get number of segments in GFA.
+#[no_mangle]
+pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFAHandle) -> usize {
+    let gfa = unsafe { &*gfa };
+    let view = gfa.store.view();
+    view.segs.all().len()
+}
+
+/// Get the DNA sequence for a segment. Returns a pointer to the raw bytes (not
+/// null-terminated) and sets `*len`. The pointer is valid as long as the
+/// FlatGFAHandle is alive. Returns null if segment_id is out of bounds.
+/// Note: always returns the forward-strand sequence regardless of orientation.
+#[no_mangle]
+pub extern "C" fn flatgfa_get_segment_seq(
+    gfa: *const FlatGFAHandle,
+    segment_id: u32,
+    len: *mut usize,
+) -> *const u8 {
+    let gfa = unsafe { &*gfa };
+    let view = gfa.store.view();
+    let segs = view.segs.all();
+    if segment_id as usize >= segs.len() {
+        return std::ptr::null();
+    }
+    let id: Id<Segment> = segment_id.into();
+    let seq = view.get_seq(&view.segs[id]);
+    unsafe { *len = seq.len() };
+    seq.as_ptr()
+}
+
+/// Get number of paths within gfa.
 #[no_mangle]
 pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFAHandle) -> usize {
     let gfa = unsafe { &*gfa };
@@ -56,9 +85,8 @@ pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFAHandle) -> usize {
     view.paths.all().len()
 }
 
-/// Get the name of a path by index. Returns a pointer to the name bytes (not
-/// null-terminated) and sets `*len` to the byte length. The pointer is valid
-/// as long as the FlatGFAHandle is alive. Returns null if index is out of bounds.
+/// Get name of a path by index. Returns a pointer to the name bytes and sets `*len` to the byte
+/// length.
 #[no_mangle]
 pub extern "C" fn flatgfa_get_path_name(
     gfa: *const FlatGFAHandle,
@@ -77,7 +105,7 @@ pub extern "C" fn flatgfa_get_path_name(
     }
 }
 
-/// Get the number of steps in a path. Returns usize::MAX if index is out of bounds.
+/// Get the number of steps in a path by index. Returns usize::MAX if index is out of bounds.
 #[no_mangle]
 pub extern "C" fn flatgfa_get_path_step_count(
     gfa: *const FlatGFAHandle,
@@ -122,35 +150,5 @@ pub extern "C" fn flatgfa_get_step(
         (*out).is_forward = handle.orient() == Orientation::Forward;
     }
     true
-}
-
-/// Get number of DNA sequences in GFA file
-#[no_mangle]
-pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFAHandle) -> usize {
-    let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
-    view.segs.all().len()
-}
-
-/// Get the DNA sequence for a segment. Returns a pointer to the raw bytes (not
-/// null-terminated) and sets `*len`. The pointer is valid as long as the
-/// FlatGFAHandle is alive. Returns null if segment_id is out of bounds.
-/// Note: always returns the forward-strand sequence regardless of orientation.
-#[no_mangle]
-pub extern "C" fn flatgfa_get_segment_seq(
-    gfa: *const FlatGFAHandle,
-    segment_id: u32,
-    len: *mut usize,
-) -> *const u8 {
-    let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
-    let segs = view.segs.all();
-    if segment_id as usize >= segs.len() {
-        return std::ptr::null();
-    }
-    let id: Id<Segment> = segment_id.into();
-    let seq = view.get_seq(&view.segs[id]);
-    unsafe { *len = seq.len() };
-    seq.as_ptr()
 }
 
