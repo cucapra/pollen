@@ -1,11 +1,6 @@
 use std::ffi::CStr;
 use flatgfa::{self, file, flatgfa::{Orientation, Segment}, memfile, pool::Id, FlatGFA, HeapGFAStore};
 
-#[no_mangle]
-pub extern "C" fn hello_world() {
-    println!("Hello, World!");
-}
-
 pub struct FlatGFAHandle {
     store: Store,
 }
@@ -33,12 +28,6 @@ impl Store {
         let store = flatgfa::parse::Parser::for_heap().parse_mem(data);
         Self::Heap(Box::new(store))
     }
-
-    // /// Load a FlatGFA binary file.
-    // fn load(filename: &str) -> Self {
-    //     let mmap = memfile::map_file(filename);
-    //     Self::File(mmap)
-    // }
 
     /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA<'_> {

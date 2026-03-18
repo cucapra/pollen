@@ -13,8 +13,6 @@ typedef struct CStep {
   bool is_forward;
 } CStep;
 
-void hello_world(void);
-
 /**
  * Parse a GFA file and return an opaque handle.
  * Caller must free with flatgfa_free().
