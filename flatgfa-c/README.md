@@ -2,11 +2,11 @@
 
 This project builds C bindings of a subset of operations from the [FlatGFA](https://github.com/cucapra/pollen/tree/main/flatgfa) library.
 
-The bindings allow to:
+The bindings allow you to:
 
 * Parse a GFA file to a FlatGFA representation.
 * Get the number of segments within the FlatGFA.
-* Get the sequences and length of segments.
+* Get the sequence and length of segments.
 * Get the number of paths.
 * Get the name of a path.
 * Get the number of steps within a specific path.
@@ -14,10 +14,10 @@ The bindings allow to:
 
 ## Development
 
-Build lib by running:
+Build the lib by running:
 
 ```
 $ cargo build
 ```
 
-This will also update the header file `include/flatgfa.h`. The lib will be build in `target` of the parent directory.
+This will also update the header file `include/flatgfa.h`. The lib will be built in `target` of the parent directory.

@@ -85,8 +85,9 @@ pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFAHandle) -> usize {
     view.paths.all().len()
 }
 
-/// Get name of a path by index. Returns a pointer to the name bytes and sets `*len` to the byte
-/// length.
+/// Get the name of a path by index. Returns a pointer to the name bytes (not null-terminated) and
+/// sets `*len` to the byte length. The pointer is valid as long as the FlatGFAHandle is alive.
+/// Returns null if index is out of bounds.
 #[no_mangle]
 pub extern "C" fn flatgfa_get_path_name(
     gfa: *const FlatGFAHandle,
@@ -151,4 +152,3 @@ pub extern "C" fn flatgfa_get_step(
     }
     true
 }
-
