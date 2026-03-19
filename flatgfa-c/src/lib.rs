@@ -1,3 +1,4 @@
+use bstr::BStr;
 use flatgfa::{
     self,
     flatgfa::{Orientation, Segment},
@@ -5,7 +6,7 @@ use flatgfa::{
     pool::Id,
     FlatGFA, HeapGFAStore,
 };
-use std::ffi::{c_ulong, CStr};
+use std::ffi::CStr;
 
 /// A datastore for a variation graph with a flat representation.
 pub struct FlatGFARef(Box<HeapGFAStore>);
@@ -34,6 +35,33 @@ impl FlatGFARef {
     }
 }
 
+/// A byte string represented using a pointer/length pair.
+///
+/// The string is not null-terminated; the `len` field is the number of bytes.
+#[repr(C)]
+pub struct FlatGFAString {
+    pub data: *const u8,
+    pub len: usize,
+}
+
+impl Default for FlatGFAString {
+    fn default() -> Self {
+        Self {
+            data: std::ptr::null(),
+            len: 0,
+        }
+    }
+}
+
+impl From<&BStr> for FlatGFAString {
+    fn from(string: &BStr) -> Self {
+        Self {
+            data: string.as_ptr(),
+            len: string.len(),
+        }
+    }
+}
+
 /// Parse a GFA text file and create a new FlatGFA, returning a handle. The
 /// caller must free this with `flatgfa_free`.
 #[no_mangle]
@@ -59,26 +87,21 @@ pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFARef) -> u32 {
     view.segs.len().try_into().unwrap()
 }
 
-/// Get the DNA sequence for a segment. Returns a pointer to the raw bytes (not
-/// null-terminated) and sets `*len`. The pointer is valid as long as the
-/// FlatGFAHandle is alive. Returns null if segment_id is out of bounds.
-/// Note: always returns the forward-strand sequence regardless of orientation.
+/// Get the DNA sequence for a segment.
+///
+/// The string is valid as long as the FlatGFAHandle is alive. Returns a null
+/// string if segment_id is out of bounds. Always returns the forward-strand
+/// sequence regardless of orientation.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_segment_seq(
-    gfa: *const FlatGFARef,
-    segment_id: u32,
-    len: *mut c_ulong,
-) -> *const u8 {
+pub extern "C" fn flatgfa_get_seq(gfa: *const FlatGFARef, segment_id: u32) -> FlatGFAString {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     let segs = view.segs.all();
     if segment_id as usize >= segs.len() {
-        return std::ptr::null();
+        return FlatGFAString::default();
     }
     let id: Id<Segment> = segment_id.into();
-    let seq = view.get_seq(&view.segs[id]);
-    unsafe { *len = seq.len().try_into().unwrap() };
-    seq.as_ptr()
+    view.get_seq(&view.segs[id]).into()
 }
 
 /// Get number of paths in the graph.
@@ -96,20 +119,12 @@ pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> u32 {
 /// valid as long as the FlatGFAHandle is alive. Returns null if index is out of
 /// bounds.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_path_name(
-    gfa: *const FlatGFARef,
-    path_index: u32,
-    len: *mut c_ulong,
-) -> *const u8 {
+pub extern "C" fn flatgfa_get_path_name(gfa: *const FlatGFARef, path_index: u32) -> FlatGFAString {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     match view.paths.get(path_index) {
-        None => std::ptr::null(),
-        Some(path) => {
-            let name = view.get_path_name(path);
-            unsafe { *len = name.len().try_into().unwrap() };
-            name.as_ptr()
-        }
+        None => FlatGFAString::default(),
+        Some(path) => view.get_path_name(path).into(),
     }
 }
 
