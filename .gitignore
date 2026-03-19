@@ -20,6 +20,7 @@ compute_maxes.py
 
 target/
 pollen/*.rlib
+flatgfa-c/include/
 
 slow_odgi/dist/
 

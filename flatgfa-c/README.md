@@ -12,12 +12,12 @@ The bindings allow you to:
 * Get the number of steps within a specific path.
 * Get the corresponding segment and orientation of a specific step within a path.
 
-## Development
+## Build the Library
 
-Build the lib by running:
+Build the library by running:
 
-```
-$ cargo build
-```
+    cargo build
 
-This will also update the header file `include/flatgfa.h`. The lib will be built in `target` of the parent directory.
+This will produce a header file in `include/flatgfa.h` (using [cbindgen][]) as well as both static and dynamic libraries in the workspace `target` directory.
+
+[cbindgen]: https://github.com/mozilla/cbindgen
