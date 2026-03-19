@@ -7,16 +7,10 @@ use flatgfa::{
 };
 use std::ffi::CStr;
 
-pub struct FlatGFAHandle {
-    store: Store,
-}
+/// A datastore for a variation graph with a flat representation.
+pub struct FlatGFAHandle(Box<HeapGFAStore>);
 
-/// Functionality to parse GFA file and afterwards interact with it in flatGFA format (from flatgfa-py).
-enum Store {
-    Heap(Box<HeapGFAStore>),
-}
-
-impl Store {
+impl FlatGFAHandle {
     /// Parse a text GFA file.
     fn parse_file(filename: &str) -> Self {
         let file = memfile::map_file(filename);
@@ -26,13 +20,12 @@ impl Store {
     /// Parse a GFA graph from a byte buffer.
     fn parse_gfa(data: &[u8]) -> Self {
         let store = flatgfa::parse::Parser::for_heap().parse_mem(data);
-        Self::Heap(Box::new(store))
+        Self(Box::new(store))
     }
 
     /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA<'_> {
-        let Store::Heap(ref store) = self;
-        (**store).as_ref()
+        (*self.0).as_ref()
     }
 }
 
@@ -41,8 +34,8 @@ impl Store {
 #[no_mangle]
 pub extern "C" fn flatgfa_parse(filename: *const std::os::raw::c_char) -> *mut FlatGFAHandle {
     let filename = unsafe { CStr::from_ptr(filename) }.to_str().unwrap();
-    let store = Store::parse_file(filename);
-    Box::into_raw(Box::new(FlatGFAHandle { store }))
+    let store = FlatGFAHandle::parse_file(filename);
+    Box::into_raw(Box::new(store))
 }
 
 /// Free a FlatGFA handle.
@@ -57,7 +50,7 @@ pub extern "C" fn flatgfa_free(gfa: *mut FlatGFAHandle) {
 #[no_mangle]
 pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFAHandle) -> usize {
     let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
+    let view = gfa.view();
     view.segs.all().len()
 }
 
@@ -72,7 +65,7 @@ pub extern "C" fn flatgfa_get_segment_seq(
     len: *mut usize,
 ) -> *const u8 {
     let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
+    let view = gfa.view();
     let segs = view.segs.all();
     if segment_id as usize >= segs.len() {
         return std::ptr::null();
@@ -87,7 +80,7 @@ pub extern "C" fn flatgfa_get_segment_seq(
 #[no_mangle]
 pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFAHandle) -> usize {
     let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
+    let view = gfa.view();
     view.paths.all().len()
 }
 
@@ -101,7 +94,7 @@ pub extern "C" fn flatgfa_get_path_name(
     len: *mut usize,
 ) -> *const u8 {
     let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
+    let view = gfa.view();
     match view.paths.all().get(path_index) {
         None => std::ptr::null(),
         Some(path) => {
@@ -119,7 +112,7 @@ pub extern "C" fn flatgfa_get_path_step_count(
     path_index: usize,
 ) -> usize {
     let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
+    let view = gfa.view();
     match view.paths.all().get(path_index) {
         None => usize::MAX,
         Some(path) => path.step_count(),
@@ -143,7 +136,7 @@ pub extern "C" fn flatgfa_get_step(
     out: *mut CStep,
 ) -> bool {
     let gfa = unsafe { &*gfa };
-    let view = gfa.store.view();
+    let view = gfa.view();
     let path = match view.paths.all().get(path_index) {
         None => return false,
         Some(p) => p,
