@@ -1,5 +1,6 @@
 #![allow(non_camel_case_types)]
 #![allow(private_interfaces)]
+#![allow(clippy::not_unsafe_ptr_arg_deref)]
 
 use bstr::BStr;
 use flatgfa::{
