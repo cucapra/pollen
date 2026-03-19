@@ -1,5 +1,11 @@
+use flatgfa::{
+    self,
+    flatgfa::{Orientation, Segment},
+    memfile,
+    pool::Id,
+    FlatGFA, HeapGFAStore,
+};
 use std::ffi::CStr;
-use flatgfa::{self, flatgfa::{Orientation, Segment}, memfile, pool::Id, FlatGFA, HeapGFAStore};
 
 pub struct FlatGFAHandle {
     store: Store,
