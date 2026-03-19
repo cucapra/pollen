@@ -283,6 +283,11 @@ impl<'a, T> Pool<'a, T> {
     pub fn size(&self) -> usize {
         std::mem::size_of_val(self.0)
     }
+
+    /// Get the nth item, or None if there are fewer than n items.
+    pub fn get(&self, n: u32) -> Option<&T> {
+        self.0.get(n as usize)
+    }
 }
 
 impl<T> Index<Id<T>> for Pool<'_, T> {
