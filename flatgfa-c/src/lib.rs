@@ -9,7 +9,7 @@ use flatgfa::{
     pool::Id,
     FlatGFA, HeapGFAStore,
 };
-use std::ffi::CStr;
+use std::ffi::{c_int, CStr};
 
 /// An opaque wrapper for a store, for exporting to C.
 struct CStore(HeapGFAStore);
@@ -35,7 +35,7 @@ pub type flatgfa_t = *mut CStore;
 #[repr(C)]
 pub struct flatgfa_string_t {
     pub data: *const u8,
-    pub len: usize,
+    pub len: c_int,
 }
 
 impl Default for flatgfa_string_t {
@@ -51,7 +51,7 @@ impl From<&BStr> for flatgfa_string_t {
     fn from(string: &BStr) -> Self {
         Self {
             data: string.as_ptr(),
-            len: string.len(),
+            len: string.len().try_into().unwrap(),
         }
     }
 }
