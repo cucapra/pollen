@@ -9,7 +9,7 @@ use flatgfa::{
 use std::ffi::CStr;
 
 /// A datastore for a variation graph with a flat representation.
-pub struct FlatGFARef(Box<HeapGFAStore>);
+pub struct FlatGFARef(HeapGFAStore);
 
 impl FlatGFARef {
     /// Parse a text GFA file.
@@ -21,12 +21,12 @@ impl FlatGFARef {
     /// Parse a GFA graph from a byte buffer.
     fn parse_gfa(data: &[u8]) -> Self {
         let store = flatgfa::parse::Parser::for_heap().parse_mem(data);
-        Self(Box::new(store))
+        Self(store)
     }
 
     /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA<'_> {
-        (*self.0).as_ref()
+        self.0.as_ref()
     }
 
     /// Get a pointer we can hand off to C.
