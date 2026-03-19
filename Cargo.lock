@@ -257,7 +257,6 @@ dependencies = [
  "bstr",
  "cbindgen",
  "flatgfa",
- "memmap",
 ]
 
 [[package]]

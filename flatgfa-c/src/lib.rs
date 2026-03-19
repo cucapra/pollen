@@ -12,18 +12,6 @@ use std::ffi::CStr;
 pub struct FlatGFARef(HeapGFAStore);
 
 impl FlatGFARef {
-    /// Parse a text GFA file.
-    fn parse_file(filename: &str) -> Self {
-        let file = memfile::map_file(filename);
-        Self::parse_gfa(file.as_ref())
-    }
-
-    /// Parse a GFA graph from a byte buffer.
-    fn parse_gfa(data: &[u8]) -> Self {
-        let store = flatgfa::parse::Parser::for_heap().parse_mem(data);
-        Self(store)
-    }
-
     /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA<'_> {
         self.0.as_ref()
@@ -67,8 +55,9 @@ impl From<&BStr> for FlatGFAString {
 #[no_mangle]
 pub extern "C" fn flatgfa_parse(filename: *const std::os::raw::c_char) -> *mut FlatGFARef {
     let filename = unsafe { CStr::from_ptr(filename) }.to_str().unwrap();
-    let store = FlatGFARef::parse_file(filename);
-    store.pointer()
+    let file = memfile::map_file(filename);
+    let store = flatgfa::parse::Parser::for_heap().parse_mem(&file);
+    FlatGFARef(store).pointer()
 }
 
 /// Free a FlatGFA handle.
