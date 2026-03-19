@@ -21,3 +21,13 @@ Build the library by running:
 This will produce a header file in `include/flatgfa.h` (using [cbindgen][]) as well as both static and dynamic libraries in the workspace `target` directory.
 
 [cbindgen]: https://github.com/mozilla/cbindgen
+
+## An Example
+
+See the `example/` directory for a sample C program.
+To use it, first build the library with `cargo build` and then:
+
+    cd example
+    make test
+    
+The generated header also has lots of detail about how to use the bindings.

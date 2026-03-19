@@ -49,7 +49,7 @@ Or, alternatively, you can set up and activate the environment manually:
 FlatGFA
 -------
 
-[FlatGFA](./flatgfa) is an efficient representation for GFA files. It is implemented in Rust and available with [Python bindings](./flatgfa-py). The latter is [on PyPI][flatgfa-pypi], so you can get started with:
+[FlatGFA](./flatgfa) is an efficient representation for GFA files. It is implemented in Rust and available with [Python bindings](./flatgfa-py) and [C bindings](./flatgfa-c). The Python interface is [on PyPI][flatgfa-pypi], so you can get started with:
 
     $ pip install flatgfa
 
