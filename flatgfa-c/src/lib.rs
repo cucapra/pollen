@@ -5,7 +5,7 @@ use flatgfa::{
     pool::Id,
     FlatGFA, HeapGFAStore,
 };
-use std::ffi::CStr;
+use std::ffi::{c_ulong, CStr};
 
 /// A datastore for a variation graph with a flat representation.
 pub struct FlatGFARef(Box<HeapGFAStore>);
@@ -53,10 +53,10 @@ pub extern "C" fn flatgfa_free(gfa: *mut FlatGFARef) {
 
 /// Get the number of segments in the graph.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFARef) -> usize {
+pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFARef) -> u32 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
-    view.segs.all().len()
+    view.segs.len().try_into().unwrap()
 }
 
 /// Get the DNA sequence for a segment. Returns a pointer to the raw bytes (not
@@ -67,7 +67,7 @@ pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFARef) -> usize {
 pub extern "C" fn flatgfa_get_segment_seq(
     gfa: *const FlatGFARef,
     segment_id: u32,
-    len: *mut usize,
+    len: *mut c_ulong,
 ) -> *const u8 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
@@ -77,16 +77,16 @@ pub extern "C" fn flatgfa_get_segment_seq(
     }
     let id: Id<Segment> = segment_id.into();
     let seq = view.get_seq(&view.segs[id]);
-    unsafe { *len = seq.len() };
+    unsafe { *len = seq.len().try_into().unwrap() };
     seq.as_ptr()
 }
 
 /// Get number of paths in the graph.
 #[no_mangle]
-pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> usize {
+pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> u32 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
-    view.paths.all().len()
+    view.paths.len().try_into().unwrap()
 }
 
 /// Get the name of a path by its index.
@@ -98,29 +98,30 @@ pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> usize {
 #[no_mangle]
 pub extern "C" fn flatgfa_get_path_name(
     gfa: *const FlatGFARef,
-    path_index: usize,
-    len: *mut usize,
+    path_index: u32,
+    len: *mut c_ulong,
 ) -> *const u8 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
-    match view.paths.all().get(path_index) {
+    match view.paths.get(path_index) {
         None => std::ptr::null(),
         Some(path) => {
             let name = view.get_path_name(path);
-            unsafe { *len = name.len() };
+            unsafe { *len = name.len().try_into().unwrap() };
             name.as_ptr()
         }
     }
 }
 
-/// Get the number of steps in a path by index. Returns usize::MAX if index is out of bounds.
+/// Get the number of steps in a path by index. Returns UINT32_MAX if index is
+/// out of bounds.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_path_step_count(gfa: *const FlatGFARef, path_index: usize) -> usize {
+pub extern "C" fn flatgfa_get_path_step_count(gfa: *const FlatGFARef, path_index: u32) -> u32 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
-    match view.paths.all().get(path_index) {
-        None => usize::MAX,
-        Some(path) => path.step_count(),
+    match view.paths.get(path_index) {
+        None => u32::MAX,
+        Some(path) => path.step_count().try_into().unwrap(),
     }
 }
 
