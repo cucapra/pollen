@@ -11,7 +11,7 @@ use flatgfa::{
 };
 use std::ffi::CStr;
 
-/// TODO remove this?
+/// An opaque wrapper for a store, for exporting to C.
 struct CStore(HeapGFAStore);
 
 impl CStore {
