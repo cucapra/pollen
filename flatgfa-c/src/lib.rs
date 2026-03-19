@@ -1,3 +1,6 @@
+#![allow(non_camel_case_types)]
+#![allow(private_interfaces)]
+
 use bstr::BStr;
 use flatgfa::{
     self,
@@ -8,31 +11,34 @@ use flatgfa::{
 };
 use std::ffi::CStr;
 
-/// A datastore for a variation graph with a flat representation.
-pub struct FlatGFARef(HeapGFAStore);
+/// TODO remove this?
+struct CStore(HeapGFAStore);
 
-impl FlatGFARef {
+impl CStore {
     /// Get the FlatGFA stored here.
     fn view(&self) -> FlatGFA<'_> {
         self.0.as_ref()
     }
 
     /// Get a pointer we can hand off to C.
-    fn pointer(self) -> *mut FlatGFARef {
+    fn pointer(self) -> *mut CStore {
         Box::into_raw(Box::new(self))
     }
 }
+
+/// A datastore for a variation graph with a flat representation.
+pub type flatgfa_t = *mut CStore;
 
 /// A byte string represented using a pointer/length pair.
 ///
 /// The string is not null-terminated; the `len` field is the number of bytes.
 #[repr(C)]
-pub struct FlatGFAString {
+pub struct flatgfa_string_t {
     pub data: *const u8,
     pub len: usize,
 }
 
-impl Default for FlatGFAString {
+impl Default for flatgfa_string_t {
     fn default() -> Self {
         Self {
             data: std::ptr::null(),
@@ -41,7 +47,7 @@ impl Default for FlatGFAString {
     }
 }
 
-impl From<&BStr> for FlatGFAString {
+impl From<&BStr> for flatgfa_string_t {
     fn from(string: &BStr) -> Self {
         Self {
             data: string.as_ptr(),
@@ -53,16 +59,16 @@ impl From<&BStr> for FlatGFAString {
 /// Parse a GFA text file and create a new FlatGFA, returning a handle. The
 /// caller must free this with `flatgfa_free`.
 #[no_mangle]
-pub extern "C" fn flatgfa_parse(filename: *const std::os::raw::c_char) -> *mut FlatGFARef {
+pub extern "C" fn flatgfa_parse(filename: *const std::os::raw::c_char) -> flatgfa_t {
     let filename = unsafe { CStr::from_ptr(filename) }.to_str().unwrap();
     let file = memfile::map_file(filename);
     let store = flatgfa::parse::Parser::for_heap().parse_mem(&file);
-    FlatGFARef(store).pointer()
+    CStore(store).pointer()
 }
 
 /// Free a FlatGFA handle.
 #[no_mangle]
-pub extern "C" fn flatgfa_free(gfa: *mut FlatGFARef) {
+pub extern "C" fn flatgfa_free(gfa: flatgfa_t) {
     if !gfa.is_null() {
         unsafe { drop(Box::from_raw(gfa)) };
     }
@@ -70,7 +76,7 @@ pub extern "C" fn flatgfa_free(gfa: *mut FlatGFARef) {
 
 /// Get the number of segments in the graph.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFARef) -> u32 {
+pub extern "C" fn flatgfa_get_segment_count(gfa: flatgfa_t) -> u32 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     view.segs.len().try_into().unwrap()
@@ -82,12 +88,12 @@ pub extern "C" fn flatgfa_get_segment_count(gfa: *const FlatGFARef) -> u32 {
 /// string if segment_id is out of bounds. Always returns the forward-strand
 /// sequence regardless of orientation.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_seq(gfa: *const FlatGFARef, segment_id: u32) -> FlatGFAString {
+pub extern "C" fn flatgfa_get_seq(gfa: flatgfa_t, segment_id: u32) -> flatgfa_string_t {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     let segs = view.segs.all();
     if segment_id as usize >= segs.len() {
-        return FlatGFAString::default();
+        return flatgfa_string_t::default();
     }
     let id: Id<Segment> = segment_id.into();
     view.get_seq(&view.segs[id]).into()
@@ -95,7 +101,7 @@ pub extern "C" fn flatgfa_get_seq(gfa: *const FlatGFARef, segment_id: u32) -> Fl
 
 /// Get number of paths in the graph.
 #[no_mangle]
-pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> u32 {
+pub extern "C" fn flatgfa_path_count(gfa: flatgfa_t) -> u32 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     view.paths.len().try_into().unwrap()
@@ -108,11 +114,11 @@ pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> u32 {
 /// valid as long as the FlatGFAHandle is alive. Returns null if index is out of
 /// bounds.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_path_name(gfa: *const FlatGFARef, path_index: u32) -> FlatGFAString {
+pub extern "C" fn flatgfa_get_path_name(gfa: flatgfa_t, path_index: u32) -> flatgfa_string_t {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     match view.paths.get(path_index) {
-        None => FlatGFAString::default(),
+        None => flatgfa_string_t::default(),
         Some(path) => view.get_path_name(path).into(),
     }
 }
@@ -120,7 +126,7 @@ pub extern "C" fn flatgfa_get_path_name(gfa: *const FlatGFARef, path_index: u32)
 /// Get the number of steps in a path by index. Returns UINT32_MAX if index is
 /// out of bounds.
 #[no_mangle]
-pub extern "C" fn flatgfa_get_path_step_count(gfa: *const FlatGFARef, path_index: u32) -> u32 {
+pub extern "C" fn flatgfa_get_path_step_count(gfa: flatgfa_t, path_index: u32) -> u32 {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
     match view.paths.get(path_index) {
@@ -131,7 +137,7 @@ pub extern "C" fn flatgfa_get_path_step_count(gfa: *const FlatGFARef, path_index
 
 /// An oriented reference to a segment within a FlatGFA.
 #[repr(C)]
-pub struct FlatGFAHandle {
+pub struct flatgfa_handle_t {
     pub segment_id: u32,
     pub is_forward: bool,
 }
@@ -140,10 +146,10 @@ pub struct FlatGFAHandle {
 /// success and writes into `*out`. Returns false if either index is out of bounds.
 #[no_mangle]
 pub extern "C" fn flatgfa_get_step(
-    gfa: *const FlatGFARef,
+    gfa: flatgfa_t,
     path_index: usize,
     step_index: usize,
-    out: *mut FlatGFAHandle,
+    out: *mut flatgfa_handle_t,
 ) -> bool {
     let gfa = unsafe { &*gfa };
     let view = gfa.view();
