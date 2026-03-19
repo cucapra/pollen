@@ -89,9 +89,12 @@ pub extern "C" fn flatgfa_path_count(gfa: *const FlatGFARef) -> usize {
     view.paths.all().len()
 }
 
-/// Get the name of a path by index. Returns a pointer to the name bytes (not null-terminated) and
-/// sets `*len` to the byte length. The pointer is valid as long as the FlatGFAHandle is alive.
-/// Returns null if index is out of bounds.
+/// Get the name of a path by its index.
+///
+/// This is a pointer/length string, i.e., it is not null-terminated. We return
+/// a pointer to the name data and set the length via a pointer. The pointer is
+/// valid as long as the FlatGFAHandle is alive. Returns null if index is out of
+/// bounds.
 #[no_mangle]
 pub extern "C" fn flatgfa_get_path_name(
     gfa: *const FlatGFARef,
