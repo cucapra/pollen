@@ -3,6 +3,7 @@ pub mod file;
 pub mod flatbed;
 pub mod flatgfa;
 pub mod gfaline;
+pub mod index;
 pub mod memfile;
 pub mod namemap;
 pub mod ops;

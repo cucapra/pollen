@@ -216,10 +216,14 @@ pub fn extract(
 /// compute node depth, the number of times paths cross a node
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "depth")]
-pub struct Depth {}
+pub struct Depth {
+    /// enable usage of StepsBySegIndex
+    #[argh(switch, short = 'n')]
+    index: bool,
+}
 
-pub fn depth(gfa: &flatgfa::FlatGFA) {
-    let (depths, uniq_paths) = ops::depth::depth(gfa);
+pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
+    let (depths, uniq_paths) = ops::depth::depth(gfa, args.index);
 
     println!("#node.id\tdepth\tdepth.uniq");
     for (id, seg) in gfa.segs.items() {
