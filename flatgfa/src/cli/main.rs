@@ -46,6 +46,7 @@ enum Command {
     BedIntersect(cmds::BEDIntersect),
     SeqExport(cmds::SeqExport),
     SeqImport(cmds::SeqImport),
+    BedDepth(cmds::BedDepth),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -63,6 +64,13 @@ fn main() -> Result<(), &'static str> {
     // since we do not parse a GFA file for that.
     if let Some(Command::BedIntersect(sub_args)) = args.command {
         cmds::bed_intersect(sub_args);
+        return Ok(());
+    }
+
+    // Special case for bed-depth command,
+    // since it handles GFA parsing internally.
+    if let Some(Command::BedDepth(sub_args)) = args.command {
+        cmds::bed_depth(sub_args);
         return Ok(());
     }
 
@@ -164,6 +172,9 @@ fn main() -> Result<(), &'static str> {
             panic!("Unreachable code");
         }
         Some(Command::SeqImport(_sub_args)) => {
+            panic!("Unreachable code");
+        }
+        Some(Command::BedDepth(_sub_args)) => {
             panic!("Unreachable code");
         }
         None => {

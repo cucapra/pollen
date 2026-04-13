@@ -76,7 +76,7 @@ fn format_float(x: f64) -> String {
     s.to_string()
 }
 
-fn create_bed(
+pub fn create_bed(
     gfa_name: &str,
     bed_name: &str,
     chrom_name: &str,
