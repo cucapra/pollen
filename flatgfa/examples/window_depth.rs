@@ -2,7 +2,7 @@ use argh::FromArgs;
 use std::fs::File;
 use std::io::BufReader;
 
-use flatgfa::{memfile, ops::depth, parse::Parser, FlatGFA};
+use flatgfa::{FlatGFA, memfile, ops::depth, parse::Parser};
 
 struct SegmentDepth {
     depth: f64,
@@ -67,6 +67,13 @@ fn assign_depths(seg_depth: &Vec<SegmentDepth>, windows: &Vec<(usize, usize)>) -
     depths
 }
 
+fn format_float(x: f64) -> String {
+    let s = format!("{:.6}", x);
+    let s = s.trim_end_matches('0');
+    let s = s.trim_end_matches('.');
+    s.to_string()
+}
+
 fn create_bed(
     gfa_name: &str,
     bed_name: &str,
@@ -94,8 +101,8 @@ fn create_bed(
     for i in 0..windows.len() {
         let start = windows[i].0;
         let end = windows[i].1;
-        let depth_avg = depths_final[i];
-        let line = format!("{chrom_name}\t{start}\t{end}\t{depth_avg}\n");
+        let depth_str = format_float(depths_final[i]);
+        let line = format!("{chrom_name}\t{start}\t{end}\t{depth_str}\n");
         let bytes = line.as_bytes();
         bed_file[offset..offset + bytes.len()].copy_from_slice(bytes);
         offset += bytes.len();
