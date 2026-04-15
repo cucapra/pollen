@@ -31,5 +31,5 @@ jobs:
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           --threshold-measure latency \
           --threshold-test percentage \
-          --threshold-max 5 \
+          --threshold-upper-boundary 105 \
           python bench/benchmark_web.py mini_bencher 3 del 
