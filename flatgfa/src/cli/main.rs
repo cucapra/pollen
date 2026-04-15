@@ -72,13 +72,6 @@ fn main() -> Result<(), &'static str> {
         return Ok(());
     }
 
-    // Special case for bed-depth command,
-    // since it handles GFA parsing internally.
-    if let Some(Command::BedDepth(sub_args)) = args.command {
-        cmds::bed_depth(sub_args);
-        return Ok(());
-    }
-
     // Yet more special cases for sequence compression/decompression, which only
     // deal with raw sequence data and not GFA files.
     if let Some(Command::SeqExport(sub_args)) = args.command {
@@ -182,8 +175,8 @@ fn main() -> Result<(), &'static str> {
         Some(Command::PangenotypeMatrix(sub_args)) => {
             cmds::pangenotype_matrix(&gfa, sub_args);
         }
-        Some(Command::BedDepth(_sub_args)) => {
-            panic!("Unreachable code");
+        Some(Command::BedDepth(sub_args)) => {
+            cmds::bed_depth(&gfa, sub_args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.
