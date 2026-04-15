@@ -406,17 +406,16 @@ pub fn seq_export(args: SeqExport) {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "bed-depth")]
 pub struct BedDepth {
-    /// the input GFA file
-    #[argh(positional)]
-    gfa: String,
-
+    // /// the input GFA file
+    // #[argh(positional)]
+    // gfa: String,
     /// the size of each BED window
     #[argh(positional)]
     window: usize,
 }
 
-pub fn bed_depth(args: BedDepth) {
-    create_bed(&args.gfa, "BedName", "ChromName", args.window, Vec::new());
+pub fn bed_depth(gfa: &flatgfa::FlatGFA, args: BedDepth) {
+    create_bed(gfa, "BedName", "ChromName", args.window, Vec::new());
     let content = fs::read_to_string("BedName").unwrap();
     println!("{}", content);
 }
