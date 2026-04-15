@@ -29,4 +29,7 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --threshold-measure latency \
+          --threshold-test percentage \
+          --threshold-max 5 \
           python bench/benchmark_web.py mini_bencher 3 del 
