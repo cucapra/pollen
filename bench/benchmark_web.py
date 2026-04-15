@@ -69,6 +69,7 @@ def test(command, test_file_name, num_iter):
             stderr=devnull,
             check=True) 
       end_time = time.time() 
+      time.sleep(5)
       return ((end_time - start_time) * 1000) / num_iter
 
   elif command == "depth":
