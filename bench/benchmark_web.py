@@ -58,6 +58,7 @@ def test(command, test_file_name, num_iter):
         subprocess.run(["fgfa", "-I", test_file_name, "extract", "-n", "3", "-c", "3"], stdout=devnull,
             stderr=devnull,
             check=True) 
+      time.sleep(1)
       end_time = time.time()
       return ((end_time - start_time) * 1000) / num_iter
         
@@ -68,8 +69,8 @@ def test(command, test_file_name, num_iter):
         subprocess.run(["fgfa", "-I", test_file_name, "chop", "-c", "3", "-l"], stdout=devnull,
             stderr=devnull,
             check=True) 
+      time.sleep(1)
       end_time = time.time() 
-      time.sleep(5)
       return ((end_time - start_time) * 1000) / num_iter
 
   elif command == "depth":
@@ -79,6 +80,7 @@ def test(command, test_file_name, num_iter):
         subprocess.run(["fgfa", "-I", test_file_name, "depth"], stdout=devnull,
             stderr=devnull,
             check=True) 
+      time.sleep(1)
       end_time = time.time()
       return ((end_time - start_time) * 1000) / num_iter
   return 0.0

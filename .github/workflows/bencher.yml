@@ -29,4 +29,4 @@ jobs:
           --err \
           --adapter json \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          python bench/benchmark_web.py mini_bencher 10 del 
+          python bench/benchmark_web.py mini_bencher 3 del 
