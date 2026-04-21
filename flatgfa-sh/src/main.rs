@@ -1,6 +1,7 @@
-use std::os::macos::raw::stat;
+use std::ffi::OsString;
 
 use flash::parser::{Node, Redirect};
+use pico_args::Arguments;
 
 fn parse(input: &str) -> Node {
     // Following the example from the flash README.
@@ -34,15 +35,13 @@ struct Program {
 
 fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> Op {
     if name == "odgi" {
-        if args[0] == "depth" {
-            dbg!(args);
-            dbg!(redirects);
-            Op::Depth(DepthOp {
-                input: GraphResource::File("hi".to_string()),
-                path: None,
-            })
-        } else {
-            unimplemented!("unsupported odgi subcommand");
+        let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
+        match argp.subcommand().unwrap().as_deref() {
+            Some("depth") => Op::Depth(DepthOp {
+                input: GraphResource::File(argp.value_from_str("-i").unwrap()),
+                path: argp.opt_value_from_str("-r").unwrap(),
+            }),
+            _ => unimplemented!("unsupported odgi subcommand"),
         }
     } else {
         unimplemented!("only odgi commands are supported");
