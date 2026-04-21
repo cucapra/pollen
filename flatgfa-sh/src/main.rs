@@ -80,12 +80,16 @@ fn repl() -> std::io::Result<()> {
         stdout.flush()?;
         linebuf.clear();
         stdin.read_line(&mut linebuf)?;
+        if linebuf.is_empty() {
+            break;
+        }
 
         // Parse it.
         let shell = parse(&linebuf);
         dbg!(&shell);
         dbg!(&script_to_ir(shell));
     }
+    Ok(())
 }
 
 fn main() {
