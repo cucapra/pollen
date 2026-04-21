@@ -1,6 +1,7 @@
 use flash::parser::{Node, Redirect};
 use pico_args::Arguments;
-use std::io::Write;
+use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 
 fn parse(input: &str) -> Node {
     // Following the example from the flash README.
@@ -70,24 +71,26 @@ fn script_to_ir(shell: Node) -> Program {
     }
 }
 
-fn repl() -> std::io::Result<()> {
-    let stdin = std::io::stdin();
-    let mut stdout = std::io::stdout();
-    let mut linebuf = String::new();
+fn repl() -> rustyline::Result<()> {
+    let mut rl = DefaultEditor::new()?;
     loop {
-        // Read an input line.
-        write!(stdout, "$ ")?;
-        stdout.flush()?;
-        linebuf.clear();
-        stdin.read_line(&mut linebuf)?;
-        if linebuf.is_empty() {
-            break;
+        match rl.readline("$ ") {
+            Ok(line) => {
+                let shell = parse(&line);
+                dbg!(&shell);
+                dbg!(&script_to_ir(shell));
+            }
+            Err(ReadlineError::Interrupted) => {
+                break;
+            }
+            Err(ReadlineError::Eof) => {
+                break;
+            }
+            Err(err) => {
+                eprintln!("Error: {:?}", err);
+                break;
+            }
         }
-
-        // Parse it.
-        let shell = parse(&linebuf);
-        dbg!(&shell);
-        dbg!(&script_to_ir(shell));
     }
     Ok(())
 }
