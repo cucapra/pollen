@@ -1,21 +1,15 @@
-use yash_syntax::syntax;
+use flash::parser::Node;
 
-fn parse(input: &str) -> syntax::List {
-    // Following the example from the yash_syntax docs:
-    // https://docs.rs/yash-syntax/latest/yash_syntax/parser/index.html
-    use futures_executor::block_on;
-    use yash_syntax::{
-        input::Memory,
-        parser::{Parser, lex::Lexer},
-    };
-
-    let input = Box::new(Memory::new(input));
-    let mut lexer = Lexer::new(input);
-    let mut parser = Parser::new(&mut lexer);
-    block_on(parser.command_line()).unwrap().unwrap()
+fn parse(input: &str) -> Node {
+    // Following the example from the flash README.
+    use flash::lexer::Lexer;
+    use flash::parser::Parser;
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    parser.parse_script()
 }
 
 fn main() {
-    let line = parse("foo | bar --baz > qux");
+    let line = parse("odgi depth -i chr8.pan.og -r chm13#chr8");
     dbg!(line);
 }
