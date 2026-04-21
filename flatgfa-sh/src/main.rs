@@ -1,7 +1,6 @@
-use std::ffi::OsString;
-
 use flash::parser::{Node, Redirect};
 use pico_args::Arguments;
+use std::io::Write;
 
 fn parse(input: &str) -> Node {
     // Following the example from the flash README.
@@ -71,8 +70,24 @@ fn script_to_ir(shell: Node) -> Program {
     }
 }
 
+fn repl() -> std::io::Result<()> {
+    let stdin = std::io::stdin();
+    let mut stdout = std::io::stdout();
+    let mut linebuf = String::new();
+    loop {
+        // Read an input line.
+        write!(stdout, "$ ")?;
+        stdout.flush()?;
+        linebuf.clear();
+        stdin.read_line(&mut linebuf)?;
+
+        // Parse it.
+        let shell = parse(&linebuf);
+        dbg!(&shell);
+        dbg!(&script_to_ir(shell));
+    }
+}
+
 fn main() {
-    let shell = parse("odgi depth -i chr8.pan.og -r 'chm13#chr8'");
-    dbg!(&shell);
-    dbg!(&script_to_ir(shell));
+    repl().unwrap();
 }
