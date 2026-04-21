@@ -33,6 +33,31 @@ struct Program {
     ops: Vec<Op>,
 }
 
+impl Program {
+    fn run(&self) {
+        for op in &self.ops {
+            op.run();
+        }
+    }
+}
+
+impl Op {
+    fn run(&self) {
+        match self {
+            Self::Depth(op) => op.run(),
+        }
+    }
+}
+
+impl DepthOp {
+    fn run(&self) {
+        println!(
+            "here I would run depth with input {:?} and optional path name {:?}",
+            self.input, self.path
+        );
+    }
+}
+
 fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> Op {
     if name == "odgi" {
         let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
@@ -71,21 +96,19 @@ fn script_to_ir(shell: Node) -> Program {
     }
 }
 
+fn run_line(line: &str) {
+    let shell = parse(&line);
+    let prog = script_to_ir(shell);
+    prog.run();
+}
+
 fn repl() -> rustyline::Result<()> {
     let mut rl = DefaultEditor::new()?;
     loop {
         match rl.readline("$ ") {
-            Ok(line) => {
-                let shell = parse(&line);
-                dbg!(&shell);
-                dbg!(&script_to_ir(shell));
-            }
-            Err(ReadlineError::Interrupted) => {
-                break;
-            }
-            Err(ReadlineError::Eof) => {
-                break;
-            }
+            Ok(line) => run_line(&line),
+            Err(ReadlineError::Interrupted) => break,
+            Err(ReadlineError::Eof) => break,
             Err(err) => {
                 eprintln!("Error: {:?}", err);
                 break;
