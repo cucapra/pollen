@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["flatgfa", "flatgfa-c", "flatgfa-py"]
+members = ["flatgfa", "flatgfa-c", "flatgfa-py", "flatgfa-sh"]
 
 [workspace.dependencies]
 bstr = "1.12.0"
