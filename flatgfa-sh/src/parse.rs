@@ -11,7 +11,7 @@ pub fn parse_sh(input: &str) -> Node {
     parser.parse_script()
 }
 
-fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: Vec<Redirect>) {
+fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, _redirects: Vec<Redirect>) {
     if name == "odgi" {
         let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
         match argp.subcommand().unwrap().as_deref() {

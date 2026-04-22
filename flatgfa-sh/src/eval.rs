@@ -19,9 +19,10 @@ impl Eval for ir::Op {
 impl Eval for ir::DepthOp {
     fn eval(&self, env: &Env) {
         let input = &env.rsrc[self.input.0];
+        let output = &env.rsrc[self.output.0];
         println!(
-            "here I would run depth with input {:?} and optional path name {:?}",
-            input, self.path
+            "here I would run depth with input {:?} and optional path name {:?}, sending output to {:?}",
+            input, self.path, output
         );
     }
 }
