@@ -1,3 +1,5 @@
+mod ir;
+
 use flash::parser::{Node, Redirect};
 use pico_args::Arguments;
 use rustyline::DefaultEditor;
@@ -12,58 +14,12 @@ fn parse(input: &str) -> Node {
     parser.parse_script()
 }
 
-#[derive(Debug)]
-enum GraphResource {
-    File(String),
-}
-
-#[derive(Debug)]
-struct DepthOp {
-    input: GraphResource,
-    path: Option<String>,
-}
-
-#[derive(Debug)]
-enum Op {
-    Depth(DepthOp),
-}
-
-#[derive(Debug)]
-struct Program {
-    ops: Vec<Op>,
-}
-
-impl Program {
-    fn run(&self) {
-        for op in &self.ops {
-            op.run();
-        }
-    }
-}
-
-impl Op {
-    fn run(&self) {
-        match self {
-            Self::Depth(op) => op.run(),
-        }
-    }
-}
-
-impl DepthOp {
-    fn run(&self) {
-        println!(
-            "here I would run depth with input {:?} and optional path name {:?}",
-            self.input, self.path
-        );
-    }
-}
-
-fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> Op {
+fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> ir::Op {
     if name == "odgi" {
         let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
         match argp.subcommand().unwrap().as_deref() {
-            Some("depth") => Op::Depth(DepthOp {
-                input: GraphResource::File(argp.value_from_str("-i").unwrap()),
+            Some("depth") => ir::Op::Depth(ir::DepthOp {
+                input: ir::GraphResource::File(argp.value_from_str("-i").unwrap()),
                 path: argp.opt_value_from_str("-r").unwrap(),
             }),
             _ => unimplemented!("unsupported odgi subcommand"),
@@ -73,7 +29,7 @@ fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> Op {
     }
 }
 
-fn script_to_ir(shell: Node) -> Program {
+fn script_to_ir(shell: Node) -> ir::Program {
     match shell {
         Node::List {
             statements,
@@ -90,7 +46,7 @@ fn script_to_ir(shell: Node) -> Program {
                     _ => unimplemented!(),
                 })
                 .collect();
-            Program { ops }
+            ir::Program { ops }
         }
         _ => unimplemented!(),
     }
