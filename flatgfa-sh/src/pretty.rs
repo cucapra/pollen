@@ -46,7 +46,6 @@ impl Display for ir::Resource {
             ir::Resource::File(name) => write!(f, "\"{}\"", name),
             ir::Resource::Stdin => write!(f, "stdin"),
             ir::Resource::Stdout => write!(f, "stdout"),
-            ir::Resource::Memory => write!(f, "mem"),
         }
     }
 }

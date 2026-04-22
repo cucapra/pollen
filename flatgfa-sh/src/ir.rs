@@ -1,7 +1,6 @@
 #[derive(Debug)]
 pub enum Resource {
     File(String),
-    Memory,
     Stdin,
     Stdout,
 }
@@ -51,10 +50,6 @@ impl Builder {
 
     pub fn add_file(&mut self, name: String) -> ResourceRef {
         self.add_rsrc(Resource::File(name))
-    }
-
-    pub fn add_mem(&mut self) -> ResourceRef {
-        self.add_rsrc(Resource::Memory)
     }
 
     pub fn stdin(&self) -> ResourceRef {
