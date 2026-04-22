@@ -14,3 +14,11 @@ $ flash -p -c 'odgi depth -i chr8.gfa -r "chm13#chr8"'
 depth("chr8.gfa", path="chm13#chr8") -> stdout
 
 ```
+
+You can even run script files...
+
+```console
+$ flash -p example.sh
+depth("chr8.pan.og", path="chm13#chr8") -> stdout
+
+```
