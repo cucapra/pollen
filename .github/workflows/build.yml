@@ -97,9 +97,15 @@ jobs:
       - name: Fetch test data
         run: make fetch SMALL=1
 
-      # Build and test.
+      # Build and test FlatGFA.
       - run: cargo build
         working-directory: ./flatgfa
       - run: cargo test
         working-directory: ./flatgfa
       - run: make test-flatgfa
+
+      # Build and test the fake shell.
+      - run: cargo build
+        working-directory: ./flatgfa-sh
+      - run: cargo test
+        working-directory: ./flatgfa-sh
