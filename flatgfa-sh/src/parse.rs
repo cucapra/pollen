@@ -27,24 +27,26 @@ pub fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> i
 }
 
 pub fn script_to_ir(shell: Node) -> ir::Program {
+    let mut builder = ir::Builder::new();
+
     match shell {
         Node::List {
             statements,
             operators,
         } => {
-            let ops: Vec<_> = statements
-                .into_iter()
-                .map(|statement| match statement {
+            for statement in statements {
+                match statement {
                     Node::Command {
                         name,
                         args,
                         redirects,
-                    } => cmd_to_ir(name, args, redirects),
+                    } => builder.add_op(cmd_to_ir(name, args, redirects)),
                     _ => unimplemented!(),
-                })
-                .collect();
-            ir::Program { ops }
+                }
+            }
         }
         _ => unimplemented!(),
     }
+
+    builder.build()
 }
