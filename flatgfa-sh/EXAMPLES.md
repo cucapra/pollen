@@ -5,12 +5,12 @@ This is just a test...
 
 ```console
 $ flatgfa-sh -p -c 'odgi depth'
-depth(Stdin, path=None) -> Stdout
+depth(stdin) -> stdout
 
 $ flatgfa-sh -p -c 'odgi depth -i chr8.gfa'
-depth(File("chr8.gfa"), path=None) -> Stdout
+depth("chr8.gfa") -> stdout
 
 $ flatgfa-sh -p -c 'odgi depth -i chr8.gfa -r "chm13#chr8"'
-depth(File("chr8.gfa"), path=Some("chm13#chr8")) -> Stdout
+depth("chr8.gfa", path="chm13#chr8") -> stdout
 
 ```

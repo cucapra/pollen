@@ -18,15 +18,23 @@ impl Print for ir::Op {
     }
 }
 
+impl Print for ir::ResourceRef {
+    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
+        let rsrc = &ctx.rsrc[self.0];
+        write!(f, "{}", rsrc)
+    }
+}
+
 impl Print for ir::DepthOp {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        let input = &ctx.rsrc[self.input.0];
-        let output = &ctx.rsrc[self.output.0];
-        writeln!(
-            f,
-            "depth({:?}, path={:?}) -> {:?}",
-            input, self.path, output
-        )
+        write!(f, "depth(")?;
+        self.input.print(ctx, f)?;
+        if let Some(path) = &self.path {
+            write!(f, ", path=\"{}\"", path)?;
+        }
+        write!(f, ") -> ")?;
+        self.output.print(ctx, f)?;
+        writeln!(f)
     }
 }
 
