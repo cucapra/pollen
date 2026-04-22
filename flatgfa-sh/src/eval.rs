@@ -1,4 +1,5 @@
 use crate::ir;
+use flatgfa::{self, cli, flatgfa::HeapGFAStore, memfile};
 
 struct Env {
     rsrc: Vec<ir::Resource>,
@@ -17,14 +18,29 @@ impl Eval for ir::Instr {
     }
 }
 
+/// Parse a (text) GFA file from a resource.
+fn parse_gfa(rsrc: &ir::Resource) -> HeapGFAStore {
+    use flatgfa::parse::Parser;
+    match rsrc {
+        ir::Resource::File(name) => {
+            let file = memfile::map_file(&name);
+            let store = Parser::for_heap().parse_mem(file.as_ref());
+            store
+        }
+        ir::Resource::Stdin => {
+            let stdin = std::io::stdin();
+            Parser::for_heap().parse_stream(stdin.lock())
+        }
+        _ => unimplemented!(),
+    }
+}
+
 impl Eval for ir::DepthInstr {
     fn eval(&self, env: &Env) {
-        let input = &env.rsrc[self.input.0];
-        let output = &env.rsrc[self.output.0];
-        println!(
-            "here I would run depth with input {:?} and optional path name {:?}, sending output to {:?}",
-            input, self.path, output
-        );
+        let store = parse_gfa(&env.rsrc[self.input.0]);
+        let gfa = store.as_ref();
+        // TODO Do something about the output resource...
+        cli::cmds::depth(&gfa);
     }
 }
 

@@ -18,11 +18,38 @@ depth("chr8.gfa") -> "depth.tsv"
 
 ```
 
+Actually running stuff...
+
+```console
+$ flash -c 'odgi depth -i ../tests/note5.gfa'
+#node.id	depth	depth.uniq
+1	2	2
+2	0	0
+3	2	2
+4	2	2
+
+```
+
 You can even run script files...
 
 ```console
-$ flash -p example.sh
-depth("chr8.pan.og", path="chm13#chr8") -> stdout
+$ flash example.sh
+#node.id	depth	depth.uniq
+1	2	2
+2	0	0
+3	2	2
+4	2	2
+#node.id	depth	depth.uniq
+1	1	1
+2	2	2
+3	1	1
+4	1	1
+5	2	2
+6	4	3
+7	1	1
+8	2	2
+9	2	2
+10	1	1
 
 ```
 
@@ -31,9 +58,10 @@ And normal shell commands pass through...
 ```console
 $ flash -c 'cat example.sh'
 #!/usr/bin/env ../target/debug/flash
-odgi depth -i chr8.pan.og -r 'chm13#chr8'
+odgi depth -i ../tests/note5.gfa
+odgi depth -i ../tests/overlap.gfa
 
 $ flash -c 'wc < example.sh'
-       2       8      79
+       3      10     105
 
 ```

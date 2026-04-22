@@ -369,6 +369,7 @@ name = "flatgfa-sh"
 version = "0.1.0"
 dependencies = [
  "flash",
+ "flatgfa",
  "pico-args",
  "rustyline",
  "trycmd",
