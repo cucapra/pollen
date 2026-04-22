@@ -16,9 +16,12 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, _redirects:
         let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
         match argp.subcommand().unwrap().as_deref() {
             Some("depth") => {
-                let file = builder.add_file(argp.value_from_str("-i").unwrap());
+                let input = match argp.opt_value_from_str("-i").unwrap() {
+                    Some(filename) => builder.add_file(filename),
+                    None => builder.stdin(),
+                };
                 let op = ir::Op::Depth(ir::DepthOp {
-                    input: file,
+                    input,
                     output: builder.stdout(),
                     path: argp.opt_value_from_str("-r").unwrap(),
                 });
