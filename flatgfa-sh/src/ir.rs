@@ -14,9 +14,19 @@ pub struct DepthInstr {
     pub path: Option<String>,
 }
 
+/// An instruction that just runs an external shell command.
+#[derive(Debug)]
+pub struct ShellInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+    pub command: String,
+    pub args: Vec<String>,
+}
+
 #[derive(Debug)]
 pub enum Instr {
     Depth(DepthInstr),
+    Shell(ShellInstr),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -44,7 +54,7 @@ impl Builder {
         }
     }
 
-    pub fn add_op(&mut self, op: Instr) {
+    pub fn add_instr(&mut self, op: Instr) {
         self.instrs.push(op);
     }
 

@@ -13,7 +13,8 @@ trait Print {
 impl Print for ir::Instr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Depth(op) => op.print(ctx, f),
+            Self::Depth(instr) => instr.print(ctx, f),
+            Self::Shell(instr) => instr.print(ctx, f),
         }
     }
 }
@@ -32,6 +33,16 @@ impl Print for ir::DepthInstr {
         if let Some(path) = &self.path {
             write!(f, ", path=\"{}\"", path)?;
         }
+        write!(f, ") -> ")?;
+        self.output.print(ctx, f)?;
+        writeln!(f)
+    }
+}
+
+impl Print for ir::ShellInstr {
+    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "shell({:?}, {:?}, input=", self.command, self.args)?;
+        self.input.print(ctx, f)?;
         write!(f, ") -> ")?;
         self.output.print(ctx, f)?;
         writeln!(f)

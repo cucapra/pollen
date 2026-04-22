@@ -33,17 +33,22 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
                     input = builder.file(filename);
                 }
 
-                let op = ir::Instr::Depth(ir::DepthInstr {
+                builder.add_instr(ir::Instr::Depth(ir::DepthInstr {
                     input,
                     output,
                     path: argp.opt_value_from_str("-r").unwrap(),
-                });
-                builder.add_op(op);
+                }));
             }
             _ => unimplemented!("unsupported odgi subcommand"),
         }
     } else {
-        unimplemented!("only odgi commands are supported");
+        // Any non-odgi command is a "passthrough" shell command.
+        builder.add_instr(ir::Instr::Shell(ir::ShellInstr {
+            input,
+            output,
+            command: name,
+            args,
+        }));
     }
 }
 
