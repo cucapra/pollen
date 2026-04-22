@@ -50,8 +50,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    /// Run some CLI tests from the README.
     #[test]
-    fn some_tests() {
-        trycmd::TestCases::new().case("EXAMPLES.md");
+    fn readme_tests() {
+        trycmd::TestCases::new().case("README.md");
     }
 }
