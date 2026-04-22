@@ -18,7 +18,7 @@ pub enum Op {
 }
 
 #[derive(Debug)]
-pub struct ResourceRef(usize);
+pub struct ResourceRef(pub usize);
 
 #[derive(Debug)]
 pub struct Program {
