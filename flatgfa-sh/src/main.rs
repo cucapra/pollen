@@ -7,7 +7,7 @@ use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 
 fn run_line(line: &str, pretend: bool) {
-    let shell = parse::parse_sh(&line);
+    let shell = parse::parse_sh(line);
     let prog = parse::sh_to_ir(shell);
     if pretend {
         print!("{}", prog);
