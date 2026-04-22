@@ -33,4 +33,7 @@ $ flash -c 'cat example.sh'
 #!/usr/bin/env ../target/debug/flash
 odgi depth -i chr8.pan.og -r 'chm13#chr8'
 
+$ flash -c 'wc < example.sh'
+       2       8      79
+
 ```
