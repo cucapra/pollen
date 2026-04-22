@@ -1,4 +1,4 @@
-use crate::ir;
+use crate::ir::{self, Builder};
 use flash::parser::{Node, Redirect};
 use pico_args::Arguments;
 
@@ -11,14 +11,18 @@ pub fn parse_sh(input: &str) -> Node {
     parser.parse_script()
 }
 
-pub fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> ir::Op {
+fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: Vec<Redirect>) {
     if name == "odgi" {
         let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
         match argp.subcommand().unwrap().as_deref() {
-            Some("depth") => ir::Op::Depth(ir::DepthOp {
-                input: ir::GraphResource::File(argp.value_from_str("-i").unwrap()),
-                path: argp.opt_value_from_str("-r").unwrap(),
-            }),
+            Some("depth") => {
+                let file = builder.add_file(argp.value_from_str("-i").unwrap());
+                let op = ir::Op::Depth(ir::DepthOp {
+                    input: file,
+                    path: argp.opt_value_from_str("-r").unwrap(),
+                });
+                builder.add_op(op);
+            }
             _ => unimplemented!("unsupported odgi subcommand"),
         }
     } else {
@@ -26,13 +30,11 @@ pub fn cmd_to_ir(name: String, args: Vec<String>, redirects: Vec<Redirect>) -> i
     }
 }
 
-pub fn script_to_ir(shell: Node) -> ir::Program {
-    let mut builder = ir::Builder::new();
-
-    match shell {
+fn node_to_ir(builder: &mut Builder, node: Node) {
+    match node {
         Node::List {
             statements,
-            operators,
+            operators: _,
         } => {
             for statement in statements {
                 match statement {
@@ -40,13 +42,17 @@ pub fn script_to_ir(shell: Node) -> ir::Program {
                         name,
                         args,
                         redirects,
-                    } => builder.add_op(cmd_to_ir(name, args, redirects)),
+                    } => cmd_to_ir(builder, name, args, redirects),
                     _ => unimplemented!(),
                 }
             }
         }
         _ => unimplemented!(),
     }
+}
 
+pub fn sh_to_ir(shell: Node) -> ir::Program {
+    let mut builder = ir::Builder::new();
+    node_to_ir(&mut builder, shell);
     builder.build()
 }

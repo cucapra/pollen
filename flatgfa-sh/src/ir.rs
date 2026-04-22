@@ -1,11 +1,14 @@
 #[derive(Debug)]
-pub enum GraphResource {
+pub enum Resource {
     File(String),
+    Memory,
+    Stdin,
+    Stdout,
 }
 
 #[derive(Debug)]
 pub struct DepthOp {
-    pub input: GraphResource,
+    pub input: ResourceRef,
     pub path: Option<String>,
 }
 
@@ -15,24 +18,48 @@ pub enum Op {
 }
 
 #[derive(Debug)]
+pub struct ResourceRef(usize);
+
+#[derive(Debug)]
 pub struct Program {
+    pub rsrc: Vec<Resource>,
     pub ops: Vec<Op>,
 }
 
 pub struct Builder {
+    rsrc: Vec<Resource>,
     ops: Vec<Op>,
 }
 
 impl Builder {
     pub fn new() -> Self {
-        Self { ops: vec![] }
+        Self {
+            rsrc: vec![],
+            ops: vec![],
+        }
     }
 
     pub fn add_op(&mut self, op: Op) {
         self.ops.push(op);
     }
 
+    pub fn add_rsrc(&mut self, rsrc: Resource) -> ResourceRef {
+        self.rsrc.push(rsrc);
+        ResourceRef(self.rsrc.len() - 1)
+    }
+
+    pub fn add_file(&mut self, name: String) -> ResourceRef {
+        self.add_rsrc(Resource::File(name))
+    }
+
+    pub fn add_mem(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::Memory)
+    }
+
     pub fn build(self) -> Program {
-        Program { ops: self.ops }
+        Program {
+            rsrc: self.rsrc,
+            ops: self.ops,
+        }
     }
 }

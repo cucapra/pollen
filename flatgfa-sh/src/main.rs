@@ -8,7 +8,7 @@ use rustyline::error::ReadlineError;
 
 fn run_line(line: &str) {
     let shell = parse::parse_sh(&line);
-    let prog = parse::script_to_ir(shell);
+    let prog = parse::sh_to_ir(shell);
     prog.eval();
 }
 
