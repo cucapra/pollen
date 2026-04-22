@@ -29,10 +29,9 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
         match argp.subcommand().unwrap().as_deref() {
             Some("depth") => {
                 // Possibly override input from `-i` flag.
-                match argp.opt_value_from_str(["-i", "--input"]).unwrap() {
-                    Some(filename) => input = builder.file(filename),
-                    None => (),
-                };
+                if let Some(filename) = argp.opt_value_from_str(["-i", "--input"]).unwrap() {
+                    input = builder.file(filename);
+                }
 
                 let op = ir::Op::Depth(ir::DepthOp {
                     input,
