@@ -23,9 +23,8 @@ fn parse_gfa(rsrc: &ir::Resource) -> HeapGFAStore {
     use flatgfa::parse::Parser;
     match rsrc {
         ir::Resource::File(name) => {
-            let file = memfile::map_file(&name);
-            let store = Parser::for_heap().parse_mem(file.as_ref());
-            store
+            let file = memfile::map_file(name);
+            Parser::for_heap().parse_mem(file.as_ref())
         }
         ir::Resource::Stdin => {
             let stdin = std::io::stdin();
