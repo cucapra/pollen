@@ -25,3 +25,11 @@ $ flash -p example.sh
 depth("chr8.pan.og", path="chm13#chr8") -> stdout
 
 ```
+
+And normal shell commands pass through...
+
+```console
+$ flash -p -c 'ls -l'
+shell("ls", ["-l"], input=stdin) -> stdout
+
+```

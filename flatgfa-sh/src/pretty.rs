@@ -14,7 +14,7 @@ impl Print for ir::Instr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Depth(instr) => instr.print(ctx, f),
-            Self::Shell(instr) => instr.print(ctx, f),
+            Self::Exec(instr) => instr.print(ctx, f),
         }
     }
 }
@@ -39,7 +39,7 @@ impl Print for ir::DepthInstr {
     }
 }
 
-impl Print for ir::ShellInstr {
+impl Print for ir::ExecInstr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "shell({:?}, {:?}, input=", self.command, self.args)?;
         self.input.print(ctx, f)?;

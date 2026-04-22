@@ -43,7 +43,7 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
         }
     } else {
         // Any non-odgi command is a "passthrough" shell command.
-        builder.add_instr(ir::Instr::Shell(ir::ShellInstr {
+        builder.add_instr(ir::Instr::Exec(ir::ExecInstr {
             input,
             output,
             command: name,

@@ -12,7 +12,7 @@ impl Eval for ir::Instr {
     fn eval(&self, env: &Env) {
         match self {
             Self::Depth(instr) => instr.eval(env),
-            Self::Shell(instr) => instr.eval(env),
+            Self::Exec(instr) => instr.eval(env),
         }
     }
 }
@@ -28,7 +28,7 @@ impl Eval for ir::DepthInstr {
     }
 }
 
-impl Eval for ir::ShellInstr {
+impl Eval for ir::ExecInstr {
     fn eval(&self, env: &Env) {
         let input = &env.rsrc[self.input.0];
         let output = &env.rsrc[self.output.0];

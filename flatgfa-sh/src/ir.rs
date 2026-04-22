@@ -16,7 +16,7 @@ pub struct DepthInstr {
 
 /// An instruction that just runs an external shell command.
 #[derive(Debug)]
-pub struct ShellInstr {
+pub struct ExecInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
     pub command: String,
@@ -26,7 +26,7 @@ pub struct ShellInstr {
 #[derive(Debug)]
 pub enum Instr {
     Depth(DepthInstr),
-    Shell(ShellInstr),
+    Exec(ExecInstr),
 }
 
 #[derive(Debug, Clone, Copy)]
