@@ -1,13 +1,15 @@
+mod eval;
 mod ir;
 mod parse;
 
+use crate::eval::Eval;
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 
 fn run_line(line: &str) {
     let shell = parse::parse_sh(&line);
     let prog = parse::script_to_ir(shell);
-    prog.run();
+    prog.eval();
 }
 
 fn repl() -> rustyline::Result<()> {

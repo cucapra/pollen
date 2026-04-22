@@ -18,28 +18,3 @@ pub enum Op {
 pub struct Program {
     pub ops: Vec<Op>,
 }
-
-impl Program {
-    pub fn run(&self) {
-        for op in &self.ops {
-            op.run();
-        }
-    }
-}
-
-impl Op {
-    pub fn run(&self) {
-        match self {
-            Self::Depth(op) => op.run(),
-        }
-    }
-}
-
-impl DepthOp {
-    pub fn run(&self) {
-        println!(
-            "here I would run depth with input {:?} and optional path name {:?}",
-            self.input, self.path
-        );
-    }
-}
