@@ -1,6 +1,7 @@
 mod eval;
 mod ir;
 mod parse;
+mod pretty;
 
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
@@ -8,6 +9,7 @@ use rustyline::error::ReadlineError;
 fn run_line(line: &str) {
     let shell = parse::parse_sh(&line);
     let prog = parse::sh_to_ir(shell);
+    print!("{}", prog);
     eval::run(prog);
 }
 
