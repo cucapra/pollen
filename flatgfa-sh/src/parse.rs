@@ -17,8 +17,8 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
     let mut output = builder.stdout();
     for redirect in redirects {
         match redirect.kind {
-            RedirectKind::Input => input = builder.add_file(redirect.file),
-            RedirectKind::Output => output = builder.add_file(redirect.file),
+            RedirectKind::Input => input = builder.file(redirect.file),
+            RedirectKind::Output => output = builder.file(redirect.file),
             _ => unimplemented!(),
         }
     }
@@ -30,7 +30,7 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
             Some("depth") => {
                 // Possibly override input from `-i` flag.
                 match argp.opt_value_from_str(["-i", "--input"]).unwrap() {
-                    Some(filename) => input = builder.add_file(filename),
+                    Some(filename) => input = builder.file(filename),
                     None => (),
                 };
 
