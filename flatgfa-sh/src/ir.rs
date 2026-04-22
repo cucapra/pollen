@@ -9,6 +9,7 @@ pub enum Resource {
 #[derive(Debug)]
 pub struct DepthOp {
     pub input: ResourceRef,
+    pub output: ResourceRef,
     pub path: Option<String>,
 }
 
@@ -34,7 +35,7 @@ pub struct Builder {
 impl Builder {
     pub fn new() -> Self {
         Self {
-            rsrc: vec![],
+            rsrc: vec![Resource::Stdin, Resource::Stdout],
             ops: vec![],
         }
     }
@@ -54,6 +55,14 @@ impl Builder {
 
     pub fn add_mem(&mut self) -> ResourceRef {
         self.add_rsrc(Resource::Memory)
+    }
+
+    pub fn stdin(&self) -> ResourceRef {
+        ResourceRef(0)
+    }
+
+    pub fn stdout(&self) -> ResourceRef {
+        ResourceRef(1)
     }
 
     pub fn build(self) -> Program {
