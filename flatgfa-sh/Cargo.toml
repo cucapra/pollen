@@ -1,0 +1,17 @@
+[package]
+name = "flatgfa-sh"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "flash"
+path = "src/main.rs"
+
+[dependencies]
+flatgfa = { path = "../flatgfa" }
+flash = "0.0.6"
+pico-args = "0.5"
+rustyline = "18"
+
+[dev-dependencies]
+trycmd = "1.2.0"

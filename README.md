@@ -55,7 +55,10 @@ FlatGFA
 
 Then read the [API documentation][flatgfa-py-docs] to see what's available. Or see [the included example](./flatgfa-py/example.py) for a synopsis.
 
+There is also a [fake Unix-like shell][flatgfa-sh] that provides a drop-in replacement for [odgi][] and other separate commands.
+
 [flatgfa-pypi]: https://pypi.org/project/flatgfa/
+[flatgfa-sh]: ./flatgfa-sh
 
 
 Credits
