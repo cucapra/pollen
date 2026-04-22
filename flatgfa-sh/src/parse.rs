@@ -47,6 +47,7 @@ fn node_to_ir(builder: &mut Builder, node: Node) {
                         args,
                         redirects,
                     } => cmd_to_ir(builder, name, args, redirects),
+                    Node::Comment(_) => (),
                     _ => unimplemented!(),
                 }
             }
