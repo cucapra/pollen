@@ -16,8 +16,8 @@ $ flash -c 'cat example.sh'
 odgi depth -d -i ../tests/note5.gfa
 odgi depth -d -i ../tests/overlap.gfa
 
-$ flash -c 'wc < example.sh'
-       3      12     111
+$ flash -c 'head -n1 < README.md'
+The FlatGFA Fake Shell
 
 ```
 
