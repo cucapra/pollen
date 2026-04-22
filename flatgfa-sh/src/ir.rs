@@ -8,15 +8,15 @@ pub enum Resource {
 }
 
 #[derive(Debug)]
-pub struct DepthOp {
+pub struct DepthInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
     pub path: Option<String>,
 }
 
 #[derive(Debug)]
-pub enum Op {
-    Depth(DepthOp),
+pub enum Instr {
+    Depth(DepthInstr),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -26,12 +26,12 @@ pub struct ResourceRef(pub usize);
 #[derive(Debug)]
 pub struct Program {
     pub rsrc: Vec<Resource>,
-    pub ops: Vec<Op>,
+    pub instrs: Vec<Instr>,
 }
 
 pub struct Builder {
     rsrc: Vec<Resource>,
-    ops: Vec<Op>,
+    instrs: Vec<Instr>,
     files: HashMap<String, ResourceRef>,
 }
 
@@ -39,13 +39,13 @@ impl Builder {
     pub fn new() -> Self {
         Self {
             rsrc: vec![Resource::Stdin, Resource::Stdout],
-            ops: vec![],
+            instrs: vec![],
             files: HashMap::new(),
         }
     }
 
-    pub fn add_op(&mut self, op: Op) {
-        self.ops.push(op);
+    pub fn add_op(&mut self, op: Instr) {
+        self.instrs.push(op);
     }
 
     pub fn add_rsrc(&mut self, rsrc: Resource) -> ResourceRef {
@@ -75,7 +75,7 @@ impl Builder {
     pub fn build(self) -> Program {
         Program {
             rsrc: self.rsrc,
-            ops: self.ops,
+            instrs: self.instrs,
         }
     }
 }

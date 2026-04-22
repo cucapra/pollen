@@ -10,7 +10,7 @@ trait Print {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result;
 }
 
-impl Print for ir::Op {
+impl Print for ir::Instr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Depth(op) => op.print(ctx, f),
@@ -25,7 +25,7 @@ impl Print for ir::ResourceRef {
     }
 }
 
-impl Print for ir::DepthOp {
+impl Print for ir::DepthInstr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "depth(")?;
         self.input.print(ctx, f)?;
@@ -41,7 +41,7 @@ impl Print for ir::DepthOp {
 impl Display for ir::Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let ctx = Context { rsrc: &self.rsrc };
-        for op in &self.ops {
+        for op in &self.instrs {
             op.print(&ctx, f)?;
         }
         Ok(())

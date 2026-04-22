@@ -33,7 +33,7 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
                     input = builder.file(filename);
                 }
 
-                let op = ir::Op::Depth(ir::DepthOp {
+                let op = ir::Instr::Depth(ir::DepthInstr {
                     input,
                     output,
                     path: argp.opt_value_from_str("-r").unwrap(),

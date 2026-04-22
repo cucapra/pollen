@@ -8,7 +8,7 @@ trait Eval {
     fn eval(&self, env: &Env);
 }
 
-impl Eval for ir::Op {
+impl Eval for ir::Instr {
     fn eval(&self, env: &Env) {
         match self {
             Self::Depth(op) => op.eval(env),
@@ -16,7 +16,7 @@ impl Eval for ir::Op {
     }
 }
 
-impl Eval for ir::DepthOp {
+impl Eval for ir::DepthInstr {
     fn eval(&self, env: &Env) {
         let input = &env.rsrc[self.input.0];
         let output = &env.rsrc[self.output.0];
@@ -29,7 +29,7 @@ impl Eval for ir::DepthOp {
 
 pub fn run(prog: ir::Program) {
     let env = Env { rsrc: prog.rsrc };
-    for op in prog.ops {
+    for op in prog.instrs {
         op.eval(&env);
     }
 }
