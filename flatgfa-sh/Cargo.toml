@@ -3,6 +3,10 @@ name = "flatgfa-sh"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "flash"
+path = "src/main.rs"
+
 [dependencies]
 flash = "0.0.6"
 pico-args = "0.5"
