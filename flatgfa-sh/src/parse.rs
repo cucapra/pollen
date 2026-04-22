@@ -1,5 +1,5 @@
 use crate::ir::{self, Builder};
-use flash::parser::{Node, Redirect};
+use flash::parser::{Node, Redirect, RedirectKind};
 use pico_args::Arguments;
 
 pub fn parse_sh(input: &str) -> Node {
@@ -11,18 +11,32 @@ pub fn parse_sh(input: &str) -> Node {
     parser.parse_script()
 }
 
-fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, _redirects: Vec<Redirect>) {
+fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: Vec<Redirect>) {
+    // Do the input or output come from stream redirections?
+    let mut input = builder.stdin();
+    let mut output = builder.stdout();
+    for redirect in redirects {
+        match redirect.kind {
+            RedirectKind::Input => input = builder.add_file(redirect.file),
+            RedirectKind::Output => output = builder.add_file(redirect.file),
+            _ => unimplemented!(),
+        }
+    }
+
+    // Look for known commands.
     if name == "odgi" {
         let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
         match argp.subcommand().unwrap().as_deref() {
             Some("depth") => {
-                let input = match argp.opt_value_from_str("-i").unwrap() {
-                    Some(filename) => builder.add_file(filename),
-                    None => builder.stdin(),
+                // Possibly override input from `-i` flag.
+                match argp.opt_value_from_str(["-i", "--input"]).unwrap() {
+                    Some(filename) => input = builder.add_file(filename),
+                    None => (),
                 };
+
                 let op = ir::Op::Depth(ir::DepthOp {
                     input,
-                    output: builder.stdout(),
+                    output,
                     path: argp.opt_value_from_str("-r").unwrap(),
                 });
                 builder.add_op(op);
