@@ -42,3 +42,11 @@ fn main() {
         repl(pretend).unwrap();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn some_tests() {
+        trycmd::TestCases::new().case("EXAMPLES.md");
+    }
+}
