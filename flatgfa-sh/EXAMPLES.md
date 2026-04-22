@@ -21,7 +21,7 @@ depth("chr8.gfa") -> "depth.tsv"
 Actually running stuff...
 
 ```console
-$ flash -c 'odgi depth -i ../tests/note5.gfa'
+$ flash -c 'odgi depth -d -i ../tests/note5.gfa'
 #node.id	depth	depth.uniq
 1	2	2
 2	0	0
@@ -58,10 +58,10 @@ And normal shell commands pass through...
 ```console
 $ flash -c 'cat example.sh'
 #!/usr/bin/env ../target/debug/flash
-odgi depth -i ../tests/note5.gfa
-odgi depth -i ../tests/overlap.gfa
+odgi depth -d -i ../tests/note5.gfa
+odgi depth -d -i ../tests/overlap.gfa
 
 $ flash -c 'wc < example.sh'
-       3      10     105
+       3      12     111
 
 ```

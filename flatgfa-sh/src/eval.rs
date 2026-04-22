@@ -40,7 +40,10 @@ impl Eval for ir::DepthInstr {
         let store = parse_gfa(&env.rsrc[self.input.0]);
         let gfa = store.as_ref();
         // TODO Do something about the output resource...
-        cli::cmds::depth(&gfa);
+        match self.mode {
+            ir::DepthOutputMode::NodeTable => cli::cmds::depth(&gfa),
+            _ => unimplemented!("only node depth is supported"),
+        }
     }
 }
 

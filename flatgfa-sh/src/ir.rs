@@ -8,10 +8,17 @@ pub enum Resource {
 }
 
 #[derive(Debug)]
+pub enum DepthOutputMode {
+    PathTable,
+    NodeTable,
+}
+
+#[derive(Debug)]
 pub struct DepthInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
     pub path: Option<String>,
+    pub mode: DepthOutputMode,
 }
 
 /// An instruction that just runs an external shell command.
