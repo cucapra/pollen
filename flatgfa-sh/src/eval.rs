@@ -30,12 +30,20 @@ impl Eval for ir::DepthInstr {
 
 impl Eval for ir::ExecInstr {
     fn eval(&self, env: &Env) {
-        let input = &env.rsrc[self.input.0];
-        let output = &env.rsrc[self.output.0];
-        println!(
-            "here I would run a subprocess for command {:?} with args {:?}, redirecting stdin from {:?} and stdout to {:?}",
-            self.command, self.args, input, output,
-        );
+        use std::fs::File;
+        use std::process::Command;
+
+        let mut cmd = Command::new(&self.command);
+        cmd.args(&self.args);
+        if let ir::Resource::File(name) = &env.rsrc[self.input.0] {
+            cmd.stdin(File::open(name).unwrap());
+        }
+        if let ir::Resource::File(name) = &env.rsrc[self.output.0] {
+            cmd.stdout(File::create(name).unwrap());
+        }
+
+        // TODO: Do anything with the status?
+        cmd.status().unwrap();
     }
 }
 

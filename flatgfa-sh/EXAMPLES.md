@@ -29,7 +29,8 @@ depth("chr8.pan.og", path="chm13#chr8") -> stdout
 And normal shell commands pass through...
 
 ```console
-$ flash -p -c 'ls -l'
-shell("ls", ["-l"], input=stdin) -> stdout
+$ flash -c 'cat example.sh'
+#!/usr/bin/env ../target/debug/flash
+odgi depth -i chr8.pan.og -r 'chm13#chr8'
 
 ```
