@@ -1,10 +1,9 @@
-use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 
-use crate::ops::depth::{self, *};
-use crate::parse::*;
-use crate::{memfile::*, FlatGFA};
+use flatgfa::ops::depth;
+use flatgfa::parse::*;
+use flatgfa::{memfile::*, FlatGFA};
 
 struct SegmentDepth {
     depth: f64,
@@ -86,7 +85,7 @@ fn create_bed(
     let max_line = 40;
     let mut bed_file = map_new_file(bed_name, (num_windows * max_line) as u64);
     let mut offset = 0;
-    let depth = depth(&flatgfa).0;
+    let depth = depth::depth(&flatgfa).0;
     let mut windows = window_vec;
     if windows == Vec::new() {
         windows = compute_windows(path_len, window_size);
@@ -108,6 +107,7 @@ fn create_bed(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_windows() {
