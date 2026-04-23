@@ -2,7 +2,7 @@ use argh::FromArgs;
 use std::fs::File;
 use std::io::BufReader;
 
-use flatgfa::{FlatGFA, memfile, ops::depth, parse::Parser};
+use flatgfa::{memfile, ops::depth, parse::Parser, FlatGFA};
 
 struct SegmentDepth {
     depth: f64,
