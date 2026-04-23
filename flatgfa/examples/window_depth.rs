@@ -107,25 +107,6 @@ fn create_bed(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-
-    #[test]
-    fn test_windows() {
-        let gfa_file_name = "k_copy.gfa";
-        let bed_file_name = "windows_test";
-        let chrom_name = "x";
-        let window_size = 5;
-        create_bed(
-            gfa_file_name,
-            bed_file_name,
-            chrom_name,
-            window_size,
-            Vec::new(),
-        );
-        let content = fs::read_to_string(bed_file_name).unwrap();
-        println!("{}", content);
-        assert_eq!(0, 0);
-    }
 
     #[test]
     fn len_test() {
@@ -137,4 +118,21 @@ mod tests {
         println!("name: {}", path_length(&flatgfa));
         assert_eq!(0, 0);
     }
+}
+
+fn main() {
+    let gfa_file_name = "k_copy.gfa";
+    let bed_file_name = "windows_test";
+    let chrom_name = "x";
+    let window_size = 5;
+    create_bed(
+        gfa_file_name,
+        bed_file_name,
+        chrom_name,
+        window_size,
+        Vec::new(),
+    );
+    let content = std::fs::read_to_string(bed_file_name).unwrap();
+    println!("{}", content);
+    assert_eq!(0, 0);
 }
