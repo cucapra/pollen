@@ -1,3 +1,4 @@
+use argh::FromArgs;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -118,19 +119,36 @@ mod tests {
     }
 }
 
+#[derive(FromArgs)]
+/// An example for calculating per-window depth.
+struct WindowDepthArgs {
+    /// input graph as GFA file
+    #[argh(positional)]
+    gfa_file: String,
+
+    /// output windows as BED file
+    #[argh(positional)]
+    bed_file: String,
+
+    /// chromosome name
+    #[argh(positional)]
+    chromosome: String,
+
+    /// window size, in base pairs
+    #[argh(positional)]
+    window_size: usize,
+}
+
 fn main() {
-    let gfa_file_name = "k_copy.gfa";
-    let bed_file_name = "windows_test";
-    let chrom_name = "x";
-    let window_size = 5;
+    let args: WindowDepthArgs = argh::from_env();
     create_bed(
-        gfa_file_name,
-        bed_file_name,
-        chrom_name,
-        window_size,
+        &args.gfa_file,
+        &args.bed_file,
+        &args.chromosome,
+        args.window_size,
         Vec::new(),
     );
-    let content = std::fs::read_to_string(bed_file_name).unwrap();
+    let content = std::fs::read_to_string(&args.bed_file).unwrap();
     println!("{}", content);
     assert_eq!(0, 0);
 }
