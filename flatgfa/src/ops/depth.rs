@@ -8,7 +8,7 @@ use bit_vec::BitVec;
 /// which only counts each path that tarverses a given segment once.
 ///
 /// Both outputs are depth values indexed by segment ID.
-pub fn depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
+pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     // Our output vectors: the ordinary and unique depths of each segment.
     let mut depths = vec![0; gfa.segs.len()];
     let mut uniq_depths = vec![0; gfa.segs.len()];
@@ -32,4 +32,36 @@ pub fn depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     }
 
     (depths, uniq_depths)
+}
+
+/// Compute the mean depth of each *path* in the variation graph.
+///
+/// A path's mean depth is defined to be the average of all the segment depths that appear in the path.
+pub fn path_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<f64>) {
+    // Compute (non-unique) segment depth.
+    let mut seg_depths = vec![0; gfa.segs.len()];
+    for path in gfa.paths.all().iter() {
+        for step in &gfa.steps[path.steps] {
+            let seg_id = step.segment().index();
+            seg_depths[seg_id] += 1;
+        }
+    }
+
+    // Weighted average across each path.
+    let mut path_lengths = Vec::with_capacity(gfa.paths.len());
+    let mut path_depths = Vec::with_capacity(gfa.paths.len());
+    for path in gfa.paths.all().iter() {
+        let mut total_depth = 0;
+        let mut total_length = 0;
+        for step in &gfa.steps[path.steps] {
+            let len = gfa.segs[step.segment()].len();
+            total_depth += seg_depths[step.segment().index()] * len;
+            total_length += len;
+        }
+
+        path_depths.push((total_depth as f64) / (total_length as f64));
+        path_lengths.push(total_length);
+    }
+
+    (path_lengths, path_depths)
 }

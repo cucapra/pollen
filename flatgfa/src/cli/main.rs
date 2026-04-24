@@ -132,8 +132,8 @@ fn main() -> Result<(), &'static str> {
             let store = cmds::extract(&gfa, sub_args)?;
             dump(&store.as_ref(), &args.output, &args.output_gfa);
         }
-        Some(Command::Depth(_)) => {
-            cmds::depth(&gfa);
+        Some(Command::Depth(sub_args)) => {
+            cmds::depth(&gfa, sub_args);
         }
         Some(Command::Chop(sub_args)) => {
             let store = cmds::chop(&gfa, sub_args)?;

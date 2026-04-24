@@ -213,23 +213,41 @@ pub fn extract(
     Ok(subgraph.store)
 }
 
-/// compute node depth, the number of times paths cross a node
+/// compute depth: the number of times paths cross a node
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "depth")]
-pub struct Depth {}
+pub struct Depth {
+    /// compute node depth instead of path depth
+    #[argh(switch, long = "graph-depth-table", short = 'd')]
+    seg_depth: bool,
+}
 
-pub fn depth(gfa: &flatgfa::FlatGFA) {
-    let (depths, uniq_paths) = ops::depth::depth(gfa);
-
-    println!("#node.id\tdepth\tdepth.uniq");
-    for (id, seg) in gfa.segs.items() {
-        let name: u32 = seg.name as u32;
-        println!(
-            "{}\t{}\t{}",
-            name,
-            depths[id.index()],
-            uniq_paths[id.index()],
-        );
+pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
+    if args.seg_depth {
+        // Segment depth table.
+        let (depths, uniq_paths) = ops::depth::seg_depth(gfa);
+        println!("#node.id\tdepth\tdepth.uniq");
+        for (id, seg) in gfa.segs.items() {
+            let name: u32 = seg.name as u32;
+            println!(
+                "{}\t{}\t{}",
+                name,
+                depths[id.index()],
+                uniq_paths[id.index()],
+            );
+        }
+    } else {
+        // Path depth table.
+        let (lengths, depths) = ops::depth::path_depth(gfa);
+        println!("#path\tstart\tend\tmean.depth");
+        for (id, path) in gfa.paths.items() {
+            println!(
+                "{}\t0\t{}\t{}",
+                gfa.get_path_name(path),
+                lengths[id.index()],
+                depths[id.index()],
+            );
+        }
     }
 }
 
