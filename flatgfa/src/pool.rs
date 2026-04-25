@@ -6,7 +6,7 @@ use tinyvec::SliceVec;
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 /// An index into a pool.
-#[derive(Debug, Immutable, FromBytes, IntoBytes, Clone, Copy)]
+#[derive(Debug, Immutable, FromBytes, IntoBytes)]
 #[repr(transparent)]
 pub struct Id<T>(u32, PhantomData<T>);
 
@@ -65,6 +65,14 @@ impl<T> From<Id<T>> for u32 {
     }
 }
 
+impl<T> Clone for Id<T> {
+    fn clone(&self) -> Self {
+        Id(self.0, PhantomData)
+    }
+}
+
+impl<T> Copy for Id<T> {}
+
 /// A range of indices into a pool.
 ///
 /// TODO: Consider smaller indices for this, and possibly base/offset instead
@@ -112,6 +120,21 @@ impl<T> Span<T> {
 
     pub fn new_empty() -> Self {
         Span::new(Id::new(0), Id::new(0))
+    }
+}
+
+impl<T> Iterator for Span<T> {
+    type Item = Id<T>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Id<T>> {
+        if self.is_empty() {
+            None
+        } else {
+            let idx = self.start.0;
+            self.start = Id(idx + 1, PhantomData);
+            Some(Id(idx, PhantomData))
+        }
     }
 }
 
@@ -279,9 +302,9 @@ impl<'a, T> Pool<'a, T> {
             .map(|(i, item)| (Id::new(i), item))
     }
 
-    /// Iterate over all ids in the pool.
-    pub fn ids(&self) -> impl Iterator<Item = Id<T>> {
-        (0..self.len()).map(Id::new)
+    /// A span covering all the ids in the pool.
+    pub fn ids(&self) -> Span<T> {
+        Span::new(0.into(), (self.len() as u32).into())
     }
 
     /// Get the in-memory size of the pool in bytes.

@@ -233,13 +233,22 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
         ops::depth::print_seg_depth(gfa, depths, uniq_depths);
     } else {
         // Path depth table.
-        let path_ids: Vec<_> = args
-            .path
-            .into_iter()
-            .filter_map(|n| gfa.find_path(n.as_ref()))
-            .collect();
-        let (lengths, depths) = ops::depth::path_depth(gfa);
-        ops::depth::print_path_depth(gfa, lengths, depths);
+        if args.path.is_empty() {
+            // All paths.
+            let (lengths, depths) = ops::depth::path_depth(gfa, gfa.paths.ids());
+            ops::depth::print_path_depth(gfa, lengths, depths);
+        } else {
+            // A subset of paths.
+            let path_ids = ops::depth::SparseSubset::new(
+                args.path
+                    .into_iter()
+                    .filter_map(|n| gfa.find_path(n.as_ref()))
+                    .collect(),
+            );
+            let (lengths, depths) = ops::depth::path_depth(gfa, path_ids);
+            dbg!(lengths, depths);
+            todo!();
+        }
     }
 }
 

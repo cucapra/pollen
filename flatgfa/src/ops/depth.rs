@@ -58,7 +58,10 @@ pub fn print_seg_depth(gfa: &flatgfa::FlatGFA, depths: Vec<usize>, uniq_depths: 
 ///
 /// A path's mean depth is defined to be the average of all the segment depths
 /// that appear in the path.
-pub fn path_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<f64>) {
+pub fn path_depth<I>(gfa: &flatgfa::FlatGFA, paths: I) -> (Vec<usize>, Vec<f64>)
+where
+    I: Iterator<Item = Id<flatgfa::Path>>,
+{
     // Compute (non-unique) segment depth.
     let mut seg_depths = vec![0; gfa.segs.len()];
     for path in gfa.paths.all().iter() {
@@ -71,8 +74,8 @@ pub fn path_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<f64>) {
     // Weighted average across each path.
     let mut path_lengths = Vec::with_capacity(gfa.paths.len());
     let mut path_depths = Vec::with_capacity(gfa.paths.len());
-    for path in gfa.paths.ids() {
-        let (length, depth) = measure_path(gfa, path, &seg_depths);
+    for path_id in paths {
+        let (length, depth) = measure_path(gfa, path_id, &seg_depths);
         path_lengths.push(length);
         path_depths.push(depth);
     }
@@ -112,5 +115,30 @@ pub fn print_path_depth(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec
             lengths[id.index()],
             depths[id.index()],
         );
+    }
+}
+
+pub struct SparseSubset<T> {
+    ids: Vec<Id<T>>,
+    start: usize,
+}
+
+impl<T> Iterator for SparseSubset<T> {
+    type Item = Id<T>;
+
+    fn next(&mut self) -> Option<Id<T>> {
+        if self.start >= self.ids.len() {
+            None
+        } else {
+            let id = self.ids[self.start];
+            self.start += 1;
+            Some(id)
+        }
+    }
+}
+
+impl<T> SparseSubset<T> {
+    pub fn new(ids: Vec<Id<T>>) -> Self {
+        Self { ids, start: 0 }
     }
 }
