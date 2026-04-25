@@ -1,5 +1,5 @@
 use crate::ir;
-use flatgfa::{self, cli, flatgfa::HeapGFAStore, memfile};
+use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops};
 
 struct Env {
     rsrc: Vec<ir::Resource>,
@@ -40,8 +40,14 @@ impl Eval for ir::DepthInstr {
         let gfa = store.as_ref();
         // TODO Do something about the output resource...
         match self.mode {
-            ir::DepthOutputMode::NodeTable => cli::cmds::depth(&gfa),
-            _ => unimplemented!("only node depth is supported"),
+            ir::DepthOutputMode::NodeTable => {
+                let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
+                ops::depth::print_seg_depth(&gfa, depths, uniq_depths);
+            }
+            ir::DepthOutputMode::PathTable => {
+                let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
+                ops::depth::print_seg_depth(&gfa, depths, uniq_depths);
+            }
         }
     }
 }

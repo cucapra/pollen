@@ -34,9 +34,26 @@ pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     (depths, uniq_depths)
 }
 
+/// Print a segment depth table.
+///
+/// Format the result of `seg_depth` in an odgi-style TSV.
+pub fn print_seg_depth(gfa: &flatgfa::FlatGFA, depths: Vec<usize>, uniq_depths: Vec<usize>) {
+    println!("#node.id\tdepth\tdepth.uniq");
+    for (id, seg) in gfa.segs.items() {
+        let name: u32 = seg.name as u32;
+        println!(
+            "{}\t{}\t{}",
+            name,
+            depths[id.index()],
+            uniq_depths[id.index()],
+        );
+    }
+}
+
 /// Compute the mean depth of each *path* in the variation graph.
 ///
-/// A path's mean depth is defined to be the average of all the segment depths that appear in the path.
+/// A path's mean depth is defined to be the average of all the segment depths
+/// that appear in the path.
 pub fn path_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<f64>) {
     // Compute (non-unique) segment depth.
     let mut seg_depths = vec![0; gfa.segs.len()];
@@ -64,4 +81,19 @@ pub fn path_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<f64>) {
     }
 
     (path_lengths, path_depths)
+}
+
+/// Print a path depth table.
+///
+/// Format the result of `path_depth` in an odgi-style TSV.
+pub fn print_path_depth(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec<f64>) {
+    println!("#path\tstart\tend\tmean.depth");
+    for (id, path) in gfa.paths.items() {
+        println!(
+            "{}\t0\t{}\t{}",
+            gfa.get_path_name(path),
+            lengths[id.index()],
+            depths[id.index()],
+        );
+    }
 }
