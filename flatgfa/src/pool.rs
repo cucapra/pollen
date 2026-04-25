@@ -67,7 +67,7 @@ impl<T> From<Id<T>> for u32 {
 
 impl<T> Clone for Id<T> {
     fn clone(&self) -> Self {
-        Id(self.0, PhantomData)
+        *self
     }
 }
 
