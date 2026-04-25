@@ -220,6 +220,10 @@ pub struct Depth {
     /// compute node depth instead of path depth
     #[argh(switch, long = "graph-depth-table", short = 'd')]
     seg_depth: bool,
+
+    /// in path mode, show only the namedpath
+    #[argh(option, short = 'r')]
+    path: Vec<bstr::BString>,
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
@@ -229,6 +233,11 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
         ops::depth::print_seg_depth(gfa, depths, uniq_depths);
     } else {
         // Path depth table.
+        let path_ids: Vec<_> = args
+            .path
+            .into_iter()
+            .filter_map(|n| gfa.find_path(n.as_ref()))
+            .collect();
         let (lengths, depths) = ops::depth::path_depth(gfa);
         ops::depth::print_path_depth(gfa, lengths, depths);
     }
