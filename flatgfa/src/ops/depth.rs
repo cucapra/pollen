@@ -117,28 +117,3 @@ pub fn print_path_depth(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec
         );
     }
 }
-
-pub struct SparseSubset<T> {
-    ids: Vec<Id<T>>,
-    start: usize,
-}
-
-impl<T> Iterator for SparseSubset<T> {
-    type Item = Id<T>;
-
-    fn next(&mut self) -> Option<Id<T>> {
-        if self.start >= self.ids.len() {
-            None
-        } else {
-            let id = self.ids[self.start];
-            self.start += 1;
-            Some(id)
-        }
-    }
-}
-
-impl<T> SparseSubset<T> {
-    pub fn new(ids: Vec<Id<T>>) -> Self {
-        Self { ids, start: 0 }
-    }
-}
