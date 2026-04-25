@@ -14,7 +14,7 @@ You can run normal shell commands, which really do run subprocesses:
 $ flash -c 'cat example.sh'
 #!/usr/bin/env ../target/debug/flash
 odgi depth -d -i ../tests/note5.gfa
-odgi depth -d -i ../tests/overlap.gfa
+odgi depth -i ../tests/note5.gfa
 
 $ flash -c 'head -n1 < README.md'
 The FlatGFA Fake Shell
@@ -42,17 +42,9 @@ $ flash example.sh
 2	0	0
 3	2	2
 4	2	2
-#node.id	depth	depth.uniq
-1	1	1
-2	2	2
-3	1	1
-4	1	1
-5	2	2
-6	4	3
-7	1	1
-8	2	2
-9	2	2
-10	1	1
+#path	start	end	mean.depth
+5	0	13	2
+5-	0	13	2
 
 ```
 
@@ -65,15 +57,18 @@ Here are some things that we currently parse (not all of which are implemented i
 
 ```console
 $ flash -p -c 'odgi depth'
-depth(stdin) -> stdout
+path_depth(stdin) -> stdout
+
+$ flash -p -c 'odgi depth -d'
+node_depth(stdin) -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.gfa'
-depth("chr8.gfa") -> stdout
+path_depth("chr8.gfa") -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.gfa -r "chm13#chr8"'
-depth("chr8.gfa", path="chm13#chr8") -> stdout
+path_depth("chr8.gfa", path="chm13#chr8") -> stdout
 
 $ flash -p -c 'odgi depth < chr8.gfa > depth.tsv'
-depth("chr8.gfa") -> "depth.tsv"
+path_depth("chr8.gfa") -> "depth.tsv"
 
 ```
