@@ -12,7 +12,8 @@ trait Eval {
 impl Eval for ir::Instr {
     fn eval(&self, env: &Env) {
         match self {
-            Self::Depth(instr) => instr.eval(env),
+            Self::NodeDepth(instr) => instr.eval(env),
+            Self::PathDepth(instr) => instr.eval(env),
             Self::Exec(instr) => instr.eval(env),
         }
     }
@@ -34,20 +35,30 @@ fn parse_gfa(rsrc: &ir::Resource) -> HeapGFAStore {
     }
 }
 
-impl Eval for ir::DepthInstr {
+impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &Env) {
         let store = parse_gfa(&env.rsrc[self.input.0]);
         let gfa = store.as_ref();
         // TODO Do something about the output resource...
-        match self.mode {
-            ir::DepthOutputMode::NodeTable => {
-                let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
-                ops::depth::print_seg_depth(&gfa, depths, uniq_depths);
-            }
-            ir::DepthOutputMode::PathTable => {
-                let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
-                ops::depth::print_seg_depth(&gfa, depths, uniq_depths);
-            }
+        let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
+        ops::depth::print_seg_depth(&gfa, depths, uniq_depths);
+    }
+}
+
+impl Eval for ir::PathDepthInstr {
+    fn eval(&self, env: &Env) {
+        let store = parse_gfa(&env.rsrc[self.input.0]);
+        let gfa = store.as_ref();
+        if let Some(path_name) = &self.path {
+            // TODO More elegantly handle missing paths.
+            let path_id = gfa
+                .find_path(path_name.as_bytes().into())
+                .expect("no such path found");
+            let (depths, uniq_depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
+            ops::depth::print_path_depth(&gfa, depths, uniq_depths, std::iter::once(path_id));
+        } else {
+            let (depths, uniq_depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
+            ops::depth::print_path_depth(&gfa, depths, uniq_depths, gfa.paths.ids());
         }
     }
 }
