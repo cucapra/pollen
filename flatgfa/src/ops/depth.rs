@@ -106,14 +106,17 @@ fn measure_path(
 /// Print a path depth table.
 ///
 /// Format the result of `path_depth` in an odgi-style TSV.
-pub fn print_path_depth(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec<f64>) {
+pub fn print_path_depth<I>(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec<f64>, paths: I)
+where
+    I: Iterator<Item = Id<flatgfa::Path>>,
+{
     println!("#path\tstart\tend\tmean.depth");
-    for (id, path) in gfa.paths.items() {
+    for (idx, id) in paths.enumerate() {
         println!(
             "{}\t0\t{}\t{}",
-            gfa.get_path_name(path),
-            lengths[id.index()],
-            depths[id.index()],
+            gfa.get_path_name(&gfa.paths[id]),
+            lengths[idx],
+            depths[idx],
         );
     }
 }

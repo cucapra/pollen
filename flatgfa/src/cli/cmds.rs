@@ -236,7 +236,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
         if args.path.is_empty() {
             // All paths.
             let (lengths, depths) = ops::depth::path_depth(gfa, gfa.paths.ids());
-            ops::depth::print_path_depth(gfa, lengths, depths);
+            ops::depth::print_path_depth(gfa, lengths, depths, gfa.paths.ids());
         } else {
             // A subset of paths.
             let path_ids: Vec<_> = args
@@ -245,8 +245,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
                 .filter_map(|n| gfa.find_path(n.as_ref()))
                 .collect();
             let (lengths, depths) = ops::depth::path_depth(gfa, path_ids.iter().copied());
-            dbg!(lengths, depths);
-            todo!();
+            ops::depth::print_path_depth(gfa, lengths, depths, path_ids.iter().copied());
         }
     }
 }
