@@ -1,4 +1,5 @@
 use crate::flatgfa;
+use crate::pool::Id;
 use bit_vec::BitVec;
 
 /// Compute the *depth* of each segment in the variation graph.
@@ -67,20 +68,33 @@ pub fn path_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<f64>) {
     // Weighted average across each path.
     let mut path_lengths = Vec::with_capacity(gfa.paths.len());
     let mut path_depths = Vec::with_capacity(gfa.paths.len());
-    for path in gfa.paths.all().iter() {
-        let mut total_depth = 0;
-        let mut total_length = 0;
-        for step in &gfa.steps[path.steps] {
-            let len = gfa.segs[step.segment()].len();
-            total_depth += seg_depths[step.segment().index()] * len;
-            total_length += len;
-        }
-
-        path_depths.push((total_depth as f64) / (total_length as f64));
-        path_lengths.push(total_length);
+    for path in gfa.paths.ids() {
+        let (length, depth) = measure_path(gfa, path, &seg_depths);
+        path_lengths.push(length);
+        path_depths.push(depth);
     }
 
     (path_lengths, path_depths)
+}
+
+/// Get a path's length (in base pairs) and average depth.
+///
+/// Requires walking the path to measure its total length.
+fn measure_path(
+    gfa: &flatgfa::FlatGFA,
+    path: Id<flatgfa::Path>,
+    seg_depths: &[usize],
+) -> (usize, f64) {
+    let mut depth = 0;
+    let mut length = 0;
+    let path = gfa.paths[path];
+    for step in &gfa.steps[path.steps] {
+        let len = gfa.segs[step.segment()].len();
+        depth += seg_depths[step.segment().index()] * len;
+        length += len;
+    }
+    let avg_depth = (depth as f64) / (length as f64);
+    (length, avg_depth)
 }
 
 /// Print a path depth table.

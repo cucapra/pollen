@@ -279,6 +279,11 @@ impl<'a, T> Pool<'a, T> {
             .map(|(i, item)| (Id::new(i), item))
     }
 
+    /// Iterate over all ids in the pool.
+    pub fn ids(&self) -> impl Iterator<Item = Id<T>> {
+        (0..self.len()).map(Id::new)
+    }
+
     /// Get the in-memory size of the pool in bytes.
     pub fn size(&self) -> usize {
         std::mem::size_of_val(self.0)
