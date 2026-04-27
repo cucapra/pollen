@@ -113,7 +113,20 @@ where
             "{}\t0\t{}\t{}",
             gfa.get_path_name(&gfa.paths[id]),
             lengths[idx],
-            depths[idx],
+            format_float(depths[idx]),
         );
     }
+}
+
+/// Format an `f64` in an odgi-like way, with limited decimal digits and without
+/// trailing zeroes.
+///
+/// This is currently inefficient: it first formats with trailing zeroes, and
+/// then it trims those zeroes. Surely there is an option out there for avoiding
+/// this extra work...
+pub fn format_float(x: f64) -> String {
+    format!("{:.2}", x)
+        .trim_end_matches('0')
+        .trim_end_matches('.')
+        .to_string()
 }
