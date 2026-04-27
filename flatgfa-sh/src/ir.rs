@@ -7,10 +7,24 @@ pub enum Resource {
     Stdout,
 }
 
+/// An instruction performs one imperative action.
+#[derive(Debug)]
+pub enum Instr {
+    NodeDepth(NodeDepthInstr),
+    PathDepth(PathDepthInstr),
+    Exec(ExecInstr),
+}
+
 #[derive(Debug)]
 pub struct NodeDepthInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
+}
+
+impl From<NodeDepthInstr> for Instr {
+    fn from(value: NodeDepthInstr) -> Self {
+        Self::NodeDepth(value)
+    }
 }
 
 #[derive(Debug)]
@@ -20,6 +34,12 @@ pub struct PathDepthInstr {
     pub path: Option<String>,
 }
 
+impl From<PathDepthInstr> for Instr {
+    fn from(value: PathDepthInstr) -> Self {
+        Self::PathDepth(value)
+    }
+}
+
 /// An instruction that just runs an external shell command.
 #[derive(Debug)]
 pub struct ExecInstr {
@@ -27,25 +47,6 @@ pub struct ExecInstr {
     pub output: ResourceRef,
     pub command: String,
     pub args: Vec<String>,
-}
-
-#[derive(Debug)]
-pub enum Instr {
-    NodeDepth(NodeDepthInstr),
-    PathDepth(PathDepthInstr),
-    Exec(ExecInstr),
-}
-
-impl From<NodeDepthInstr> for Instr {
-    fn from(value: NodeDepthInstr) -> Self {
-        Self::NodeDepth(value)
-    }
-}
-
-impl From<PathDepthInstr> for Instr {
-    fn from(value: PathDepthInstr) -> Self {
-        Self::PathDepth(value)
-    }
 }
 
 impl From<ExecInstr> for Instr {
