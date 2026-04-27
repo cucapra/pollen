@@ -51,9 +51,6 @@ pub fn print_seg_depth(gfa: &flatgfa::FlatGFA, depths: Vec<usize>, uniq_depths: 
     }
 }
 
-// TODO Need a way to pass one of two kinds of iterators to `path_depth`: one
-// that says "take everything" and one that walks over a subset.
-
 /// Compute the mean depth of each *path* in the variation graph.
 ///
 /// A path's mean depth is defined to be the average of all the segment depths
