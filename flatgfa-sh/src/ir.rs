@@ -36,6 +36,24 @@ pub enum Instr {
     Exec(ExecInstr),
 }
 
+impl From<NodeDepthInstr> for Instr {
+    fn from(value: NodeDepthInstr) -> Self {
+        Self::NodeDepth(value)
+    }
+}
+
+impl From<PathDepthInstr> for Instr {
+    fn from(value: PathDepthInstr) -> Self {
+        Self::PathDepth(value)
+    }
+}
+
+impl From<ExecInstr> for Instr {
+    fn from(value: ExecInstr) -> Self {
+        Self::Exec(value)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub struct ResourceRef(pub usize);
@@ -61,8 +79,8 @@ impl Builder {
         }
     }
 
-    pub fn add_instr(&mut self, op: Instr) {
-        self.instrs.push(op);
+    pub fn add_instr<I: Into<Instr>>(&mut self, instr: I) {
+        self.instrs.push(instr.into());
     }
 
     pub fn add_rsrc(&mut self, rsrc: Resource) -> ResourceRef {

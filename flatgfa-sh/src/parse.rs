@@ -36,28 +36,26 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
                 // In the `odgi depth` command line, the default is a per-path
                 // table, and `-d` switches to a per-node table. (There are
                 // other modes, such as `-D`, to support...)
-                let instr = if argp.contains("-d") {
-                    ir::Instr::NodeDepth(ir::NodeDepthInstr { input, output })
+                if argp.contains("-d") {
+                    builder.add_instr(ir::NodeDepthInstr { input, output });
                 } else {
-                    ir::Instr::PathDepth(ir::PathDepthInstr {
+                    builder.add_instr(ir::PathDepthInstr {
                         input,
                         output,
                         path: argp.opt_value_from_str("-r").unwrap(),
-                    })
+                    });
                 };
-
-                builder.add_instr(instr);
             }
             _ => unimplemented!("unsupported odgi subcommand"),
         }
     } else {
         // Any non-odgi command is a "passthrough" shell command.
-        builder.add_instr(ir::Instr::Exec(ir::ExecInstr {
+        builder.add_instr(ir::ExecInstr {
             input,
             output,
             command: name,
             args,
-        }));
+        });
     }
 }
 
