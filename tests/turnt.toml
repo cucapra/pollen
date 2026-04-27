@@ -177,7 +177,7 @@ command = "odgi depth -d -i {filename}"
 output.depth = "-"
 
 [envs.flatgfa_depth]
-command = "../target/debug/fgfa -I {filename} depth"
+command = "../target/debug/fgfa -I {filename} depth -d"
 output.depth = "-"
 
 [envs.chop_oracle_fgfa]

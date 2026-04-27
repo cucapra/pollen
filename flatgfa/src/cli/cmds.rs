@@ -213,23 +213,40 @@ pub fn extract(
     Ok(subgraph.store)
 }
 
-/// compute node depth, the number of times paths cross a node
+/// compute depth: the number of times paths cross a node
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "depth")]
-pub struct Depth {}
+pub struct Depth {
+    /// compute node depth instead of path depth
+    #[argh(switch, long = "graph-depth-table", short = 'd')]
+    seg_depth: bool,
 
-pub fn depth(gfa: &flatgfa::FlatGFA) {
-    let (depths, uniq_paths) = ops::depth::depth(gfa);
+    /// in path mode, show only the namedpath
+    #[argh(option, short = 'r')]
+    path: Vec<bstr::BString>,
+}
 
-    println!("#node.id\tdepth\tdepth.uniq");
-    for (id, seg) in gfa.segs.items() {
-        let name: u32 = seg.name as u32;
-        println!(
-            "{}\t{}\t{}",
-            name,
-            depths[id.index()],
-            uniq_paths[id.index()],
-        );
+pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
+    if args.seg_depth {
+        // Segment depth table.
+        let (depths, uniq_depths) = ops::depth::seg_depth(gfa);
+        ops::depth::print_seg_depth(gfa, depths, uniq_depths);
+    } else {
+        // Path depth table.
+        if args.path.is_empty() {
+            // All paths.
+            let (lengths, depths) = ops::depth::path_depth(gfa, gfa.paths.ids());
+            ops::depth::print_path_depth(gfa, lengths, depths, gfa.paths.ids());
+        } else {
+            // A subset of paths.
+            let path_ids: Vec<_> = args
+                .path
+                .into_iter()
+                .filter_map(|n| gfa.find_path(n.as_ref()))
+                .collect();
+            let (lengths, depths) = ops::depth::path_depth(gfa, path_ids.iter().copied());
+            ops::depth::print_path_depth(gfa, lengths, depths, path_ids.iter().copied());
+        }
     }
 }
 

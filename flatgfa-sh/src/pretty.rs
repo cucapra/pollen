@@ -13,7 +13,8 @@ trait Print {
 impl Print for ir::Instr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Depth(instr) => instr.print(ctx, f),
+            Self::NodeDepth(instr) => instr.print(ctx, f),
+            Self::PathDepth(instr) => instr.print(ctx, f),
             Self::Exec(instr) => instr.print(ctx, f),
         }
     }
@@ -26,9 +27,19 @@ impl Print for ir::ResourceRef {
     }
 }
 
-impl Print for ir::DepthInstr {
+impl Print for ir::NodeDepthInstr {
     fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "depth(")?;
+        write!(f, "node_depth(")?;
+        self.input.print(ctx, f)?;
+        write!(f, ") -> ")?;
+        self.output.print(ctx, f)?;
+        writeln!(f)
+    }
+}
+
+impl Print for ir::PathDepthInstr {
+    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "path_depth(")?;
         self.input.print(ctx, f)?;
         if let Some(path) = &self.path {
             write!(f, ", path=\"{}\"", path)?;
