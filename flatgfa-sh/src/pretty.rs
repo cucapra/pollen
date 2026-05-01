@@ -30,8 +30,14 @@ impl Display for Wrapped<'_, ir::Instr> {
 
 impl Display for Wrapped<'_, ir::ResourceRef> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let rsrc = &self.rsrc[self.val.0];
-        rsrc.fmt(f)
+        let idx = self.val.0;
+        let rsrc = &self.rsrc[idx];
+        match rsrc {
+            ir::Resource::File(name) => write!(f, "\"{}\"", name),
+            ir::Resource::Stdin => write!(f, "stdin"),
+            ir::Resource::Stdout => write!(f, "stdout"),
+            ir::Resource::Pipe => write!(f, "pipe-{}", idx),
+        }
     }
 }
 
@@ -82,15 +88,5 @@ impl Display for ir::Program {
             )?;
         }
         Ok(())
-    }
-}
-
-impl Display for ir::Resource {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            ir::Resource::File(name) => write!(f, "\"{}\"", name),
-            ir::Resource::Stdin => write!(f, "stdin"),
-            ir::Resource::Stdout => write!(f, "stdout"),
-        }
     }
 }

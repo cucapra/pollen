@@ -5,6 +5,7 @@ pub enum Resource {
     File(String),
     Stdin,
     Stdout,
+    Pipe,
 }
 
 /// An instruction performs one imperative action.
