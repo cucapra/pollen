@@ -37,7 +37,7 @@ impl Display for Wrapped<'_, ir::ResourceRef> {
 
 impl Display for Wrapped<'_, ir::NodeDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(
+        write!(
             f,
             "node_depth({}) -> {}",
             self.wrap(&self.val.input),
@@ -52,13 +52,13 @@ impl Display for Wrapped<'_, ir::PathDepthInstr> {
         if let Some(path) = &self.val.path {
             write!(f, ", path=\"{}\"", path)?;
         }
-        writeln!(f, ") -> {}", self.wrap(&self.val.output))
+        write!(f, ") -> {}", self.wrap(&self.val.output))
     }
 }
 
 impl Display for Wrapped<'_, ir::ExecInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(
+        write!(
             f,
             "shell({:?}, {:?}, input={}) -> {}",
             self.val.command,
@@ -72,11 +72,14 @@ impl Display for Wrapped<'_, ir::ExecInstr> {
 impl Display for ir::Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         for op in &self.instrs {
-            Wrapped {
-                rsrc: &self.rsrc,
-                val: op,
-            }
-            .fmt(f)?;
+            writeln!(
+                f,
+                "{}",
+                Wrapped {
+                    rsrc: &self.rsrc,
+                    val: op,
+                }
+            )?;
         }
         Ok(())
     }
