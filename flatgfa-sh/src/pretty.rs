@@ -31,44 +31,41 @@ impl Display for Wrapped<'_, ir::Instr> {
 impl Display for Wrapped<'_, ir::ResourceRef> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let rsrc = &self.rsrc[self.val.0];
-        write!(f, "{}", rsrc)
+        rsrc.fmt(f)
     }
 }
 
 impl Display for Wrapped<'_, ir::NodeDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "node_depth(")?;
-        self.wrap(&self.val.input).fmt(f)?;
-        write!(f, ") -> ")?;
-        self.wrap(&self.val.output).fmt(f)?;
-        writeln!(f)
+        writeln!(
+            f,
+            "node_depth({}) -> {}",
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
     }
 }
 
 impl Display for Wrapped<'_, ir::PathDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "path_depth(")?;
-        self.wrap(&self.val.input).fmt(f)?;
+        write!(f, "path_depth({}", self.wrap(&self.val.input))?;
         if let Some(path) = &self.val.path {
             write!(f, ", path=\"{}\"", path)?;
         }
-        write!(f, ") -> ")?;
-        self.wrap(&self.val.output).fmt(f)?;
-        writeln!(f)
+        writeln!(f, ") -> {}", self.wrap(&self.val.output))
     }
 }
 
 impl Display for Wrapped<'_, ir::ExecInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
+        writeln!(
             f,
-            "shell({:?}, {:?}, input=",
-            self.val.command, self.val.args
-        )?;
-        self.wrap(&self.val.input).fmt(f)?;
-        write!(f, ") -> ")?;
-        self.wrap(&self.val.output).fmt(f)?;
-        writeln!(f)
+            "shell({:?}, {:?}, input={}) -> {}",
+            self.val.command,
+            self.val.args,
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
     }
 }
 
