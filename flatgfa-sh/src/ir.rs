@@ -7,10 +7,24 @@ pub enum Resource {
     Stdout,
 }
 
+/// An instruction performs one imperative action.
+#[derive(Debug)]
+pub enum Instr {
+    NodeDepth(NodeDepthInstr),
+    PathDepth(PathDepthInstr),
+    Exec(ExecInstr),
+}
+
 #[derive(Debug)]
 pub struct NodeDepthInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
+}
+
+impl From<NodeDepthInstr> for Instr {
+    fn from(value: NodeDepthInstr) -> Self {
+        Self::NodeDepth(value)
+    }
 }
 
 #[derive(Debug)]
@@ -18,6 +32,12 @@ pub struct PathDepthInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
     pub path: Option<String>,
+}
+
+impl From<PathDepthInstr> for Instr {
+    fn from(value: PathDepthInstr) -> Self {
+        Self::PathDepth(value)
+    }
 }
 
 /// An instruction that just runs an external shell command.
@@ -29,11 +49,10 @@ pub struct ExecInstr {
     pub args: Vec<String>,
 }
 
-#[derive(Debug)]
-pub enum Instr {
-    NodeDepth(NodeDepthInstr),
-    PathDepth(PathDepthInstr),
-    Exec(ExecInstr),
+impl From<ExecInstr> for Instr {
+    fn from(value: ExecInstr) -> Self {
+        Self::Exec(value)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -61,8 +80,8 @@ impl Builder {
         }
     }
 
-    pub fn add_instr(&mut self, op: Instr) {
-        self.instrs.push(op);
+    pub fn add_instr<I: Into<Instr>>(&mut self, instr: I) {
+        self.instrs.push(instr.into());
     }
 
     pub fn add_rsrc(&mut self, rsrc: Resource) -> ResourceRef {

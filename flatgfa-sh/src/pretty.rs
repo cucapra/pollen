@@ -2,69 +2,84 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::ir;
 
-struct Context<'a> {
+/// A utility for printing IR values using additional context.
+struct Wrapped<'a, T> {
     rsrc: &'a [ir::Resource],
+    val: &'a T,
 }
 
-trait Print {
-    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result;
-}
-
-impl Print for ir::Instr {
-    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NodeDepth(instr) => instr.print(ctx, f),
-            Self::PathDepth(instr) => instr.print(ctx, f),
-            Self::Exec(instr) => instr.print(ctx, f),
+impl<'a, T> Wrapped<'a, T> {
+    /// Wrap a new value with the same printing context.
+    fn wrap<S>(&self, val: &'a S) -> Wrapped<'a, S> {
+        Wrapped {
+            rsrc: self.rsrc,
+            val,
         }
     }
 }
 
-impl Print for ir::ResourceRef {
-    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        let rsrc = &ctx.rsrc[self.0];
-        write!(f, "{}", rsrc)
+impl Display for Wrapped<'_, ir::Instr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.val {
+            ir::Instr::NodeDepth(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::PathDepth(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::Exec(instr) => self.wrap(instr).fmt(f),
+        }
     }
 }
 
-impl Print for ir::NodeDepthInstr {
-    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "node_depth(")?;
-        self.input.print(ctx, f)?;
-        write!(f, ") -> ")?;
-        self.output.print(ctx, f)?;
-        writeln!(f)
+impl Display for Wrapped<'_, ir::ResourceRef> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let rsrc = &self.rsrc[self.val.0];
+        rsrc.fmt(f)
     }
 }
 
-impl Print for ir::PathDepthInstr {
-    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "path_depth(")?;
-        self.input.print(ctx, f)?;
-        if let Some(path) = &self.path {
+impl Display for Wrapped<'_, ir::NodeDepthInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "node_depth({}) -> {}",
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::PathDepthInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "path_depth({}", self.wrap(&self.val.input))?;
+        if let Some(path) = &self.val.path {
             write!(f, ", path=\"{}\"", path)?;
         }
-        write!(f, ") -> ")?;
-        self.output.print(ctx, f)?;
-        writeln!(f)
+        write!(f, ") -> {}", self.wrap(&self.val.output))
     }
 }
 
-impl Print for ir::ExecInstr {
-    fn print(&self, ctx: &Context, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "shell({:?}, {:?}, input=", self.command, self.args)?;
-        self.input.print(ctx, f)?;
-        write!(f, ") -> ")?;
-        self.output.print(ctx, f)?;
-        writeln!(f)
+impl Display for Wrapped<'_, ir::ExecInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "shell({:?}, {:?}, input={}) -> {}",
+            self.val.command,
+            self.val.args,
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
     }
 }
 
 impl Display for ir::Program {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let ctx = Context { rsrc: &self.rsrc };
         for op in &self.instrs {
-            op.print(&ctx, f)?;
+            writeln!(
+                f,
+                "{}",
+                Wrapped {
+                    rsrc: &self.rsrc,
+                    val: op,
+                }
+            )?;
         }
         Ok(())
     }
