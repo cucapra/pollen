@@ -9,6 +9,7 @@ struct Wrapped<'a, T> {
 }
 
 impl<'a, T> Wrapped<'a, T> {
+    /// Wrap a new value with the same printing context.
     fn wrap<S>(&self, val: &'a S) -> Wrapped<'a, S> {
         Wrapped {
             rsrc: self.rsrc,
@@ -17,7 +18,7 @@ impl<'a, T> Wrapped<'a, T> {
     }
 }
 
-impl<'a> Display for Wrapped<'a, ir::Instr> {
+impl Display for Wrapped<'_, ir::Instr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.val {
             ir::Instr::NodeDepth(instr) => self.wrap(instr).fmt(f),
@@ -27,14 +28,14 @@ impl<'a> Display for Wrapped<'a, ir::Instr> {
     }
 }
 
-impl<'a> Display for Wrapped<'a, ir::ResourceRef> {
+impl Display for Wrapped<'_, ir::ResourceRef> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let rsrc = &self.rsrc[self.val.0];
         write!(f, "{}", rsrc)
     }
 }
 
-impl<'a> Display for Wrapped<'a, ir::NodeDepthInstr> {
+impl Display for Wrapped<'_, ir::NodeDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "node_depth(")?;
         self.wrap(&self.val.input).fmt(f)?;
@@ -44,7 +45,7 @@ impl<'a> Display for Wrapped<'a, ir::NodeDepthInstr> {
     }
 }
 
-impl<'a> Display for Wrapped<'a, ir::PathDepthInstr> {
+impl Display for Wrapped<'_, ir::PathDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "path_depth(")?;
         self.wrap(&self.val.input).fmt(f)?;
@@ -57,7 +58,7 @@ impl<'a> Display for Wrapped<'a, ir::PathDepthInstr> {
     }
 }
 
-impl<'a> Display for Wrapped<'a, ir::ExecInstr> {
+impl Display for Wrapped<'_, ir::ExecInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
