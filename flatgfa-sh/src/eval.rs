@@ -1,10 +1,11 @@
-use crate::ir::{self, ResourceRef};
+use crate::ir::{self, Resource, ResourceRef};
 use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops};
-use std::io::{self, BufReader, PipeReader, PipeWriter};
+use std::fs::File;
+use std::io::{self, BufReader, PipeReader, PipeWriter, stdout};
 
 struct Env {
     /// All the resource descriptions used in this program.
-    rsrc: Vec<ir::Resource>,
+    rsrc: Vec<Resource>,
 
     /// The currently open Unix pipes for operations in this program.
     ///
@@ -16,7 +17,7 @@ struct Env {
 }
 
 impl Env {
-    fn new(rsrc: Vec<ir::Resource>) -> Self {
+    fn new(rsrc: Vec<Resource>) -> Self {
         let mut pipes = Vec::with_capacity(rsrc.len());
         pipes.resize_with(rsrc.len(), Default::default);
         Self { rsrc, pipes }
@@ -24,7 +25,7 @@ impl Env {
 
     fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
         let idx = rsrc.0;
-        debug_assert!(matches!(self.rsrc[idx], ir::Resource::Pipe));
+        debug_assert!(matches!(self.rsrc[idx], Resource::Pipe));
         if let Some(reader) = self.pipes[idx].0.take() {
             Ok(reader)
         } else {
@@ -36,7 +37,7 @@ impl Env {
 
     fn write_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeWriter> {
         let idx = rsrc.0;
-        debug_assert!(matches!(self.rsrc[idx], ir::Resource::Pipe));
+        debug_assert!(matches!(self.rsrc[idx], Resource::Pipe));
         if let Some(writer) = self.pipes[idx].1.take() {
             Ok(writer)
         } else {
@@ -47,19 +48,19 @@ impl Env {
     }
 
     /// Parse a (text) GFA file from a resource.
-    fn parse_gfa(&mut self, rsrc: ir::ResourceRef) -> HeapGFAStore {
+    fn parse_gfa(&mut self, rsrc: ResourceRef) -> HeapGFAStore {
         use flatgfa::parse::Parser;
         match &self.rsrc[rsrc.0] {
-            ir::Resource::File(name) => {
+            Resource::File(name) => {
                 let file = memfile::map_file(name);
                 Parser::for_heap().parse_mem(file.as_ref())
             }
-            ir::Resource::Stdin => {
+            Resource::Stdin => {
                 let stdin = std::io::stdin();
                 Parser::for_heap().parse_stream(stdin.lock())
             }
-            ir::Resource::Stdout => panic!("cannot read from stdout"),
-            ir::Resource::Pipe => {
+            Resource::Stdout => panic!("cannot read from stdout"),
+            Resource::Pipe => {
                 let read = self.read_pipe(rsrc).unwrap();
                 Parser::for_heap().parse_stream(BufReader::new(read))
             }
@@ -87,13 +88,25 @@ impl Eval for ir::NodeDepthInstr {
         let gfa = store.as_ref();
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
 
-        match env.rsrc[self.output.0] {
-            ir::Resource::Stdin => panic!("cannot write to stdin"),
-            ir::Resource::Stdout => {
-                ops::depth::write_seg_depth(&mut std::io::stdout(), &gfa, depths, uniq_depths)
-                    .unwrap()
+        match &env.rsrc[self.output.0] {
+            Resource::Stdin => panic!("cannot write to stdin"),
+            Resource::Stdout => {
+                ops::depth::write_seg_depth(&mut stdout(), &gfa, depths, uniq_depths).unwrap()
             }
-            _ => unimplemented!(),
+            Resource::File(name) => ops::depth::write_seg_depth(
+                &mut File::create(name).unwrap(),
+                &gfa,
+                depths,
+                uniq_depths,
+            )
+            .unwrap(),
+            Resource::Pipe => ops::depth::write_seg_depth(
+                &mut env.write_pipe(self.output).unwrap(),
+                &gfa,
+                depths,
+                uniq_depths,
+            )
+            .unwrap(),
         }
     }
 }
@@ -109,32 +122,62 @@ impl Eval for ir::PathDepthInstr {
                 .expect("no such path found");
             let (depths, uniq_depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
 
-            match env.rsrc[self.output.0] {
-                ir::Resource::Stdin => panic!("cannot write to stdin"),
-                ir::Resource::Stdout => ops::depth::write_path_depth(
-                    &mut std::io::stdout(),
+            match &env.rsrc[self.output.0] {
+                Resource::Stdin => panic!("cannot write to stdin"),
+                Resource::Stdout => ops::depth::write_path_depth(
+                    &mut stdout(),
                     &gfa,
                     depths,
                     uniq_depths,
                     std::iter::once(path_id),
                 )
                 .unwrap(),
-                _ => unimplemented!(),
+                Resource::File(name) => ops::depth::write_path_depth(
+                    &mut File::create(name).unwrap(),
+                    &gfa,
+                    depths,
+                    uniq_depths,
+                    std::iter::once(path_id),
+                )
+                .unwrap(),
+                Resource::Pipe => ops::depth::write_path_depth(
+                    &mut env.write_pipe(self.output).unwrap(),
+                    &gfa,
+                    depths,
+                    uniq_depths,
+                    std::iter::once(path_id),
+                )
+                .unwrap(),
             }
         } else {
             let (depths, uniq_depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
 
-            match env.rsrc[self.output.0] {
-                ir::Resource::Stdin => panic!("cannot write to stdin"),
-                ir::Resource::Stdout => ops::depth::write_path_depth(
-                    &mut std::io::stdout(),
+            match &env.rsrc[self.output.0] {
+                Resource::Stdin => panic!("cannot write to stdin"),
+                Resource::Stdout => ops::depth::write_path_depth(
+                    &mut stdout(),
                     &gfa,
                     depths,
                     uniq_depths,
                     gfa.paths.ids(),
                 )
                 .unwrap(),
-                _ => unimplemented!(),
+                Resource::File(name) => ops::depth::write_path_depth(
+                    &mut File::create(name).unwrap(),
+                    &gfa,
+                    depths,
+                    uniq_depths,
+                    gfa.paths.ids(),
+                )
+                .unwrap(),
+                Resource::Pipe => ops::depth::write_path_depth(
+                    &mut env.write_pipe(self.output).unwrap(),
+                    &gfa,
+                    depths,
+                    uniq_depths,
+                    gfa.paths.ids(),
+                )
+                .unwrap(),
             }
         }
     }
@@ -149,23 +192,23 @@ impl Eval for ir::ExecInstr {
         cmd.args(&self.args);
 
         match &env.rsrc[self.input.0] {
-            ir::Resource::Stdin => (),
-            ir::Resource::Stdout => panic!("cannot read from stdout"),
-            ir::Resource::File(name) => {
+            Resource::Stdin => (),
+            Resource::Stdout => panic!("cannot read from stdout"),
+            Resource::File(name) => {
                 cmd.stdin(File::open(name).unwrap());
             }
-            ir::Resource::Pipe => {
+            Resource::Pipe => {
                 cmd.stdin(env.read_pipe(self.input).unwrap());
             }
         }
 
         match &env.rsrc[self.output.0] {
-            ir::Resource::Stdin => panic!("cannot write to stdin"),
-            ir::Resource::Stdout => (),
-            ir::Resource::File(name) => {
+            Resource::Stdin => panic!("cannot write to stdin"),
+            Resource::Stdout => (),
+            Resource::File(name) => {
                 cmd.stdout(File::create(name).unwrap());
             }
-            ir::Resource::Pipe => {
+            Resource::Pipe => {
                 cmd.stdout(env.write_pipe(self.output).unwrap());
             }
         }
