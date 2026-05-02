@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod emit;
 pub mod file;
 pub mod flatbed;
 pub mod flatgfa;

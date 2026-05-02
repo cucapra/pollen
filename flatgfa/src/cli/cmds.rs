@@ -1,3 +1,4 @@
+use crate::emit::Emit;
 use crate::flatbed::BEDParser;
 use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
@@ -227,7 +228,7 @@ pub struct Depth {
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
-    use crate::ops::depth::{path_depth, seg_depth, Emit, PathDepth, SegDepth};
+    use crate::ops::depth::{path_depth, seg_depth, PathDepth, SegDepth};
     if args.seg_depth {
         // Segment depth table.
         let (depths, uniq_depths) = seg_depth(gfa);

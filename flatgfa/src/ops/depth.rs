@@ -1,3 +1,4 @@
+use crate::emit::Emit;
 use crate::flatgfa;
 use crate::pool::Id;
 use bit_vec::BitVec;
@@ -34,18 +35,6 @@ pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     }
 
     (depths, uniq_depths)
-}
-
-/// Sorta like `std::fmt::Display`, but consumes the thing being printed.
-pub trait Emit {
-    fn emit(self, f: &mut impl Write) -> std::io::Result<()>;
-
-    fn print(self)
-    where
-        Self: Sized,
-    {
-        self.emit(&mut std::io::stdout().lock()).unwrap();
-    }
 }
 
 /// A printable segment depth table.

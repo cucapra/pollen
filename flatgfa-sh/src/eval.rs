@@ -1,5 +1,5 @@
 use crate::ir::{self, Resource, ResourceRef};
-use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops, ops::depth::Emit};
+use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter};
 
