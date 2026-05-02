@@ -47,6 +47,7 @@ impl Env {
         }
     }
 
+    #[allow(dead_code)]
     fn input(&mut self, rsrc: ResourceRef) -> Input {
         match &self.rsrc[rsrc.0] {
             Resource::Stdin => Input::Stdin(std::io::stdin().lock()),
@@ -86,6 +87,7 @@ impl Env {
     }
 }
 
+#[allow(dead_code)]
 enum Input {
     Stdin(std::io::StdinLock<'static>),
     File(BufReader<File>),
