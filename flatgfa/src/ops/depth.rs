@@ -1,6 +1,7 @@
 use crate::flatgfa;
 use crate::pool::Id;
 use bit_vec::BitVec;
+use std::io::Write;
 
 /// Compute the *depth* of each segment in the variation graph.
 ///
@@ -35,27 +36,42 @@ pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     (depths, uniq_depths)
 }
 
-/// Print a segment depth table.
-///
-/// Format the result of `seg_depth` in an odgi-style TSV.
-pub fn write_seg_depth(
-    out: &mut impl std::io::Write,
-    gfa: &flatgfa::FlatGFA,
-    depths: Vec<usize>,
-    uniq_depths: Vec<usize>,
-) -> std::io::Result<()> {
-    writeln!(out, "#node.id\tdepth\tdepth.uniq")?;
-    for (id, seg) in gfa.segs.items() {
-        let name: u32 = seg.name as u32;
-        writeln!(
-            out,
-            "{}\t{}\t{}",
-            name,
-            depths[id.index()],
-            uniq_depths[id.index()],
-        )?;
+/// Sorta like `std::fmt::Display`, but consumes the thing being printed.
+pub trait Emit {
+    fn emit(self, f: &mut impl Write) -> std::io::Result<()>;
+
+    fn print(self)
+    where
+        Self: Sized,
+    {
+        self.emit(&mut std::io::stdout().lock()).unwrap();
     }
-    Ok(())
+}
+
+/// A printable segment depth table.
+///
+/// Formats the result of `seg_depth` in an odgi-style TSV.
+pub struct SegDepth<'a> {
+    pub gfa: &'a flatgfa::FlatGFA<'a>,
+    pub depths: Vec<usize>,
+    pub uniq_depths: Vec<usize>,
+}
+
+impl<'a> Emit for SegDepth<'a> {
+    fn emit(self, f: &mut impl Write) -> std::io::Result<()> {
+        writeln!(f, "#node.id\tdepth\tdepth.uniq")?;
+        for (id, seg) in self.gfa.segs.items() {
+            let name: u32 = seg.name as u32;
+            writeln!(
+                f,
+                "{}\t{}\t{}",
+                name,
+                self.depths[id.index()],
+                self.uniq_depths[id.index()],
+            )?;
+        }
+        Ok(())
+    }
 }
 
 /// Compute the mean depth of each *path* in the variation graph.
@@ -107,30 +123,33 @@ fn measure_path(
     (length, avg_depth)
 }
 
-/// Print a path depth table.
+/// A printable path depth table.
 ///
-/// Format the result of `path_depth` in an odgi-style TSV.
-pub fn write_path_depth<I>(
-    out: &mut impl std::io::Write,
-    gfa: &flatgfa::FlatGFA,
-    lengths: Vec<usize>,
-    depths: Vec<f64>,
-    paths: I,
-) -> std::io::Result<()>
+/// Formats the result of `path_depth` in an odgi-style TSV.
+pub struct PathDepth<'a, I: Iterator<Item = Id<flatgfa::Path>>> {
+    pub gfa: &'a flatgfa::FlatGFA<'a>,
+    pub lengths: Vec<usize>,
+    pub depths: Vec<f64>,
+    pub paths: I,
+}
+
+impl<'a, I> Emit for PathDepth<'a, I>
 where
     I: Iterator<Item = Id<flatgfa::Path>>,
 {
-    writeln!(out, "#path\tstart\tend\tmean.depth")?;
-    for (idx, id) in paths.enumerate() {
-        writeln!(
-            out,
-            "{}\t0\t{}\t{}",
-            gfa.get_path_name(&gfa.paths[id]),
-            lengths[idx],
-            format_float(depths[idx]),
-        )?;
+    fn emit(self, f: &mut impl Write) -> std::io::Result<()> {
+        writeln!(f, "#path\tstart\tend\tmean.depth")?;
+        for (idx, id) in self.paths.enumerate() {
+            writeln!(
+                f,
+                "{}\t0\t{}\t{}",
+                self.gfa.get_path_name(&self.gfa.paths[id]),
+                self.lengths[idx],
+                format_float(self.depths[idx]),
+            )?;
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 /// Format an `f64` in an odgi-like way, with limited decimal digits and without
