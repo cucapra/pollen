@@ -5,6 +5,7 @@ pub enum Resource {
     File(String),
     Stdin,
     Stdout,
+    Pipe,
 }
 
 /// An instruction performs one imperative action.
@@ -100,10 +101,17 @@ impl Builder {
         }
     }
 
+    /// Create a new pipe resource.
+    pub fn pipe(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::Pipe)
+    }
+
+    /// Get the standard input resource.
     pub fn stdin(&self) -> ResourceRef {
         ResourceRef(0)
     }
 
+    /// Get the standard output resource.
     pub fn stdout(&self) -> ResourceRef {
         ResourceRef(1)
     }

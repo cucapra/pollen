@@ -1,4 +1,4 @@
-use crate::ir::{self, Builder};
+use crate::ir::{self, Builder, ResourceRef};
 use flash::parser::{Node, Redirect, RedirectKind};
 use pico_args::Arguments;
 
@@ -11,10 +11,17 @@ pub fn parse_sh(input: &str) -> Node {
     parser.parse_script()
 }
 
-fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: Vec<Redirect>) {
+fn cmd_to_ir(
+    builder: &mut Builder,
+    name: String,
+    args: Vec<String>,
+    redirects: Vec<Redirect>,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     // Do the input or output come from stream redirections?
-    let mut input = builder.stdin();
-    let mut output = builder.stdout();
+    let mut input = input;
+    let mut output = output;
     for redirect in redirects {
         match redirect.kind {
             RedirectKind::Input => input = builder.file(redirect.file),
@@ -59,22 +66,31 @@ fn cmd_to_ir(builder: &mut Builder, name: String, args: Vec<String>, redirects: 
     }
 }
 
-fn node_to_ir(builder: &mut Builder, node: Node) {
+fn node_to_ir(builder: &mut Builder, node: Node, input: ResourceRef, output: ResourceRef) {
     match node {
+        Node::Command {
+            name,
+            args,
+            redirects,
+        } => cmd_to_ir(builder, name, args, redirects, input, output),
+        Node::Comment(_) => (),
+        Node::Pipeline { commands } => {
+            // Step through the pipeline and construct a pipe
+            // between each consecutive pair.
+            let mut input = input;
+            let last = commands.len() - 1;
+            for (i, step) in commands.into_iter().enumerate() {
+                let output = if i == last { output } else { builder.pipe() };
+                node_to_ir(builder, step, input, output);
+                input = output; // Feed this pipe into the next step.
+            }
+        }
         Node::List {
             statements,
             operators: _,
         } => {
             for statement in statements {
-                match statement {
-                    Node::Command {
-                        name,
-                        args,
-                        redirects,
-                    } => cmd_to_ir(builder, name, args, redirects),
-                    Node::Comment(_) => (),
-                    _ => unimplemented!(),
-                }
+                node_to_ir(builder, statement, input, output);
             }
         }
         _ => unimplemented!(),
@@ -83,6 +99,8 @@ fn node_to_ir(builder: &mut Builder, node: Node) {
 
 pub fn sh_to_ir(shell: Node) -> ir::Program {
     let mut builder = ir::Builder::new();
-    node_to_ir(&mut builder, shell);
+    let stdin = builder.stdin();
+    let stdout = builder.stdout();
+    node_to_ir(&mut builder, shell, stdin, stdout);
     builder.build()
 }

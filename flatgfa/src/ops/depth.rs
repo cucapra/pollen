@@ -1,6 +1,8 @@
+use crate::emit::Emit;
 use crate::flatgfa;
 use crate::pool::Id;
 use bit_vec::BitVec;
+use std::io::Write;
 
 /// Compute the *depth* of each segment in the variation graph.
 ///
@@ -35,19 +37,29 @@ pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     (depths, uniq_depths)
 }
 
-/// Print a segment depth table.
+/// A printable segment depth table.
 ///
-/// Format the result of `seg_depth` in an odgi-style TSV.
-pub fn print_seg_depth(gfa: &flatgfa::FlatGFA, depths: Vec<usize>, uniq_depths: Vec<usize>) {
-    println!("#node.id\tdepth\tdepth.uniq");
-    for (id, seg) in gfa.segs.items() {
-        let name: u32 = seg.name as u32;
-        println!(
-            "{}\t{}\t{}",
-            name,
-            depths[id.index()],
-            uniq_depths[id.index()],
-        );
+/// Formats the result of `seg_depth` in an odgi-style TSV.
+pub struct SegDepth<'a> {
+    pub gfa: &'a flatgfa::FlatGFA<'a>,
+    pub depths: Vec<usize>,
+    pub uniq_depths: Vec<usize>,
+}
+
+impl<'a> Emit for SegDepth<'a> {
+    fn emit(self, f: &mut impl Write) -> std::io::Result<()> {
+        writeln!(f, "#node.id\tdepth\tdepth.uniq")?;
+        for (id, seg) in self.gfa.segs.items() {
+            let name: u32 = seg.name as u32;
+            writeln!(
+                f,
+                "{}\t{}\t{}",
+                name,
+                self.depths[id.index()],
+                self.uniq_depths[id.index()],
+            )?;
+        }
+        Ok(())
     }
 }
 
@@ -100,21 +112,32 @@ fn measure_path(
     (length, avg_depth)
 }
 
-/// Print a path depth table.
+/// A printable path depth table.
 ///
-/// Format the result of `path_depth` in an odgi-style TSV.
-pub fn print_path_depth<I>(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec<f64>, paths: I)
+/// Formats the result of `path_depth` in an odgi-style TSV.
+pub struct PathDepth<'a, I: Iterator<Item = Id<flatgfa::Path>>> {
+    pub gfa: &'a flatgfa::FlatGFA<'a>,
+    pub lengths: Vec<usize>,
+    pub depths: Vec<f64>,
+    pub paths: I,
+}
+
+impl<'a, I> Emit for PathDepth<'a, I>
 where
     I: Iterator<Item = Id<flatgfa::Path>>,
 {
-    println!("#path\tstart\tend\tmean.depth");
-    for (idx, id) in paths.enumerate() {
-        println!(
-            "{}\t0\t{}\t{}",
-            gfa.get_path_name(&gfa.paths[id]),
-            lengths[idx],
-            format_float(depths[idx]),
-        );
+    fn emit(self, f: &mut impl Write) -> std::io::Result<()> {
+        writeln!(f, "#path\tstart\tend\tmean.depth")?;
+        for (idx, id) in self.paths.enumerate() {
+            writeln!(
+                f,
+                "{}\t0\t{}\t{}",
+                self.gfa.get_path_name(&self.gfa.paths[id]),
+                self.lengths[idx],
+                format_float(self.depths[idx]),
+            )?;
+        }
+        Ok(())
     }
 }
 

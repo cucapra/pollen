@@ -1,3 +1,4 @@
+use crate::emit::Emit;
 use crate::flatbed::BEDParser;
 use crate::flatgfa::{self, Segment};
 use crate::memfile::{self, map_file};
@@ -227,16 +228,28 @@ pub struct Depth {
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
+    use crate::ops::depth::{path_depth, seg_depth, PathDepth, SegDepth};
     if args.seg_depth {
         // Segment depth table.
-        let (depths, uniq_depths) = ops::depth::seg_depth(gfa);
-        ops::depth::print_seg_depth(gfa, depths, uniq_depths);
+        let (depths, uniq_depths) = seg_depth(gfa);
+        SegDepth {
+            gfa,
+            depths,
+            uniq_depths,
+        }
+        .print();
     } else {
         // Path depth table.
         if args.path.is_empty() {
             // All paths.
-            let (lengths, depths) = ops::depth::path_depth(gfa, gfa.paths.ids());
-            ops::depth::print_path_depth(gfa, lengths, depths, gfa.paths.ids());
+            let (lengths, depths) = path_depth(gfa, gfa.paths.ids());
+            PathDepth {
+                gfa,
+                lengths,
+                depths,
+                paths: gfa.paths.ids(),
+            }
+            .print();
         } else {
             // A subset of paths.
             let path_ids: Vec<_> = args
@@ -244,8 +257,14 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
                 .into_iter()
                 .filter_map(|n| gfa.find_path(n.as_ref()))
                 .collect();
-            let (lengths, depths) = ops::depth::path_depth(gfa, path_ids.iter().copied());
-            ops::depth::print_path_depth(gfa, lengths, depths, path_ids.iter().copied());
+            let (lengths, depths) = path_depth(gfa, path_ids.iter().copied());
+            PathDepth {
+                gfa,
+                lengths,
+                depths,
+                paths: path_ids.iter().copied(),
+            }
+            .print();
         }
     }
 }
