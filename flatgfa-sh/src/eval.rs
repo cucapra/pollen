@@ -1,6 +1,6 @@
 use crate::ir::{self, ResourceRef};
 use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops};
-use std::io::{self, PipeReader, PipeWriter};
+use std::io::{self, BufReader, PipeReader, PipeWriter};
 
 struct Env {
     /// All the resource descriptions used in this program.
@@ -45,6 +45,26 @@ impl Env {
             Ok(writer)
         }
     }
+
+    /// Parse a (text) GFA file from a resource.
+    fn parse_gfa(&mut self, rsrc: ir::ResourceRef) -> HeapGFAStore {
+        use flatgfa::parse::Parser;
+        match &self.rsrc[rsrc.0] {
+            ir::Resource::File(name) => {
+                let file = memfile::map_file(name);
+                Parser::for_heap().parse_mem(file.as_ref())
+            }
+            ir::Resource::Stdin => {
+                let stdin = std::io::stdin();
+                Parser::for_heap().parse_stream(stdin.lock())
+            }
+            ir::Resource::Stdout => panic!("cannot read from stdout"),
+            ir::Resource::Pipe => {
+                let read = self.read_pipe(rsrc).unwrap();
+                Parser::for_heap().parse_stream(BufReader::new(read))
+            }
+        }
+    }
 }
 
 trait Eval {
@@ -61,25 +81,9 @@ impl Eval for ir::Instr {
     }
 }
 
-/// Parse a (text) GFA file from a resource.
-fn parse_gfa(rsrc: &ir::Resource) -> HeapGFAStore {
-    use flatgfa::parse::Parser;
-    match rsrc {
-        ir::Resource::File(name) => {
-            let file = memfile::map_file(name);
-            Parser::for_heap().parse_mem(file.as_ref())
-        }
-        ir::Resource::Stdin => {
-            let stdin = std::io::stdin();
-            Parser::for_heap().parse_stream(stdin.lock())
-        }
-        _ => unimplemented!(),
-    }
-}
-
 impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = parse_gfa(&env.rsrc[self.input.0]);
+        let store = env.parse_gfa(self.input);
         let gfa = store.as_ref();
         // TODO Do something about the output resource...
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
@@ -89,7 +93,7 @@ impl Eval for ir::NodeDepthInstr {
 
 impl Eval for ir::PathDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = parse_gfa(&env.rsrc[self.input.0]);
+        let store = env.parse_gfa(self.input);
         let gfa = store.as_ref();
         if let Some(path_name) = &self.path {
             // TODO More elegantly handle missing paths.
