@@ -1,7 +1,7 @@
 use crate::ir::{self, Resource, ResourceRef};
 use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops};
 use std::fs::File;
-use std::io::{self, BufReader, PipeReader, PipeWriter};
+use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter};
 
 struct Env {
     /// All the resource descriptions used in this program.
@@ -49,19 +49,19 @@ impl Env {
 
     fn input(&mut self, rsrc: ResourceRef) -> Input {
         match &self.rsrc[rsrc.0] {
-            Resource::Stdin => Input::Stdin(std::io::stdin()),
+            Resource::Stdin => Input::Stdin(std::io::stdin().lock()),
             Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::File(name) => Input::File(File::open(name).unwrap()),
-            Resource::Pipe => Input::Pipe(self.read_pipe(rsrc).unwrap()),
+            Resource::File(name) => Input::File(BufReader::new(File::open(name).unwrap())),
+            Resource::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
         }
     }
 
     fn output(&mut self, rsrc: ResourceRef) -> Output {
         match &self.rsrc[rsrc.0] {
             Resource::Stdin => panic!("cannot write to stdin"),
-            Resource::Stdout => Output::Stdout(std::io::stdout()),
-            Resource::File(name) => Output::File(File::create(name).unwrap()),
-            Resource::Pipe => Output::Pipe(self.write_pipe(rsrc).unwrap()),
+            Resource::Stdout => Output::Stdout(std::io::stdout().lock()),
+            Resource::File(name) => Output::File(BufWriter::new(File::create(name).unwrap())),
+            Resource::Pipe => Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())),
         }
     }
 
@@ -87,15 +87,15 @@ impl Env {
 }
 
 enum Input {
-    Stdin(std::io::Stdin),
-    File(File),
-    Pipe(PipeReader),
+    Stdin(std::io::StdinLock<'static>),
+    File(BufReader<File>),
+    Pipe(BufReader<PipeReader>),
 }
 
 enum Output {
-    Stdout(std::io::Stdout),
-    File(File),
-    Pipe(PipeWriter),
+    Stdout(std::io::StdoutLock<'static>),
+    File(BufWriter<File>),
+    Pipe(BufWriter<PipeWriter>),
 }
 
 trait Eval {
