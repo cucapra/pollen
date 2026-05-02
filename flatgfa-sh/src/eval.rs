@@ -128,18 +128,6 @@ impl Env {
             _ => panic!("non-bytes output"),
         }
     }
-
-    fn get_store(&mut self, rsrc: ResourceRef) -> HeapGFAStore {
-        // TODO With some finer-grained structs, there's probably no need to
-        // take ownership here, which would let us reuse the resource.
-        let loc = self.get_gfa_store(rsrc);
-        loc.take().expect("store not populated")
-    }
-
-    fn set_store(&mut self, rsrc: ResourceRef, store: HeapGFAStore) {
-        let loc = self.get_gfa_store(rsrc);
-        *loc = Some(store);
-    }
 }
 
 #[allow(dead_code)]
@@ -183,7 +171,10 @@ impl Eval for ir::Instr {
 
 impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env.get_store(self.input);
+        let store = env
+            .get_gfa_store(self.input)
+            .take()
+            .expect("store not populated");
         let gfa = store.as_ref();
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
         env.output(self.output)
@@ -198,7 +189,10 @@ impl Eval for ir::NodeDepthInstr {
 
 impl Eval for ir::PathDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env.get_store(self.input);
+        let store = env
+            .get_gfa_store(self.input)
+            .take()
+            .expect("store not populated");
         let gfa = store.as_ref();
         if let Some(path_name) = &self.path {
             // TODO More elegantly handle missing paths.
@@ -286,7 +280,7 @@ impl Eval for ir::ParseGFAInstr {
             _ => panic!("non-bytes input"),
         };
 
-        env.set_store(self.output, store);
+        *env.get_gfa_store(self.output) = Some(store);
     }
 }
 
