@@ -26,6 +26,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Instr::Exec(instr) => self.wrap(instr).fmt(f),
             ir::Instr::ParseGFA(instr) => self.wrap(instr).fmt(f),
             ir::Instr::MapFile(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::ParseBED(instr) => self.wrap(instr).fmt(f),
         }
     }
 }
@@ -41,6 +42,7 @@ impl Display for Wrapped<'_, ir::ResourceRef> {
             ir::Resource::Pipe => write!(f, "pipe-{}", idx),
             ir::Resource::GFAStore => write!(f, "gfa-store-{}", idx),
             ir::Resource::Mmap => write!(f, "mmap-{}", idx),
+            ir::Resource::BEDStore => write!(f, "bed-store-{}", idx),
         }
     }
 }
@@ -95,6 +97,17 @@ impl Display for Wrapped<'_, ir::MapFileInstr> {
         write!(
             f,
             "map-file({}) -> {}",
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::ParseBEDInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "parse-bed({}) -> {}",
             self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )

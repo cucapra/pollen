@@ -3,6 +3,7 @@ use crate::memfile::MemchrSplit;
 use crate::pool::{FixedStore, HeapStore, Id, Pool, Span, Store};
 use atoi::FromRadix10;
 use bstr::BStr;
+use std::io::BufRead;
 use zerocopy::{FromBytes, IntoBytes};
 
 /// A single interval from a BED file.
@@ -128,14 +129,26 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
     /// Parse a BED text file from an in-memory buffer.
     pub fn parse_mem(mut self, buf: &[u8]) -> BEDStore<'a, P> {
         for line in MemchrSplit::new(b'\n', buf) {
-            let (name_slice, rest) = parse_field(line).unwrap();
-            let (start_num, rest) = parse_num(rest).unwrap();
-            let (end_num, _) = parse_num(&rest[1..]).unwrap();
-
-            self.flat.add_entry(name_slice, start_num, end_num);
+            self.parse_line(line)
         }
-
         self.flat
+    }
+
+    /// Parse a BED text file from an I/O stream.
+    pub fn parse_stream<R: BufRead>(mut self, stream: R) -> BEDStore<'a, P> {
+        for line in stream.split(b'\n') {
+            self.parse_line(&line.unwrap())
+        }
+        self.flat
+    }
+
+    /// Parse a single line from a BED file and add it to the store.
+    fn parse_line(&mut self, line: &[u8]) {
+        let (name_slice, rest) = parse_field(line).unwrap();
+        let (start_num, rest) = parse_num(rest).unwrap();
+        let (end_num, _) = parse_num(&rest[1..]).unwrap();
+
+        self.flat.add_entry(name_slice, start_num, end_num);
     }
 }
 

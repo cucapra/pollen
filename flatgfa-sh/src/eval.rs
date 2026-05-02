@@ -1,5 +1,6 @@
 use crate::ir::{self, Resource, ResourceRef};
 use flatgfa::FlatGFA;
+use flatgfa::flatbed::HeapBEDStore;
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
 use memmap::Mmap;
 use std::fs::File;
@@ -23,27 +24,26 @@ struct Env {
     /// the pipe. The first use of either "side" of the pipe consumes it.
     pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)>,
 
-    /// The currently available FlatGFA data stores.
-    ///
-    /// This is a heap vector (indexed by `idx`) for each resource that is a
-    /// `GFAStore`.
+    /// A heap vector of currently available FlatGFA data stores.
     gfa_stores: Vec<Option<HeapGFAStore>>,
 
-    /// The currently memory-mapped files.
-    ///
-    /// This is a heap vector (indexed by `idx`) for each resource that is a
-    /// `Mmap`.
+    /// A heap vector of currently memory-mapped files.
     mmaps: Vec<Option<Mmap>>,
+
+    /// A heap vector of FlatBED stores.
+    bed_stores: Vec<Option<HeapBEDStore>>,
 }
 
 impl Env {
     fn new(rsrc: Vec<Resource>) -> Self {
         // Initialize the heap vectors and their indices.
+        // TODO Reduce some duplication here...
         let mut idx: Vec<u16> = Vec::with_capacity(rsrc.len());
         let mut pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)> =
             Vec::with_capacity(rsrc.len());
         let mut mmaps: Vec<Option<Mmap>> = Vec::with_capacity(rsrc.len());
         let mut gfa_stores: Vec<Option<HeapGFAStore>> = Vec::with_capacity(rsrc.len());
+        let mut bed_stores: Vec<Option<HeapBEDStore>> = Vec::with_capacity(rsrc.len());
         for r in &rsrc {
             let i = match r {
                 Resource::Pipe => {
@@ -58,6 +58,10 @@ impl Env {
                     mmaps.push(None);
                     (mmaps.len() - 1).try_into().unwrap()
                 }
+                Resource::BEDStore => {
+                    bed_stores.push(None);
+                    (bed_stores.len() - 1).try_into().unwrap()
+                }
                 _ => u16::MAX,
             };
             idx.push(i);
@@ -69,6 +73,7 @@ impl Env {
             pipes,
             gfa_stores,
             mmaps,
+            bed_stores,
         }
     }
 
@@ -85,6 +90,11 @@ impl Env {
     fn get_mmap(&mut self, rsrc: ResourceRef) -> &mut Option<Mmap> {
         debug_assert!(matches!(self.rsrc[rsrc.0], Resource::Mmap));
         &mut self.mmaps[self.idx[rsrc.0] as usize]
+    }
+
+    fn get_bed_store(&mut self, rsrc: ResourceRef) -> &mut Option<HeapBEDStore> {
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::BEDStore));
+        &mut self.bed_stores[self.idx[rsrc.0] as usize]
     }
 
     fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
@@ -188,6 +198,7 @@ impl Eval for ir::Instr {
             Self::Exec(instr) => instr.eval(env),
             Self::ParseGFA(instr) => instr.eval(env),
             Self::MapFile(instr) => instr.eval(env),
+            Self::ParseBED(instr) => instr.eval(env),
         }
     }
 }
@@ -306,6 +317,31 @@ impl Eval for ir::MapFileInstr {
         } else {
             panic!("can only map actual files");
         }
+    }
+}
+
+impl Eval for ir::ParseBEDInstr {
+    fn eval(&self, env: &mut Env) {
+        use flatgfa::flatbed::BEDParser;
+
+        let store = match &env.rsrc[self.input.0] {
+            Resource::File(name) => {
+                let file = memfile::map_file(name);
+                BEDParser::for_heap().parse_mem(file.as_ref())
+            }
+            Resource::Stdin => {
+                let stdin = std::io::stdin();
+                BEDParser::for_heap().parse_stream(stdin.lock())
+            }
+            Resource::Stdout => panic!("cannot read from stdout"),
+            Resource::Pipe => {
+                let read = env.read_pipe(self.input).unwrap();
+                BEDParser::for_heap().parse_stream(BufReader::new(read))
+            }
+            _ => panic!("non-bytes input"),
+        };
+
+        *env.get_bed_store(self.output) = Some(store);
     }
 }
 

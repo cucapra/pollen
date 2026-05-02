@@ -8,6 +8,7 @@ pub enum Resource {
     Pipe,
     GFAStore,
     Mmap,
+    BEDStore,
 }
 
 /// An instruction performs one imperative action.
@@ -18,6 +19,7 @@ pub enum Instr {
     Exec(ExecInstr),
     ParseGFA(ParseGFAInstr),
     MapFile(MapFileInstr),
+    ParseBED(ParseBEDInstr),
 }
 
 #[derive(Debug)]
@@ -60,7 +62,7 @@ impl From<ExecInstr> for Instr {
     }
 }
 
-/// Parse a GFA file or stream  in text foramt.
+/// Parse a GFA file or stream in text foramt.
 #[derive(Debug)]
 pub struct ParseGFAInstr {
     pub input: ResourceRef,
@@ -83,6 +85,19 @@ pub struct MapFileInstr {
 impl From<MapFileInstr> for Instr {
     fn from(value: MapFileInstr) -> Self {
         Self::MapFile(value)
+    }
+}
+
+/// Parse a text BED file or stream.
+#[derive(Debug)]
+pub struct ParseBEDInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+}
+
+impl From<ParseBEDInstr> for Instr {
+    fn from(value: ParseBEDInstr) -> Self {
+        Self::ParseBED(value)
     }
 }
 
