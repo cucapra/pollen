@@ -1,5 +1,6 @@
 use crate::ir::{self, Resource, ResourceRef};
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
+use memmap::Mmap;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter};
 
@@ -26,6 +27,12 @@ struct Env {
     /// This is a heap vector (indexed by `idx`) for each resource that is a
     /// `GFAStore`.
     gfa_stores: Vec<Option<HeapGFAStore>>,
+
+    /// The currently memory-mapped files.
+    ///
+    /// This is a heap vector (indexed by `idx`) for each resource that is a
+    /// `Mmap`.
+    mmaps: Vec<Option<Mmap>>,
 }
 
 impl Env {
@@ -34,6 +41,7 @@ impl Env {
         let mut idx: Vec<u16> = Vec::with_capacity(rsrc.len());
         let mut pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)> =
             Vec::with_capacity(rsrc.len());
+        let mut mmaps: Vec<Option<Mmap>> = Vec::with_capacity(rsrc.len());
         let mut gfa_stores: Vec<Option<HeapGFAStore>> = Vec::with_capacity(rsrc.len());
         for r in &rsrc {
             let i = match r {
@@ -45,6 +53,10 @@ impl Env {
                     gfa_stores.push(None);
                     (gfa_stores.len() - 1).try_into().unwrap()
                 }
+                Resource::Mmap => {
+                    mmaps.push(None);
+                    (mmaps.len() - 1).try_into().unwrap()
+                }
                 _ => u16::MAX,
             };
             idx.push(i);
@@ -55,6 +67,7 @@ impl Env {
             idx,
             pipes,
             gfa_stores,
+            mmaps,
         }
     }
 
@@ -66,6 +79,11 @@ impl Env {
     fn get_gfa_store(&mut self, rsrc: ResourceRef) -> &mut Option<HeapGFAStore> {
         debug_assert!(matches!(self.rsrc[rsrc.0], Resource::GFAStore));
         &mut self.gfa_stores[self.idx[rsrc.0] as usize]
+    }
+
+    fn get_mmap(&mut self, rsrc: ResourceRef) -> &mut Option<Mmap> {
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::Mmap));
+        &mut self.mmaps[self.idx[rsrc.0] as usize]
     }
 
     fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
@@ -97,7 +115,7 @@ impl Env {
             Resource::Stdout => panic!("cannot read from stdout"),
             Resource::File(name) => Input::File(BufReader::new(File::open(name).unwrap())),
             Resource::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
-            Resource::GFAStore => panic!("non-bytes input"),
+            _ => panic!("non-bytes input"),
         }
     }
 
@@ -107,7 +125,7 @@ impl Env {
             Resource::Stdout => Output::Stdout(std::io::stdout().lock()),
             Resource::File(name) => Output::File(BufWriter::new(File::create(name).unwrap())),
             Resource::Pipe => Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())),
-            Resource::GFAStore => panic!("non-bytes output"),
+            _ => panic!("non-bytes output"),
         }
     }
 
@@ -158,7 +176,7 @@ impl Eval for ir::Instr {
             Self::PathDepth(instr) => instr.eval(env),
             Self::Exec(instr) => instr.eval(env),
             Self::ParseGFA(instr) => instr.eval(env),
-            Self::LoadFlatGFA(instr) => instr.eval(env),
+            Self::MapFile(instr) => instr.eval(env),
         }
     }
 }
@@ -227,7 +245,7 @@ impl Eval for ir::ExecInstr {
             Resource::Pipe => {
                 cmd.stdin(env.read_pipe(self.input).unwrap());
             }
-            Resource::GFAStore => panic!("non-bytes input"),
+            _ => panic!("non-bytes input"),
         }
 
         match &env.rsrc[self.output.0] {
@@ -239,7 +257,7 @@ impl Eval for ir::ExecInstr {
             Resource::Pipe => {
                 cmd.stdout(env.write_pipe(self.output).unwrap());
             }
-            Resource::GFAStore => panic!("non-bytes output"),
+            _ => panic!("non-bytes output"),
         }
 
         // TODO: Do anything with the status?
@@ -265,21 +283,20 @@ impl Eval for ir::ParseGFAInstr {
                 let read = env.read_pipe(self.input).unwrap();
                 Parser::for_heap().parse_stream(BufReader::new(read))
             }
-            Resource::GFAStore => panic!("non-bytes input"),
+            _ => panic!("non-bytes input"),
         };
 
         env.set_store(self.output, store);
     }
 }
 
-impl Eval for ir::LoadFlatGFAInstr {
+impl Eval for ir::MapFileInstr {
     fn eval(&self, env: &mut Env) {
         if let Resource::File(name) = &env.rsrc[self.input.0] {
             let mmap = memfile::map_file(&name);
-            let gfa = flatgfa::file::view(&mmap);
-            env.set_store(self.output, todo!());
+            *env.get_mmap(self.output) = Some(mmap);
         } else {
-            panic!("FlatGFAs can only come from files");
+            panic!("can only map actual files");
         }
     }
 }

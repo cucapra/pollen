@@ -25,7 +25,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Instr::PathDepth(instr) => self.wrap(instr).fmt(f),
             ir::Instr::Exec(instr) => self.wrap(instr).fmt(f),
             ir::Instr::ParseGFA(instr) => self.wrap(instr).fmt(f),
-            ir::Instr::LoadFlatGFA(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::MapFile(instr) => self.wrap(instr).fmt(f),
         }
     }
 }
@@ -40,6 +40,7 @@ impl Display for Wrapped<'_, ir::ResourceRef> {
             ir::Resource::Stdout => write!(f, "stdout"),
             ir::Resource::Pipe => write!(f, "pipe-{}", idx),
             ir::Resource::GFAStore => write!(f, "gfa-store-{}", idx),
+            ir::Resource::Mmap => write!(f, "mmap-{}", idx),
         }
     }
 }
@@ -89,11 +90,11 @@ impl Display for Wrapped<'_, ir::ParseGFAInstr> {
     }
 }
 
-impl Display for Wrapped<'_, ir::LoadFlatGFAInstr> {
+impl Display for Wrapped<'_, ir::MapFileInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "load-flat-gfa({}) -> {}",
+            "map-file({}) -> {}",
             self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )

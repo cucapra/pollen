@@ -7,6 +7,7 @@ pub enum Resource {
     Stdout,
     Pipe,
     GFAStore,
+    Mmap,
 }
 
 /// An instruction performs one imperative action.
@@ -16,7 +17,7 @@ pub enum Instr {
     PathDepth(PathDepthInstr),
     Exec(ExecInstr),
     ParseGFA(ParseGFAInstr),
-    LoadFlatGFA(LoadFlatGFAInstr),
+    MapFile(MapFileInstr),
 }
 
 #[derive(Debug)]
@@ -72,16 +73,16 @@ impl From<ParseGFAInstr> for Instr {
     }
 }
 
-/// Load an on-disk FlatGFA from a binary file.
+/// Memory-map a file: for instance, a FlatGFA binary file.
 #[derive(Debug)]
-pub struct LoadFlatGFAInstr {
+pub struct MapFileInstr {
     pub input: ResourceRef,
     pub output: ResourceRef,
 }
 
-impl From<LoadFlatGFAInstr> for Instr {
-    fn from(value: LoadFlatGFAInstr) -> Self {
-        Self::LoadFlatGFA(value)
+impl From<MapFileInstr> for Instr {
+    fn from(value: MapFileInstr) -> Self {
+        Self::MapFile(value)
     }
 }
 
