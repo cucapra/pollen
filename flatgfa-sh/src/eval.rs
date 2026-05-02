@@ -85,9 +85,16 @@ impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
         let store = env.parse_gfa(self.input);
         let gfa = store.as_ref();
-        // TODO Do something about the output resource...
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
-        ops::depth::print_seg_depth(&gfa, depths, uniq_depths);
+
+        match env.rsrc[self.output.0] {
+            ir::Resource::Stdin => panic!("cannot write to stdin"),
+            ir::Resource::Stdout => {
+                ops::depth::write_seg_depth(&mut std::io::stdout(), &gfa, depths, uniq_depths)
+                    .unwrap()
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -101,10 +108,34 @@ impl Eval for ir::PathDepthInstr {
                 .find_path(path_name.as_bytes().into())
                 .expect("no such path found");
             let (depths, uniq_depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
-            ops::depth::print_path_depth(&gfa, depths, uniq_depths, std::iter::once(path_id));
+
+            match env.rsrc[self.output.0] {
+                ir::Resource::Stdin => panic!("cannot write to stdin"),
+                ir::Resource::Stdout => ops::depth::write_path_depth(
+                    &mut std::io::stdout(),
+                    &gfa,
+                    depths,
+                    uniq_depths,
+                    std::iter::once(path_id),
+                )
+                .unwrap(),
+                _ => unimplemented!(),
+            }
         } else {
             let (depths, uniq_depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
-            ops::depth::print_path_depth(&gfa, depths, uniq_depths, gfa.paths.ids());
+
+            match env.rsrc[self.output.0] {
+                ir::Resource::Stdin => panic!("cannot write to stdin"),
+                ir::Resource::Stdout => ops::depth::write_path_depth(
+                    &mut std::io::stdout(),
+                    &gfa,
+                    depths,
+                    uniq_depths,
+                    gfa.paths.ids(),
+                )
+                .unwrap(),
+                _ => unimplemented!(),
+            }
         }
     }
 }

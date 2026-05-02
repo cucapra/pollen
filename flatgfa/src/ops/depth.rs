@@ -38,17 +38,24 @@ pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
 /// Print a segment depth table.
 ///
 /// Format the result of `seg_depth` in an odgi-style TSV.
-pub fn print_seg_depth(gfa: &flatgfa::FlatGFA, depths: Vec<usize>, uniq_depths: Vec<usize>) {
-    println!("#node.id\tdepth\tdepth.uniq");
+pub fn write_seg_depth(
+    out: &mut impl std::io::Write,
+    gfa: &flatgfa::FlatGFA,
+    depths: Vec<usize>,
+    uniq_depths: Vec<usize>,
+) -> std::io::Result<()> {
+    writeln!(out, "#node.id\tdepth\tdepth.uniq")?;
     for (id, seg) in gfa.segs.items() {
         let name: u32 = seg.name as u32;
-        println!(
+        writeln!(
+            out,
             "{}\t{}\t{}",
             name,
             depths[id.index()],
             uniq_depths[id.index()],
-        );
+        )?;
     }
+    Ok(())
 }
 
 /// Compute the mean depth of each *path* in the variation graph.
@@ -103,19 +110,27 @@ fn measure_path(
 /// Print a path depth table.
 ///
 /// Format the result of `path_depth` in an odgi-style TSV.
-pub fn print_path_depth<I>(gfa: &flatgfa::FlatGFA, lengths: Vec<usize>, depths: Vec<f64>, paths: I)
+pub fn write_path_depth<I>(
+    out: &mut impl std::io::Write,
+    gfa: &flatgfa::FlatGFA,
+    lengths: Vec<usize>,
+    depths: Vec<f64>,
+    paths: I,
+) -> std::io::Result<()>
 where
     I: Iterator<Item = Id<flatgfa::Path>>,
 {
-    println!("#path\tstart\tend\tmean.depth");
+    writeln!(out, "#path\tstart\tend\tmean.depth")?;
     for (idx, id) in paths.enumerate() {
-        println!(
+        writeln!(
+            out,
             "{}\t0\t{}\t{}",
             gfa.get_path_name(&gfa.paths[id]),
             lengths[idx],
             format_float(depths[idx]),
-        );
+        )?;
     }
+    Ok(())
 }
 
 /// Format an `f64` in an odgi-like way, with limited decimal digits and without

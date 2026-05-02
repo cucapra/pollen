@@ -227,16 +227,17 @@ pub struct Depth {
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
+    let mut out = std::io::stdout();
     if args.seg_depth {
         // Segment depth table.
         let (depths, uniq_depths) = ops::depth::seg_depth(gfa);
-        ops::depth::print_seg_depth(gfa, depths, uniq_depths);
+        ops::depth::write_seg_depth(&mut out, gfa, depths, uniq_depths).unwrap();
     } else {
         // Path depth table.
         if args.path.is_empty() {
             // All paths.
             let (lengths, depths) = ops::depth::path_depth(gfa, gfa.paths.ids());
-            ops::depth::print_path_depth(gfa, lengths, depths, gfa.paths.ids());
+            ops::depth::write_path_depth(&mut out, gfa, lengths, depths, gfa.paths.ids()).unwrap();
         } else {
             // A subset of paths.
             let path_ids: Vec<_> = args
@@ -245,7 +246,8 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
                 .filter_map(|n| gfa.find_path(n.as_ref()))
                 .collect();
             let (lengths, depths) = ops::depth::path_depth(gfa, path_ids.iter().copied());
-            ops::depth::print_path_depth(gfa, lengths, depths, path_ids.iter().copied());
+            ops::depth::write_path_depth(&mut out, gfa, lengths, depths, path_ids.iter().copied())
+                .unwrap();
         }
     }
 }
