@@ -19,6 +19,9 @@ odgi depth -i ../tests/note5.gfa
 $ flash -c 'head -n1 < README.md'
 The FlatGFA Fake Shell
 
+$ flash -c 'head -n1 < README.md | rev'
+llehS ekaF AFGtalF ehT
+
 ```
 
 But more importantly, you can also use odgi subcommands, which are implemented using in-process calls to the FlatGFA library, without forking anything:
