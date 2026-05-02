@@ -1,16 +1,58 @@
-use crate::ir;
+use crate::ir::{self, ResourceRef};
 use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops};
+use std::io::{self, PipeReader, PipeWriter};
 
 struct Env {
+    /// All the resource descriptions used in this program.
     rsrc: Vec<ir::Resource>,
+
+    /// The currently open Unix pipes for operations in this program.
+    ///
+    /// This has the same length as `rsrc`. For every resource index that is a
+    /// `Pipe`, this may contain the currently open pipe. We lazily populate
+    /// these slots when the first instruction uses the pipe. The first use of
+    /// either "side" of the pipe consumes it.
+    pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)>,
+}
+
+impl Env {
+    fn new(rsrc: Vec<ir::Resource>) -> Self {
+        let mut pipes = Vec::with_capacity(rsrc.len());
+        pipes.resize_with(rsrc.len(), Default::default);
+        Self { rsrc, pipes }
+    }
+
+    fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
+        let idx = rsrc.0;
+        debug_assert!(matches!(self.rsrc[idx], ir::Resource::Pipe));
+        if let Some(reader) = self.pipes[idx].0.take() {
+            Ok(reader)
+        } else {
+            let (reader, writer) = io::pipe()?;
+            self.pipes[idx].1 = Some(writer);
+            Ok(reader)
+        }
+    }
+
+    fn write_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeWriter> {
+        let idx = rsrc.0;
+        debug_assert!(matches!(self.rsrc[idx], ir::Resource::Pipe));
+        if let Some(writer) = self.pipes[idx].1.take() {
+            Ok(writer)
+        } else {
+            let (reader, writer) = io::pipe()?;
+            self.pipes[idx].0 = Some(reader);
+            Ok(writer)
+        }
+    }
 }
 
 trait Eval {
-    fn eval(&self, env: &Env);
+    fn eval(&self, env: &mut Env);
 }
 
 impl Eval for ir::Instr {
-    fn eval(&self, env: &Env) {
+    fn eval(&self, env: &mut Env) {
         match self {
             Self::NodeDepth(instr) => instr.eval(env),
             Self::PathDepth(instr) => instr.eval(env),
@@ -36,7 +78,7 @@ fn parse_gfa(rsrc: &ir::Resource) -> HeapGFAStore {
 }
 
 impl Eval for ir::NodeDepthInstr {
-    fn eval(&self, env: &Env) {
+    fn eval(&self, env: &mut Env) {
         let store = parse_gfa(&env.rsrc[self.input.0]);
         let gfa = store.as_ref();
         // TODO Do something about the output resource...
@@ -46,7 +88,7 @@ impl Eval for ir::NodeDepthInstr {
 }
 
 impl Eval for ir::PathDepthInstr {
-    fn eval(&self, env: &Env) {
+    fn eval(&self, env: &mut Env) {
         let store = parse_gfa(&env.rsrc[self.input.0]);
         let gfa = store.as_ref();
         if let Some(path_name) = &self.path {
@@ -64,17 +106,33 @@ impl Eval for ir::PathDepthInstr {
 }
 
 impl Eval for ir::ExecInstr {
-    fn eval(&self, env: &Env) {
+    fn eval(&self, env: &mut Env) {
         use std::fs::File;
         use std::process::Command;
 
         let mut cmd = Command::new(&self.command);
         cmd.args(&self.args);
-        if let ir::Resource::File(name) = &env.rsrc[self.input.0] {
-            cmd.stdin(File::open(name).unwrap());
+
+        match &env.rsrc[self.input.0] {
+            ir::Resource::Stdin => (),
+            ir::Resource::Stdout => panic!("cannot read from stdout"),
+            ir::Resource::File(name) => {
+                cmd.stdin(File::open(name).unwrap());
+            }
+            ir::Resource::Pipe => {
+                cmd.stdin(env.read_pipe(self.input).unwrap());
+            }
         }
-        if let ir::Resource::File(name) = &env.rsrc[self.output.0] {
-            cmd.stdout(File::create(name).unwrap());
+
+        match &env.rsrc[self.output.0] {
+            ir::Resource::Stdin => panic!("cannot write to stdin"),
+            ir::Resource::Stdout => (),
+            ir::Resource::File(name) => {
+                cmd.stdout(File::create(name).unwrap());
+            }
+            ir::Resource::Pipe => {
+                cmd.stdout(env.write_pipe(self.output).unwrap());
+            }
         }
 
         // TODO: Do anything with the status?
@@ -83,8 +141,8 @@ impl Eval for ir::ExecInstr {
 }
 
 pub fn run(prog: ir::Program) {
-    let env = Env { rsrc: prog.rsrc };
+    let mut env = Env::new(prog.rsrc);
     for op in prog.instrs {
-        op.eval(&env);
+        op.eval(&mut env);
     }
 }
