@@ -7,54 +7,85 @@ struct Env {
     /// All the resource descriptions used in this program.
     rsrc: Vec<Resource>,
 
+    /// Indices into the heap vectors for resources that have them.
+    ///
+    /// This has the same length as `rsrc`. For each resource type that comes
+    /// with an associated run-time value, this contains the index into the
+    /// appropriate heap vector in this environment. For others, it's MAX.
+    idx: Vec<u16>,
+
     /// The currently open Unix pipes for operations in this program.
     ///
-    /// This has the same length as `rsrc`. For every resource index that is a
-    /// `Pipe`, this may contain the currently open pipe. We lazily populate
-    /// these slots when the first instruction uses the pipe. The first use of
-    /// either "side" of the pipe consumes it.
+    /// This is a heap vector (indexed via `idx`) for each resource that is a
+    /// `Pipe`. We lazily populate these slots when the first instruction uses
+    /// the pipe. The first use of either "side" of the pipe consumes it.
     pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)>,
 
     /// The currently available FlatGFA data stores.
     ///
-    /// As with `pipes`, the length should be the same as for `rsrc`. This is
-    /// `Some` for every resource that is `GFAStore`.
+    /// This is a heap vector (indexed by `idx`) for each resource that is a
+    /// `GFAStore`.
     gfa_stores: Vec<Option<HeapGFAStore>>,
 }
 
 impl Env {
     fn new(rsrc: Vec<Resource>) -> Self {
-        let mut pipes = Vec::with_capacity(rsrc.len());
-        pipes.resize_with(rsrc.len(), Default::default);
-        let mut gfa_stores = Vec::with_capacity(rsrc.len());
-        gfa_stores.resize_with(rsrc.len(), Default::default);
+        // Initialize the heap vectors and their indices.
+        let mut idx: Vec<u16> = Vec::with_capacity(rsrc.len());
+        let mut pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)> =
+            Vec::with_capacity(rsrc.len());
+        let mut gfa_stores: Vec<Option<HeapGFAStore>> = Vec::with_capacity(rsrc.len());
+        for r in &rsrc {
+            let i = match r {
+                Resource::Pipe => {
+                    pipes.push((None, None));
+                    (pipes.len() - 1).try_into().unwrap()
+                }
+                Resource::GFAStore => {
+                    gfa_stores.push(None);
+                    (gfa_stores.len() - 1).try_into().unwrap()
+                }
+                _ => u16::MAX,
+            };
+            idx.push(i);
+        }
+
         Self {
             rsrc,
+            idx,
             pipes,
             gfa_stores,
         }
     }
 
+    fn get_pipe(&mut self, rsrc: ResourceRef) -> &mut (Option<PipeReader>, Option<PipeWriter>) {
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::Pipe));
+        &mut self.pipes[self.idx[rsrc.0] as usize]
+    }
+
+    fn get_gfa_store(&mut self, rsrc: ResourceRef) -> &mut Option<HeapGFAStore> {
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::GFAStore));
+        &mut self.gfa_stores[self.idx[rsrc.0] as usize]
+    }
+
     fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
-        let idx = rsrc.0;
-        debug_assert!(matches!(self.rsrc[idx], Resource::Pipe));
-        if let Some(reader) = self.pipes[idx].0.take() {
+        let pair = self.get_pipe(rsrc);
+        if let Some(reader) = pair.0.take() {
             Ok(reader)
         } else {
             let (reader, writer) = io::pipe()?;
-            self.pipes[idx].1 = Some(writer);
+            pair.1 = Some(writer);
             Ok(reader)
         }
     }
 
     fn write_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeWriter> {
-        let idx = rsrc.0;
-        debug_assert!(matches!(self.rsrc[idx], Resource::Pipe));
-        if let Some(writer) = self.pipes[idx].1.take() {
+        let pair = self.get_pipe(rsrc);
+        if let Some(writer) = pair.1.take() {
             Ok(writer)
         } else {
             let (reader, writer) = io::pipe()?;
-            self.pipes[idx].0 = Some(reader);
+            pair.0 = Some(reader);
             Ok(writer)
         }
     }
@@ -83,13 +114,13 @@ impl Env {
     fn get_store(&mut self, rsrc: ResourceRef) -> HeapGFAStore {
         // TODO With some finer-grained structs, there's probably no need to
         // take ownership here, which would let us reuse the resource.
-        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::GFAStore));
-        self.gfa_stores[rsrc.0].take().expect("store not populated")
+        let loc = self.get_gfa_store(rsrc);
+        loc.take().expect("store not populated")
     }
 
     fn set_store(&mut self, rsrc: ResourceRef, store: HeapGFAStore) {
-        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::GFAStore));
-        self.gfa_stores[rsrc.0] = Some(store);
+        let loc = self.get_gfa_store(rsrc);
+        *loc = Some(store);
     }
 }
 
