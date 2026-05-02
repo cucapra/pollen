@@ -36,6 +36,14 @@ $ flash -c 'odgi depth -d -i ../tests/note5.gfa'
 
 ```
 
+Built-in commands even compose with external commands via pipes:
+
+```console
+$ flash -c 'odgi depth -d -i ../tests/note5.gfa | tail -n1'
+4	2	2
+
+```
+
 You can also run shell script files:
 
 ```console
