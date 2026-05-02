@@ -1,4 +1,5 @@
 use crate::ir::{self, Resource, ResourceRef};
+use flatgfa::FlatGFA;
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
 use memmap::Mmap;
 use std::fs::File;
@@ -128,6 +129,28 @@ impl Env {
             _ => panic!("non-bytes output"),
         }
     }
+
+    /// Get a FlatGFA data structure from the heap.
+    ///
+    /// The resource must be either a memory-mapped file or an in-memory
+    /// FlatGFA store.
+    fn flatgfa<'a>(&'a self, rsrc: ResourceRef) -> FlatGFA<'a> {
+        match &self.rsrc[rsrc.0] {
+            Resource::GFAStore => {
+                let store = self.gfa_stores[self.idx[rsrc.0] as usize]
+                    .as_ref()
+                    .expect("store not populated");
+                store.as_ref()
+            }
+            Resource::Mmap => {
+                let mmap = self.mmaps[self.idx[rsrc.0] as usize]
+                    .as_ref()
+                    .expect("mmap not populated");
+                flatgfa::file::view(mmap.as_ref())
+            }
+            _ => panic!("resource must be FlatGFA data"),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -171,53 +194,44 @@ impl Eval for ir::Instr {
 
 impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env
-            .get_gfa_store(self.input)
-            .take()
-            .expect("store not populated");
-        let gfa = store.as_ref();
+        let out = env.output(self.output);
+        let gfa = env.flatgfa(self.input);
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
-        env.output(self.output)
-            .emit(ops::depth::SegDepth {
-                gfa: &gfa,
-                depths,
-                uniq_depths,
-            })
-            .unwrap();
+        out.emit(ops::depth::SegDepth {
+            gfa: &gfa,
+            depths,
+            uniq_depths,
+        })
+        .unwrap();
     }
 }
 
 impl Eval for ir::PathDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env
-            .get_gfa_store(self.input)
-            .take()
-            .expect("store not populated");
-        let gfa = store.as_ref();
+        let out = env.output(self.output);
+        let gfa = env.flatgfa(self.input);
         if let Some(path_name) = &self.path {
             // TODO More elegantly handle missing paths.
             let path_id = gfa
                 .find_path(path_name.as_bytes().into())
                 .expect("no such path found");
             let (lengths, depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
-            env.output(self.output)
-                .emit(ops::depth::PathDepth {
-                    gfa: &gfa,
-                    depths,
-                    lengths,
-                    paths: std::iter::once(path_id),
-                })
-                .unwrap();
+            out.emit(ops::depth::PathDepth {
+                gfa: &gfa,
+                depths,
+                lengths,
+                paths: std::iter::once(path_id),
+            })
+            .unwrap();
         } else {
             let (lengths, depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
-            env.output(self.output)
-                .emit(ops::depth::PathDepth {
-                    gfa: &gfa,
-                    depths,
-                    lengths,
-                    paths: gfa.paths.ids(),
-                })
-                .unwrap();
+            out.emit(ops::depth::PathDepth {
+                gfa: &gfa,
+                depths,
+                lengths,
+                paths: gfa.paths.ids(),
+            })
+            .unwrap();
         }
     }
 }
