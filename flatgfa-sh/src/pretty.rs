@@ -24,6 +24,8 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Instr::NodeDepth(instr) => self.wrap(instr).fmt(f),
             ir::Instr::PathDepth(instr) => self.wrap(instr).fmt(f),
             ir::Instr::Exec(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::ParseGFA(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::MapFile(instr) => self.wrap(instr).fmt(f),
         }
     }
 }
@@ -37,6 +39,8 @@ impl Display for Wrapped<'_, ir::ResourceRef> {
             ir::Resource::Stdin => write!(f, "stdin"),
             ir::Resource::Stdout => write!(f, "stdout"),
             ir::Resource::Pipe => write!(f, "pipe-{}", idx),
+            ir::Resource::GFAStore => write!(f, "gfa-store-{}", idx),
+            ir::Resource::Mmap => write!(f, "mmap-{}", idx),
         }
     }
 }
@@ -45,7 +49,7 @@ impl Display for Wrapped<'_, ir::NodeDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "node_depth({}) -> {}",
+            "node-depth({}) -> {}",
             self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )
@@ -54,7 +58,7 @@ impl Display for Wrapped<'_, ir::NodeDepthInstr> {
 
 impl Display for Wrapped<'_, ir::PathDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "path_depth({}", self.wrap(&self.val.input))?;
+        write!(f, "path-depth({}", self.wrap(&self.val.input))?;
         if let Some(path) = &self.val.path {
             write!(f, ", path=\"{}\"", path)?;
         }
@@ -69,6 +73,28 @@ impl Display for Wrapped<'_, ir::ExecInstr> {
             "shell({:?}, {:?}, input={}) -> {}",
             self.val.command,
             self.val.args,
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::ParseGFAInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "parse-gfa({}) -> {}",
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::MapFileInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "map-file({}) -> {}",
             self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )

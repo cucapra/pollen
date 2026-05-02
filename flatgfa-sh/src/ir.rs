@@ -6,6 +6,8 @@ pub enum Resource {
     Stdin,
     Stdout,
     Pipe,
+    GFAStore,
+    Mmap,
 }
 
 /// An instruction performs one imperative action.
@@ -14,6 +16,8 @@ pub enum Instr {
     NodeDepth(NodeDepthInstr),
     PathDepth(PathDepthInstr),
     Exec(ExecInstr),
+    ParseGFA(ParseGFAInstr),
+    MapFile(MapFileInstr),
 }
 
 #[derive(Debug)]
@@ -53,6 +57,32 @@ pub struct ExecInstr {
 impl From<ExecInstr> for Instr {
     fn from(value: ExecInstr) -> Self {
         Self::Exec(value)
+    }
+}
+
+/// Parse a GFA file or stream  in text foramt.
+#[derive(Debug)]
+pub struct ParseGFAInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+}
+
+impl From<ParseGFAInstr> for Instr {
+    fn from(value: ParseGFAInstr) -> Self {
+        Self::ParseGFA(value)
+    }
+}
+
+/// Memory-map a file: for instance, a FlatGFA binary file.
+#[derive(Debug)]
+pub struct MapFileInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+}
+
+impl From<MapFileInstr> for Instr {
+    fn from(value: MapFileInstr) -> Self {
+        Self::MapFile(value)
     }
 }
 
@@ -106,6 +136,16 @@ impl Builder {
         self.add_rsrc(Resource::Pipe)
     }
 
+    /// Create a new FlatGFA data store resource.
+    pub fn gfa_store(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::GFAStore)
+    }
+
+    /// Create a new memory-mapped file resource.
+    pub fn mmap(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::Mmap)
+    }
+
     /// Get the standard input resource.
     pub fn stdin(&self) -> ResourceRef {
         ResourceRef(0)
@@ -114,6 +154,29 @@ impl Builder {
     /// Get the standard output resource.
     pub fn stdout(&self) -> ResourceRef {
         ResourceRef(1)
+    }
+
+    /// Create an instruction to load a FlatGFA data structure as a resource.
+    ///
+    /// Either parse GFA text or memory-map a FlatGFA binary file. If `input` is
+    /// a byte stream, we treat it as GFA text. If it's a file, we use the
+    /// filename to decide whether to treat it as GFA text or FlatGFA binary.
+    pub fn load_gfa(&mut self, input: ResourceRef) -> ResourceRef {
+        match &self.rsrc[input.0] {
+            Resource::File(name) if name.ends_with(".flatgfa") => {
+                // Memory-map the FlatGFA binary file.
+                let output = self.mmap();
+                self.add_instr(Instr::MapFile(MapFileInstr { input, output }));
+                output
+            }
+            Resource::Pipe | Resource::Stdin | Resource::File(_) => {
+                // Parse as GFA text.
+                let output = self.gfa_store();
+                self.add_instr(Instr::ParseGFA(ParseGFAInstr { input, output }));
+                output
+            }
+            _ => panic!("cannot parse this resource as GFA text"),
+        }
     }
 
     pub fn build(self) -> Program {

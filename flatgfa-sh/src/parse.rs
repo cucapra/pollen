@@ -40,6 +40,10 @@ fn cmd_to_ir(
                     input = builder.file(filename);
                 }
 
+                // Get a FlatGFA data structure, either by parsing GFA text or
+                // by memory-mapping a FlatGFA binary file.
+                let input = builder.load_gfa(input);
+
                 // In the `odgi depth` command line, the default is a per-path
                 // table, and `-d` switches to a per-node table. (There are
                 // other modes, such as `-D`, to support...)
