@@ -103,3 +103,13 @@ shell("bar", [], input=pipe-2) -> pipe-3
 shell("baz", [], input=pipe-3) -> "qux"
 
 ```
+
+Flash also detects FlatGFA files (by filename extension) everywhere that an
+input GFA is allowed:
+
+```console
+$ flash -p -c 'odgi depth -i chr8.flatgfa'
+map-file("chr8.flatgfa") -> mmap-3
+path-depth(mmap-3) -> stdout
+
+```

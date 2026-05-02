@@ -287,7 +287,7 @@ impl Eval for ir::ParseGFAInstr {
 impl Eval for ir::MapFileInstr {
     fn eval(&self, env: &mut Env) {
         if let Resource::File(name) = &env.rsrc[self.input.0] {
-            let mmap = memfile::map_file(&name);
+            let mmap = memfile::map_file(name);
             *env.get_mmap(self.output) = Some(mmap);
         } else {
             panic!("can only map actual files");

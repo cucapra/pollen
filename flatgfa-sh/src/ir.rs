@@ -141,6 +141,11 @@ impl Builder {
         self.add_rsrc(Resource::GFAStore)
     }
 
+    /// Create a new memory-mapped file resource.
+    pub fn mmap(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::Mmap)
+    }
+
     /// Get the standard input resource.
     pub fn stdin(&self) -> ResourceRef {
         ResourceRef(0)
@@ -151,14 +156,27 @@ impl Builder {
         ResourceRef(1)
     }
 
-    /// Create an instruction to parse GFA text into a FlatGFA store.
+    /// Create an instruction to load a FlatGFA data structure as a resource.
     ///
-    /// The input should be a plain-bytes resource. We return the output, which
-    /// is a FlatGFA store resource.
-    pub fn parse_gfa(&mut self, input: ResourceRef) -> ResourceRef {
-        let output = self.gfa_store();
-        self.add_instr(Instr::ParseGFA(ParseGFAInstr { input, output }));
-        output
+    /// Either parse GFA text or memory-map a FlatGFA binary file. If `input` is
+    /// a byte stream, we treat it as GFA text. If it's a file, we use the
+    /// filename to decide whether to treat it as GFA text or FlatGFA binary.
+    pub fn load_gfa(&mut self, input: ResourceRef) -> ResourceRef {
+        match &self.rsrc[input.0] {
+            Resource::File(name) if name.ends_with(".flatgfa") => {
+                // Memory-map the FlatGFA binary file.
+                let output = self.mmap();
+                self.add_instr(Instr::MapFile(MapFileInstr { input, output }));
+                output
+            }
+            Resource::Pipe | Resource::Stdin | Resource::File(_) => {
+                // Parse as GFA text.
+                let output = self.gfa_store();
+                self.add_instr(Instr::ParseGFA(ParseGFAInstr { input, output }));
+                output
+            }
+            _ => panic!("cannot parse this resource as GFA text"),
+        }
     }
 
     pub fn build(self) -> Program {
