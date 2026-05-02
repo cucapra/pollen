@@ -69,23 +69,23 @@ Here are some things that we currently parse:
 ```console
 $ flash -p -c 'odgi depth'
 parse-gfa(stdin) -> gfa-store-2
-path_depth(gfa-store-2) -> stdout
+path-depth(gfa-store-2) -> stdout
 
 $ flash -p -c 'odgi depth -d'
 parse-gfa(stdin) -> gfa-store-2
-node_depth(gfa-store-2) -> stdout
+node-depth(gfa-store-2) -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.gfa'
 parse-gfa("chr8.gfa") -> gfa-store-3
-path_depth(gfa-store-3) -> stdout
+path-depth(gfa-store-3) -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.gfa -r "chm13#chr8"'
 parse-gfa("chr8.gfa") -> gfa-store-3
-path_depth(gfa-store-3, path="chm13#chr8") -> stdout
+path-depth(gfa-store-3, path="chm13#chr8") -> stdout
 
 $ flash -p -c 'odgi depth < chr8.gfa > depth.tsv'
 parse-gfa("chr8.gfa") -> gfa-store-4
-path_depth(gfa-store-4) -> "depth.tsv"
+path-depth(gfa-store-4) -> "depth.tsv"
 
 ```
 

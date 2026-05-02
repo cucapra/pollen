@@ -47,7 +47,7 @@ impl Display for Wrapped<'_, ir::NodeDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "node_depth({}) -> {}",
+            "node-depth({}) -> {}",
             self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )
@@ -56,7 +56,7 @@ impl Display for Wrapped<'_, ir::NodeDepthInstr> {
 
 impl Display for Wrapped<'_, ir::PathDepthInstr> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "path_depth({}", self.wrap(&self.val.input))?;
+        write!(f, "path-depth({}", self.wrap(&self.val.input))?;
         if let Some(path) = &self.val.path {
             write!(f, ", path=\"{}\"", path)?;
         }
