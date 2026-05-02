@@ -1,7 +1,7 @@
 use crate::ir::{self, Resource, ResourceRef};
 use flatgfa::{self, flatgfa::HeapGFAStore, memfile, ops};
 use std::fs::File;
-use std::io::{self, BufReader, PipeReader, PipeWriter, stdout};
+use std::io::{self, BufReader, PipeReader, PipeWriter};
 
 struct Env {
     /// All the resource descriptions used in this program.
@@ -47,6 +47,24 @@ impl Env {
         }
     }
 
+    fn input(&mut self, rsrc: ResourceRef) -> Input {
+        match &self.rsrc[rsrc.0] {
+            Resource::Stdin => Input::Stdin(std::io::stdin()),
+            Resource::Stdout => panic!("cannot read from stdout"),
+            Resource::File(name) => Input::File(File::open(name).unwrap()),
+            Resource::Pipe => Input::Pipe(self.read_pipe(rsrc).unwrap()),
+        }
+    }
+
+    fn output(&mut self, rsrc: ResourceRef) -> Output {
+        match &self.rsrc[rsrc.0] {
+            Resource::Stdin => panic!("cannot write to stdin"),
+            Resource::Stdout => Output::Stdout(std::io::stdout()),
+            Resource::File(name) => Output::File(File::create(name).unwrap()),
+            Resource::Pipe => Output::Pipe(self.write_pipe(rsrc).unwrap()),
+        }
+    }
+
     /// Parse a (text) GFA file from a resource.
     fn parse_gfa(&mut self, rsrc: ResourceRef) -> HeapGFAStore {
         use flatgfa::parse::Parser;
@@ -66,6 +84,18 @@ impl Env {
             }
         }
     }
+}
+
+enum Input {
+    Stdin(std::io::Stdin),
+    File(File),
+    Pipe(PipeReader),
+}
+
+enum Output {
+    Stdout(std::io::Stdout),
+    File(File),
+    Pipe(PipeWriter),
 }
 
 trait Eval {
@@ -88,25 +118,16 @@ impl Eval for ir::NodeDepthInstr {
         let gfa = store.as_ref();
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
 
-        match &env.rsrc[self.output.0] {
-            Resource::Stdin => panic!("cannot write to stdin"),
-            Resource::Stdout => {
-                ops::depth::write_seg_depth(&mut stdout(), &gfa, depths, uniq_depths).unwrap()
+        match env.output(self.output) {
+            Output::Stdout(mut s) => {
+                ops::depth::write_seg_depth(&mut s, &gfa, depths, uniq_depths).unwrap()
             }
-            Resource::File(name) => ops::depth::write_seg_depth(
-                &mut File::create(name).unwrap(),
-                &gfa,
-                depths,
-                uniq_depths,
-            )
-            .unwrap(),
-            Resource::Pipe => ops::depth::write_seg_depth(
-                &mut env.write_pipe(self.output).unwrap(),
-                &gfa,
-                depths,
-                uniq_depths,
-            )
-            .unwrap(),
+            Output::File(mut s) => {
+                ops::depth::write_seg_depth(&mut s, &gfa, depths, uniq_depths).unwrap()
+            }
+            Output::Pipe(mut s) => {
+                ops::depth::write_seg_depth(&mut s, &gfa, depths, uniq_depths).unwrap()
+            }
         }
     }
 }
@@ -122,26 +143,25 @@ impl Eval for ir::PathDepthInstr {
                 .expect("no such path found");
             let (depths, uniq_depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
 
-            match &env.rsrc[self.output.0] {
-                Resource::Stdin => panic!("cannot write to stdin"),
-                Resource::Stdout => ops::depth::write_path_depth(
-                    &mut stdout(),
+            match env.output(self.output) {
+                Output::Stdout(mut s) => ops::depth::write_path_depth(
+                    &mut s,
                     &gfa,
                     depths,
                     uniq_depths,
                     std::iter::once(path_id),
                 )
                 .unwrap(),
-                Resource::File(name) => ops::depth::write_path_depth(
-                    &mut File::create(name).unwrap(),
+                Output::File(mut s) => ops::depth::write_path_depth(
+                    &mut s,
                     &gfa,
                     depths,
                     uniq_depths,
                     std::iter::once(path_id),
                 )
                 .unwrap(),
-                Resource::Pipe => ops::depth::write_path_depth(
-                    &mut env.write_pipe(self.output).unwrap(),
+                Output::Pipe(mut s) => ops::depth::write_path_depth(
+                    &mut s,
                     &gfa,
                     depths,
                     uniq_depths,
@@ -152,32 +172,19 @@ impl Eval for ir::PathDepthInstr {
         } else {
             let (depths, uniq_depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
 
-            match &env.rsrc[self.output.0] {
-                Resource::Stdin => panic!("cannot write to stdin"),
-                Resource::Stdout => ops::depth::write_path_depth(
-                    &mut stdout(),
-                    &gfa,
-                    depths,
-                    uniq_depths,
-                    gfa.paths.ids(),
-                )
-                .unwrap(),
-                Resource::File(name) => ops::depth::write_path_depth(
-                    &mut File::create(name).unwrap(),
-                    &gfa,
-                    depths,
-                    uniq_depths,
-                    gfa.paths.ids(),
-                )
-                .unwrap(),
-                Resource::Pipe => ops::depth::write_path_depth(
-                    &mut env.write_pipe(self.output).unwrap(),
-                    &gfa,
-                    depths,
-                    uniq_depths,
-                    gfa.paths.ids(),
-                )
-                .unwrap(),
+            match env.output(self.output) {
+                Output::Stdout(mut s) => {
+                    ops::depth::write_path_depth(&mut s, &gfa, depths, uniq_depths, gfa.paths.ids())
+                        .unwrap()
+                }
+                Output::File(mut s) => {
+                    ops::depth::write_path_depth(&mut s, &gfa, depths, uniq_depths, gfa.paths.ids())
+                        .unwrap()
+                }
+                Output::Pipe(mut s) => {
+                    ops::depth::write_path_depth(&mut s, &gfa, depths, uniq_depths, gfa.paths.ids())
+                        .unwrap()
+                }
             }
         }
     }
