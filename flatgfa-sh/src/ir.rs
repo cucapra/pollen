@@ -16,6 +16,7 @@ pub enum Instr {
     PathDepth(PathDepthInstr),
     Exec(ExecInstr),
     ParseGFA(ParseGFAInstr),
+    LoadFlatGFA(LoadFlatGFAInstr),
 }
 
 #[derive(Debug)]
@@ -68,6 +69,19 @@ pub struct ParseGFAInstr {
 impl From<ParseGFAInstr> for Instr {
     fn from(value: ParseGFAInstr) -> Self {
         Self::ParseGFA(value)
+    }
+}
+
+/// Load an on-disk FlatGFA from a binary file.
+#[derive(Debug)]
+pub struct LoadFlatGFAInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+}
+
+impl From<LoadFlatGFAInstr> for Instr {
+    fn from(value: LoadFlatGFAInstr) -> Self {
+        Self::LoadFlatGFA(value)
     }
 }
 

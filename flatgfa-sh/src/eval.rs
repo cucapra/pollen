@@ -127,6 +127,7 @@ impl Eval for ir::Instr {
             Self::PathDepth(instr) => instr.eval(env),
             Self::Exec(instr) => instr.eval(env),
             Self::ParseGFA(instr) => instr.eval(env),
+            Self::LoadFlatGFA(instr) => instr.eval(env),
         }
     }
 }
@@ -237,6 +238,18 @@ impl Eval for ir::ParseGFAInstr {
         };
 
         env.set_store(self.output, store);
+    }
+}
+
+impl Eval for ir::LoadFlatGFAInstr {
+    fn eval(&self, env: &mut Env) {
+        if let Resource::File(name) = &env.rsrc[self.input.0] {
+            let mmap = memfile::map_file(&name);
+            let gfa = flatgfa::file::view(&mmap);
+            env.set_store(self.output, todo!());
+        } else {
+            panic!("FlatGFAs can only come from files");
+        }
     }
 }
 
