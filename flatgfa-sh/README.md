@@ -53,7 +53,7 @@ Supported Syntax
 ----------------
 
 Use the `-p` flag for "pretend mode" to see how `flash` parses your shell command.
-Here are some things that we currently parse (not all of which are implemented in the evaluator just yet):
+Here are some things that we currently parse:
 
 ```console
 $ flash -p -c 'odgi depth'
@@ -70,5 +70,20 @@ path_depth("chr8.gfa", path="chm13#chr8") -> stdout
 
 $ flash -p -c 'odgi depth < chr8.gfa > depth.tsv'
 path_depth("chr8.gfa") -> "depth.tsv"
+
+```
+
+Here's how pipelines get parsed:
+
+```console
+$ flash -p -c 'foo | bar | baz'
+shell("foo", [], input=stdin) -> pipe-2
+shell("bar", [], input=pipe-2) -> pipe-3
+shell("baz", [], input=pipe-3) -> stdout
+
+$ flash -p -c 'foo | bar | baz > qux'
+shell("foo", [], input=stdin) -> pipe-2
+shell("bar", [], input=pipe-2) -> pipe-3
+shell("baz", [], input=pipe-3) -> "qux"
 
 ```
