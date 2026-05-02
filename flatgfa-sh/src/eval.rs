@@ -100,6 +100,16 @@ enum Output {
     Pipe(BufWriter<PipeWriter>),
 }
 
+impl Output {
+    fn emit<T: Emit>(self, val: T) -> std::io::Result<()> {
+        match self {
+            Self::Stdout(mut s) => val.emit(&mut s),
+            Self::File(mut s) => val.emit(&mut s),
+            Self::Pipe(mut s) => val.emit(&mut s),
+        }
+    }
+}
+
 trait Eval {
     fn eval(&self, env: &mut Env);
 }
@@ -119,28 +129,13 @@ impl Eval for ir::NodeDepthInstr {
         let store = env.parse_gfa(self.input);
         let gfa = store.as_ref();
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
-
-        match env.output(self.output) {
-            Output::Stdout(mut s) => ops::depth::SegDepth {
+        env.output(self.output)
+            .emit(ops::depth::SegDepth {
                 gfa: &gfa,
                 depths,
                 uniq_depths,
-            }
-            .emit(&mut s),
-            Output::File(mut s) => ops::depth::SegDepth {
-                gfa: &gfa,
-                depths,
-                uniq_depths,
-            }
-            .emit(&mut s),
-            Output::Pipe(mut s) => ops::depth::SegDepth {
-                gfa: &gfa,
-                depths,
-                uniq_depths,
-            }
-            .emit(&mut s),
-        }
-        .unwrap();
+            })
+            .unwrap();
     }
 }
 
@@ -154,58 +149,24 @@ impl Eval for ir::PathDepthInstr {
                 .find_path(path_name.as_bytes().into())
                 .expect("no such path found");
             let (lengths, depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
-
-            match env.output(self.output) {
-                Output::Stdout(mut s) => ops::depth::PathDepth {
+            env.output(self.output)
+                .emit(ops::depth::PathDepth {
                     gfa: &gfa,
                     depths,
                     lengths,
                     paths: std::iter::once(path_id),
-                }
-                .emit(&mut s),
-                Output::File(mut s) => ops::depth::PathDepth {
-                    gfa: &gfa,
-                    depths,
-                    lengths,
-                    paths: std::iter::once(path_id),
-                }
-                .emit(&mut s),
-                Output::Pipe(mut s) => ops::depth::PathDepth {
-                    gfa: &gfa,
-                    depths,
-                    lengths,
-                    paths: std::iter::once(path_id),
-                }
-                .emit(&mut s),
-            }
-            .unwrap();
+                })
+                .unwrap();
         } else {
             let (lengths, depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
-
-            match env.output(self.output) {
-                Output::Stdout(mut s) => ops::depth::PathDepth {
+            env.output(self.output)
+                .emit(ops::depth::PathDepth {
                     gfa: &gfa,
                     depths,
                     lengths,
                     paths: gfa.paths.ids(),
-                }
-                .emit(&mut s),
-                Output::File(mut s) => ops::depth::PathDepth {
-                    gfa: &gfa,
-                    depths,
-                    lengths,
-                    paths: gfa.paths.ids(),
-                }
-                .emit(&mut s),
-                Output::Pipe(mut s) => ops::depth::PathDepth {
-                    gfa: &gfa,
-                    depths,
-                    lengths,
-                    paths: gfa.paths.ids(),
-                }
-                .emit(&mut s),
-            }
-            .unwrap();
+                })
+                .unwrap();
         }
     }
 }
