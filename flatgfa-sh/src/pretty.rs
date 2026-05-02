@@ -24,6 +24,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Instr::NodeDepth(instr) => self.wrap(instr).fmt(f),
             ir::Instr::PathDepth(instr) => self.wrap(instr).fmt(f),
             ir::Instr::Exec(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::ParseGFA(instr) => self.wrap(instr).fmt(f),
         }
     }
 }
@@ -37,6 +38,7 @@ impl Display for Wrapped<'_, ir::ResourceRef> {
             ir::Resource::Stdin => write!(f, "stdin"),
             ir::Resource::Stdout => write!(f, "stdout"),
             ir::Resource::Pipe => write!(f, "pipe-{}", idx),
+            ir::Resource::GFAStore => write!(f, "gfa-store-{}", idx),
         }
     }
 }
@@ -69,6 +71,17 @@ impl Display for Wrapped<'_, ir::ExecInstr> {
             "shell({:?}, {:?}, input={}) -> {}",
             self.val.command,
             self.val.args,
+            self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::ParseGFAInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "parse-gfa({}) -> {}",
             self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )

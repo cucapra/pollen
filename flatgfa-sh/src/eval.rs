@@ -14,13 +14,25 @@ struct Env {
     /// these slots when the first instruction uses the pipe. The first use of
     /// either "side" of the pipe consumes it.
     pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)>,
+
+    /// The currently available FlatGFA data stores.
+    ///
+    /// As with `pipes`, the length should be the same as for `rsrc`. This is
+    /// `Some` for every resource that is `GFAStore`.
+    gfa_stores: Vec<Option<HeapGFAStore>>,
 }
 
 impl Env {
     fn new(rsrc: Vec<Resource>) -> Self {
         let mut pipes = Vec::with_capacity(rsrc.len());
         pipes.resize_with(rsrc.len(), Default::default);
-        Self { rsrc, pipes }
+        let mut gfa_stores = Vec::with_capacity(rsrc.len());
+        gfa_stores.resize_with(rsrc.len(), Default::default);
+        Self {
+            rsrc,
+            pipes,
+            gfa_stores,
+        }
     }
 
     fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
@@ -54,6 +66,7 @@ impl Env {
             Resource::Stdout => panic!("cannot read from stdout"),
             Resource::File(name) => Input::File(BufReader::new(File::open(name).unwrap())),
             Resource::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
+            Resource::GFAStore => panic!("non-bytes input"),
         }
     }
 
@@ -63,27 +76,20 @@ impl Env {
             Resource::Stdout => Output::Stdout(std::io::stdout().lock()),
             Resource::File(name) => Output::File(BufWriter::new(File::create(name).unwrap())),
             Resource::Pipe => Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())),
+            Resource::GFAStore => panic!("non-bytes output"),
         }
     }
 
-    /// Parse a (text) GFA file from a resource.
-    fn parse_gfa(&mut self, rsrc: ResourceRef) -> HeapGFAStore {
-        use flatgfa::parse::Parser;
-        match &self.rsrc[rsrc.0] {
-            Resource::File(name) => {
-                let file = memfile::map_file(name);
-                Parser::for_heap().parse_mem(file.as_ref())
-            }
-            Resource::Stdin => {
-                let stdin = std::io::stdin();
-                Parser::for_heap().parse_stream(stdin.lock())
-            }
-            Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::Pipe => {
-                let read = self.read_pipe(rsrc).unwrap();
-                Parser::for_heap().parse_stream(BufReader::new(read))
-            }
-        }
+    fn get_store(&mut self, rsrc: ResourceRef) -> HeapGFAStore {
+        // TODO With some finer-grained structs, there's probably no need to
+        // take ownership here, which would let us reuse the resource.
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::GFAStore));
+        self.gfa_stores[rsrc.0].take().expect("store not populated")
+    }
+
+    fn set_store(&mut self, rsrc: ResourceRef, store: HeapGFAStore) {
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::GFAStore));
+        self.gfa_stores[rsrc.0] = Some(store);
     }
 }
 
@@ -120,13 +126,14 @@ impl Eval for ir::Instr {
             Self::NodeDepth(instr) => instr.eval(env),
             Self::PathDepth(instr) => instr.eval(env),
             Self::Exec(instr) => instr.eval(env),
+            Self::ParseGFA(instr) => instr.eval(env),
         }
     }
 }
 
 impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env.parse_gfa(self.input);
+        let store = env.get_store(self.input);
         let gfa = store.as_ref();
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
         env.output(self.output)
@@ -141,7 +148,7 @@ impl Eval for ir::NodeDepthInstr {
 
 impl Eval for ir::PathDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env.parse_gfa(self.input);
+        let store = env.get_store(self.input);
         let gfa = store.as_ref();
         if let Some(path_name) = &self.path {
             // TODO More elegantly handle missing paths.
@@ -188,6 +195,7 @@ impl Eval for ir::ExecInstr {
             Resource::Pipe => {
                 cmd.stdin(env.read_pipe(self.input).unwrap());
             }
+            Resource::GFAStore => panic!("non-bytes input"),
         }
 
         match &env.rsrc[self.output.0] {
@@ -199,10 +207,36 @@ impl Eval for ir::ExecInstr {
             Resource::Pipe => {
                 cmd.stdout(env.write_pipe(self.output).unwrap());
             }
+            Resource::GFAStore => panic!("non-bytes output"),
         }
 
         // TODO: Do anything with the status?
         cmd.status().unwrap();
+    }
+}
+
+impl Eval for ir::ParseGFAInstr {
+    fn eval(&self, env: &mut Env) {
+        use flatgfa::parse::Parser;
+
+        let store = match &env.rsrc[self.input.0] {
+            Resource::File(name) => {
+                let file = memfile::map_file(name);
+                Parser::for_heap().parse_mem(file.as_ref())
+            }
+            Resource::Stdin => {
+                let stdin = std::io::stdin();
+                Parser::for_heap().parse_stream(stdin.lock())
+            }
+            Resource::Stdout => panic!("cannot read from stdout"),
+            Resource::Pipe => {
+                let read = env.read_pipe(self.input).unwrap();
+                Parser::for_heap().parse_stream(BufReader::new(read))
+            }
+            Resource::GFAStore => panic!("non-bytes input"),
+        };
+
+        env.set_store(self.output, store);
     }
 }
 

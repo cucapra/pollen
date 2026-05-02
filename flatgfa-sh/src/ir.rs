@@ -6,6 +6,7 @@ pub enum Resource {
     Stdin,
     Stdout,
     Pipe,
+    GFAStore,
 }
 
 /// An instruction performs one imperative action.
@@ -14,6 +15,7 @@ pub enum Instr {
     NodeDepth(NodeDepthInstr),
     PathDepth(PathDepthInstr),
     Exec(ExecInstr),
+    ParseGFA(ParseGFAInstr),
 }
 
 #[derive(Debug)]
@@ -53,6 +55,19 @@ pub struct ExecInstr {
 impl From<ExecInstr> for Instr {
     fn from(value: ExecInstr) -> Self {
         Self::Exec(value)
+    }
+}
+
+/// Parse a GFA file or stream  in text foramt.
+#[derive(Debug)]
+pub struct ParseGFAInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+}
+
+impl From<ParseGFAInstr> for Instr {
+    fn from(value: ParseGFAInstr) -> Self {
+        Self::ParseGFA(value)
     }
 }
 
@@ -106,6 +121,11 @@ impl Builder {
         self.add_rsrc(Resource::Pipe)
     }
 
+    /// Create a new FlatGFA data store resource.
+    pub fn gfa_store(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::GFAStore)
+    }
+
     /// Get the standard input resource.
     pub fn stdin(&self) -> ResourceRef {
         ResourceRef(0)
@@ -114,6 +134,16 @@ impl Builder {
     /// Get the standard output resource.
     pub fn stdout(&self) -> ResourceRef {
         ResourceRef(1)
+    }
+
+    /// Create an instruction to parse GFA text into a FlatGFA store.
+    ///
+    /// The input should be a plain-bytes resource. We return the output, which
+    /// is a FlatGFA store resource.
+    pub fn parse_gfa(&mut self, input: ResourceRef) -> ResourceRef {
+        let output = self.gfa_store();
+        self.add_instr(Instr::ParseGFA(ParseGFAInstr { input, output }));
+        output
     }
 
     pub fn build(self) -> Program {
