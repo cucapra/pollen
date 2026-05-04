@@ -368,6 +368,7 @@ dependencies = [
 name = "flatgfa-sh"
 version = "0.1.0"
 dependencies = [
+ "bstr",
  "flash",
  "flatgfa",
  "memmap",

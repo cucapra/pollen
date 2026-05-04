@@ -59,6 +59,28 @@ fn cmd_to_ir(
             }
             _ => unimplemented!("unsupported odgi subcommand"),
         }
+    } else if name == "bedtools" {
+        let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
+        match argp.subcommand().unwrap().as_deref() {
+            Some("makewindows") => {
+                // The input comes from the `-b` argument, which may be
+                // literally `/dev/stdin`.
+                let filename: String = argp.value_from_str("-b").unwrap();
+                if filename != "/dev/stdin" {
+                    input = builder.file(filename);
+                }
+
+                // Use an instruction to parse the BED file.
+                let input = builder.load_bed(input);
+
+                builder.add_instr(ir::MakeWindowsInstr {
+                    input,
+                    output,
+                    size: argp.value_from_str("-w").unwrap(),
+                });
+            }
+            _ => unimplemented!("unsupported bedtools subcommand"),
+        }
     } else {
         // Any non-odgi command is a "passthrough" shell command.
         builder.add_instr(ir::ExecInstr {

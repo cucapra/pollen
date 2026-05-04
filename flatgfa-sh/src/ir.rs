@@ -8,6 +8,7 @@ pub enum Resource {
     Pipe,
     GFAStore,
     Mmap,
+    BEDStore,
 }
 
 /// An instruction performs one imperative action.
@@ -18,6 +19,8 @@ pub enum Instr {
     Exec(ExecInstr),
     ParseGFA(ParseGFAInstr),
     MapFile(MapFileInstr),
+    ParseBED(ParseBEDInstr),
+    MakeWindows(MakeWindowsInstr),
 }
 
 #[derive(Debug)]
@@ -60,7 +63,7 @@ impl From<ExecInstr> for Instr {
     }
 }
 
-/// Parse a GFA file or stream  in text foramt.
+/// Parse a GFA file or stream in text foramt.
 #[derive(Debug)]
 pub struct ParseGFAInstr {
     pub input: ResourceRef,
@@ -83,6 +86,36 @@ pub struct MapFileInstr {
 impl From<MapFileInstr> for Instr {
     fn from(value: MapFileInstr) -> Self {
         Self::MapFile(value)
+    }
+}
+
+/// Parse a text BED file or stream.
+#[derive(Debug)]
+pub struct ParseBEDInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+}
+
+impl From<ParseBEDInstr> for Instr {
+    fn from(value: ParseBEDInstr) -> Self {
+        Self::ParseBED(value)
+    }
+}
+
+/// Create strided windows within chromosome spans.
+///
+/// Behaves like `bedtools makewindows`. Takes in a BED file with chromosome
+/// sizes, and generates widows of the given `size` as a BED output.
+#[derive(Debug)]
+pub struct MakeWindowsInstr {
+    pub input: ResourceRef,
+    pub output: ResourceRef,
+    pub size: usize,
+}
+
+impl From<MakeWindowsInstr> for Instr {
+    fn from(value: MakeWindowsInstr) -> Self {
+        Self::MakeWindows(value)
     }
 }
 
@@ -141,6 +174,11 @@ impl Builder {
         self.add_rsrc(Resource::GFAStore)
     }
 
+    /// Create a new FlatBED data store resource.
+    pub fn bed_store(&mut self) -> ResourceRef {
+        self.add_rsrc(Resource::BEDStore)
+    }
+
     /// Create a new memory-mapped file resource.
     pub fn mmap(&mut self) -> ResourceRef {
         self.add_rsrc(Resource::Mmap)
@@ -172,10 +210,22 @@ impl Builder {
             Resource::Pipe | Resource::Stdin | Resource::File(_) => {
                 // Parse as GFA text.
                 let output = self.gfa_store();
-                self.add_instr(Instr::ParseGFA(ParseGFAInstr { input, output }));
+                self.add_instr(ParseGFAInstr { input, output });
                 output
             }
             _ => panic!("cannot parse this resource as GFA text"),
+        }
+    }
+
+    /// Create an instruction to parse a BED file to a FlatBED resource.
+    pub fn load_bed(&mut self, input: ResourceRef) -> ResourceRef {
+        match &self.rsrc[input.0] {
+            Resource::Pipe | Resource::Stdin | Resource::File(_) => {
+                let output = self.bed_store();
+                self.add_instr(ParseBEDInstr { input, output });
+                output
+            }
+            _ => panic!("cannot parse this resource as BED text"),
         }
     }
 

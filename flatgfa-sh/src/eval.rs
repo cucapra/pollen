@@ -1,5 +1,7 @@
 use crate::ir::{self, Resource, ResourceRef};
+use bstr::BStr;
 use flatgfa::FlatGFA;
+use flatgfa::flatbed::HeapBEDStore;
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
 use memmap::Mmap;
 use std::fs::File;
@@ -23,27 +25,26 @@ struct Env {
     /// the pipe. The first use of either "side" of the pipe consumes it.
     pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)>,
 
-    /// The currently available FlatGFA data stores.
-    ///
-    /// This is a heap vector (indexed by `idx`) for each resource that is a
-    /// `GFAStore`.
+    /// A heap vector of currently available FlatGFA data stores.
     gfa_stores: Vec<Option<HeapGFAStore>>,
 
-    /// The currently memory-mapped files.
-    ///
-    /// This is a heap vector (indexed by `idx`) for each resource that is a
-    /// `Mmap`.
+    /// A heap vector of currently memory-mapped files.
     mmaps: Vec<Option<Mmap>>,
+
+    /// A heap vector of FlatBED stores.
+    bed_stores: Vec<Option<HeapBEDStore>>,
 }
 
 impl Env {
     fn new(rsrc: Vec<Resource>) -> Self {
         // Initialize the heap vectors and their indices.
+        // TODO Reduce some duplication here...
         let mut idx: Vec<u16> = Vec::with_capacity(rsrc.len());
         let mut pipes: Vec<(Option<PipeReader>, Option<PipeWriter>)> =
             Vec::with_capacity(rsrc.len());
         let mut mmaps: Vec<Option<Mmap>> = Vec::with_capacity(rsrc.len());
         let mut gfa_stores: Vec<Option<HeapGFAStore>> = Vec::with_capacity(rsrc.len());
+        let mut bed_stores: Vec<Option<HeapBEDStore>> = Vec::with_capacity(rsrc.len());
         for r in &rsrc {
             let i = match r {
                 Resource::Pipe => {
@@ -58,6 +59,10 @@ impl Env {
                     mmaps.push(None);
                     (mmaps.len() - 1).try_into().unwrap()
                 }
+                Resource::BEDStore => {
+                    bed_stores.push(None);
+                    (bed_stores.len() - 1).try_into().unwrap()
+                }
                 _ => u16::MAX,
             };
             idx.push(i);
@@ -69,6 +74,7 @@ impl Env {
             pipes,
             gfa_stores,
             mmaps,
+            bed_stores,
         }
     }
 
@@ -85,6 +91,11 @@ impl Env {
     fn get_mmap(&mut self, rsrc: ResourceRef) -> &mut Option<Mmap> {
         debug_assert!(matches!(self.rsrc[rsrc.0], Resource::Mmap));
         &mut self.mmaps[self.idx[rsrc.0] as usize]
+    }
+
+    fn get_bed_store(&mut self, rsrc: ResourceRef) -> &mut Option<HeapBEDStore> {
+        debug_assert!(matches!(self.rsrc[rsrc.0], Resource::BEDStore));
+        &mut self.bed_stores[self.idx[rsrc.0] as usize]
     }
 
     fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
@@ -167,11 +178,11 @@ enum Output {
 }
 
 impl Output {
-    fn emit<T: Emit>(self, val: T) -> std::io::Result<()> {
-        match self {
-            Self::Stdout(mut s) => val.emit(&mut s),
-            Self::File(mut s) => val.emit(&mut s),
-            Self::Pipe(mut s) => val.emit(&mut s),
+    fn emit<T: Emit>(&mut self, val: T) -> std::io::Result<()> {
+        match *self {
+            Self::Stdout(ref mut s) => val.emit(s),
+            Self::File(ref mut s) => val.emit(s),
+            Self::Pipe(ref mut s) => val.emit(s),
         }
     }
 }
@@ -188,13 +199,15 @@ impl Eval for ir::Instr {
             Self::Exec(instr) => instr.eval(env),
             Self::ParseGFA(instr) => instr.eval(env),
             Self::MapFile(instr) => instr.eval(env),
+            Self::ParseBED(instr) => instr.eval(env),
+            Self::MakeWindows(instr) => instr.eval(env),
         }
     }
 }
 
 impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let out = env.output(self.output);
+        let mut out = env.output(self.output);
         let gfa = env.flatgfa(self.input);
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
         out.emit(ops::depth::SegDepth {
@@ -208,7 +221,7 @@ impl Eval for ir::NodeDepthInstr {
 
 impl Eval for ir::PathDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let out = env.output(self.output);
+        let mut out = env.output(self.output);
         let gfa = env.flatgfa(self.input);
         if let Some(path_name) = &self.path {
             // TODO More elegantly handle missing paths.
@@ -305,6 +318,67 @@ impl Eval for ir::MapFileInstr {
             *env.get_mmap(self.output) = Some(mmap);
         } else {
             panic!("can only map actual files");
+        }
+    }
+}
+
+impl Eval for ir::ParseBEDInstr {
+    fn eval(&self, env: &mut Env) {
+        use flatgfa::flatbed::BEDParser;
+
+        let store = match &env.rsrc[self.input.0] {
+            Resource::File(name) => {
+                let file = memfile::map_file(name);
+                BEDParser::for_heap().parse_mem(file.as_ref())
+            }
+            Resource::Stdin => {
+                let stdin = std::io::stdin();
+                BEDParser::for_heap().parse_stream(stdin.lock())
+            }
+            Resource::Stdout => panic!("cannot read from stdout"),
+            Resource::Pipe => {
+                let read = env.read_pipe(self.input).unwrap();
+                BEDParser::for_heap().parse_stream(BufReader::new(read))
+            }
+            _ => panic!("non-bytes input"),
+        };
+
+        *env.get_bed_store(self.output) = Some(store);
+    }
+}
+
+struct WindowsBed<'a> {
+    name: &'a BStr,
+    start: u64,
+    end: u64,
+    size: u64,
+}
+
+impl<'a> Emit for WindowsBed<'a> {
+    fn emit(self, f: &mut impl std::io::Write) -> io::Result<()> {
+        let mut pos = self.start;
+        while pos < self.end {
+            let end = (pos + self.size).min(self.end);
+            writeln!(f, "{}\t{}\t{}", self.name, pos, end)?;
+            pos = end;
+        }
+        Ok(())
+    }
+}
+
+impl Eval for ir::MakeWindowsInstr {
+    fn eval(&self, env: &mut Env) {
+        let store = env.get_bed_store(self.input).take().unwrap();
+        let bed = store.as_ref();
+        let mut out = env.output(self.output);
+        for entry in bed.entries.all() {
+            out.emit(WindowsBed {
+                name: bed.get_name_of_entry(entry),
+                start: entry.start,
+                end: entry.end,
+                size: self.size.try_into().unwrap(),
+            })
+            .unwrap();
         }
     }
 }
