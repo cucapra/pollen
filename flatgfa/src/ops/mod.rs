@@ -4,5 +4,6 @@ pub mod beddepth;
 pub mod depth;
 pub mod extract;
 pub mod gaf;
+pub mod pangenotype;
 pub mod position;
 pub mod windows;

@@ -1,6 +1,7 @@
 use flatgfa::namemap::NameMap;
 use flatgfa::ops::gaf::{ChunkEvent, GAFParser};
 use flatgfa::packedseq::decompress_into_buffer;
+use flatgfa::ops::pangenotype;
 use flatgfa::pool::Id;
 use flatgfa::{self, file, memfile, print, FlatGFA, Handle, HeapGFAStore};
 use memmap::Mmap;
@@ -167,6 +168,11 @@ impl PyFlatGFA {
             }
             println!();
         }
+    }
+
+    pub fn make_pangenotype_matrix(&self, gaf_files: Vec<String>) -> Vec<Vec<bool>> {
+        let gfa = self.0.view();
+        pangenotype::make_pangenotype_matrix(&gfa, gaf_files)
     }
 }
 

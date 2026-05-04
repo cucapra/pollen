@@ -27,8 +27,8 @@ One way to do it is to install the necessary command-line tools into the virtual
 
     $ . .venv/bin/activate
     $ cd flatgfa-py
-    $ uv pip install maturin pip
-    $ maturin develop
+    $ uv pip install maturin
+    $ maturin develop --uv
 
 Then, just type `maturin develop` and `pytest` while you work.
 
