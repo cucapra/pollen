@@ -27,6 +27,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Instr::ParseGFA(instr) => self.wrap(instr).fmt(f),
             ir::Instr::MapFile(instr) => self.wrap(instr).fmt(f),
             ir::Instr::ParseBED(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::MakeWindows(instr) => self.wrap(instr).fmt(f),
         }
     }
 }
@@ -109,6 +110,18 @@ impl Display for Wrapped<'_, ir::ParseBEDInstr> {
             f,
             "parse-bed({}) -> {}",
             self.wrap(&self.val.input),
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::MakeWindowsInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "make-windows({}, {}) -> {}",
+            self.wrap(&self.val.input),
+            self.val.size,
             self.wrap(&self.val.output),
         )
     }

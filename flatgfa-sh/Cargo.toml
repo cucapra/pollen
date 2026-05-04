@@ -13,6 +13,7 @@ flash = "0.0.6"
 pico-args = "0.5"
 rustyline = "18"
 memmap = { workspace = true }
+bstr = { workspace = true }
 
 [dev-dependencies]
 trycmd = "1.2.0"

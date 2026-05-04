@@ -1,4 +1,5 @@
 use crate::ir::{self, Resource, ResourceRef};
+use bstr::BStr;
 use flatgfa::FlatGFA;
 use flatgfa::flatbed::HeapBEDStore;
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
@@ -177,11 +178,11 @@ enum Output {
 }
 
 impl Output {
-    fn emit<T: Emit>(self, val: T) -> std::io::Result<()> {
-        match self {
-            Self::Stdout(mut s) => val.emit(&mut s),
-            Self::File(mut s) => val.emit(&mut s),
-            Self::Pipe(mut s) => val.emit(&mut s),
+    fn emit<T: Emit>(&mut self, val: T) -> std::io::Result<()> {
+        match *self {
+            Self::Stdout(ref mut s) => val.emit(s),
+            Self::File(ref mut s) => val.emit(s),
+            Self::Pipe(ref mut s) => val.emit(s),
         }
     }
 }
@@ -199,13 +200,14 @@ impl Eval for ir::Instr {
             Self::ParseGFA(instr) => instr.eval(env),
             Self::MapFile(instr) => instr.eval(env),
             Self::ParseBED(instr) => instr.eval(env),
+            Self::MakeWindows(instr) => instr.eval(env),
         }
     }
 }
 
 impl Eval for ir::NodeDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let out = env.output(self.output);
+        let mut out = env.output(self.output);
         let gfa = env.flatgfa(self.input);
         let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
         out.emit(ops::depth::SegDepth {
@@ -219,7 +221,7 @@ impl Eval for ir::NodeDepthInstr {
 
 impl Eval for ir::PathDepthInstr {
     fn eval(&self, env: &mut Env) {
-        let out = env.output(self.output);
+        let mut out = env.output(self.output);
         let gfa = env.flatgfa(self.input);
         if let Some(path_name) = &self.path {
             // TODO More elegantly handle missing paths.
@@ -342,6 +344,42 @@ impl Eval for ir::ParseBEDInstr {
         };
 
         *env.get_bed_store(self.output) = Some(store);
+    }
+}
+
+struct WindowsBed<'a> {
+    name: &'a BStr,
+    start: u64,
+    end: u64,
+    size: u64,
+}
+
+impl<'a> Emit for WindowsBed<'a> {
+    fn emit(self, f: &mut impl std::io::Write) -> io::Result<()> {
+        let mut pos = self.start;
+        while pos < self.end {
+            let end = (pos + self.size).min(self.end);
+            writeln!(f, "{}\t{}\t{}", self.name, pos, end)?;
+            pos = end;
+        }
+        Ok(())
+    }
+}
+
+impl Eval for ir::MakeWindowsInstr {
+    fn eval(&self, env: &mut Env) {
+        let store = env.get_bed_store(self.input).take().unwrap();
+        let bed = store.as_ref();
+        let mut out = env.output(self.output);
+        for entry in bed.entries.all() {
+            out.emit(WindowsBed {
+                name: bed.get_name_of_entry(entry),
+                start: entry.start,
+                end: entry.end,
+                size: self.size.try_into().unwrap(),
+            })
+            .unwrap();
+        }
     }
 }
 
