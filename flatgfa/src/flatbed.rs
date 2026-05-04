@@ -144,6 +144,11 @@ impl<'a, P: StoreFamily<'a>> BEDParser<'a, P> {
 
     /// Parse a single line from a BED file and add it to the store.
     fn parse_line(&mut self, line: &[u8]) {
+        // Ignore comments (which are also used as header lines).
+        if line.starts_with(b"#") {
+            return;
+        }
+
         let (name_slice, rest) = parse_field(line).unwrap();
         let (start_num, rest) = parse_num(rest).unwrap();
         let (end_num, _) = parse_num(&rest[1..]).unwrap();
