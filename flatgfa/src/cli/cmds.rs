@@ -10,6 +10,7 @@ use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
+use std::fs;
 use std::io::Write;
 
 /// print the FlatGFA table of contents
@@ -434,6 +435,20 @@ pub fn seq_export(args: SeqExport) {
     );
     let view = store.as_ref();
     packedseq::export(view, &args.output);
+}
+
+/// Finds the depth of a sequence
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "bed-depth")]
+pub struct BedDepth {
+    #[argh(positional)]
+    window: usize,
+}
+
+pub fn bed_depth(gfa: &flatgfa::FlatGFA, args: BedDepth) {
+    ops::beddepth::create_bed(gfa, "BedName", "ChromName", args.window, Vec::new());
+    let content = fs::read_to_string("BedName").unwrap();
+    println!("{}", content);
 }
 
 /// construct a pangenotype matrix

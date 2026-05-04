@@ -50,6 +50,7 @@ enum Command {
     BedIntersect(cmds::BEDIntersect),
     SeqExport(cmds::SeqExport),
     SeqImport(cmds::SeqImport),
+    BedDepth(cmds::BedDepth),
     PangenotypeMatrix(cmds::PangenotypeMatrix),
 }
 
@@ -170,6 +171,9 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::SeqImport(_sub_args)) => {
             panic!("Unreachable code");
+        }
+        Some(Command::BedDepth(sub_args)) => {
+            cmds::bed_depth(&gfa, sub_args);
         }
         Some(Command::PangenotypeMatrix(sub_args)) => {
             cmds::pangenotype_matrix(&gfa, sub_args);

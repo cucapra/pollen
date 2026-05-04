@@ -3,7 +3,10 @@
 use std::ops::Range;
 use std::str::FromStr;
 
-use crate::pool::{self, Id, Pool, Span, Store};
+use crate::{
+    packedseq::{PackedSeqView, SeqSpan},
+    pool::{self, Id, Pool, Span, Store},
+};
 use bstr::BStr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use zerocopy::{FromBytes, Immutable, IntoBytes};
@@ -75,7 +78,7 @@ pub struct Segment {
     pub name: usize,
 
     /// The base-pair sequence for the segment. This is a range in the `seq_data` pool.
-    pub seq: Span<u8>,
+    pub seq: SeqSpan,
 
     /// Segments can have optional fields. This is a range in the `optional_data` pool.
     pub optional: Span<u8>,
@@ -274,7 +277,7 @@ pub enum LineKind {
 /// This is mostly a `&[u8]`, but it also has a flag to indicate that we're
 /// representing the reverse-complement of the underlying sequence data.
 pub struct Sequence<'a> {
-    data: &'a [u8],
+    data: PackedSeqView<'a>,
     revcmp: bool,
 }
 
@@ -284,7 +287,7 @@ impl<'a> Sequence<'a> {
     /// `data` should be the "forward" version of the sequence. Use `ori` to
     /// indicate whether this `Sequence` represents the forward or backward
     /// (reverse complement) of that data.
-    pub fn new(data: &'a [u8], ori: Orientation) -> Self {
+    pub fn new(data: PackedSeqView<'a>, ori: Orientation) -> Self {
         Self {
             data,
             revcmp: ori == Orientation::Backward,
@@ -294,9 +297,9 @@ impl<'a> Sequence<'a> {
     /// Look up a single base pair in the sequence.
     pub fn index(&self, idx: usize) -> u8 {
         if self.revcmp {
-            nucleotide_complement(self.data[self.data.len() - idx - 1])
+            self.data.get(self.data.len() - idx - 1).complement().into()
         } else {
-            self.data[idx]
+            self.data.get(idx).into()
         }
     }
 
@@ -305,9 +308,10 @@ impl<'a> Sequence<'a> {
         let data = if self.revcmp {
             // The range starts at the end of the buffer:
             // [-----<end<******<start<------]
-            &self.data[(self.data.len() - range.end)..(self.data.len() - range.start)]
+            self.data
+                .range_slice((self.data.len() - range.end)..(self.data.len() - range.start))
         } else {
-            &self.data[range]
+            self.data.range_slice(range)
         };
         Self {
             data,
@@ -321,26 +325,11 @@ impl<'a> Sequence<'a> {
             self.data
                 .iter()
                 .rev()
-                .map(|&c| nucleotide_complement(c))
+                .map(|c| c.complement().into())
                 .collect()
         } else {
-            self.data.to_vec()
+            self.data.iter().map(|c| c.into()).collect()
         }
-    }
-}
-
-/// Given an ASCII character for a nucleotide, get its complement.
-fn nucleotide_complement(c: u8) -> u8 {
-    match c {
-        b'A' => b'T',
-        b'T' => b'A',
-        b'C' => b'G',
-        b'G' => b'C',
-        b'a' => b't',
-        b't' => b'a',
-        b'c' => b'g',
-        b'g' => b'c',
-        x => x,
     }
 }
 
@@ -354,7 +343,7 @@ impl std::fmt::Display for Sequence<'_> {
             let bytes = self.to_vec();
             write!(f, "{}", BStr::new(&bytes))?;
         } else {
-            write!(f, "{}", BStr::new(self.data))?;
+            write!(f, "{}", self.data)?;
         }
         Ok(())
     }
@@ -362,8 +351,8 @@ impl std::fmt::Display for Sequence<'_> {
 
 impl<'a> FlatGFA<'a> {
     /// Get the base-pair sequence for a segment.
-    pub fn get_seq(&self, seg: &Segment) -> &BStr {
-        self.seq_data[seg.seq].as_ref()
+    pub fn get_seq(&self, seg: &Segment) -> PackedSeqView<'_> {
+        PackedSeqView::from_pool(self.seq_data, seg.seq)
     }
 
     /// Get the sequence that a *handle* refers to.
@@ -372,7 +361,7 @@ impl<'a> FlatGFA<'a> {
     /// gets the sequence in the orientation specified by the handle.
     pub fn get_seq_oriented(&self, handle: Handle) -> Sequence<'_> {
         let seg = self.get_handle_seg(handle);
-        let seq_data = self.seq_data[seg.seq].as_ref();
+        let seq_data = PackedSeqView::from_pool(self.seq_data, seg.seq);
         Sequence::new(seq_data, handle.orient())
     }
 
@@ -446,11 +435,62 @@ impl<'a, P: StoreFamily<'a>> GFAStore<'a, P> {
         self.header.add_slice(version);
     }
 
-    /// Add a new segment to the GFA file.
-    pub fn add_seg(&mut self, name: usize, seq: &[u8], optional: &[u8]) -> Id<Segment> {
+    /// Add a new segment to the GFA file, compressing the data in `seq`
+    pub fn compress_and_add_seg(
+        &mut self,
+        name: usize,
+        seq: &[u8],
+        optional: &[u8],
+    ) -> Id<Segment> {
+        self.seq_data.reserve(seq.len());
+        let mut high_nibble_end = true;
+        let mut combined_item = 0;
+        let start_id = self.seq_data.next_id();
+        for i in 0..seq.len() {
+            let item = seq[i];
+            let converted: u8 = match item {
+                65 => 0,
+                67 => 1,
+                84 => 2,
+                71 => 3,
+                78 => 4,
+                _ => panic!("Not a Nucleotide!"),
+            };
+            if high_nibble_end {
+                high_nibble_end = false;
+                if i == seq.len() - 1 {
+                    self.seq_data.add(converted);
+                    break;
+                }
+                combined_item = converted;
+            } else {
+                combined_item |= converted << 4;
+                self.seq_data.add(combined_item);
+                high_nibble_end = true;
+            }
+        }
+        let end_id = self.seq_data.next_id();
+        let byte_span = Span::new(start_id, end_id);
+        let start = SeqSpan::to_logical(byte_span.start.index(), false);
+        let end = SeqSpan::to_logical(byte_span.end.index() - 1, high_nibble_end) + 1;
         self.segs.add(Segment {
             name,
-            seq: self.seq_data.add_slice(seq),
+            seq: SeqSpan {
+                start,
+                len: (end - start) as u16,
+            },
+            optional: self.optional_data.add_slice(optional),
+        })
+    }
+
+    /// Add a new segment with already compressed data
+    pub fn add_seg(&mut self, name: usize, seq: PackedSeqView, optional: &[u8]) -> Id<Segment> {
+        let byte_span = self.seq_data.add_slice(seq.data);
+        let start = SeqSpan::to_logical(byte_span.start.index(), seq.high_nibble_begin);
+        let end = SeqSpan::to_logical(byte_span.end.index() - 1, seq.high_nibble_end) + 1;
+        self.segs.add(Segment {
+            name,
+            seq: (start as usize..end as usize).into(),
             optional: self.optional_data.add_slice(optional),
         })
     }

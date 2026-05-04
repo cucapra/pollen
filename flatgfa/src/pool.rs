@@ -170,6 +170,9 @@ pub trait Store<T: Clone> {
     fn next_id(&self) -> Id<T> {
         Id::new(self.len())
     }
+
+    /// Reserve space for directly adding elements
+    fn reserve(&mut self, num_elems: usize);
 }
 
 /// A store that uses a `Vec` to allocate objects on the heap.
@@ -203,6 +206,10 @@ impl<T: Clone> Store<T> for HeapStore<T> {
 
     fn len(&self) -> usize {
         self.0.len()
+    }
+
+    fn reserve(&mut self, num_elems: usize) {
+        self.0.reserve(num_elems);
     }
 }
 
@@ -245,6 +252,11 @@ impl<T: Clone> Store<T> for FixedStore<'_, T> {
 
     fn len(&self) -> usize {
         self.0.len()
+    }
+
+    fn reserve(&mut self, num_elems: usize) {
+        let required_capacity = self.len() + num_elems;
+        assert!(self.capacity() >= required_capacity);
     }
 }
 

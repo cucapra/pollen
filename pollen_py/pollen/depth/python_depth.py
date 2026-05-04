@@ -1,4 +1,4 @@
-""" A node depth computation for .og files implemented using odgi's
+"""A node depth computation for .og files implemented using odgi's
 Python bindings. While this implementation reuses odgi's data structures, it
 does not reuse its node depth computation algorithm and instead implements
 it from scratch.

@@ -37,6 +37,7 @@ impl<'a> SubgraphBuilder<'a> {
     fn include_seg(&mut self, seg_id: Id<Segment>) {
         let seg = &self.old.segs[seg_id];
         let new_seg_id = self.store.add_seg(
+            // Note for reviwer, change made here
             seg.name,
             self.old.get_seq(seg),
             self.old.get_optional_data(seg),
