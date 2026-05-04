@@ -113,3 +113,16 @@ map-file("chr8.flatgfa") -> mmap-3
 path-depth(mmap-3) -> stdout
 
 ```
+
+
+Complicated Example
+-------------------
+
+Here's a shell script that uses a pipeline to combine `odgi depth` and
+`bedtools makewindows`.
+
+```console
+$ flash windows.sh
+5	0	4
+
+```
