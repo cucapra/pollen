@@ -10,6 +10,7 @@ use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter};
 use std::ops::{Index, IndexMut};
 
 struct Env {
+    /// The names of each `File` resource, by their indices.
     file_names: Vec<String>,
 
     /// The currently open Unix pipes for operations in this program.
