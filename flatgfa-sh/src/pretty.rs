@@ -4,7 +4,7 @@ use crate::ir;
 
 /// A utility for printing IR values using additional context.
 struct Wrapped<'a, T> {
-    rsrc: &'a [ir::Resource],
+    file_names: &'a [String],
     val: &'a T,
 }
 
@@ -12,7 +12,7 @@ impl<'a, T> Wrapped<'a, T> {
     /// Wrap a new value with the same printing context.
     fn wrap<S>(&self, val: &'a S) -> Wrapped<'a, S> {
         Wrapped {
-            rsrc: self.rsrc,
+            file_names: self.file_names,
             val,
         }
     }
@@ -32,18 +32,17 @@ impl Display for Wrapped<'_, ir::Instr> {
     }
 }
 
-impl Display for Wrapped<'_, ir::ResourceRef> {
+impl Display for Wrapped<'_, ir::Resource> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let idx = self.val.0;
-        let rsrc = &self.rsrc[idx];
-        match rsrc {
-            ir::Resource::File(name) => write!(f, "\"{}\"", name),
-            ir::Resource::Stdin => write!(f, "stdin"),
-            ir::Resource::Stdout => write!(f, "stdout"),
-            ir::Resource::Pipe => write!(f, "pipe-{}", idx),
-            ir::Resource::GFAStore => write!(f, "gfa-store-{}", idx),
-            ir::Resource::Mmap => write!(f, "mmap-{}", idx),
-            ir::Resource::BEDStore => write!(f, "bed-store-{}", idx),
+        let index = self.val.index;
+        match self.val.kind {
+            ir::ResourceKind::File => write!(f, "\"{}\"", self.file_names[index as usize]),
+            ir::ResourceKind::Stdin => write!(f, "stdin"),
+            ir::ResourceKind::Stdout => write!(f, "stdout"),
+            ir::ResourceKind::Pipe => write!(f, "pipe-{}", index),
+            ir::ResourceKind::GFAStore => write!(f, "gfa-store-{}", index),
+            ir::ResourceKind::Mmap => write!(f, "mmap-{}", index),
+            ir::ResourceKind::BEDStore => write!(f, "bed-store-{}", index),
         }
     }
 }
@@ -134,7 +133,7 @@ impl Display for ir::Program {
                 f,
                 "{}",
                 Wrapped {
-                    rsrc: &self.rsrc,
+                    file_names: &self.file_names,
                     val: op,
                 }
             )?;
