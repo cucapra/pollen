@@ -39,7 +39,7 @@ impl Env {
         }
     }
 
-    pub fn file_name(&self, rsrc: Resource) -> &str {
+    fn file_name(&self, rsrc: Resource) -> &str {
         debug_assert!(rsrc.kind == ResourceKind::File);
         &self.file_names[rsrc.index as usize]
     }
