@@ -1,4 +1,4 @@
-use crate::ir::{Builder, Instr, MapFileInstr, Program};
+use crate::ir::{Builder, Instr, MapFileInstr, Program, ResourceKind};
 use std::fs;
 
 fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
@@ -7,13 +7,10 @@ fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
         if let Instr::ParseGFA(parse) = instr {
             // Search for an `odgi-view` instruction that produces the GFA.
             let gfa = parse.input;
-            if let Some((view_idx, Instr::OdgiView(view))) =
-                instrs.iter().enumerate().find(|(_, instr)| match instr {
-                    Instr::OdgiView(view) => view.output == gfa,
-                    _ => false,
-                })
-            {
-                dbg!(parse_idx, parse, view_idx, view);
+            if let Some(view_idx) = instrs.iter().position(|instr| match instr {
+                Instr::OdgiView(view) => view.output == gfa,
+                _ => false,
+            }) {
                 return Some((view_idx, parse_idx));
             }
         }
@@ -25,8 +22,6 @@ pub fn optimize(prog: Program) -> Program {
     let mut builder = Builder::rebuild(prog);
 
     if let Some((view_idx, parse_idx)) = find_og_pair(&builder.instrs) {
-        dbg!(view_idx, parse_idx);
-
         // Get the input `.og` file to this pair.
         let og_filename = if let Instr::OdgiView(view) = &builder.instrs[view_idx] {
             builder.file_name(view.input)
@@ -37,8 +32,8 @@ pub fn optimize(prog: Program) -> Program {
             .strip_suffix(".og")
             .expect("odgi-view inputs must end in .og");
 
-        // Get the final FlatGFA output resource.
-        let gfa_rsrc = if let Instr::ParseGFA(parse) = &builder.instrs[parse_idx] {
+        // Get the parsed FlatGFA output resource.
+        let old_gfa = if let Instr::ParseGFA(parse) = &builder.instrs[parse_idx] {
             parse.output
         } else {
             panic!()
@@ -48,11 +43,19 @@ pub fn optimize(prog: Program) -> Program {
         let flat_filename = format!("{stem}.flatgfa");
         if fs::exists(&flat_filename).unwrap() {
             // Make a new instruction to load the FlatGFA.
-            let flat_file = builder.file(flat_filename);
-            builder.add_instr(Instr::MapFile(MapFileInstr {
-                input: flat_file,
-                output: gfa_rsrc,
-            }));
+            let new_gfa = builder.add_rsrc(ResourceKind::Mmap);
+            let new_instr = MapFileInstr {
+                input: builder.file(flat_filename),
+                output: new_gfa,
+            };
+
+            // Swap it in where the old `parse-gfa` used to be, and remove the
+            // `odgi-view`.
+            builder.instrs[parse_idx] = new_instr;
+            builder.instrs.remove(view_idx);
+
+            // Replace all uses of `old_gfa` with `new_gfa`.
+            // TODO
         }
     }
 
