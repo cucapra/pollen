@@ -5,6 +5,7 @@ use flatgfa::FlatGFA;
 use flatgfa::flatbed::HeapBEDStore;
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
 use memmap::Mmap;
+use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter};
 use std::ops::{Index, IndexMut};
@@ -106,6 +107,47 @@ impl Env {
             _ => panic!("resource must be FlatGFA data"),
         }
     }
+
+    /// Execute a subprocess hooked up to the given resources as the stdin & stdout streams.
+    fn run_cmd(
+        &mut self,
+        command: impl AsRef<OsStr>,
+        args: &[impl AsRef<OsStr>],
+        stdin: Resource,
+        stdout: Resource,
+    ) {
+        use std::process::Command;
+
+        let mut cmd = Command::new(command);
+        cmd.args(args);
+
+        match stdin.kind {
+            ResourceKind::Stdin => (),
+            ResourceKind::Stdout => panic!("cannot read from stdout"),
+            ResourceKind::File => {
+                cmd.stdin(File::open(self.file_name(stdin)).unwrap());
+            }
+            ResourceKind::Pipe => {
+                cmd.stdin(self.read_pipe(stdin).unwrap());
+            }
+            _ => panic!("non-bytes input"),
+        }
+
+        match stdout.kind {
+            ResourceKind::Stdin => panic!("cannot write to stdin"),
+            ResourceKind::Stdout => (),
+            ResourceKind::File => {
+                cmd.stdout(File::create(self.file_name(stdout)).unwrap());
+            }
+            ResourceKind::Pipe => {
+                cmd.stdout(self.write_pipe(stdout).unwrap());
+            }
+            _ => panic!("non-bytes output"),
+        }
+
+        // TODO: Do anything with the status?
+        cmd.status().unwrap();
+    }
 }
 
 /// The data storage for heap values of a given resource kind.
@@ -176,6 +218,7 @@ impl Eval for ir::Instr {
             Self::MapFile(instr) => instr.eval(env),
             Self::ParseBED(instr) => instr.eval(env),
             Self::MakeWindows(instr) => instr.eval(env),
+            Self::OdgiView(instr) => instr.eval(env),
         }
     }
 }
@@ -226,38 +269,7 @@ impl Eval for ir::PathDepthInstr {
 
 impl Eval for ir::ExecInstr {
     fn eval(&self, env: &mut Env) {
-        use std::fs::File;
-        use std::process::Command;
-
-        let mut cmd = Command::new(&self.command);
-        cmd.args(&self.args);
-
-        match self.input.kind {
-            ResourceKind::Stdin => (),
-            ResourceKind::Stdout => panic!("cannot read from stdout"),
-            ResourceKind::File => {
-                cmd.stdin(File::open(env.file_name(self.input)).unwrap());
-            }
-            ResourceKind::Pipe => {
-                cmd.stdin(env.read_pipe(self.input).unwrap());
-            }
-            _ => panic!("non-bytes input"),
-        }
-
-        match self.output.kind {
-            ResourceKind::Stdin => panic!("cannot write to stdin"),
-            ResourceKind::Stdout => (),
-            ResourceKind::File => {
-                cmd.stdout(File::create(env.file_name(self.output)).unwrap());
-            }
-            ResourceKind::Pipe => {
-                cmd.stdout(env.write_pipe(self.output).unwrap());
-            }
-            _ => panic!("non-bytes output"),
-        }
-
-        // TODO: Do anything with the status?
-        cmd.status().unwrap();
+        env.run_cmd(&self.command, &self.args, self.input, self.output)
     }
 }
 
@@ -333,6 +345,21 @@ impl Eval for ir::MakeWindowsInstr {
             })
             .unwrap();
         }
+    }
+}
+
+impl Eval for ir::OdgiViewInstr {
+    fn eval(&self, env: &mut Env) {
+        let og_file = env.file_name(self.input).to_string();
+        env.run_cmd(
+            "odgi",
+            &["view", "-g", "-i", &og_file],
+            Resource {
+                kind: ResourceKind::Stdin,
+                index: 0,
+            },
+            self.output,
+        )
     }
 }
 

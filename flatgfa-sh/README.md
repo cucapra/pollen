@@ -113,7 +113,7 @@ map-file("chr8.flatgfa") -> mmap-0
 path-depth(mmap-0) -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.og'
-shell("odgi", ["view", "-g", "-i", "chr8.og"], input=stdin) -> pipe-0
+odgi-view("chr8.og") -> pipe-0
 parse-gfa(pipe-0) -> gfa-store-0
 path-depth(gfa-store-0) -> stdout
 

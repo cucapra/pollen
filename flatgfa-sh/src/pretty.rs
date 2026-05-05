@@ -28,6 +28,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Instr::MapFile(instr) => self.wrap(instr).fmt(f),
             ir::Instr::ParseBED(instr) => self.wrap(instr).fmt(f),
             ir::Instr::MakeWindows(instr) => self.wrap(instr).fmt(f),
+            ir::Instr::OdgiView(instr) => self.wrap(instr).fmt(f),
         }
     }
 }
@@ -121,6 +122,17 @@ impl Display for Wrapped<'_, ir::MakeWindowsInstr> {
             "make-windows({}, {}) -> {}",
             self.wrap(&self.val.input),
             self.val.size,
+            self.wrap(&self.val.output),
+        )
+    }
+}
+
+impl Display for Wrapped<'_, ir::OdgiViewInstr> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "odgi-view({}) -> {}",
+            self.wrap(&self.val.input),
             self.wrap(&self.val.output),
         )
     }

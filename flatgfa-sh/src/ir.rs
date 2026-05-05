@@ -28,6 +28,7 @@ pub enum Instr {
     MapFile(MapFileInstr),
     ParseBED(ParseBEDInstr),
     MakeWindows(MakeWindowsInstr),
+    OdgiView(OdgiViewInstr),
 }
 
 #[derive(Debug)]
@@ -126,6 +127,19 @@ impl From<MakeWindowsInstr> for Instr {
     }
 }
 
+/// Convert an odgi native file (.og) to GFA text.
+#[derive(Debug)]
+pub struct OdgiViewInstr {
+    pub input: Resource,
+    pub output: Resource,
+}
+
+impl From<OdgiViewInstr> for Instr {
+    fn from(value: OdgiViewInstr) -> Self {
+        Self::OdgiView(value)
+    }
+}
+
 #[derive(Debug)]
 pub struct Program {
     pub instrs: Vec<Instr>,
@@ -212,18 +226,11 @@ impl Builder {
                 output
             }
             ResourceKind::File if self.file_name(input).ends_with(".og") => {
-                // Use `odgi view -g -i <file>` to dump as GFA text and then parse that.
+                // Use `odgi view` to dump as GFA text and then parse that.
                 let pipe = self.add_rsrc(ResourceKind::Pipe);
-                self.add_instr(ExecInstr {
-                    input: self.stdin(),
+                self.add_instr(OdgiViewInstr {
+                    input,
                     output: pipe,
-                    command: "odgi".into(),
-                    args: vec![
-                        "view".into(),
-                        "-g".into(),
-                        "-i".into(),
-                        self.file_name(input).into(),
-                    ],
                 });
                 self.load_gfa(pipe)
             }
