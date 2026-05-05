@@ -1,15 +1,16 @@
-use crate::ir::{self, Resource, ResourceRef};
+use crate::ir::{self, Resource, ResourceKind};
 use bstr::BStr;
+use enum_map::EnumMap;
 use flatgfa::FlatGFA;
 use flatgfa::flatbed::HeapBEDStore;
 use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile, ops};
 use memmap::Mmap;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter};
+use std::ops::{Index, IndexMut};
 
 struct Env {
-    /// An indirection table for accessing the heaps.
-    idx: HeapIndex,
+    file_names: Vec<String>,
 
     /// The currently open Unix pipes for operations in this program.
     ///
@@ -28,28 +29,23 @@ struct Env {
 }
 
 impl Env {
-    fn new(rsrc: Vec<Resource>) -> Self {
-        let (idx, counts) = HeapIndex::init(
-            rsrc,
-            [
-                Resource::Pipe,
-                Resource::GFAStore,
-                Resource::Mmap,
-                Resource::BEDStore,
-            ],
-        );
-
+    fn new(file_names: Vec<String>, counts: EnumMap<ResourceKind, u16>) -> Self {
         Self {
-            idx,
-            pipes: Heap::new(counts[0], Resource::Pipe),
-            gfa_stores: Heap::new(counts[1], Resource::GFAStore),
-            mmaps: Heap::new(counts[2], Resource::Mmap),
-            bed_stores: Heap::new(counts[3], Resource::BEDStore),
+            file_names,
+            pipes: Heap::new(counts[ResourceKind::Pipe], ResourceKind::Pipe),
+            gfa_stores: Heap::new(counts[ResourceKind::GFAStore], ResourceKind::GFAStore),
+            mmaps: Heap::new(counts[ResourceKind::Mmap], ResourceKind::Mmap),
+            bed_stores: Heap::new(counts[ResourceKind::BEDStore], ResourceKind::BEDStore),
         }
     }
 
-    fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
-        let pair = &mut self.pipes.get_mut(&self.idx, rsrc);
+    pub fn file_name(&self, rsrc: Resource) -> &str {
+        debug_assert!(rsrc.kind == ResourceKind::File);
+        &self.file_names[rsrc.index as usize]
+    }
+
+    fn read_pipe(&mut self, rsrc: Resource) -> io::Result<PipeReader> {
+        let pair = &mut self.pipes[rsrc];
         if let Some(reader) = pair.0.take() {
             Ok(reader)
         } else {
@@ -59,8 +55,8 @@ impl Env {
         }
     }
 
-    fn write_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeWriter> {
-        let pair = &mut self.pipes.get_mut(&self.idx, rsrc);
+    fn write_pipe(&mut self, rsrc: Resource) -> io::Result<PipeWriter> {
+        let pair = &mut self.pipes[rsrc];
         if let Some(writer) = pair.1.take() {
             Ok(writer)
         } else {
@@ -70,22 +66,24 @@ impl Env {
         }
     }
 
-    fn input(&mut self, rsrc: ResourceRef) -> Input {
-        match &self.idx.rsrc[rsrc.0] {
-            Resource::Stdin => Input::Stdin(std::io::stdin().lock()),
-            Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::File(name) => Input::File(memfile::map_file(name)),
-            Resource::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
+    fn input(&mut self, rsrc: Resource) -> Input {
+        match rsrc.kind {
+            ResourceKind::Stdin => Input::Stdin(std::io::stdin().lock()),
+            ResourceKind::Stdout => panic!("cannot read from stdout"),
+            ResourceKind::File => Input::File(memfile::map_file(self.file_name(rsrc))),
+            ResourceKind::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
             _ => panic!("non-bytes input"),
         }
     }
 
-    fn output(&mut self, rsrc: ResourceRef) -> Output {
-        match &self.idx.rsrc[rsrc.0] {
-            Resource::Stdin => panic!("cannot write to stdin"),
-            Resource::Stdout => Output::Stdout(std::io::stdout().lock()),
-            Resource::File(name) => Output::File(BufWriter::new(File::create(name).unwrap())),
-            Resource::Pipe => Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())),
+    fn output(&mut self, rsrc: Resource) -> Output {
+        match rsrc.kind {
+            ResourceKind::Stdin => panic!("cannot write to stdin"),
+            ResourceKind::Stdout => Output::Stdout(std::io::stdout().lock()),
+            ResourceKind::File => {
+                Output::File(BufWriter::new(File::create(self.file_name(rsrc)).unwrap()))
+            }
+            ResourceKind::Pipe => Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())),
             _ => panic!("non-bytes output"),
         }
     }
@@ -94,62 +92,18 @@ impl Env {
     ///
     /// The resource must be either a memory-mapped file or an in-memory
     /// FlatGFA store.
-    fn flatgfa<'a>(&'a self, rsrc: ResourceRef) -> FlatGFA<'a> {
-        match &self.idx.rsrc[rsrc.0] {
-            Resource::GFAStore => {
-                let store = self
-                    .gfa_stores
-                    .get(&self.idx, rsrc)
-                    .as_ref()
-                    .expect("store not populated");
+    fn flatgfa<'a>(&'a self, rsrc: Resource) -> FlatGFA<'a> {
+        match rsrc.kind {
+            ResourceKind::GFAStore => {
+                let store = self.gfa_stores[rsrc].as_ref().expect("store not populated");
                 store.as_ref()
             }
-            Resource::Mmap => {
-                let mmap = self
-                    .mmaps
-                    .get(&self.idx, rsrc)
-                    .as_ref()
-                    .expect("mmap not populated");
+            ResourceKind::Mmap => {
+                let mmap = self.mmaps[rsrc].as_ref().expect("mmap not populated");
                 flatgfa::file::view(mmap.as_ref())
             }
             _ => panic!("resource must be FlatGFA data"),
         }
-    }
-}
-
-/// The metadata required to access all the per-type heaps in `Env`.
-struct HeapIndex {
-    /// All the resource descriptions used in this program.
-    rsrc: Vec<Resource>,
-
-    /// Indices into the heap vectors for resources that have them.
-    ///
-    /// This has the same length as `rsrc`. For each resource type that comes
-    /// with an associated run-time value, this contains the index into the
-    /// appropriate heap vector in this environment. For others, it's MAX.
-    loc: Vec<u16>,
-}
-
-impl HeapIndex {
-    /// Create a heap index for a specified list of resource kind.
-    ///
-    /// Create the index and return the number of elements of each kind. We will
-    /// nead `Heap`s of these sizes to store the actual data.
-    fn init<const N: usize>(rsrc: Vec<Resource>, kinds: [Resource; N]) -> (Self, [u16; N]) {
-        let mut counts = [0; N];
-        let mut loc = Vec::with_capacity(rsrc.len());
-        for r in &rsrc {
-            let mut new_loc = u16::MAX;
-            for (i, kind) in kinds.iter().enumerate() {
-                if r == kind {
-                    new_loc = counts[i];
-                    counts[i] += 1;
-                    break;
-                }
-            }
-            loc.push(new_loc);
-        }
-        (Self { rsrc, loc }, counts)
     }
 }
 
@@ -161,24 +115,30 @@ impl HeapIndex {
 /// in on each access.
 struct Heap<T: Default> {
     data: Vec<T>,
-    kind: Resource,
+    kind: ResourceKind,
 }
 
 impl<T: Default> Heap<T> {
-    fn new(size: u16, kind: Resource) -> Self {
+    fn new(size: u16, kind: ResourceKind) -> Self {
         let mut data = Vec::new();
         data.resize_with(size.into(), Default::default);
         Self { data, kind }
     }
+}
 
-    fn get(&self, idx: &HeapIndex, r: ResourceRef) -> &T {
-        debug_assert!(idx.rsrc[r.0] == self.kind);
-        &self.data[idx.loc[r.0] as usize]
+impl<T: Default> Index<Resource> for Heap<T> {
+    type Output = T;
+
+    fn index(&self, rsrc: Resource) -> &Self::Output {
+        debug_assert!(rsrc.kind == self.kind);
+        &self.data[rsrc.index as usize]
     }
+}
 
-    fn get_mut(&mut self, idx: &HeapIndex, r: ResourceRef) -> &mut T {
-        debug_assert!(idx.rsrc[r.0] == self.kind);
-        &mut self.data[idx.loc[r.0] as usize]
+impl<T: Default> IndexMut<Resource> for Heap<T> {
+    fn index_mut(&mut self, rsrc: Resource) -> &mut Self::Output {
+        debug_assert!(rsrc.kind == self.kind);
+        &mut self.data[rsrc.index as usize]
     }
 }
 
@@ -274,25 +234,25 @@ impl Eval for ir::ExecInstr {
         let mut cmd = Command::new(&self.command);
         cmd.args(&self.args);
 
-        match &env.idx.rsrc[self.input.0] {
-            Resource::Stdin => (),
-            Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::File(name) => {
-                cmd.stdin(File::open(name).unwrap());
+        match self.input.kind {
+            ResourceKind::Stdin => (),
+            ResourceKind::Stdout => panic!("cannot read from stdout"),
+            ResourceKind::File => {
+                cmd.stdin(File::open(env.file_name(self.input)).unwrap());
             }
-            Resource::Pipe => {
+            ResourceKind::Pipe => {
                 cmd.stdin(env.read_pipe(self.input).unwrap());
             }
             _ => panic!("non-bytes input"),
         }
 
-        match &env.idx.rsrc[self.output.0] {
-            Resource::Stdin => panic!("cannot write to stdin"),
-            Resource::Stdout => (),
-            Resource::File(name) => {
-                cmd.stdout(File::create(name).unwrap());
+        match self.output.kind {
+            ResourceKind::Stdin => panic!("cannot write to stdin"),
+            ResourceKind::Stdout => (),
+            ResourceKind::File => {
+                cmd.stdout(File::create(env.file_name(self.output)).unwrap());
             }
-            Resource::Pipe => {
+            ResourceKind::Pipe => {
                 cmd.stdout(env.write_pipe(self.output).unwrap());
             }
             _ => panic!("non-bytes output"),
@@ -313,15 +273,15 @@ impl Eval for ir::ParseGFAInstr {
             Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
         };
 
-        *env.gfa_stores.get_mut(&env.idx, self.output) = Some(store);
+        env.gfa_stores[self.output] = Some(store);
     }
 }
 
 impl Eval for ir::MapFileInstr {
     fn eval(&self, env: &mut Env) {
-        if let Resource::File(name) = &env.idx.rsrc[self.input.0] {
-            let mmap = memfile::map_file(name);
-            *env.mmaps.get_mut(&env.idx, self.output) = Some(mmap);
+        if let ResourceKind::File = self.input.kind {
+            let mmap = memfile::map_file(env.file_name(self.input));
+            env.mmaps[self.output] = Some(mmap);
         } else {
             panic!("can only map actual files");
         }
@@ -338,7 +298,7 @@ impl Eval for ir::ParseBEDInstr {
             Input::Pipe(stream) => BEDParser::for_heap().parse_stream(stream),
         };
 
-        *env.bed_stores.get_mut(&env.idx, self.output) = Some(store);
+        env.bed_stores[self.output] = Some(store);
     }
 }
 
@@ -363,7 +323,7 @@ impl<'a> Emit for WindowsBed<'a> {
 
 impl Eval for ir::MakeWindowsInstr {
     fn eval(&self, env: &mut Env) {
-        let store = env.bed_stores.get_mut(&env.idx, self.input).take().unwrap();
+        let store = env.bed_stores[self.input].take().unwrap();
         let bed = store.as_ref();
         let mut out = env.output(self.output);
         for entry in bed.entries.all() {
@@ -379,7 +339,7 @@ impl Eval for ir::MakeWindowsInstr {
 }
 
 pub fn run(prog: ir::Program) {
-    let mut env = Env::new(prog.rsrc);
+    let mut env = Env::new(prog.file_names, prog.rsrc_counts);
     for op in prog.instrs {
         op.eval(&mut env);
     }

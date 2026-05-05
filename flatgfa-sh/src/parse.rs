@@ -1,4 +1,4 @@
-use crate::ir::{self, Builder, ResourceRef};
+use crate::ir::{self, Builder, Resource};
 use flash::parser::{Node, Redirect, RedirectKind};
 use pico_args::Arguments;
 
@@ -16,8 +16,8 @@ fn cmd_to_ir(
     name: String,
     args: Vec<String>,
     redirects: Vec<Redirect>,
-    input: ResourceRef,
-    output: ResourceRef,
+    input: Resource,
+    output: Resource,
 ) {
     // Do the input or output come from stream redirections?
     let mut input = input;
@@ -92,7 +92,7 @@ fn cmd_to_ir(
     }
 }
 
-fn node_to_ir(builder: &mut Builder, node: Node, input: ResourceRef, output: ResourceRef) {
+fn node_to_ir(builder: &mut Builder, node: Node, input: Resource, output: Resource) {
     match node {
         Node::Command {
             name,
@@ -106,7 +106,11 @@ fn node_to_ir(builder: &mut Builder, node: Node, input: ResourceRef, output: Res
             let mut input = input;
             let last = commands.len() - 1;
             for (i, step) in commands.into_iter().enumerate() {
-                let output = if i == last { output } else { builder.pipe() };
+                let output = if i == last {
+                    output
+                } else {
+                    builder.add_rsrc(ir::ResourceKind::Pipe)
+                };
                 node_to_ir(builder, step, input, output);
                 input = output; // Feed this pipe into the next step.
             }

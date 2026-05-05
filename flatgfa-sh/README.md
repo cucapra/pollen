@@ -68,24 +68,24 @@ Here are some things that we currently parse:
 
 ```console
 $ flash -p -c 'odgi depth'
-parse-gfa(stdin) -> gfa-store-2
-path-depth(gfa-store-2) -> stdout
+parse-gfa(stdin) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
 
 $ flash -p -c 'odgi depth -d'
-parse-gfa(stdin) -> gfa-store-2
-node-depth(gfa-store-2) -> stdout
+parse-gfa(stdin) -> gfa-store-0
+node-depth(gfa-store-0) -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.gfa'
-parse-gfa("chr8.gfa") -> gfa-store-3
-path-depth(gfa-store-3) -> stdout
+parse-gfa("chr8.gfa") -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
 
 $ flash -p -c 'odgi depth -i chr8.gfa -r "chm13#chr8"'
-parse-gfa("chr8.gfa") -> gfa-store-3
-path-depth(gfa-store-3, path="chm13#chr8") -> stdout
+parse-gfa("chr8.gfa") -> gfa-store-0
+path-depth(gfa-store-0, path="chm13#chr8") -> stdout
 
 $ flash -p -c 'odgi depth < chr8.gfa > depth.tsv'
-parse-gfa("chr8.gfa") -> gfa-store-4
-path-depth(gfa-store-4) -> "depth.tsv"
+parse-gfa("chr8.gfa") -> gfa-store-0
+path-depth(gfa-store-0) -> "depth.tsv"
 
 ```
 
@@ -93,14 +93,14 @@ Here's how pipelines get parsed:
 
 ```console
 $ flash -p -c 'foo | bar | baz'
-shell("foo", [], input=stdin) -> pipe-2
-shell("bar", [], input=pipe-2) -> pipe-3
-shell("baz", [], input=pipe-3) -> stdout
+shell("foo", [], input=stdin) -> pipe-0
+shell("bar", [], input=pipe-0) -> pipe-1
+shell("baz", [], input=pipe-1) -> stdout
 
 $ flash -p -c 'foo | bar | baz > qux'
-shell("foo", [], input=stdin) -> pipe-2
-shell("bar", [], input=pipe-2) -> pipe-3
-shell("baz", [], input=pipe-3) -> "qux"
+shell("foo", [], input=stdin) -> pipe-0
+shell("bar", [], input=pipe-0) -> pipe-1
+shell("baz", [], input=pipe-1) -> "qux"
 
 ```
 
@@ -109,8 +109,8 @@ input GFA is allowed:
 
 ```console
 $ flash -p -c 'odgi depth -i chr8.flatgfa'
-map-file("chr8.flatgfa") -> mmap-3
-path-depth(mmap-3) -> stdout
+map-file("chr8.flatgfa") -> mmap-0
+path-depth(mmap-0) -> stdout
 
 ```
 

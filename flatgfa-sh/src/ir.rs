@@ -14,8 +14,8 @@ pub enum ResourceKind {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Resource {
-    kind: ResourceKind,
-    index: u16,
+    pub kind: ResourceKind,
+    pub index: u16,
 }
 
 /// An instruction performs one imperative action.
@@ -163,7 +163,8 @@ impl Builder {
                 kind: ResourceKind::File,
                 index: self.files.len().try_into().unwrap(),
             };
-            self.files.insert(name, rsrc);
+            self.files.insert(name.clone(), rsrc);
+            self.file_names.push(name);
             rsrc
         }
     }
@@ -174,7 +175,7 @@ impl Builder {
     }
 
     /// Create a new "normal" resource (not a file, stdin, or stdout).
-    fn add_rsrc(&mut self, kind: ResourceKind) -> Resource {
+    pub fn add_rsrc(&mut self, kind: ResourceKind) -> Resource {
         let index = self.rsrc_counts[kind];
         self.rsrc_counts[kind] += 1;
         Resource { kind, index }
