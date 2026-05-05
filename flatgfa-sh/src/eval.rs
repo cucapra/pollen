@@ -109,10 +109,7 @@ impl Env {
 
 /// The data storage for heap values of a given resource kind.
 ///
-/// This is a glorified `Vec<T>` that is indexed indirectly through `Env::idx`.
-/// If we could just store a reference to that indirection table, we would, but
-/// Rust doesn't allow self-reference. So instead we must past these ingredients
-/// in on each access.
+/// This is a glorified `Vec<T>` that is indexed by `Resource` objects.
 struct Heap<T: Default> {
     data: Vec<T>,
     kind: ResourceKind,
