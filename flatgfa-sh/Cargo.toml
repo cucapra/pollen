@@ -14,6 +14,7 @@ pico-args = "0.5"
 rustyline = "18"
 memmap = { workspace = true }
 bstr = { workspace = true }
+enum-map = "2.7.3"
 
 [dev-dependencies]
 trycmd = "1.2.0"

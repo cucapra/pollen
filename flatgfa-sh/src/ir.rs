@@ -1,14 +1,21 @@
+use enum_map::{Enum, EnumMap};
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum Resource {
-    File(String),
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Enum)]
+pub enum ResourceKind {
+    File,
     Stdin,
     Stdout,
     Pipe,
     GFAStore,
     Mmap,
     BEDStore,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Resource {
+    kind: ResourceKind,
+    index: u16,
 }
 
 /// An instruction performs one imperative action.
@@ -25,8 +32,8 @@ pub enum Instr {
 
 #[derive(Debug)]
 pub struct NodeDepthInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
 }
 
 impl From<NodeDepthInstr> for Instr {
@@ -37,8 +44,8 @@ impl From<NodeDepthInstr> for Instr {
 
 #[derive(Debug)]
 pub struct PathDepthInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
     pub path: Option<String>,
 }
 
@@ -51,8 +58,8 @@ impl From<PathDepthInstr> for Instr {
 /// An instruction that just runs an external shell command.
 #[derive(Debug)]
 pub struct ExecInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
     pub command: String,
     pub args: Vec<String>,
 }
@@ -66,8 +73,8 @@ impl From<ExecInstr> for Instr {
 /// Parse a GFA file or stream in text foramt.
 #[derive(Debug)]
 pub struct ParseGFAInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
 }
 
 impl From<ParseGFAInstr> for Instr {
@@ -79,8 +86,8 @@ impl From<ParseGFAInstr> for Instr {
 /// Memory-map a file: for instance, a FlatGFA binary file.
 #[derive(Debug)]
 pub struct MapFileInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
 }
 
 impl From<MapFileInstr> for Instr {
@@ -92,8 +99,8 @@ impl From<MapFileInstr> for Instr {
 /// Parse a text BED file or stream.
 #[derive(Debug)]
 pub struct ParseBEDInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
 }
 
 impl From<ParseBEDInstr> for Instr {
@@ -108,8 +115,8 @@ impl From<ParseBEDInstr> for Instr {
 /// sizes, and generates widows of the given `size` as a BED output.
 #[derive(Debug)]
 pub struct MakeWindowsInstr {
-    pub input: ResourceRef,
-    pub output: ResourceRef,
+    pub input: Resource,
+    pub output: Resource,
     pub size: usize,
 }
 
@@ -119,28 +126,27 @@ impl From<MakeWindowsInstr> for Instr {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(transparent)]
-pub struct ResourceRef(pub usize);
-
 #[derive(Debug)]
 pub struct Program {
-    pub rsrc: Vec<Resource>,
     pub instrs: Vec<Instr>,
+    pub file_names: Vec<String>,
+    pub rsrc_counts: EnumMap<ResourceKind, u16>,
 }
 
 pub struct Builder {
-    rsrc: Vec<Resource>,
     instrs: Vec<Instr>,
-    files: HashMap<String, ResourceRef>,
+    files: HashMap<String, Resource>,
+    file_names: Vec<String>,
+    rsrc_counts: EnumMap<ResourceKind, u16>,
 }
 
 impl Builder {
     pub fn new() -> Self {
         Self {
-            rsrc: vec![Resource::Stdin, Resource::Stdout],
-            instrs: vec![],
+            instrs: Vec::new(),
             files: HashMap::new(),
+            file_names: Vec::new(),
+            rsrc_counts: EnumMap::default(),
         }
     }
 
@@ -148,50 +154,46 @@ impl Builder {
         self.instrs.push(instr.into());
     }
 
-    pub fn add_rsrc(&mut self, rsrc: Resource) -> ResourceRef {
-        self.rsrc.push(rsrc);
-        ResourceRef(self.rsrc.len() - 1)
-    }
-
     /// Add a file resource, or get an existing one if we've already added it.
-    pub fn file(&mut self, name: String) -> ResourceRef {
+    pub fn file(&mut self, name: String) -> Resource {
         if let Some(&rsrc) = self.files.get(&name) {
             rsrc
         } else {
-            let rsrc = self.add_rsrc(Resource::File(name.clone()));
+            let rsrc = Resource {
+                kind: ResourceKind::File,
+                index: self.files.len().try_into().unwrap(),
+            };
             self.files.insert(name, rsrc);
             rsrc
         }
     }
 
-    /// Create a new pipe resource.
-    pub fn pipe(&mut self) -> ResourceRef {
-        self.add_rsrc(Resource::Pipe)
+    pub fn file_name(&self, rsrc: Resource) -> &str {
+        debug_assert!(rsrc.kind == ResourceKind::File);
+        &self.file_names[rsrc.index as usize]
     }
 
-    /// Create a new FlatGFA data store resource.
-    pub fn gfa_store(&mut self) -> ResourceRef {
-        self.add_rsrc(Resource::GFAStore)
-    }
-
-    /// Create a new FlatBED data store resource.
-    pub fn bed_store(&mut self) -> ResourceRef {
-        self.add_rsrc(Resource::BEDStore)
-    }
-
-    /// Create a new memory-mapped file resource.
-    pub fn mmap(&mut self) -> ResourceRef {
-        self.add_rsrc(Resource::Mmap)
+    /// Create a new "normal" resource (not a file, stdin, or stdout).
+    fn add_rsrc(&mut self, kind: ResourceKind) -> Resource {
+        let index = self.rsrc_counts[kind];
+        self.rsrc_counts[kind] += 1;
+        Resource { kind, index }
     }
 
     /// Get the standard input resource.
-    pub fn stdin(&self) -> ResourceRef {
-        ResourceRef(0)
+    pub fn stdin(&self) -> Resource {
+        Resource {
+            kind: ResourceKind::Stdin,
+            index: 0,
+        }
     }
 
     /// Get the standard output resource.
-    pub fn stdout(&self) -> ResourceRef {
-        ResourceRef(1)
+    pub fn stdout(&self) -> Resource {
+        Resource {
+            kind: ResourceKind::Stdout,
+            index: 0,
+        }
     }
 
     /// Create an instruction to load a FlatGFA data structure as a resource.
@@ -199,17 +201,17 @@ impl Builder {
     /// Either parse GFA text or memory-map a FlatGFA binary file. If `input` is
     /// a byte stream, we treat it as GFA text. If it's a file, we use the
     /// filename to decide whether to treat it as GFA text or FlatGFA binary.
-    pub fn load_gfa(&mut self, input: ResourceRef) -> ResourceRef {
-        match &self.rsrc[input.0] {
-            Resource::File(name) if name.ends_with(".flatgfa") => {
+    pub fn load_gfa(&mut self, input: Resource) -> Resource {
+        match input.kind {
+            ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
                 // Memory-map the FlatGFA binary file.
-                let output = self.mmap();
+                let output = self.add_rsrc(ResourceKind::Mmap);
                 self.add_instr(Instr::MapFile(MapFileInstr { input, output }));
                 output
             }
-            Resource::Pipe | Resource::Stdin | Resource::File(_) => {
+            ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
-                let output = self.gfa_store();
+                let output = self.add_rsrc(ResourceKind::GFAStore);
                 self.add_instr(ParseGFAInstr { input, output });
                 output
             }
@@ -218,10 +220,10 @@ impl Builder {
     }
 
     /// Create an instruction to parse a BED file to a FlatBED resource.
-    pub fn load_bed(&mut self, input: ResourceRef) -> ResourceRef {
-        match &self.rsrc[input.0] {
-            Resource::Pipe | Resource::Stdin | Resource::File(_) => {
-                let output = self.bed_store();
+    pub fn load_bed(&mut self, input: Resource) -> Resource {
+        match input.kind {
+            ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
+                let output = self.add_rsrc(ResourceKind::BEDStore);
                 self.add_instr(ParseBEDInstr { input, output });
                 output
             }
@@ -231,8 +233,9 @@ impl Builder {
 
     pub fn build(self) -> Program {
         Program {
-            rsrc: self.rsrc,
             instrs: self.instrs,
+            file_names: self.file_names,
+            rsrc_counts: self.rsrc_counts,
         }
     }
 }
