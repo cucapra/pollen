@@ -29,42 +29,22 @@ struct Env {
 
 impl Env {
     fn new(rsrc: Vec<Resource>) -> Self {
-        // Initialize the heap vectors and their indices.
-        // TODO Reduce some duplication here...
-        let mut idx = Vec::with_capacity(rsrc.len());
-        let mut pipes = 0;
-        let mut mmaps = 0;
-        let mut gfa_stores = 0;
-        let mut bed_stores = 0;
-        for r in &rsrc {
-            let i = match r {
-                Resource::Pipe => {
-                    pipes += 1;
-                    pipes - 1
-                }
-                Resource::GFAStore => {
-                    gfa_stores += 1;
-                    gfa_stores - 1
-                }
-                Resource::Mmap => {
-                    mmaps += 1;
-                    mmaps - 1
-                }
-                Resource::BEDStore => {
-                    bed_stores += 1;
-                    bed_stores - 1
-                }
-                _ => u16::MAX,
-            };
-            idx.push(i);
-        }
+        let (idx, counts) = HeapIndex::init(
+            rsrc,
+            [
+                Resource::Pipe,
+                Resource::GFAStore,
+                Resource::Mmap,
+                Resource::BEDStore,
+            ],
+        );
 
         Self {
-            idx: HeapIndex { rsrc, loc: idx },
-            pipes: Heap::new(pipes, Resource::Pipe),
-            gfa_stores: Heap::new(gfa_stores, Resource::GFAStore),
-            mmaps: Heap::new(mmaps, Resource::Mmap),
-            bed_stores: Heap::new(bed_stores, Resource::BEDStore),
+            idx,
+            pipes: Heap::new(counts[0], Resource::Pipe),
+            gfa_stores: Heap::new(counts[1], Resource::GFAStore),
+            mmaps: Heap::new(counts[2], Resource::Mmap),
+            bed_stores: Heap::new(counts[3], Resource::BEDStore),
         }
     }
 
@@ -148,6 +128,29 @@ struct HeapIndex {
     /// with an associated run-time value, this contains the index into the
     /// appropriate heap vector in this environment. For others, it's MAX.
     loc: Vec<u16>,
+}
+
+impl HeapIndex {
+    /// Create a heap index for a specified list of resource kind.
+    ///
+    /// Create the index and return the number of elements of each kind. We will
+    /// nead `Heap`s of these sizes to store the actual data.
+    fn init<const N: usize>(rsrc: Vec<Resource>, kinds: [Resource; N]) -> (Self, [u16; N]) {
+        let mut counts = [0; N];
+        let mut loc = Vec::with_capacity(rsrc.len());
+        for r in &rsrc {
+            let mut new_loc = u16::MAX;
+            for (i, kind) in kinds.iter().enumerate() {
+                if r == kind {
+                    new_loc = counts[i];
+                    counts[i] += 1;
+                    break;
+                }
+            }
+            loc.push(new_loc);
+        }
+        (Self { rsrc, loc }, counts)
+    }
 }
 
 /// The data storage for heap values of a given resource kind.
