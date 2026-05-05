@@ -104,13 +104,18 @@ shell("baz", [], input=pipe-1) -> "qux"
 
 ```
 
-Flash also detects FlatGFA files (by filename extension) everywhere that an
-input GFA is allowed:
+Flash also detects FlatGFA files and odgi files (by filename extension)
+everywhere that an input GFA is allowed:
 
 ```console
 $ flash -p -c 'odgi depth -i chr8.flatgfa'
 map-file("chr8.flatgfa") -> mmap-0
 path-depth(mmap-0) -> stdout
+
+$ flash -p -c 'odgi depth -i chr8.og'
+shell("odgi", ["view", "-g", "-i", "chr8.og"], input=stdin) -> pipe-0
+parse-gfa(pipe-0) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
 
 ```
 

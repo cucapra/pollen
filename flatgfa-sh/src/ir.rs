@@ -199,9 +199,10 @@ impl Builder {
 
     /// Create an instruction to load a FlatGFA data structure as a resource.
     ///
-    /// Either parse GFA text or memory-map a FlatGFA binary file. If `input` is
-    /// a byte stream, we treat it as GFA text. If it's a file, we use the
-    /// filename to decide whether to treat it as GFA text or FlatGFA binary.
+    /// Either parse GFA text, memory-map a FlatGFA binary file, or convert an
+    /// odgi native file. If `input` is a byte stream, we treat it as GFA text.
+    /// If it's a file, we use the filename to decide whether to treat it as GFA
+    /// text or FlatGFA binary.
     pub fn load_gfa(&mut self, input: Resource) -> Resource {
         match input.kind {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
@@ -209,6 +210,22 @@ impl Builder {
                 let output = self.add_rsrc(ResourceKind::Mmap);
                 self.add_instr(Instr::MapFile(MapFileInstr { input, output }));
                 output
+            }
+            ResourceKind::File if self.file_name(input).ends_with(".og") => {
+                // Use `odgi view -g -i <file>` to dump as GFA text and then parse that.
+                let pipe = self.add_rsrc(ResourceKind::Pipe);
+                self.add_instr(ExecInstr {
+                    input: self.stdin(),
+                    output: pipe,
+                    command: "odgi".into(),
+                    args: vec![
+                        "view".into(),
+                        "-g".into(),
+                        "-i".into(),
+                        self.file_name(input).into(),
+                    ],
+                });
+                self.load_gfa(pipe)
             }
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
