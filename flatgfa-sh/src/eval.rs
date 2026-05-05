@@ -120,12 +120,11 @@ impl Env {
         }
     }
 
-    #[allow(dead_code)]
     fn input(&mut self, rsrc: ResourceRef) -> Input {
         match &self.rsrc[rsrc.0] {
             Resource::Stdin => Input::Stdin(std::io::stdin().lock()),
             Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::File(name) => Input::File(BufReader::new(File::open(name).unwrap())),
+            Resource::File(name) => Input::File(memfile::map_file(name)),
             Resource::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
             _ => panic!("non-bytes input"),
         }
@@ -164,10 +163,9 @@ impl Env {
     }
 }
 
-#[allow(dead_code)]
 enum Input {
     Stdin(std::io::StdinLock<'static>),
-    File(BufReader<File>),
+    File(Mmap),
     Pipe(BufReader<PipeReader>),
 }
 
@@ -290,21 +288,10 @@ impl Eval for ir::ParseGFAInstr {
     fn eval(&self, env: &mut Env) {
         use flatgfa::parse::Parser;
 
-        let store = match &env.rsrc[self.input.0] {
-            Resource::File(name) => {
-                let file = memfile::map_file(name);
-                Parser::for_heap().parse_mem(file.as_ref())
-            }
-            Resource::Stdin => {
-                let stdin = std::io::stdin();
-                Parser::for_heap().parse_stream(stdin.lock())
-            }
-            Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::Pipe => {
-                let read = env.read_pipe(self.input).unwrap();
-                Parser::for_heap().parse_stream(BufReader::new(read))
-            }
-            _ => panic!("non-bytes input"),
+        let store = match env.input(self.input) {
+            Input::File(file) => Parser::for_heap().parse_mem(file.as_ref()),
+            Input::Stdin(stream) => Parser::for_heap().parse_stream(stream),
+            Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
         };
 
         *env.get_gfa_store(self.output) = Some(store);
@@ -326,21 +313,10 @@ impl Eval for ir::ParseBEDInstr {
     fn eval(&self, env: &mut Env) {
         use flatgfa::flatbed::BEDParser;
 
-        let store = match &env.rsrc[self.input.0] {
-            Resource::File(name) => {
-                let file = memfile::map_file(name);
-                BEDParser::for_heap().parse_mem(file.as_ref())
-            }
-            Resource::Stdin => {
-                let stdin = std::io::stdin();
-                BEDParser::for_heap().parse_stream(stdin.lock())
-            }
-            Resource::Stdout => panic!("cannot read from stdout"),
-            Resource::Pipe => {
-                let read = env.read_pipe(self.input).unwrap();
-                BEDParser::for_heap().parse_stream(BufReader::new(read))
-            }
-            _ => panic!("non-bytes input"),
+        let store = match env.input(self.input) {
+            Input::File(file) => BEDParser::for_heap().parse_mem(file.as_ref()),
+            Input::Stdin(stream) => BEDParser::for_heap().parse_stream(stream),
+            Input::Pipe(stream) => BEDParser::for_heap().parse_stream(stream),
         };
 
         *env.get_bed_store(self.output) = Some(store);
