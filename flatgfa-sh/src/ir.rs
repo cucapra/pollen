@@ -155,6 +155,7 @@ pub struct Builder {
 }
 
 impl Builder {
+    /// Start building a fresh, empty program.
     pub fn new() -> Self {
         Self {
             instrs: Vec::new(),
@@ -164,6 +165,31 @@ impl Builder {
         }
     }
 
+    /// Start with an existing program.
+    pub fn rebuild(prog: Program) -> Self {
+        let files: HashMap<_, _> = prog
+            .file_names
+            .iter()
+            .enumerate()
+            .map(|(i, name)| {
+                (
+                    name.clone(),
+                    Resource {
+                        kind: ResourceKind::File,
+                        index: i.try_into().unwrap(),
+                    },
+                )
+            })
+            .collect();
+        Self {
+            instrs: prog.instrs,
+            files,
+            file_names: prog.file_names,
+            rsrc_counts: prog.rsrc_counts,
+        }
+    }
+
+    /// Add an instruction to the end of the program.
     pub fn add_instr<I: Into<Instr>>(&mut self, instr: I) {
         self.instrs.push(instr.into());
     }
