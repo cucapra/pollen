@@ -148,10 +148,10 @@ pub struct Program {
 }
 
 pub struct Builder {
-    instrs: Vec<Instr>,
-    files: HashMap<String, Resource>,
-    file_names: Vec<String>,
-    rsrc_counts: EnumMap<ResourceKind, u16>,
+    pub instrs: Vec<Instr>,
+    pub files: HashMap<String, Resource>,
+    pub file_names: Vec<String>,
+    pub rsrc_counts: EnumMap<ResourceKind, u16>,
 }
 
 impl Builder {
