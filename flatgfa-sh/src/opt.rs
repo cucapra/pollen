@@ -45,6 +45,15 @@ fn opt_og_pair(builder: &mut Builder, view_idx: usize, parse_idx: usize) {
 
         // Use the new resource in the rest of the program.
         builder.replace_rsrc(old_gfa, new_gfa);
+        return;
+    }
+
+    // Otherwise, does the text GFA exist?
+    let text_filename = format!("{stem}.gfa");
+    if fs::exists(&text_filename).unwrap() {
+        // Make the `parse-gfa` read from this file, and remove the `odgi-view`.
+        builder.instrs[parse_idx].input = builder.file(text_filename);
+        builder.instrs.remove(view_idx);
     }
 }
 

@@ -124,7 +124,7 @@ path-depth(gfa-store-0) -> stdout
 ```
 
 With optimizations enabled via `-O`, flash will detect when an `.og` file can be
-bypassed in favor of an existing FlatGFA equivalent:
+bypassed in favor of an existing FlatGFA or text GFA equivalent:
 
 ```console
 $ flash -p -c 'odgi depth -i ../tests/note5.og'
