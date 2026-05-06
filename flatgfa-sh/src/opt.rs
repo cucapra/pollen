@@ -1,23 +1,29 @@
 use crate::ir::{Builder, Instr, Op, Program, ResourceKind};
 use std::fs;
 
-fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
-    // Search for a `parse-gfa` instruction.
-    let (parse_idx, parse_instr) = instrs
-        .iter()
-        .enumerate()
-        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))?;
+/// Apply all our optimizations to a program.
+pub fn optimize(prog: Program) -> Program {
+    let mut builder = Builder::rebuild(prog);
 
-    // Search for an `odgi-view` instruction that produces the GFA.
-    let gfa = parse_instr.input;
-    let view_idx = instrs
-        .iter()
-        .position(|instr| matches!(instr.op, Op::OdgiView) && instr.output == gfa)?;
+    // Optimize `odgi-view` or `parse-gfa` into `map-file` when a FlatGFA file
+    // is available.
+    opt_gfa_parse(&mut builder);
+    opt_og_parse(&mut builder);
 
-    Some((view_idx, parse_idx))
+    builder.build()
 }
 
-fn opt_og_pair(builder: &mut Builder, view_idx: usize, parse_idx: usize) {
+/// Try to replace odgi inputs with FlatGFA binary inputs.
+///
+/// Search for an `odgi-view` instruction that reads an `.og` file and feeds
+/// into a `gfa-parse` instruction, and (if found) replace that pair with a
+/// `map-file` of a similarly-named `.fgfa` file that exists on the filesystem.
+fn opt_og_parse(builder: &mut Builder) {
+    // Find an `odgi-view` -> `gfa-parse` pair.
+    let Some((view_idx, parse_idx)) = find_og_pair(&builder.instrs) else {
+        return;
+    };
+
     // Get the stem of the input `.og` file to this pair.
     let stem = builder
         .file_name(builder.instrs[view_idx].input)
@@ -41,6 +47,27 @@ fn opt_og_pair(builder: &mut Builder, view_idx: usize, parse_idx: usize) {
     }
 }
 
+fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
+    // Search for a `parse-gfa` instruction.
+    let (parse_idx, parse_instr) = instrs
+        .iter()
+        .enumerate()
+        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))?;
+
+    // Search for an `odgi-view` instruction that produces the GFA.
+    let gfa = parse_instr.input;
+    let view_idx = instrs
+        .iter()
+        .position(|instr| matches!(instr.op, Op::OdgiView) && instr.output == gfa)?;
+
+    Some((view_idx, parse_idx))
+}
+
+/// Optimize GFA file input to FlatGFA input.
+///
+/// Search for a `parse-gfa` instruction for a `.gfa` file and, when the
+/// relevant file exists, replace it with a `map-file` of an equivalent
+/// `.flatgfa` file.
 fn opt_gfa_parse(builder: &mut Builder) {
     // Search for a `parse-gfa` instruction.
     if let Some((parse_idx, parse_instr)) = builder
@@ -64,6 +91,11 @@ fn opt_gfa_parse(builder: &mut Builder) {
     }
 }
 
+/// Replace an instruction with a `map-file` to open a FlatGFA binary file.
+///
+/// If the file `{stem}.flatgfa` exists, replace the instruction at `instr_idx`
+/// with a new instruction that maps that file. Update all consuming
+/// instructions to use the resulting resource instead of the parsed GFA.
 fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> bool {
     // Does the FlatGFA exist?
     let flat_filename = format!("{stem}.flatgfa");
@@ -88,18 +120,4 @@ fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> boo
     builder.replace_rsrc(old_gfa, new_gfa);
 
     true
-}
-
-pub fn optimize(prog: Program) -> Program {
-    let mut builder = Builder::rebuild(prog);
-
-    // Optimize `parse-gfa` when we have a FlatGFA file.
-    opt_gfa_parse(&mut builder);
-
-    // Optimize `odgi-view` when we have a FlatGFA file.
-    if let Some((view_idx, parse_idx)) = find_og_pair(&builder.instrs) {
-        opt_og_pair(&mut builder, view_idx, parse_idx);
-    }
-
-    builder.build()
 }
