@@ -104,12 +104,50 @@ shell("baz", [], input=pipe-1) -> "qux"
 
 ```
 
-Flash also detects FlatGFA files (by filename extension) everywhere that an
-input GFA is allowed:
+
+Input GFA File Types
+--------------------
+
+Flash also detects FlatGFA files and odgi files (by filename extension)
+everywhere that an input GFA is allowed:
 
 ```console
 $ flash -p -c 'odgi depth -i chr8.flatgfa'
 map-file("chr8.flatgfa") -> mmap-0
+path-depth(mmap-0) -> stdout
+
+$ flash -p -c 'odgi depth -i chr8.og'
+odgi-view("chr8.og") -> pipe-0
+parse-gfa(pipe-0) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+```
+
+With optimizations enabled via `-O`, flash will detect when you're reading a
+plain-text GFA file but have a FlatGFA file you can use directly instead:
+
+```console
+$ flash -p -c 'odgi depth -i ../tests/note5.gfa'
+parse-gfa("../tests/note5.gfa") -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+$ flash -p -O -c 'odgi depth -i ../tests/note5.gfa'
+map-file("../tests/note5.flatgfa") -> mmap-0
+path-depth(mmap-0) -> stdout
+
+```
+
+Similarly, when you use an odgi-native `.og` file, an optimization can rewrite
+this to use a plain-text GFA file directly or a FlatGFA binary file:
+
+```console
+$ flash -p -c 'odgi depth -i ../tests/note5.og'
+odgi-view("../tests/note5.og") -> pipe-0
+parse-gfa(pipe-0) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+$ flash -p -O -c 'odgi depth -i ../tests/note5.og'
+map-file("../tests/note5.flatgfa") -> mmap-0
 path-depth(mmap-0) -> stdout
 
 ```
