@@ -48,7 +48,11 @@ pub fn optimize(prog: Program) -> Program {
             builder.instrs.remove(view_idx);
 
             // Replace all uses of `old_gfa` with `new_gfa`.
-            // TODO
+            for instr in builder.instrs.iter_mut() {
+                if instr.input == old_gfa {
+                    instr.input = new_gfa;
+                }
+            }
         }
     }
 
