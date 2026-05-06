@@ -1,4 +1,4 @@
-use crate::ir::{self, Builder, Resource};
+use crate::ir::{self, Builder, Op, Resource};
 use flash::parser::{Node, Redirect, RedirectKind};
 use pico_args::Arguments;
 
@@ -48,13 +48,15 @@ fn cmd_to_ir(
                 // table, and `-d` switches to a per-node table. (There are
                 // other modes, such as `-D`, to support...)
                 if argp.contains("-d") {
-                    builder.add_instr(ir::NodeDepthInstr { input, output });
+                    builder.instr(input, output, Op::NodeDepth);
                 } else {
-                    builder.add_instr(ir::PathDepthInstr {
+                    builder.instr(
                         input,
                         output,
-                        path: argp.opt_value_from_str("-r").unwrap(),
-                    });
+                        Op::PathDepth {
+                            path: argp.opt_value_from_str("-r").unwrap(),
+                        },
+                    );
                 };
             }
             _ => unimplemented!("unsupported odgi subcommand"),
@@ -73,22 +75,26 @@ fn cmd_to_ir(
                 // Use an instruction to parse the BED file.
                 let input = builder.load_bed(input);
 
-                builder.add_instr(ir::MakeWindowsInstr {
+                builder.instr(
                     input,
                     output,
-                    size: argp.value_from_str("-w").unwrap(),
-                });
+                    Op::MakeWindows {
+                        size: argp.value_from_str("-w").unwrap(),
+                    },
+                );
             }
             _ => unimplemented!("unsupported bedtools subcommand"),
         }
     } else {
         // Any non-odgi command is a "passthrough" shell command.
-        builder.add_instr(ir::ExecInstr {
+        builder.instr(
             input,
             output,
-            command: name,
-            args,
-        });
+            Op::Exec {
+                command: name,
+                args,
+            },
+        );
     }
 }
 

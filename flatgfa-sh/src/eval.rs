@@ -1,4 +1,4 @@
-use crate::ir::{self, Resource, ResourceKind};
+use crate::ir::{self, Op, Resource, ResourceKind};
 use bstr::BStr;
 use enum_map::EnumMap;
 use flatgfa::FlatGFA;
@@ -210,106 +210,94 @@ trait Eval {
 
 impl Eval for ir::Instr {
     fn eval(&self, env: &mut Env) {
-        match self {
-            Self::NodeDepth(instr) => instr.eval(env),
-            Self::PathDepth(instr) => instr.eval(env),
-            Self::Exec(instr) => instr.eval(env),
-            Self::ParseGFA(instr) => instr.eval(env),
-            Self::MapFile(instr) => instr.eval(env),
-            Self::ParseBED(instr) => instr.eval(env),
-            Self::MakeWindows(instr) => instr.eval(env),
-            Self::OdgiView(instr) => instr.eval(env),
+        match &self.op {
+            Op::NodeDepth => node_depth(env, self.input, self.output),
+            Op::PathDepth { path } => path_depth(env, self.input, self.output, path),
+            Op::Exec { command, args } => exec(env, self.input, self.output, command, args),
+            Op::ParseGFA => parse_gfa(env, self.input, self.output),
+            Op::MapFile => map_file(env, self.input, self.output),
+            Op::ParseBED => parse_bed(env, self.input, self.output),
+            Op::MakeWindows { size } => make_windows(env, self.input, self.output, *size),
+            Op::OdgiView => odgi_view(env, self.input, self.output),
         }
     }
 }
 
-impl Eval for ir::NodeDepthInstr {
-    fn eval(&self, env: &mut Env) {
-        let mut out = env.output(self.output);
-        let gfa = env.flatgfa(self.input);
-        let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
-        out.emit(ops::depth::SegDepth {
+fn node_depth(env: &mut Env, input: Resource, output: Resource) {
+    let mut out = env.output(output);
+    let gfa = env.flatgfa(input);
+    let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
+    out.emit(ops::depth::SegDepth {
+        gfa: &gfa,
+        depths,
+        uniq_depths,
+    })
+    .unwrap();
+}
+
+fn path_depth(env: &mut Env, input: Resource, output: Resource, path: &Option<String>) {
+    let mut out = env.output(output);
+    let gfa = env.flatgfa(input);
+    if let Some(path_name) = &path {
+        // TODO More elegantly handle missing paths.
+        let path_id = gfa
+            .find_path(path_name.as_bytes().into())
+            .expect("no such path found");
+        let (lengths, depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
+        out.emit(ops::depth::PathDepth {
             gfa: &gfa,
             depths,
-            uniq_depths,
+            lengths,
+            paths: std::iter::once(path_id),
+        })
+        .unwrap();
+    } else {
+        let (lengths, depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
+        out.emit(ops::depth::PathDepth {
+            gfa: &gfa,
+            depths,
+            lengths,
+            paths: gfa.paths.ids(),
         })
         .unwrap();
     }
 }
 
-impl Eval for ir::PathDepthInstr {
-    fn eval(&self, env: &mut Env) {
-        let mut out = env.output(self.output);
-        let gfa = env.flatgfa(self.input);
-        if let Some(path_name) = &self.path {
-            // TODO More elegantly handle missing paths.
-            let path_id = gfa
-                .find_path(path_name.as_bytes().into())
-                .expect("no such path found");
-            let (lengths, depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
-            out.emit(ops::depth::PathDepth {
-                gfa: &gfa,
-                depths,
-                lengths,
-                paths: std::iter::once(path_id),
-            })
-            .unwrap();
-        } else {
-            let (lengths, depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
-            out.emit(ops::depth::PathDepth {
-                gfa: &gfa,
-                depths,
-                lengths,
-                paths: gfa.paths.ids(),
-            })
-            .unwrap();
-        }
+fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args: &[String]) {
+    env.run_cmd(&command, &args, input, output);
+}
+
+fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
+    use flatgfa::parse::Parser;
+
+    let store = match env.input(input) {
+        Input::File(file) => Parser::for_heap().parse_mem(file.as_ref()),
+        Input::Stdin(stream) => Parser::for_heap().parse_stream(stream),
+        Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
+    };
+
+    env.gfa_stores[output] = Some(store);
+}
+
+fn map_file(env: &mut Env, input: Resource, output: Resource) {
+    if let ResourceKind::File = input.kind {
+        let mmap = memfile::map_file(env.file_name(input));
+        env.mmaps[output] = Some(mmap);
+    } else {
+        panic!("can only map actual files");
     }
 }
 
-impl Eval for ir::ExecInstr {
-    fn eval(&self, env: &mut Env) {
-        env.run_cmd(&self.command, &self.args, self.input, self.output)
-    }
-}
+fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
+    use flatgfa::flatbed::BEDParser;
 
-impl Eval for ir::ParseGFAInstr {
-    fn eval(&self, env: &mut Env) {
-        use flatgfa::parse::Parser;
+    let store = match env.input(input) {
+        Input::File(file) => BEDParser::for_heap().parse_mem(file.as_ref()),
+        Input::Stdin(stream) => BEDParser::for_heap().parse_stream(stream),
+        Input::Pipe(stream) => BEDParser::for_heap().parse_stream(stream),
+    };
 
-        let store = match env.input(self.input) {
-            Input::File(file) => Parser::for_heap().parse_mem(file.as_ref()),
-            Input::Stdin(stream) => Parser::for_heap().parse_stream(stream),
-            Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
-        };
-
-        env.gfa_stores[self.output] = Some(store);
-    }
-}
-
-impl Eval for ir::MapFileInstr {
-    fn eval(&self, env: &mut Env) {
-        if let ResourceKind::File = self.input.kind {
-            let mmap = memfile::map_file(env.file_name(self.input));
-            env.mmaps[self.output] = Some(mmap);
-        } else {
-            panic!("can only map actual files");
-        }
-    }
-}
-
-impl Eval for ir::ParseBEDInstr {
-    fn eval(&self, env: &mut Env) {
-        use flatgfa::flatbed::BEDParser;
-
-        let store = match env.input(self.input) {
-            Input::File(file) => BEDParser::for_heap().parse_mem(file.as_ref()),
-            Input::Stdin(stream) => BEDParser::for_heap().parse_stream(stream),
-            Input::Pipe(stream) => BEDParser::for_heap().parse_stream(stream),
-        };
-
-        env.bed_stores[self.output] = Some(store);
-    }
+    env.bed_stores[output] = Some(store);
 }
 
 struct WindowsBed<'a> {
@@ -331,36 +319,32 @@ impl<'a> Emit for WindowsBed<'a> {
     }
 }
 
-impl Eval for ir::MakeWindowsInstr {
-    fn eval(&self, env: &mut Env) {
-        let store = env.bed_stores[self.input].take().unwrap();
-        let bed = store.as_ref();
-        let mut out = env.output(self.output);
-        for entry in bed.entries.all() {
-            out.emit(WindowsBed {
-                name: bed.get_name_of_entry(entry),
-                start: entry.start,
-                end: entry.end,
-                size: self.size.try_into().unwrap(),
-            })
-            .unwrap();
-        }
+fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
+    let store = env.bed_stores[input].take().unwrap();
+    let bed = store.as_ref();
+    let mut out = env.output(output);
+    for entry in bed.entries.all() {
+        out.emit(WindowsBed {
+            name: bed.get_name_of_entry(entry),
+            start: entry.start,
+            end: entry.end,
+            size: size.try_into().unwrap(),
+        })
+        .unwrap();
     }
 }
 
-impl Eval for ir::OdgiViewInstr {
-    fn eval(&self, env: &mut Env) {
-        let og_file = env.file_name(self.input).to_string();
-        env.run_cmd(
-            "odgi",
-            &["view", "-g", "-i", &og_file],
-            Resource {
-                kind: ResourceKind::Stdin,
-                index: 0,
-            },
-            self.output,
-        )
-    }
+fn odgi_view(env: &mut Env, input: Resource, output: Resource) {
+    let og_file = env.file_name(input).to_string();
+    env.run_cmd(
+        "odgi",
+        &["view", "-g", "-i", &og_file],
+        Resource {
+            kind: ResourceKind::Stdin,
+            index: 0,
+        },
+        output,
+    )
 }
 
 pub fn run(prog: ir::Program) {

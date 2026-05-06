@@ -20,124 +20,23 @@ pub struct Resource {
 
 /// An instruction performs one imperative action.
 #[derive(Debug)]
-pub enum Instr {
-    NodeDepth(NodeDepthInstr),
-    PathDepth(PathDepthInstr),
-    Exec(ExecInstr),
-    ParseGFA(ParseGFAInstr),
-    MapFile(MapFileInstr),
-    ParseBED(ParseBEDInstr),
-    MakeWindows(MakeWindowsInstr),
-    OdgiView(OdgiViewInstr),
-}
-
-#[derive(Debug)]
-pub struct NodeDepthInstr {
+pub struct Instr {
     pub input: Resource,
     pub output: Resource,
+    pub op: Op,
 }
 
-impl From<NodeDepthInstr> for Instr {
-    fn from(value: NodeDepthInstr) -> Self {
-        Self::NodeDepth(value)
-    }
-}
-
+/// The operation that an instruction may perform.
 #[derive(Debug)]
-pub struct PathDepthInstr {
-    pub input: Resource,
-    pub output: Resource,
-    pub path: Option<String>,
-}
-
-impl From<PathDepthInstr> for Instr {
-    fn from(value: PathDepthInstr) -> Self {
-        Self::PathDepth(value)
-    }
-}
-
-/// An instruction that just runs an external shell command.
-#[derive(Debug)]
-pub struct ExecInstr {
-    pub input: Resource,
-    pub output: Resource,
-    pub command: String,
-    pub args: Vec<String>,
-}
-
-impl From<ExecInstr> for Instr {
-    fn from(value: ExecInstr) -> Self {
-        Self::Exec(value)
-    }
-}
-
-/// Parse a GFA file or stream in text foramt.
-#[derive(Debug)]
-pub struct ParseGFAInstr {
-    pub input: Resource,
-    pub output: Resource,
-}
-
-impl From<ParseGFAInstr> for Instr {
-    fn from(value: ParseGFAInstr) -> Self {
-        Self::ParseGFA(value)
-    }
-}
-
-/// Memory-map a file: for instance, a FlatGFA binary file.
-#[derive(Debug)]
-pub struct MapFileInstr {
-    pub input: Resource,
-    pub output: Resource,
-}
-
-impl From<MapFileInstr> for Instr {
-    fn from(value: MapFileInstr) -> Self {
-        Self::MapFile(value)
-    }
-}
-
-/// Parse a text BED file or stream.
-#[derive(Debug)]
-pub struct ParseBEDInstr {
-    pub input: Resource,
-    pub output: Resource,
-}
-
-impl From<ParseBEDInstr> for Instr {
-    fn from(value: ParseBEDInstr) -> Self {
-        Self::ParseBED(value)
-    }
-}
-
-/// Create strided windows within chromosome spans.
-///
-/// Behaves like `bedtools makewindows`. Takes in a BED file with chromosome
-/// sizes, and generates widows of the given `size` as a BED output.
-#[derive(Debug)]
-pub struct MakeWindowsInstr {
-    pub input: Resource,
-    pub output: Resource,
-    pub size: usize,
-}
-
-impl From<MakeWindowsInstr> for Instr {
-    fn from(value: MakeWindowsInstr) -> Self {
-        Self::MakeWindows(value)
-    }
-}
-
-/// Convert an odgi native file (.og) to GFA text.
-#[derive(Debug)]
-pub struct OdgiViewInstr {
-    pub input: Resource,
-    pub output: Resource,
-}
-
-impl From<OdgiViewInstr> for Instr {
-    fn from(value: OdgiViewInstr) -> Self {
-        Self::OdgiView(value)
-    }
+pub enum Op {
+    NodeDepth,
+    PathDepth { path: Option<String> },
+    Exec { command: String, args: Vec<String> },
+    ParseGFA,
+    MapFile,
+    ParseBED,
+    MakeWindows { size: usize },
+    OdgiView,
 }
 
 #[derive(Debug)]
@@ -190,8 +89,8 @@ impl Builder {
     }
 
     /// Add an instruction to the end of the program.
-    pub fn add_instr<I: Into<Instr>>(&mut self, instr: I) {
-        self.instrs.push(instr.into());
+    pub fn instr(&mut self, input: Resource, output: Resource, op: Op) {
+        self.instrs.push(Instr { input, output, op })
     }
 
     /// Add a file resource, or get an existing one if we've already added it.
@@ -248,22 +147,19 @@ impl Builder {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
                 // Memory-map the FlatGFA binary file.
                 let output = self.add_rsrc(ResourceKind::Mmap);
-                self.add_instr(Instr::MapFile(MapFileInstr { input, output }));
+                self.instr(input, output, Op::MapFile);
                 output
             }
             ResourceKind::File if self.file_name(input).ends_with(".og") => {
                 // Use `odgi view` to dump as GFA text and then parse that.
                 let pipe = self.add_rsrc(ResourceKind::Pipe);
-                self.add_instr(OdgiViewInstr {
-                    input,
-                    output: pipe,
-                });
+                self.instr(input, pipe, Op::OdgiView);
                 self.load_gfa(pipe)
             }
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
                 let output = self.add_rsrc(ResourceKind::GFAStore);
-                self.add_instr(ParseGFAInstr { input, output });
+                self.instr(input, output, Op::ParseGFA);
                 output
             }
             _ => panic!("cannot parse this resource as GFA text"),
@@ -275,7 +171,7 @@ impl Builder {
         match input.kind {
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 let output = self.add_rsrc(ResourceKind::BEDStore);
-                self.add_instr(ParseBEDInstr { input, output });
+                self.instr(input, output, Op::ParseBED);
                 output
             }
             _ => panic!("cannot parse this resource as BED text"),
