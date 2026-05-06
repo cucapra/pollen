@@ -3,19 +3,18 @@ use std::fs;
 
 fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
     // Search for a `parse-gfa` instruction.
-    for (parse_idx, instr) in instrs.iter().enumerate() {
-        if let Op::ParseGFA = instr.op {
-            // Search for an `odgi-view` instruction that produces the GFA.
-            let gfa = instr.input;
-            if let Some(view_idx) = instrs.iter().position(|instr| match instr.op {
-                Op::OdgiView => instr.output == gfa,
-                _ => false,
-            }) {
-                return Some((view_idx, parse_idx));
-            }
-        }
-    }
-    None
+    let (parse_idx, parse_instr) = instrs
+        .iter()
+        .enumerate()
+        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))?;
+
+    // Search for an `odgi-view` instruction that produces the GFA.
+    let gfa = parse_instr.input;
+    let view_idx = instrs
+        .iter()
+        .position(|instr| matches!(instr.op, Op::OdgiView) && instr.output == gfa)?;
+
+    Some((view_idx, parse_idx))
 }
 
 fn opt_og_pair(builder: &mut Builder, view_idx: usize, parse_idx: usize) {
