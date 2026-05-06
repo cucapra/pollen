@@ -104,6 +104,10 @@ shell("baz", [], input=pipe-1) -> "qux"
 
 ```
 
+
+Input GFA File Types
+--------------------
+
 Flash also detects FlatGFA files and odgi files (by filename extension)
 everywhere that an input GFA is allowed:
 
@@ -116,6 +120,21 @@ $ flash -p -c 'odgi depth -i chr8.og'
 odgi-view("chr8.og") -> pipe-0
 parse-gfa(pipe-0) -> gfa-store-0
 path-depth(gfa-store-0) -> stdout
+
+```
+
+With optimizations enabled via `-O`, flash will detect when an `.og` file can be
+bypassed in favor of an existing FlatGFA equivalent:
+
+```console
+$ flash -p -c 'odgi depth -i ../tests/note5.og'
+odgi-view("../tests/note5.og") -> pipe-0
+parse-gfa(pipe-0) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+$ flash -p -O -c 'odgi depth -i ../tests/note5.og'
+map-file("../tests/note5.flatgfa") -> mmap-0
+path-depth(mmap-0) -> stdout
 
 ```
 
