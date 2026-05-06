@@ -115,7 +115,7 @@ fn node_to_ir(builder: &mut Builder, node: Node, input: Resource, output: Resour
                 let output = if i == last {
                     output
                 } else {
-                    builder.add_rsrc(ir::ResourceKind::Pipe)
+                    builder.rsrc(ir::ResourceKind::Pipe)
                 };
                 node_to_ir(builder, step, input, output);
                 input = output; // Feed this pipe into the next step.

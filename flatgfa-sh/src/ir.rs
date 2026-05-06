@@ -114,7 +114,7 @@ impl Builder {
     }
 
     /// Create a new "normal" resource (not a file, stdin, or stdout).
-    pub fn add_rsrc(&mut self, kind: ResourceKind) -> Resource {
+    pub fn rsrc(&mut self, kind: ResourceKind) -> Resource {
         let index = self.rsrc_counts[kind];
         self.rsrc_counts[kind] += 1;
         Resource { kind, index }
@@ -146,19 +146,19 @@ impl Builder {
         match input.kind {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
                 // Memory-map the FlatGFA binary file.
-                let output = self.add_rsrc(ResourceKind::Mmap);
+                let output = self.rsrc(ResourceKind::Mmap);
                 self.instr(input, output, Op::MapFile);
                 output
             }
             ResourceKind::File if self.file_name(input).ends_with(".og") => {
                 // Use `odgi view` to dump as GFA text and then parse that.
-                let pipe = self.add_rsrc(ResourceKind::Pipe);
+                let pipe = self.rsrc(ResourceKind::Pipe);
                 self.instr(input, pipe, Op::OdgiView);
                 self.load_gfa(pipe)
             }
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
-                let output = self.add_rsrc(ResourceKind::GFAStore);
+                let output = self.rsrc(ResourceKind::GFAStore);
                 self.instr(input, output, Op::ParseGFA);
                 output
             }
@@ -170,11 +170,23 @@ impl Builder {
     pub fn load_bed(&mut self, input: Resource) -> Resource {
         match input.kind {
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
-                let output = self.add_rsrc(ResourceKind::BEDStore);
+                let output = self.rsrc(ResourceKind::BEDStore);
                 self.instr(input, output, Op::ParseBED);
                 output
             }
             _ => panic!("cannot parse this resource as BED text"),
+        }
+    }
+
+    /// Replace all uses of one resource with another.
+    pub fn replace_rsrc(&mut self, old: Resource, new: Resource) {
+        for instr in self.instrs.iter_mut() {
+            if instr.input == old {
+                instr.input = new;
+            }
+            if instr.output == old {
+                instr.output = new;
+            }
         }
     }
 
