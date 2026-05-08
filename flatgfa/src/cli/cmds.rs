@@ -1,4 +1,3 @@
-use crate::bedcmds::{self, create_bed};
 use crate::emit::Emit;
 use crate::flatbed::BEDParser;
 use crate::flatgfa::{self, Segment};

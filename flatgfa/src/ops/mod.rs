@@ -1,6 +1,7 @@
+pub mod bedcmds;
+pub mod beddepth;
 pub mod bench;
 pub mod chop;
-pub mod beddepth;
 pub mod depth;
 pub mod extract;
 pub mod gaf;
