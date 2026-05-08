@@ -1,4 +1,3 @@
-pub mod bedcmds;
 pub mod beddepth;
 pub mod bench;
 pub mod chop;
