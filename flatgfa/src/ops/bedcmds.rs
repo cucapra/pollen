@@ -1,6 +1,6 @@
 use crate::flatgfa;
-use crate::ops::depth::*;
-use crate::{memfile::*, FlatGFA};
+use crate::ops::depth::seg_depth;
+use crate::{memfile::map_new_file, FlatGFA};
 
 struct SegmentDepth {
     depth: f64,
