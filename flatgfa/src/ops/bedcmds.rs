@@ -1,9 +1,5 @@
-use std::fs;
-use std::fs::File;
-use std::io::BufReader;
-
-use crate::ops::depth::{self, *};
-use crate::{flatgfa, parse::*};
+use crate::flatgfa;
+use crate::ops::depth::*;
 use crate::{memfile::*, FlatGFA};
 
 struct SegmentDepth {
@@ -105,27 +101,4 @@ pub fn create_bed(
         offset += bytes.len();
     }
     bed_file.flush().unwrap();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // #[test]
-    // fn test_windows() {
-    //     let gfa_file_name = "k_copy.gfa";
-    //     let bed_file_name = "windows_test";
-    //     let chrom_name = "x";
-    //     let window_size = 5;
-    //     create_bed(
-    //         gfa_file_name,
-    //         bed_file_name,
-    //         chrom_name,
-    //         window_size,
-    //         Vec::new(),
-    //     );
-    //     let content = fs::read_to_string(bed_file_name).unwrap();
-    //     println!("{}", content);
-    //     assert_eq!(0, 0);
-    // }
 }
