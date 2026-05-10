@@ -63,18 +63,10 @@ fn assign_depths(seg_depth: &Vec<SegmentDepth>, windows: &[(usize, usize)]) -> V
     depths
 }
 
-pub fn create_bed(
-    flatgfa: &flatgfa::FlatGFA,
-    chrom_name: &str,
-    window_size: usize,
-    window_vec: Vec<(usize, usize)>,
-) {
+pub fn create_bed(flatgfa: &flatgfa::FlatGFA, chrom_name: &str, window_size: usize) {
     let path_len = path_length(flatgfa);
     let depth = seg_depth(flatgfa).0;
-    let mut windows = window_vec;
-    if windows == Vec::new() {
-        windows = compute_windows(path_len, window_size);
-    }
+    let windows = compute_windows(path_len, window_size);
     let seg_depths = compute_depths(flatgfa, &depth);
     let depths_final = assign_depths(&seg_depths, &windows);
     for i in 0..windows.len() {

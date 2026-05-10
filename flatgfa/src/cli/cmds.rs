@@ -468,5 +468,5 @@ pub struct BedDepth {
 }
 
 pub fn bed_depth(gfa: &flatgfa::FlatGFA, args: BedDepth) {
-    ops::beddepth::create_bed(gfa, "ChromName", args.window, Vec::new());
+    ops::beddepth::create_bed(gfa, "ChromName", args.window);
 }
