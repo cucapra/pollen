@@ -1,5 +1,5 @@
 use crate::flatgfa;
-use crate::ops::depth::seg_depth;
+use crate::ops::depth::{format_float, seg_depth};
 use crate::ops::windows::compute_windows;
 use crate::FlatGFA;
 
@@ -61,13 +61,6 @@ fn assign_depths(seg_depth: &Vec<SegmentDepth>, windows: &[(usize, usize)]) -> V
         }
     }
     depths
-}
-
-fn format_float(x: f64) -> String {
-    let s = format!("{:.6}", x);
-    let s = s.trim_end_matches('0');
-    let s = s.trim_end_matches('.');
-    s.to_string()
 }
 
 pub fn create_bed(
