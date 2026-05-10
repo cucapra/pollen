@@ -1,5 +1,4 @@
 use crate::flatgfa;
-use crate::memfile::map_new_file;
 use crate::ops::depth::seg_depth;
 use crate::ops::windows::compute_windows;
 use crate::FlatGFA;
@@ -73,16 +72,11 @@ fn format_float(x: f64) -> String {
 
 pub fn create_bed(
     flatgfa: &flatgfa::FlatGFA,
-    bed_name: &str,
     chrom_name: &str,
     window_size: usize,
     window_vec: Vec<(usize, usize)>,
 ) {
     let path_len = path_length(flatgfa);
-    let num_windows = path_len.div_ceil(window_size);
-    let max_line = 40;
-    let mut bed_file = map_new_file(bed_name, (num_windows * max_line) as u64);
-    let mut offset = 0;
     let depth = seg_depth(flatgfa).0;
     let mut windows = window_vec;
     if windows == Vec::new() {
@@ -94,10 +88,6 @@ pub fn create_bed(
         let start = windows[i].0;
         let end = windows[i].1;
         let depth_str: String = format_float(depths_final[i]);
-        let line = format!("{chrom_name}\t{start}\t{end}\t{depth_str}\n");
-        let bytes = line.as_bytes();
-        bed_file[offset..offset + bytes.len()].copy_from_slice(bytes);
-        offset += bytes.len();
+        println!("{chrom_name}\t{start}\t{end}\t{depth_str}");
     }
-    bed_file.flush().unwrap();
 }

@@ -10,7 +10,6 @@ use argh::FromArgs;
 use bstr::BStr;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
-use std::fs;
 use std::io::Write;
 
 /// print the FlatGFA table of contents
@@ -469,7 +468,5 @@ pub struct BedDepth {
 }
 
 pub fn bed_depth(gfa: &flatgfa::FlatGFA, args: BedDepth) {
-    ops::beddepth::create_bed(gfa, "BedName", "ChromName", args.window, Vec::new());
-    let content = fs::read_to_string("BedName").unwrap();
-    println!("{}", content);
+    ops::beddepth::create_bed(gfa, "ChromName", args.window, Vec::new());
 }
