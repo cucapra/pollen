@@ -134,7 +134,7 @@ where
                 "{}\t0\t{}\t{}",
                 self.gfa.get_path_name(&self.gfa.paths[id]),
                 self.lengths[idx],
-                format_float(self.depths[idx]),
+                format_float(self.depths[idx], 2),
             )?;
         }
         Ok(())
@@ -147,8 +147,8 @@ where
 /// This is currently inefficient: it first formats with trailing zeroes, and
 /// then it trims those zeroes. Surely there is an option out there for avoiding
 /// this extra work...
-pub fn format_float(x: f64) -> String {
-    format!("{:.2}", x)
+pub fn format_float(x: f64, digits: usize) -> String {
+    format!("{:.digits$}", x, digits = digits)
         .trim_end_matches('0')
         .trim_end_matches('.')
         .to_string()

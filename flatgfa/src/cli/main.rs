@@ -51,6 +51,7 @@ enum Command {
     SeqExport(cmds::SeqExport),
     SeqImport(cmds::SeqImport),
     PangenotypeMatrix(cmds::PangenotypeMatrix),
+    WindowDepth(cmds::WindowDepth),
 }
 
 fn main() -> Result<(), &'static str> {
@@ -173,6 +174,9 @@ fn main() -> Result<(), &'static str> {
         }
         Some(Command::PangenotypeMatrix(sub_args)) => {
             cmds::pangenotype_matrix(&gfa, sub_args);
+        }
+        Some(Command::WindowDepth(sub_args)) => {
+            cmds::window_depth(&gfa, sub_args);
         }
         None => {
             // Just emit the GFA or FlatGFA file.

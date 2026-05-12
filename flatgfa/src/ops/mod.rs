@@ -5,3 +5,4 @@ pub mod extract;
 pub mod gaf;
 pub mod pangenotype;
 pub mod position;
+pub mod window_depth;
