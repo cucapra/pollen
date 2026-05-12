@@ -459,14 +459,14 @@ pub fn pangenotype_matrix(gfa: &flatgfa::FlatGFA, args: PangenotypeMatrix) {
     }
 }
 
-/// Finds the depth of a sequence
+/// find the depth of windows along a path
 #[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "bed-depth")]
-pub struct BedDepth {
+#[argh(subcommand, name = "window-depth")]
+pub struct WindowDepth {
     #[argh(positional)]
     window: usize,
 }
 
-pub fn bed_depth(gfa: &flatgfa::FlatGFA, args: BedDepth) {
-    ops::beddepth::create_bed(gfa, "ChromName", args.window);
+pub fn window_depth(gfa: &flatgfa::FlatGFA, args: WindowDepth) {
+    ops::window_depth::create_bed(gfa, "ChromName", args.window);
 }
