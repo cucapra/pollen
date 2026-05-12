@@ -103,22 +103,19 @@ fn assign_depths(seg_depth: &Vec<SegmentDepth>, windows: &[(usize, usize)]) -> V
 }
 
 /// Compute the depth for windows along a path and print a BED file.
-pub fn window_depth_bed(flatgfa: &flatgfa::FlatGFA, chrom_name: &str, window_size: usize) {
-    // We currently hardcode that we're using the first path.
-    // TODO To match odgi more closely, make the command take a path name on the command line.
-    let path = Id::from(0);
-
+pub fn window_depth_bed(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usize) {
     // The actual depth computation.
-    let depth = seg_depth(flatgfa).0;
-    let windows = make_windows(path_length(flatgfa, path), window_size);
-    let seg_depths = weighted_depths(flatgfa, &depth, path);
+    let depth = seg_depth(gfa).0;
+    let windows = make_windows(path_length(gfa, path), window_size);
+    let seg_depths = weighted_depths(gfa, &depth, path);
     let window_depths = assign_depths(&seg_depths, &windows);
 
     // Print a BED table with these weights.
+    let name = gfa.get_path_name(&gfa.paths[path]);
     for i in 0..windows.len() {
         let start = windows[i].0;
         let end = windows[i].1;
         let depth_str = format_float(window_depths[i]);
-        println!("{chrom_name}\t{start}\t{end}\t{depth_str}");
+        println!("{name}\t{start}\t{end}\t{depth_str}");
     }
 }

@@ -7,7 +7,7 @@ use crate::packedseq::PackedSeqView;
 use crate::pool::Id;
 use crate::{ops, packedseq};
 use argh::FromArgs;
-use bstr::BStr;
+use bstr::{BStr, BString};
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
 use std::io::Write;
@@ -464,9 +464,13 @@ pub fn pangenotype_matrix(gfa: &flatgfa::FlatGFA, args: PangenotypeMatrix) {
 #[argh(subcommand, name = "window-depth")]
 pub struct WindowDepth {
     #[argh(positional)]
+    path: BString,
+
+    #[argh(positional)]
     window: usize,
 }
 
 pub fn window_depth(gfa: &flatgfa::FlatGFA, args: WindowDepth) {
-    ops::window_depth::window_depth_bed(gfa, "ChromName", args.window);
+    let path = gfa.find_path(args.path.as_ref()).expect("path not found");
+    ops::window_depth::window_depth_bed(gfa, path, args.window);
 }
