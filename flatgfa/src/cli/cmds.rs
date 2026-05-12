@@ -468,5 +468,5 @@ pub struct WindowDepth {
 }
 
 pub fn window_depth(gfa: &flatgfa::FlatGFA, args: WindowDepth) {
-    ops::window_depth::create_bed(gfa, "ChromName", args.window);
+    ops::window_depth::window_depth_bed(gfa, "ChromName", args.window);
 }
