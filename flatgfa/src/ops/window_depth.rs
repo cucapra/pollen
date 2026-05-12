@@ -115,7 +115,7 @@ pub fn window_depth_bed(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usi
     for i in 0..windows.len() {
         let start = windows[i].0;
         let end = windows[i].1;
-        let depth_str = format_float(window_depths[i]);
+        let depth_str = format_float(window_depths[i], 4);
         println!("{name}\t{start}\t{end}\t{depth_str}");
     }
 }
