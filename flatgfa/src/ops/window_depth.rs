@@ -1,3 +1,4 @@
+use crate::flatbed::FlatBED;
 use crate::flatgfa::{self, Path};
 use crate::ops::depth::{format_float, seg_depth};
 use crate::pool::Id;
@@ -104,7 +105,8 @@ fn assign_depths(
     depths
 }
 
-/// Compute the depth for windows along a path and print a BED file.
+/// Compute the depth for equally-sized windows along a given path and print a
+/// BED file.
 pub fn window_depth_bed(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usize) {
     // The actual depth computation.
     let depth = seg_depth(gfa).0;
@@ -113,6 +115,41 @@ pub fn window_depth_bed(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usi
     let window_depths = assign_depths(seg_depths, &windows);
 
     // Print a BED table with these weights.
+    let name = gfa.get_path_name(&gfa.paths[path]);
+    for i in 0..windows.len() {
+        let start = windows[i].0;
+        let end = windows[i].1;
+        let depth_str = format_float(window_depths[i], 4);
+        println!("{name}\t{start}\t{end}\t{depth_str}");
+    }
+}
+
+/// Compute the depth for arbitrary intervals and print a BED file.
+///
+/// The intervals must be (1) along a single path and (2) sorted in increasing
+/// order along that path.
+pub fn interval_depth_bed(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) {
+    // We assume that this BED interval file contains only intervals from a
+    // single path. (Relaxing this assumption without sacrificing performance is
+    // interesting future work.)
+    let path_name = intervals.get_name_of_entry(&intervals.entries.all()[0]);
+    let path = gfa.find_path(path_name).expect("path not found in graph");
+
+    // TODO Avoid this conversion cost!
+    let windows: Vec<_> = intervals
+        .entries
+        .all()
+        .iter()
+        .map(|entry| (entry.start as usize, entry.end as usize))
+        .collect();
+
+    // TODO Share this stuff with `window_depth_bed`!
+    let depth = seg_depth(gfa).0;
+    let seg_depths = weighted_depths(gfa, &depth, path);
+    let window_depths = assign_depths(seg_depths, &windows);
+
+    // TODO Separate computation & printing so we can share this stuff with
+    // `window_depth_bed`!
     let name = gfa.get_path_name(&gfa.paths[path]);
     for i in 0..windows.len() {
         let start = windows[i].0;

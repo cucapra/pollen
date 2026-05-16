@@ -222,13 +222,18 @@ pub struct Depth {
     #[argh(switch, long = "graph-depth-table", short = 'd')]
     seg_depth: bool,
 
-    /// in path mode, show only the namedpath
+    /// in path mode, show only the named path
     #[argh(option, short = 'r')]
     path: Vec<bstr::BString>,
+
+    /// show depth for intervals from a BED file
+    #[argh(option, long = "bed-input", short = 'b')]
+    bed: Option<String>,
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
     use crate::ops::depth::{path_depth, seg_depth, PathDepth, SegDepth};
+    use crate::ops::window_depth::interval_depth_bed;
     if args.seg_depth {
         // Segment depth table.
         let (depths, uniq_depths) = seg_depth(gfa);
@@ -238,6 +243,11 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
             uniq_depths,
         }
         .print();
+    } else if let Some(bed) = args.bed {
+        // Interval depth table.
+        let file = memfile::map_file(&bed);
+        let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
+        interval_depth_bed(gfa, &bed_store.as_ref());
     } else {
         // Path depth table.
         if args.path.is_empty() {
