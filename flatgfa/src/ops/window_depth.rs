@@ -1,8 +1,10 @@
+use crate::emit::Emit;
 use crate::flatbed::FlatBED;
 use crate::flatgfa::{self, Path};
 use crate::ops::depth::{format_float, seg_depth};
 use crate::pool::Id;
 use crate::FlatGFA;
+use bstr::BString;
 
 struct SegmentDepth {
     depth: f64,
@@ -105,22 +107,38 @@ fn assign_depths(
     depths
 }
 
+/// The result of a window or arbitrary interval depth computation.
+///
+/// The result of `window_depth` or `interval_depth` is a list of offset
+/// intervals in a single path along with the average depths of those intervals.
+pub struct IntervalDepth {
+    path_name: BString,
+    intervals: Vec<(usize, usize)>,
+    depths: Vec<f64>,
+}
+
+impl Emit for IntervalDepth {
+    fn emit(self, f: &mut impl std::io::prelude::Write) -> std::io::Result<()> {
+        for (i, (start, end)) in self.intervals.into_iter().enumerate() {
+            let depth_str = format_float(self.depths[i], 4);
+            writeln!(f, "{}\t{start}\t{end}\t{depth_str}", self.path_name)?;
+        }
+        Ok(())
+    }
+}
+
 /// Compute the depth for equally-sized windows along a given path and print a
 /// BED file.
-pub fn window_depth_bed(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usize) {
-    // The actual depth computation.
+pub fn window_depth(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usize) -> IntervalDepth {
     let depth = seg_depth(gfa).0;
     let windows = make_windows(path_length(gfa, path), window_size);
     let seg_depths = weighted_depths(gfa, &depth, path);
     let window_depths = assign_depths(seg_depths, &windows);
 
-    // Print a BED table with these weights.
-    let name = gfa.get_path_name(&gfa.paths[path]);
-    for i in 0..windows.len() {
-        let start = windows[i].0;
-        let end = windows[i].1;
-        let depth_str = format_float(window_depths[i], 4);
-        println!("{name}\t{start}\t{end}\t{depth_str}");
+    IntervalDepth {
+        path_name: gfa.get_path_name(&gfa.paths[path]).to_owned(),
+        intervals: windows,
+        depths: window_depths,
     }
 }
 
@@ -128,7 +146,7 @@ pub fn window_depth_bed(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usi
 ///
 /// The intervals must be (1) along a single path and (2) sorted in increasing
 /// order along that path.
-pub fn interval_depth_bed(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) {
+pub fn interval_depth(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) -> IntervalDepth {
     // We assume that this BED interval file contains only intervals from a
     // single path. (Relaxing this assumption without sacrificing performance is
     // interesting future work.)
@@ -136,7 +154,7 @@ pub fn interval_depth_bed(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) {
     let path = gfa.find_path(path_name).expect("path not found in graph");
 
     // TODO Avoid this conversion cost!
-    let windows: Vec<_> = intervals
+    let intervals: Vec<_> = intervals
         .entries
         .all()
         .iter()
@@ -146,15 +164,11 @@ pub fn interval_depth_bed(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) {
     // TODO Share this stuff with `window_depth_bed`!
     let depth = seg_depth(gfa).0;
     let seg_depths = weighted_depths(gfa, &depth, path);
-    let window_depths = assign_depths(seg_depths, &windows);
+    let interval_depths = assign_depths(seg_depths, &intervals);
 
-    // TODO Separate computation & printing so we can share this stuff with
-    // `window_depth_bed`!
-    let name = gfa.get_path_name(&gfa.paths[path]);
-    for i in 0..windows.len() {
-        let start = windows[i].0;
-        let end = windows[i].1;
-        let depth_str = format_float(window_depths[i], 4);
-        println!("{name}\t{start}\t{end}\t{depth_str}");
+    IntervalDepth {
+        path_name: path_name.to_owned(),
+        intervals,
+        depths: interval_depths,
     }
 }
