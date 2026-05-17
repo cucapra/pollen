@@ -233,7 +233,7 @@ pub struct Depth {
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
     use crate::ops::depth::{path_depth, seg_depth, PathDepth, SegDepth};
-    use crate::ops::window_depth::interval_depth;
+    use crate::ops::window_depth::{interval_depth, IntervalDepth};
     if args.seg_depth {
         // Segment depth table.
         let (depths, uniq_depths) = seg_depth(gfa);
@@ -247,7 +247,12 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
         // Interval depth table.
         let file = memfile::map_file(&bed);
         let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
-        interval_depth(gfa, &bed_store.as_ref()).print();
+        let depths = interval_depth(gfa, &bed_store.as_ref());
+        IntervalDepth {
+            intervals: bed_store.as_ref(),
+            depths,
+        }
+        .print()
     } else {
         // Path depth table.
         if args.path.is_empty() {
@@ -482,5 +487,10 @@ pub struct WindowDepth {
 
 pub fn window_depth(gfa: &flatgfa::FlatGFA, args: WindowDepth) {
     let path = gfa.find_path(args.path.as_ref()).expect("path not found");
-    ops::window_depth::window_depth(gfa, path, args.window).print();
+    let (intervals, depths) = ops::window_depth::window_depth(gfa, path, args.window);
+    ops::window_depth::IntervalDepth {
+        intervals: intervals.as_ref(),
+        depths,
+    }
+    .print()
 }

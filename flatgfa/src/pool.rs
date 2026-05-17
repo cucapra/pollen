@@ -212,6 +212,12 @@ impl<T> Default for HeapStore<T> {
     }
 }
 
+impl<T> From<Vec<T>> for HeapStore<T> {
+    fn from(value: Vec<T>) -> Self {
+        Self(value)
+    }
+}
+
 /// A store that keeps its data in fixed locations in memory.
 ///
 /// This is a funkier kind of arena that uses memory that has already been pre-allocated

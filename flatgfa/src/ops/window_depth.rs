@@ -1,27 +1,35 @@
 use crate::emit::Emit;
-use crate::flatbed::FlatBED;
+use crate::flatbed::{BEDEntry, FlatBED, HeapBEDStore};
 use crate::flatgfa::{self, Path};
 use crate::ops::depth::{format_float, seg_depth};
 use crate::pool::Id;
+use crate::pool::Store;
 use crate::FlatGFA;
-use bstr::BString;
+use bstr::BStr;
 
 struct SegmentDepth {
     depth: f64,
     range: (usize, usize),
 }
 
-/// Create "windows" from 0 through `len` in increments of `size`.
-pub fn make_windows(len: usize, size: usize) -> Vec<(usize, usize)> {
-    let num_windows = len.div_ceil(size);
-    let mut windows = Vec::with_capacity(num_windows);
-    let mut start = 0;
+/// Create a BED with "windows" from 0 through `len` in increments of `size`.
+///
+/// Every row in the resulting BED has the same `name`.
+pub fn make_windows(name: &BStr, len: u64, size: u64) -> HeapBEDStore {
+    let num_windows = len.div_ceil(size) as usize;
+    let mut store = HeapBEDStore {
+        name_data: Vec::with_capacity(name.len()).into(),
+        entries: Vec::with_capacity(num_windows).into(),
+    };
+    let name = store.name_data.add_slice(name.as_ref());
+
+    let mut start: u64 = 0;
     while start < len {
         let end = (start + size).min(len);
-        windows.push((start, end));
+        store.entries.add(BEDEntry { name, start, end });
         start = end;
     }
-    windows
+    store
 }
 
 /// Get the total length (in base pairs) of a single path.
@@ -72,18 +80,16 @@ fn overlap(a: (usize, usize), b: (usize, usize)) -> (usize, usize) {
 /// Given weighted segment depths from `weighted_depths`, assign that weight to
 /// each of the base-pair ranges in `windows`.
 #[allow(clippy::mut_range_bound)]
-fn assign_depths(
-    seg_depth: impl IntoIterator<Item = SegmentDepth>,
-    windows: &[(usize, usize)],
-) -> Vec<f64> {
-    let mut depths: Vec<f64> = vec![0.0; windows.len()];
+fn assign_depths(seg_depth: impl IntoIterator<Item = SegmentDepth>, windows: &FlatBED) -> Vec<f64> {
+    let mut depths: Vec<f64> = vec![0.0; windows.get_num_entries()];
 
     // Walk down the segments in the path.
     let mut cur_window_idx = 0;
     for seg in seg_depth {
         // Move through the windows that overlap with this segment.
-        while cur_window_idx < windows.len() {
-            let window = windows[cur_window_idx];
+        while cur_window_idx < windows.get_num_entries() {
+            let entry = windows.entries.all()[cur_window_idx];
+            let window = (entry.start as usize, entry.end as usize);
             let (start, end) = overlap(window, seg.range);
 
             // Is this window at least *partially* within the current segment?
@@ -111,64 +117,55 @@ fn assign_depths(
 ///
 /// The result of `window_depth` or `interval_depth` is a list of offset
 /// intervals in a single path along with the average depths of those intervals.
-pub struct IntervalDepth {
-    path_name: BString,
-    intervals: Vec<(usize, usize)>,
-    depths: Vec<f64>,
+pub struct IntervalDepth<'a> {
+    pub intervals: FlatBED<'a>,
+    pub depths: Vec<f64>,
 }
 
-impl Emit for IntervalDepth {
+impl Emit for IntervalDepth<'_> {
     fn emit(self, f: &mut impl std::io::prelude::Write) -> std::io::Result<()> {
-        for (i, (start, end)) in self.intervals.into_iter().enumerate() {
+        for (i, entry) in self.intervals.entries.all().iter().enumerate() {
             let depth_str = format_float(self.depths[i], 4);
-            writeln!(f, "{}\t{start}\t{end}\t{depth_str}", self.path_name)?;
+            let name = self.intervals.get_name_of_entry(entry);
+            let start = entry.start;
+            let end = entry.end;
+            writeln!(f, "{name}\t{start}\t{end}\t{depth_str}")?;
         }
         Ok(())
     }
 }
 
-/// Compute the depth for equally-sized windows along a given path and print a
-/// BED file.
-pub fn window_depth(gfa: &flatgfa::FlatGFA, path: Id<Path>, window_size: usize) -> IntervalDepth {
+/// Compute the depth for equally-sized windows along a given path.
+pub fn window_depth(
+    gfa: &flatgfa::FlatGFA,
+    path: Id<Path>,
+    window_size: usize,
+) -> (HeapBEDStore, Vec<f64>) {
+    let path_name = gfa.get_path_name(&gfa.paths[path]).to_owned();
     let depth = seg_depth(gfa).0;
-    let windows = make_windows(path_length(gfa, path), window_size);
+    let windows = make_windows(
+        path_name.as_ref(),
+        path_length(gfa, path) as u64,
+        window_size as u64,
+    );
     let seg_depths = weighted_depths(gfa, &depth, path);
-    let window_depths = assign_depths(seg_depths, &windows);
-
-    IntervalDepth {
-        path_name: gfa.get_path_name(&gfa.paths[path]).to_owned(),
-        intervals: windows,
-        depths: window_depths,
-    }
+    let depths = assign_depths(seg_depths, &windows.as_ref());
+    (windows, depths)
 }
 
 /// Compute the depth for arbitrary intervals and print a BED file.
 ///
 /// The intervals must be (1) along a single path and (2) sorted in increasing
 /// order along that path.
-pub fn interval_depth(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) -> IntervalDepth {
+pub fn interval_depth(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) -> Vec<f64> {
     // We assume that this BED interval file contains only intervals from a
     // single path. (Relaxing this assumption without sacrificing performance is
     // interesting future work.)
     let path_name = intervals.get_name_of_entry(&intervals.entries.all()[0]);
     let path = gfa.find_path(path_name).expect("path not found in graph");
 
-    // TODO Avoid this conversion cost!
-    let intervals: Vec<_> = intervals
-        .entries
-        .all()
-        .iter()
-        .map(|entry| (entry.start as usize, entry.end as usize))
-        .collect();
-
     // TODO Share this stuff with `window_depth_bed`!
     let depth = seg_depth(gfa).0;
     let seg_depths = weighted_depths(gfa, &depth, path);
-    let interval_depths = assign_depths(seg_depths, &intervals);
-
-    IntervalDepth {
-        path_name: path_name.to_owned(),
-        intervals,
-        depths: interval_depths,
-    }
+    assign_depths(seg_depths, intervals)
 }
