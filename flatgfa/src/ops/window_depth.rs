@@ -135,37 +135,42 @@ impl Emit for IntervalDepth<'_> {
     }
 }
 
+/// Compute the depth for a sequence of intervals along a single path.
+///
+/// Return one weighted depth value per interval. We require a path so we can
+/// avoid computing any average weights for segments not included within that
+/// path.
+fn interval_depth(gfa: &flatgfa::FlatGFA, path: Id<Path>, intervals: &FlatBED) -> Vec<f64> {
+    let depth = seg_depth(gfa).0;
+    let seg_depths = weighted_depths(gfa, &depth, path);
+    assign_depths(seg_depths, intervals)
+}
+
 /// Compute the depth for equally-sized windows along a given path.
 pub fn window_depth(
     gfa: &flatgfa::FlatGFA,
     path: Id<Path>,
     window_size: usize,
 ) -> (HeapBEDStore, Vec<f64>) {
-    let path_name = gfa.get_path_name(&gfa.paths[path]).to_owned();
-    let depth = seg_depth(gfa).0;
     let windows = make_windows(
-        path_name.as_ref(),
+        gfa.get_path_name(&gfa.paths[path]),
         path_length(gfa, path) as u64,
         window_size as u64,
     );
-    let seg_depths = weighted_depths(gfa, &depth, path);
-    let depths = assign_depths(seg_depths, &windows.as_ref());
+    let depths = interval_depth(gfa, path, &windows.as_ref());
     (windows, depths)
 }
 
-/// Compute the depth for arbitrary intervals and print a BED file.
+/// Compute the depth for arbitrary intervals from a FlatBED.
 ///
 /// The intervals must be (1) along a single path and (2) sorted in increasing
 /// order along that path.
-pub fn interval_depth(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) -> Vec<f64> {
+pub fn bed_depth(gfa: &flatgfa::FlatGFA, intervals: &FlatBED) -> Vec<f64> {
     // We assume that this BED interval file contains only intervals from a
     // single path. (Relaxing this assumption without sacrificing performance is
     // interesting future work.)
     let path_name = intervals.get_name_of_entry(&intervals.entries.all()[0]);
     let path = gfa.find_path(path_name).expect("path not found in graph");
 
-    // TODO Share this stuff with `window_depth_bed`!
-    let depth = seg_depth(gfa).0;
-    let seg_depths = weighted_depths(gfa, &depth, path);
-    assign_depths(seg_depths, intervals)
+    interval_depth(gfa, path, intervals)
 }

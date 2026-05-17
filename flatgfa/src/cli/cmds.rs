@@ -233,7 +233,7 @@ pub struct Depth {
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
     use crate::ops::depth::{path_depth, seg_depth, PathDepth, SegDepth};
-    use crate::ops::window_depth::{interval_depth, IntervalDepth};
+    use crate::ops::window_depth::{bed_depth, IntervalDepth};
     if args.seg_depth {
         // Segment depth table.
         let (depths, uniq_depths) = seg_depth(gfa);
@@ -247,7 +247,7 @@ pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
         // Interval depth table.
         let file = memfile::map_file(&bed);
         let bed_store = BEDParser::for_heap().parse_mem(file.as_ref());
-        let depths = interval_depth(gfa, &bed_store.as_ref());
+        let depths = bed_depth(gfa, &bed_store.as_ref());
         IntervalDepth {
             intervals: bed_store.as_ref(),
             depths,
