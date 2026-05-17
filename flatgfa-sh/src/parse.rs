@@ -45,10 +45,14 @@ fn cmd_to_ir(
                 let input = builder.load_gfa(input);
 
                 // In the `odgi depth` command line, the default is a per-path
-                // table, and `-d` switches to a per-node table. (There are
-                // other modes, such as `-D`, to support...)
+                // table. `-d` switches to a per-node table, and `-b` takes a
+                // BED file and switches to an interval table.
                 if argp.contains("-d") {
                     builder.instr(&[input], output, Op::NodeDepth);
+                } else if let Some(bed_file) = argp.opt_value_from_str("-b").unwrap() {
+                    let bed_file = builder.file(bed_file);
+                    let bed_rsrc = builder.load_bed(bed_file);
+                    builder.instr(&[input, bed_rsrc], output, Op::IntervalDepth)
                 } else {
                     builder.instr(
                         &[input],

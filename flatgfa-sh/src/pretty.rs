@@ -46,6 +46,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Op::ParseBED => "parse-bed",
             ir::Op::MakeWindows { size: _ } => "make-windows",
             ir::Op::OdgiView => "odgi-view",
+            ir::Op::IntervalDepth => "interval-depth",
         };
         write!(f, "{}({}", name, self.wrap(&self.val.inputs[0]))?;
         for input in &self.val.inputs[1..] {

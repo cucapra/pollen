@@ -161,6 +161,10 @@ Here's a shell script that uses a pipeline to combine `odgi depth` and
 
 ```console
 $ flash windows.sh
-5	0	4
+#path	start	end	mean.depth
+5	0	4	2
+5	4	8	2
+5	8	12	2
+5	12	13	2
 
 ```

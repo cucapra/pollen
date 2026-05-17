@@ -45,6 +45,7 @@ pub enum Op {
         size: usize,
     },
     OdgiView,
+    IntervalDepth,
 }
 
 #[derive(Debug)]

@@ -15,6 +15,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
         Op::ParseBED => parse_bed(env, instr.inputs[0], instr.output),
         Op::MakeWindows { size } => make_windows(env, instr.inputs[0], instr.output, *size),
         Op::OdgiView => odgi_view(env, instr.inputs[0], instr.output),
+        Op::IntervalDepth => interval_depth(env, instr.inputs[0], instr.inputs[1], instr.output),
     }
 }
 
@@ -140,4 +141,19 @@ fn odgi_view(env: &mut Env, input: Resource, output: Resource) {
         },
         output,
     )
+}
+
+fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output: Resource) {
+    let bed_store = env.bed_stores[bed_rsrc].take().unwrap();
+    let gfa = env.flatgfa(gfa_rsrc);
+
+    let depths = ops::window_depth::bed_depth(&gfa, &bed_store.as_ref());
+
+    let mut out = env.output(output);
+    out.write("#path\tstart\tend\tmean.depth\n").unwrap();
+    out.emit(ops::window_depth::IntervalDepth {
+        intervals: bed_store.as_ref(),
+        depths,
+    })
+    .unwrap();
 }
