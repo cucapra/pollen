@@ -395,6 +395,7 @@ dependencies = [
  "memmap",
  "pico-args",
  "rustyline",
+ "smallvec",
  "trycmd",
 ]
 

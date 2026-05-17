@@ -92,7 +92,7 @@ fn cmd_to_ir(
             output,
             Op::Exec {
                 command: name,
-                args,
+                args: args.into(),
             },
         );
     }

@@ -1,4 +1,5 @@
 use enum_map::{Enum, EnumMap};
+use smallvec::SmallVec;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Enum)]
@@ -21,7 +22,7 @@ pub struct Resource {
 /// An instruction performs one imperative action.
 #[derive(Debug)]
 pub struct Instr {
-    pub inputs: Vec<Resource>,
+    pub inputs: SmallVec<[Resource; 2]>,
     pub output: Resource,
     pub op: Op,
 }
@@ -30,12 +31,19 @@ pub struct Instr {
 #[derive(Debug)]
 pub enum Op {
     NodeDepth,
-    PathDepth { path: Option<String> },
-    Exec { command: String, args: Vec<String> },
+    PathDepth {
+        path: Option<String>,
+    },
+    Exec {
+        command: String,
+        args: SmallVec<[String; 4]>,
+    },
     ParseGFA,
     MapFile,
     ParseBED,
-    MakeWindows { size: usize },
+    MakeWindows {
+        size: usize,
+    },
     OdgiView,
 }
 
@@ -91,7 +99,7 @@ impl Builder {
     /// Add an instruction to the end of the program.
     pub fn instr(&mut self, inputs: &[Resource], output: Resource, op: Op) {
         self.instrs.push(Instr {
-            inputs: inputs.to_vec(),
+            inputs: inputs.into(),
             output,
             op,
         })

@@ -1,4 +1,5 @@
 use crate::ir::{Builder, Instr, Op, Program, ResourceKind};
+use smallvec::SmallVec;
 use std::fs;
 
 /// Apply all our optimizations to a program.
@@ -106,7 +107,7 @@ fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> boo
     // Make a new instruction to load the FlatGFA.
     let new_gfa = builder.rsrc(ResourceKind::Mmap);
     let new_instr = Instr {
-        inputs: vec![builder.file(flat_filename)],
+        inputs: SmallVec::from_slice(&[builder.file(flat_filename)]),
         output: new_gfa,
         op: Op::MapFile,
     };
