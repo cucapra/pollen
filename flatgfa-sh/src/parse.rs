@@ -48,10 +48,10 @@ fn cmd_to_ir(
                 // table, and `-d` switches to a per-node table. (There are
                 // other modes, such as `-D`, to support...)
                 if argp.contains("-d") {
-                    builder.instr(input, output, Op::NodeDepth);
+                    builder.instr(&[input], output, Op::NodeDepth);
                 } else {
                     builder.instr(
-                        input,
+                        &[input],
                         output,
                         Op::PathDepth {
                             path: argp.opt_value_from_str("-r").unwrap(),
@@ -76,7 +76,7 @@ fn cmd_to_ir(
                 let input = builder.load_bed(input);
 
                 builder.instr(
-                    input,
+                    &[input],
                     output,
                     Op::MakeWindows {
                         size: argp.value_from_str("-w").unwrap(),
@@ -88,7 +88,7 @@ fn cmd_to_ir(
     } else {
         // Any non-odgi command is a "passthrough" shell command.
         builder.instr(
-            input,
+            &[input],
             output,
             Op::Exec {
                 command: name,

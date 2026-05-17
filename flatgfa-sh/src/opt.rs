@@ -26,7 +26,7 @@ fn opt_og_parse(builder: &mut Builder) {
 
     // Get the stem of the input `.og` file to this pair.
     let stem = builder
-        .file_name(builder.instrs[view_idx].input)
+        .file_name(builder.instrs[view_idx].inputs[0])
         .strip_suffix(".og")
         .expect("odgi-view inputs must end in .og")
         .to_string();
@@ -42,7 +42,7 @@ fn opt_og_parse(builder: &mut Builder) {
     let text_filename = format!("{stem}.gfa");
     if fs::exists(&text_filename).unwrap() {
         // Make the `parse-gfa` read from this file, and remove the `odgi-view`.
-        builder.instrs[parse_idx].input = builder.file(text_filename);
+        builder.instrs[parse_idx].inputs[0] = builder.file(text_filename);
         builder.instrs.remove(view_idx);
     }
 }
@@ -55,7 +55,7 @@ fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
         .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))?;
 
     // Search for an `odgi-view` instruction that produces the GFA.
-    let gfa = parse_instr.input;
+    let gfa = parse_instr.inputs[0];
     let view_idx = instrs
         .iter()
         .position(|instr| matches!(instr.op, Op::OdgiView) && instr.output == gfa)?;
@@ -77,11 +77,11 @@ fn opt_gfa_parse(builder: &mut Builder) {
         .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))
     {
         // Get the stem of the input `.gfa` file, if it's a file.
-        if parse_instr.input.kind != ResourceKind::File {
+        if parse_instr.inputs[0].kind != ResourceKind::File {
             return;
         }
         let stem = builder
-            .file_name(parse_instr.input)
+            .file_name(parse_instr.inputs[0])
             .strip_suffix(".gfa")
             .expect("parse-gfa inputs must end in .gfa")
             .to_string();
@@ -106,7 +106,7 @@ fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> boo
     // Make a new instruction to load the FlatGFA.
     let new_gfa = builder.rsrc(ResourceKind::Mmap);
     let new_instr = Instr {
-        input: builder.file(flat_filename),
+        inputs: vec![builder.file(flat_filename)],
         output: new_gfa,
         op: Op::MapFile,
     };

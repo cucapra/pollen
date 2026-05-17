@@ -7,14 +7,14 @@ use std::io;
 /// Execute a single instruction.
 pub fn eval(env: &mut Env, instr: &Instr) {
     match &instr.op {
-        Op::NodeDepth => node_depth(env, instr.input, instr.output),
-        Op::PathDepth { path } => path_depth(env, instr.input, instr.output, path),
-        Op::Exec { command, args } => exec(env, instr.input, instr.output, command, args),
-        Op::ParseGFA => parse_gfa(env, instr.input, instr.output),
-        Op::MapFile => map_file(env, instr.input, instr.output),
-        Op::ParseBED => parse_bed(env, instr.input, instr.output),
-        Op::MakeWindows { size } => make_windows(env, instr.input, instr.output, *size),
-        Op::OdgiView => odgi_view(env, instr.input, instr.output),
+        Op::NodeDepth => node_depth(env, instr.inputs[0], instr.output),
+        Op::PathDepth { path } => path_depth(env, instr.inputs[0], instr.output, path),
+        Op::Exec { command, args } => exec(env, instr.inputs[0], instr.output, command, args),
+        Op::ParseGFA => parse_gfa(env, instr.inputs[0], instr.output),
+        Op::MapFile => map_file(env, instr.inputs[0], instr.output),
+        Op::ParseBED => parse_bed(env, instr.inputs[0], instr.output),
+        Op::MakeWindows { size } => make_windows(env, instr.inputs[0], instr.output, *size),
+        Op::OdgiView => odgi_view(env, instr.inputs[0], instr.output),
     }
 }
 

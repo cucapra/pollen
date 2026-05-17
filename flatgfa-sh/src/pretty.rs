@@ -27,7 +27,7 @@ impl Display for Wrapped<'_, ir::Instr> {
                 "shell({:?}, {:?}, input={}) -> {}",
                 command,
                 args,
-                self.wrap(&self.val.input),
+                self.wrap(&self.val.inputs[0]),
                 self.wrap(&self.val.output)
             )?;
             return Ok(());
@@ -47,7 +47,10 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Op::MakeWindows { size: _ } => "make-windows",
             ir::Op::OdgiView => "odgi-view",
         };
-        write!(f, "{}({}", name, self.wrap(&self.val.input))?;
+        write!(f, "{}({}", name, self.wrap(&self.val.inputs[0]))?;
+        for input in &self.val.inputs[1..] {
+            write!(f, ", {}", self.wrap(input))?;
+        }
         match &self.val.op {
             ir::Op::PathDepth { path: Some(path) } => write!(f, ", path={:?}", path)?,
             ir::Op::Exec { command, args } => {

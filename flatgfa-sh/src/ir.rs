@@ -21,7 +21,7 @@ pub struct Resource {
 /// An instruction performs one imperative action.
 #[derive(Debug)]
 pub struct Instr {
-    pub input: Resource,
+    pub inputs: Vec<Resource>,
     pub output: Resource,
     pub op: Op,
 }
@@ -89,8 +89,12 @@ impl Builder {
     }
 
     /// Add an instruction to the end of the program.
-    pub fn instr(&mut self, input: Resource, output: Resource, op: Op) {
-        self.instrs.push(Instr { input, output, op })
+    pub fn instr(&mut self, inputs: &[Resource], output: Resource, op: Op) {
+        self.instrs.push(Instr {
+            inputs: inputs.to_vec(),
+            output,
+            op,
+        })
     }
 
     /// Add a file resource, or get an existing one if we've already added it.
@@ -147,19 +151,19 @@ impl Builder {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
                 // Memory-map the FlatGFA binary file.
                 let output = self.rsrc(ResourceKind::Mmap);
-                self.instr(input, output, Op::MapFile);
+                self.instr(&[input], output, Op::MapFile);
                 output
             }
             ResourceKind::File if self.file_name(input).ends_with(".og") => {
                 // Use `odgi view` to dump as GFA text and then parse that.
                 let pipe = self.rsrc(ResourceKind::Pipe);
-                self.instr(input, pipe, Op::OdgiView);
+                self.instr(&[input], pipe, Op::OdgiView);
                 self.load_gfa(pipe)
             }
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
                 let output = self.rsrc(ResourceKind::GFAStore);
-                self.instr(input, output, Op::ParseGFA);
+                self.instr(&[input], output, Op::ParseGFA);
                 output
             }
             _ => panic!("cannot parse this resource as GFA text"),
@@ -171,7 +175,7 @@ impl Builder {
         match input.kind {
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 let output = self.rsrc(ResourceKind::BEDStore);
-                self.instr(input, output, Op::ParseBED);
+                self.instr(&[input], output, Op::ParseBED);
                 output
             }
             _ => panic!("cannot parse this resource as BED text"),
@@ -181,8 +185,10 @@ impl Builder {
     /// Replace all uses of one resource with another.
     pub fn replace_rsrc(&mut self, old: Resource, new: Resource) {
         for instr in self.instrs.iter_mut() {
-            if instr.input == old {
-                instr.input = new;
+            for input in instr.inputs.iter_mut() {
+                if *input == old {
+                    *input = new;
+                }
             }
             if instr.output == old {
                 instr.output = new;
