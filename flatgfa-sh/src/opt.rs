@@ -10,7 +10,7 @@ pub fn optimize(prog: Program) -> Program {
     // is available.
     opt_gfa_parse(&mut builder);
     opt_og_parse(&mut builder);
-    skip_bed_file(&mut builder);
+    skip_bed_files(&mut builder);
 
     builder.build()
 }
@@ -124,34 +124,38 @@ fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> boo
     true
 }
 
-fn find_bed_file_pair(builder: &mut Builder) -> Option<(usize, usize)> {
+fn find_bed_file_pairs(builder: &mut Builder) -> impl Iterator<Item = (usize, usize)> {
     // Search for a `parse-bed` instruction.
-    let (parse_idx, parse_instr) = builder
+    builder
         .instrs
         .iter()
         .enumerate()
-        .find(|(_, instr)| matches!(instr.op, Op::ParseBED))?;
+        .filter_map(|(parse_idx, parse_instr)| {
+            if let Op::ParseBED = parse_instr.op {
+                // Which instruction produces that file?
+                let bed_file = parse_instr.inputs[0];
+                debug_assert!(matches!(
+                    bed_file.kind,
+                    ResourceKind::File | ResourceKind::Pipe
+                ));
+                let (def_idx, def_instr) = builder
+                    .instrs
+                    .iter()
+                    .enumerate()
+                    .find(|(_, instr)| instr.output == bed_file)?;
 
-    // Which instruction produces that file?
-    let bed_file = parse_instr.inputs[0];
-    debug_assert!(matches!(
-        bed_file.kind,
-        ResourceKind::File | ResourceKind::Pipe
-    ));
-    let (def_idx, def_instr) = builder
-        .instrs
-        .iter()
-        .enumerate()
-        .find(|(_, instr)| instr.output == bed_file)?;
+                // TODO Ensure there are no other uses of the file.
 
-    // TODO Ensure there are no other uses of the file.
-
-    // We match if this is in an allowlist of operations that can either produce
-    // BED text files *or* in-memory FlatBED resources.
-    match def_instr.op {
-        Op::MakeWindows { size: _ } => Some((def_idx, parse_idx)),
-        _ => None,
-    }
+                // We match if this is in an allowlist of operations that can either produce
+                // BED text files *or* in-memory FlatBED resources.
+                match def_instr.op {
+                    Op::MakeWindows { size: _ } => Some((def_idx, parse_idx)),
+                    _ => None,
+                }
+            } else {
+                None
+            }
+        })
 }
 
 /// Optimize BED file round trips.
@@ -164,14 +168,14 @@ fn find_bed_file_pair(builder: &mut Builder) -> Option<(usize, usize)> {
 /// And attempt to replace it with:
 ///
 ///     something -> bed-store 0
-fn skip_bed_file(builder: &mut Builder) {
-    let Some((def_idx, parse_idx)) = find_bed_file_pair(builder) else {
-        return;
-    };
+fn skip_bed_files(builder: &mut Builder) {
+    let pairs: Vec<_> = find_bed_file_pairs(builder).collect();
+    // TODO second+ iterations break because we will change indices :(
+    for (def_idx, parse_idx) in pairs {
+        // Make the defining instruction produce the parsed FlatBED resource directly.
+        builder.instrs[def_idx].output = builder.instrs[parse_idx].output;
 
-    // Make the defining instruction produce the parsed FlatBED resource directly.
-    builder.instrs[def_idx].output = builder.instrs[parse_idx].output;
-
-    // Delete the parse instruction.
-    builder.instrs.remove(parse_idx);
+        // Delete the parse instruction.
+        builder.instrs.remove(parse_idx);
+    }
 }
