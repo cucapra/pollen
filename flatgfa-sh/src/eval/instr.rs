@@ -1,7 +1,7 @@
 use super::{Env, Input};
 use crate::ir::{Instr, Op, Resource, ResourceKind};
 use bstr::BStr;
-use flatgfa::{self, emit::Emit, memfile, ops};
+use flatgfa::{self, emit::Emit, flatbed::HeapBEDStore, memfile, ops};
 use std::io;
 
 /// Execute a single instruction.
@@ -115,18 +115,50 @@ impl<'a> Emit for WindowsBed<'a> {
     }
 }
 
+impl<'a> WindowsBed<'a> {
+    fn emit_bed(self, store: &mut HeapBEDStore) {
+        let mut pos = self.start;
+        while pos < self.end {
+            let end = (pos + self.size).min(self.end);
+            store.add_entry(self.name, pos, end); // TODO dedup name
+            pos = end;
+        }
+    }
+}
+
 fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
     let store = env.bed_stores[input].take().unwrap();
-    let bed = store.as_ref();
-    let mut out = env.output(output);
-    for entry in bed.entries.all() {
-        out.emit(WindowsBed {
-            name: bed.get_name_of_entry(entry),
-            start: entry.start,
-            end: entry.end,
-            size: size.try_into().unwrap(),
-        })
-        .unwrap();
+    let in_bed = store.as_ref();
+
+    match output.kind {
+        ResourceKind::BEDStore => {
+            // In-memory FlatBED output.
+            let mut out = HeapBEDStore::default();
+            // TODO dedup with below
+            for entry in in_bed.entries.all() {
+                WindowsBed {
+                    name: in_bed.get_name_of_entry(entry),
+                    start: entry.start,
+                    end: entry.end,
+                    size: size.try_into().unwrap(),
+                }
+                .emit_bed(&mut out);
+            }
+            env.bed_stores[output] = Some(out);
+        }
+        _ => {
+            // Text output.
+            let mut out = env.output(output);
+            for entry in in_bed.entries.all() {
+                out.emit(WindowsBed {
+                    name: in_bed.get_name_of_entry(entry),
+                    start: entry.start,
+                    end: entry.end,
+                    size: size.try_into().unwrap(),
+                })
+                .unwrap();
+            }
+        }
     }
 }
 
