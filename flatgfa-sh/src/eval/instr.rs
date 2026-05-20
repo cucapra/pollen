@@ -98,33 +98,27 @@ fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
     let store = env.bed_stores[input].take().unwrap();
     let in_bed = store.as_ref();
 
+    // Generate a series of windows for each input interval.
+    let all_windows = in_bed.entries.all().iter().map(|entry| Windows {
+        name: in_bed.get_name_of_entry(entry),
+        start: entry.start,
+        end: entry.end,
+        size: size.try_into().unwrap(),
+    });
+
+    // Output as either FlatBED or text.
     match output.kind {
         ResourceKind::BEDStore => {
-            // In-memory FlatBED output.
             let mut out = HeapBEDStore::default();
-            // TODO dedup with below
-            for entry in in_bed.entries.all() {
-                Windows {
-                    name: in_bed.get_name_of_entry(entry),
-                    start: entry.start,
-                    end: entry.end,
-                    size: size.try_into().unwrap(),
-                }
-                .emit_bed(&mut out);
+            for windows in all_windows {
+                windows.emit_bed(&mut out);
             }
             env.bed_stores[output] = Some(out);
         }
         _ => {
-            // Text output.
             let mut out = env.output(output);
-            for entry in in_bed.entries.all() {
-                out.emit(Windows {
-                    name: in_bed.get_name_of_entry(entry),
-                    start: entry.start,
-                    end: entry.end,
-                    size: size.try_into().unwrap(),
-                })
-                .unwrap();
+            for windows in all_windows {
+                out.emit(windows).unwrap();
             }
         }
     }
