@@ -218,6 +218,12 @@ impl<T> From<Vec<T>> for HeapStore<T> {
     }
 }
 
+impl<T> HeapStore<T> {
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
+    }
+}
+
 /// A store that keeps its data in fixed locations in memory.
 ///
 /// This is a funkier kind of arena that uses memory that has already been pre-allocated

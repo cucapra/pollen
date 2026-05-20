@@ -12,24 +12,57 @@ struct SegmentDepth {
     range: (usize, usize),
 }
 
-/// Create a BED with "windows" from 0 through `len` in increments of `size`.
+/// A sequence of equally-sized windows along a certain path.
 ///
-/// Every row in the resulting BED has the same `name`.
-pub fn make_windows(name: &BStr, len: u64, size: u64) -> HeapBEDStore {
-    let num_windows = len.div_ceil(size) as usize;
-    let mut store = HeapBEDStore {
-        name_data: Vec::with_capacity(name.len()).into(),
-        entries: Vec::with_capacity(num_windows).into(),
-    };
-    let name = store.name_data.add_slice(name.as_ref());
+/// The sequence of windows go from `start` through `end` in increments of
+/// `size`. This struct abstractly represents a sequence of windows. It allows
+/// emitting the sequence either as text or as an in-memory FlatBED store.
+pub struct Windows<'a> {
+    pub name: &'a BStr,
+    pub start: u64,
+    pub end: u64,
+    pub size: u64,
+}
 
-    let mut start: u64 = 0;
-    while start < len {
-        let end = (start + size).min(len);
-        store.entries.add(BEDEntry { name, start, end });
-        start = end;
+impl<'a> Emit for Windows<'a> {
+    fn emit(self, f: &mut impl std::io::Write) -> std::io::Result<()> {
+        let mut pos = self.start;
+        while pos < self.end {
+            let end = (pos + self.size).min(self.end);
+            writeln!(f, "{}\t{}\t{}", self.name, pos, end)?;
+            pos = end;
+        }
+        Ok(())
     }
-    store
+}
+
+impl<'a> Windows<'a> {
+    pub fn emit_bed(self, store: &mut HeapBEDStore) {
+        let name = store.name_data.add_slice(self.name.as_ref());
+        store.entries.reserve(self.len());
+
+        let mut start = self.start;
+        while start < self.end {
+            let end = (start + self.size).min(self.end);
+            store.entries.add(BEDEntry { name, start, end });
+            start = end;
+        }
+    }
+
+    pub fn as_bed(self) -> HeapBEDStore {
+        let mut store = HeapBEDStore::default();
+        self.emit_bed(&mut store);
+        store
+    }
+
+    /// The number of windows in the sequence.
+    pub fn len(&self) -> usize {
+        (self.end - self.start).div_ceil(self.size) as usize
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 /// Get the total length (in base pairs) of a single path.
@@ -152,11 +185,13 @@ pub fn window_depth(
     path: Id<Path>,
     window_size: usize,
 ) -> (HeapBEDStore, Vec<f64>) {
-    let windows = make_windows(
-        gfa.get_path_name(&gfa.paths[path]),
-        path_length(gfa, path) as u64,
-        window_size as u64,
-    );
+    let windows = Windows {
+        name: gfa.get_path_name(&gfa.paths[path]),
+        start: 0,
+        end: path_length(gfa, path) as u64,
+        size: window_size as u64,
+    }
+    .as_bed();
     let depths = interval_depth(gfa, path, &windows.as_ref());
     (windows, depths)
 }

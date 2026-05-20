@@ -1,8 +1,6 @@
 use super::{Env, Input};
 use crate::ir::{Instr, Op, Resource, ResourceKind};
-use bstr::BStr;
-use flatgfa::{self, emit::Emit, flatbed::HeapBEDStore, memfile, ops};
-use std::io;
+use flatgfa::{self, flatbed::HeapBEDStore, memfile, ops, ops::window_depth::Windows};
 
 /// Execute a single instruction.
 pub fn eval(env: &mut Env, instr: &Instr) {
@@ -96,36 +94,6 @@ fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
     env.bed_stores[output] = Some(store);
 }
 
-struct WindowsBed<'a> {
-    name: &'a BStr,
-    start: u64,
-    end: u64,
-    size: u64,
-}
-
-impl<'a> Emit for WindowsBed<'a> {
-    fn emit(self, f: &mut impl std::io::Write) -> io::Result<()> {
-        let mut pos = self.start;
-        while pos < self.end {
-            let end = (pos + self.size).min(self.end);
-            writeln!(f, "{}\t{}\t{}", self.name, pos, end)?;
-            pos = end;
-        }
-        Ok(())
-    }
-}
-
-impl<'a> WindowsBed<'a> {
-    fn emit_bed(self, store: &mut HeapBEDStore) {
-        let mut pos = self.start;
-        while pos < self.end {
-            let end = (pos + self.size).min(self.end);
-            store.add_entry(self.name, pos, end); // TODO dedup name
-            pos = end;
-        }
-    }
-}
-
 fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
     let store = env.bed_stores[input].take().unwrap();
     let in_bed = store.as_ref();
@@ -136,7 +104,7 @@ fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
             let mut out = HeapBEDStore::default();
             // TODO dedup with below
             for entry in in_bed.entries.all() {
-                WindowsBed {
+                Windows {
                     name: in_bed.get_name_of_entry(entry),
                     start: entry.start,
                     end: entry.end,
@@ -150,7 +118,7 @@ fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
             // Text output.
             let mut out = env.output(output);
             for entry in in_bed.entries.all() {
-                out.emit(WindowsBed {
+                out.emit(Windows {
                     name: in_bed.get_name_of_entry(entry),
                     start: entry.start,
                     end: entry.end,
