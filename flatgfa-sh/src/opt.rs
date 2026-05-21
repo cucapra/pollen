@@ -171,33 +171,6 @@ fn def_use(instrs: &[Instr]) -> DefUse {
     DefUse { defs, uses }
 }
 
-fn find_bed_file_pairs(instrs: &[Instr], du: &DefUse) -> impl Iterator<Item = (usize, usize)> {
-    // Search for a `parse-bed` instruction.
-    instrs
-        .iter()
-        .enumerate()
-        .filter_map(move |(parse_idx, parse_instr)| {
-            if let Op::ParseBED = parse_instr.op {
-                // Find the instruction that produces this file. If there are no
-                // other uses of this file, we can optimize.
-                let def_idx = du.defs[parse_idx][0]?;
-                if du.uses[def_idx].len() == 1 {
-                    // We match if this is in an allowlist of operations that
-                    // can either produce BED text files *or* in-memory FlatBED
-                    // resources.
-                    match instrs[def_idx].op {
-                        Op::MakeWindows { size: _ } => Some((def_idx, parse_idx)),
-                        _ => None,
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-}
-
 /// Optimize BED file round trips.
 ///
 /// Search for this pattern:
@@ -209,8 +182,37 @@ fn find_bed_file_pairs(instrs: &[Instr], du: &DefUse) -> impl Iterator<Item = (u
 ///
 ///     something -> bed-store 0
 fn skip_bed_files(builder: &mut Builder) {
+    // Find def/use pairs consisting of something that produces a BED file and
+    // then a `parse-bed` instruction.
     let du = def_use(&builder.instrs);
-    let pairs: Vec<_> = find_bed_file_pairs(&builder.instrs, &du).collect();
+    let pairs: Vec<_> = builder
+        .instrs
+        .iter()
+        .enumerate()
+        .filter_map(|(parse_idx, parse_instr)| {
+            // Start with a `parse-bed` instruction.
+            let Op::ParseBED = parse_instr.op else {
+                return None;
+            };
+
+            // Find the instruction that produces this file. If there are no
+            // other uses of this file, we can optimize.
+            let def_idx = du.defs[parse_idx][0]?;
+            if du.uses[def_idx].len() != 1 {
+                return None;
+            }
+
+            // We match if this is in an allowlist of operations that
+            // can either produce BED text files *or* in-memory FlatBED
+            // resources.
+            let Op::MakeWindows { size: _ } = builder.instrs[def_idx].op else {
+                return None;
+            };
+
+            Some((def_idx, parse_idx))
+        })
+        .collect();
+
     // TODO second+ iterations break because we will change indices :(
     for (def_idx, parse_idx) in pairs {
         // Make the defining instruction produce the parsed FlatBED resource directly.
