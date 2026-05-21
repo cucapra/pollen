@@ -153,6 +153,37 @@ path-depth(mmap-0) -> stdout
 ```
 
 
+Optimizations
+-------------
+
+The `-O` flag enables some optimizations in the intermediate representation.
+We've seen one (avoiding parsing when a pre-parsed file exists) above.
+Here are some other optimizations.
+
+### Eliminate Intermediate BED Files
+
+Some commands that produce BED files as text can also produce in-memory FlatBED resources, avoiding the need for a print/parse round trip.
+One optimization detects these round trips and removes them:
+
+```console
+$ flash -p -c 'bedtools makewindows -b in.bed -w 16 > intermediate.bed ; odgi depth -i g.gfa -b intermediate.bed'
+parse-bed("in.bed") -> bed-store-0
+make-windows(bed-store-0, size=16) -> "intermediate.bed"
+parse-gfa("g.gfa") -> gfa-store-0
+parse-bed("intermediate.bed") -> bed-store-1
+interval-depth(gfa-store-0, bed-store-1) -> stdout
+
+$ flash -p -O -c 'bedtools makewindows -b in.bed -w 16 > intermediate.bed ; odgi depth -i g.gfa -b intermediate.bed'
+parse-bed("in.bed") -> bed-store-0
+make-windows(bed-store-0, size=16) -> bed-store-1
+parse-gfa("g.gfa") -> gfa-store-0
+interval-depth(gfa-store-0, bed-store-1) -> stdout
+
+```
+
+The `intermediate.bed` file is eliminated.
+
+
 Complicated Example
 -------------------
 
