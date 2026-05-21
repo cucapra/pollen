@@ -21,48 +21,54 @@ pub fn optimize(prog: Program) -> Program {
 /// into a `gfa-parse` instruction, and (if found) replace that pair with a
 /// `map-file` of a similarly-named `.fgfa` file that exists on the filesystem.
 fn opt_og_parse(builder: &mut Builder) {
-    // Find an `odgi-view` -> `gfa-parse` pair.
-    let Some((view_idx, parse_idx)) = find_og_pair(&builder.instrs) else {
-        return;
-    };
-
-    // Get the stem of the input `.og` file to this pair.
-    let stem = builder
-        .file_name(builder.instrs[view_idx].inputs[0])
-        .strip_suffix(".og")
-        .expect("odgi-view inputs must end in .og")
-        .to_string();
-
-    // Try replacing this with a FlatGFA load.
-    if replace_with_flat(builder, &stem, parse_idx) {
-        // Remove the `odgi-view` too.
-        builder.instrs.remove(view_idx);
-        return;
-    }
-
-    // Otherwise, try replacing this with a direct text GFA parse.
-    let text_filename = format!("{stem}.gfa");
-    if fs::exists(&text_filename).unwrap() {
-        // Make the `parse-gfa` read from this file, and remove the `odgi-view`.
-        builder.instrs[parse_idx].inputs[0] = builder.file(text_filename);
-        builder.instrs.remove(view_idx);
-    }
-}
-
-fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
-    // Search for a `parse-gfa` instruction.
-    let (parse_idx, parse_instr) = instrs
+    // Search for def/use pairs of `odgi-view` and `parse-gfa` instructions.
+    let du = def_use(&builder.instrs);
+    let pairs: Vec<_> = builder
+        .instrs
         .iter()
         .enumerate()
-        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))?;
+        .filter_map(|(parse_idx, parse_instr)| {
+            // Start with a `parse-gfa` instruction.
+            let Op::ParseGFA = parse_instr.op else {
+                return None;
+            };
 
-    // Search for an `odgi-view` instruction that produces the GFA.
-    let gfa = parse_instr.inputs[0];
-    let view_idx = instrs
-        .iter()
-        .position(|instr| matches!(instr.op, Op::OdgiView) && instr.output == gfa)?;
+            // The definition must be an `odgi-view`.
+            let def_idx = du.defs[parse_idx][0]?;
+            let Op::OdgiView = builder.instrs[def_idx].op else {
+                return None;
+            };
 
-    Some((view_idx, parse_idx))
+            Some((def_idx, parse_idx))
+        })
+        .collect();
+
+    // Delete the `odgi-view` and rewire the result resource.
+    let mut to_drop = Vec::new();
+    for (view_idx, parse_idx) in pairs {
+        // Get the stem of the input `.og` file to this pair.
+        let stem = builder
+            .file_name(builder.instrs[view_idx].inputs[0])
+            .strip_suffix(".og")
+            .expect("odgi-view inputs must end in .og")
+            .to_string();
+
+        // Try replacing this with a FlatGFA load.
+        if replace_with_flat(builder, &stem, parse_idx) {
+            // Remove the `odgi-view` too.
+            to_drop.push(view_idx);
+            continue;
+        }
+
+        // Otherwise, try replacing this with a direct text GFA parse.
+        let text_filename = format!("{stem}.gfa");
+        if fs::exists(&text_filename).unwrap() {
+            // Make the `parse-gfa` read from this file, and remove the `odgi-view`.
+            builder.instrs[parse_idx].inputs[0] = builder.file(text_filename);
+            to_drop.push(view_idx);
+        }
+    }
+    remove_indices(&mut builder.instrs, &to_drop);
 }
 
 /// Optimize GFA file input to FlatGFA input.
