@@ -235,7 +235,9 @@ fn remove_indices<T>(vec: &mut Vec<T>, indices: &[usize]) {
     let mut cur = 0;
     let mut i = 0;
     vec.retain(|_| {
-        if indices[cur] == i {
+        if cur >= indices.len() {
+            true
+        } else if indices[cur] == i {
             cur += 1;
             i += 1;
             false
