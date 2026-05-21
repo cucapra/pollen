@@ -1,6 +1,6 @@
-use crate::ir::{Builder, Instr, Op, Program, ResourceKind};
+use crate::ir::{Builder, Instr, Op, Program, Resource, ResourceKind};
 use smallvec::SmallVec;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 /// Apply all our optimizations to a program.
 pub fn optimize(prog: Program) -> Program {
@@ -124,33 +124,73 @@ fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> boo
     true
 }
 
-fn find_bed_file_pairs(builder: &mut Builder) -> impl Iterator<Item = (usize, usize)> {
+#[derive(Debug)]
+struct DefUse {
+    /// The defining instruction for each use.
+    ///
+    /// For each instruction, this contains a vector that is the same length as
+    /// that instruction's `inputs`. Each entry in that vector references (via
+    /// index) the instruction that defined that input.
+    defs: Vec<SmallVec<[Option<usize>; 2]>>,
+
+    /// The uses of the resource defined by each instruction.
+    ///
+    /// Each instruction defines the resource that is its `output` resource.
+    /// For each instruction, this contains a vector referencing (via index) all
+    /// the instructions that use that defined resource. A use occurs when the
+    /// resource appears in an instruction's `inputs` before it is overwritten.
+    uses: Vec<SmallVec<[usize; 2]>>,
+}
+
+fn def_use(instrs: &[Instr]) -> DefUse {
+    let mut defs = Vec::with_capacity(instrs.len());
+    let mut uses = vec![SmallVec::new(); instrs.len()];
+    let mut last_def: HashMap<Resource, usize> = HashMap::new();
+
+    for (idx, instr) in instrs.iter().enumerate() {
+        // Find the definition for each use.
+        defs.push(
+            instr
+                .inputs
+                .iter()
+                .map(|input| last_def.get(input).copied())
+                .collect(),
+        );
+
+        // Attribute each use to its definition.
+        for input in &instr.inputs {
+            if let Some(&def_idx) = last_def.get(input) {
+                uses[def_idx].push(idx);
+            }
+        }
+
+        // Record the definition.
+        last_def.insert(instr.output, idx);
+    }
+
+    DefUse { defs, uses }
+}
+
+fn find_bed_file_pairs(instrs: &[Instr], du: &DefUse) -> impl Iterator<Item = (usize, usize)> {
     // Search for a `parse-bed` instruction.
-    builder
-        .instrs
+    instrs
         .iter()
         .enumerate()
-        .filter_map(|(parse_idx, parse_instr)| {
+        .filter_map(move |(parse_idx, parse_instr)| {
             if let Op::ParseBED = parse_instr.op {
-                // Which instruction produces that file?
-                let bed_file = parse_instr.inputs[0];
-                debug_assert!(matches!(
-                    bed_file.kind,
-                    ResourceKind::File | ResourceKind::Pipe
-                ));
-                let (def_idx, def_instr) = builder
-                    .instrs
-                    .iter()
-                    .enumerate()
-                    .find(|(_, instr)| instr.output == bed_file)?;
-
-                // TODO Ensure there are no other uses of the file.
-
-                // We match if this is in an allowlist of operations that can either produce
-                // BED text files *or* in-memory FlatBED resources.
-                match def_instr.op {
-                    Op::MakeWindows { size: _ } => Some((def_idx, parse_idx)),
-                    _ => None,
+                // Find the instruction that produces this file. If there are no
+                // other uses of this file, we can optimize.
+                let def_idx = du.defs[parse_idx][0]?;
+                if du.uses[def_idx].len() == 1 {
+                    // We match if this is in an allowlist of operations that
+                    // can either produce BED text files *or* in-memory FlatBED
+                    // resources.
+                    match instrs[def_idx].op {
+                        Op::MakeWindows { size: _ } => Some((def_idx, parse_idx)),
+                        _ => None,
+                    }
+                } else {
+                    None
                 }
             } else {
                 None
@@ -169,7 +209,8 @@ fn find_bed_file_pairs(builder: &mut Builder) -> impl Iterator<Item = (usize, us
 ///
 ///     something -> bed-store 0
 fn skip_bed_files(builder: &mut Builder) {
-    let pairs: Vec<_> = find_bed_file_pairs(builder).collect();
+    let du = def_use(&builder.instrs);
+    let pairs: Vec<_> = find_bed_file_pairs(&builder.instrs, &du).collect();
     // TODO second+ iterations break because we will change indices :(
     for (def_idx, parse_idx) in pairs {
         // Make the defining instruction produce the parsed FlatBED resource directly.
