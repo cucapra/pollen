@@ -71,19 +71,31 @@ fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
 /// relevant file exists, replace it with a `map-file` of an equivalent
 /// `.flatgfa` file.
 fn opt_gfa_parse(builder: &mut Builder) {
-    // Search for a `parse-gfa` instruction.
-    if let Some((parse_idx, parse_instr)) = builder
+    // Search for `parse-gfa` instructions that come from a file.
+    let parses: Vec<_> = builder
         .instrs
         .iter()
         .enumerate()
-        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))
-    {
-        // Get the stem of the input `.gfa` file, if it's a file.
-        if parse_instr.inputs[0].kind != ResourceKind::File {
-            return;
-        }
+        .filter_map(|(idx, instr)| {
+            // Find `parse-gfa` instructions.
+            let Op::ParseGFA = instr.op else {
+                return None;
+            };
+
+            // ...where the input is a file.
+            if instr.inputs[0].kind != ResourceKind::File {
+                return None;
+            }
+
+            Some(idx)
+        })
+        .collect();
+
+    // Search for a `parse-gfa` instruction.
+    for parse_idx in parses {
+        // Get the stem of the input `.gfa` file.
         let stem = builder
-            .file_name(parse_instr.inputs[0])
+            .file_name(builder.instrs[parse_idx].inputs[0])
             .strip_suffix(".gfa")
             .expect("parse-gfa inputs must end in .gfa")
             .to_string();
