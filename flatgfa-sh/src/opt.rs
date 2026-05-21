@@ -213,12 +213,35 @@ fn skip_bed_files(builder: &mut Builder) {
         })
         .collect();
 
-    // TODO second+ iterations break because we will change indices :(
+    // Apply the optimization.
+    let mut to_drop = Vec::new();
     for (def_idx, parse_idx) in pairs {
         // Make the defining instruction produce the parsed FlatBED resource directly.
         builder.instrs[def_idx].output = builder.instrs[parse_idx].output;
 
         // Delete the parse instruction.
-        builder.instrs.remove(parse_idx);
+        to_drop.push(parse_idx);
     }
+    remove_indices(&mut builder.instrs, &to_drop);
+}
+
+/// Remove elements from a vector at the given indices.
+///
+/// The indices must be provided in sorted order.
+fn remove_indices<T>(vec: &mut Vec<T>, indices: &[usize]) {
+    if indices.is_empty() {
+        return;
+    }
+    let mut cur = 0;
+    let mut i = 0;
+    vec.retain(|_| {
+        if indices[cur] == i {
+            cur += 1;
+            i += 1;
+            false
+        } else {
+            i += 1;
+            true
+        }
+    });
 }
