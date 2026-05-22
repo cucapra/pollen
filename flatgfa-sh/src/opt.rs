@@ -30,7 +30,7 @@ pub fn optimize(prog: Program) -> Program {
 /// If either of the relevant files is available on the filesystem.
 fn opt_og_parse(builder: &mut Builder) {
     // Search for def/use pairs of `odgi-view` and `parse-gfa` instructions.
-    let du = def_use(&builder.instrs);
+    let du = DefUse::analyze(&builder.instrs);
     let pairs: Vec<_> = builder
         .instrs
         .iter()
@@ -125,6 +125,60 @@ fn opt_gfa_parse(builder: &mut Builder) {
     }
 }
 
+/// Optimize BED file round trips.
+///
+/// Search for this pattern:
+///
+///     something -> "file.bed"
+///     parse-bed("file.bed") -> bed-store-0
+///
+/// And attempt to replace it with:
+///
+///     something -> bed-store 0
+fn skip_bed_files(builder: &mut Builder) {
+    // Find def/use pairs consisting of something that produces a BED file and
+    // then a `parse-bed` instruction.
+    let du = DefUse::analyze(&builder.instrs);
+    let pairs: Vec<_> = builder
+        .instrs
+        .iter()
+        .enumerate()
+        .filter_map(|(parse_idx, parse_instr)| {
+            // Start with a `parse-bed` instruction.
+            let Op::ParseBED = parse_instr.op else {
+                return None;
+            };
+
+            // Find the instruction that produces this file. If there are no
+            // other uses of this file, we can optimize.
+            let def_idx = du.defs[parse_idx][0]?;
+            if du.uses[def_idx].len() != 1 {
+                return None;
+            }
+
+            // We match if this is in an allowlist of operations that
+            // can either produce BED text files *or* in-memory FlatBED
+            // resources.
+            let Op::MakeWindows { size: _ } = builder.instrs[def_idx].op else {
+                return None;
+            };
+
+            Some((def_idx, parse_idx))
+        })
+        .collect();
+
+    // Apply the optimization.
+    let mut to_drop = Vec::new();
+    for (def_idx, parse_idx) in pairs {
+        // Make the defining instruction produce the parsed FlatBED resource directly.
+        builder.instrs[def_idx].output = builder.instrs[parse_idx].output;
+
+        // Delete the parse instruction.
+        to_drop.push(parse_idx);
+    }
+    remove_indices(&mut builder.instrs, &to_drop);
+}
+
 /// Replace an instruction with a `map-file` to open a FlatGFA binary file.
 ///
 /// If the file `{stem}.flatgfa` exists, replace the instruction at `instr_idx`
@@ -174,93 +228,42 @@ struct DefUse {
     uses: Vec<SmallVec<[usize; 2]>>,
 }
 
-fn def_use(instrs: &[Instr]) -> DefUse {
-    let mut defs = Vec::with_capacity(instrs.len());
-    let mut uses = vec![SmallVec::new(); instrs.len()];
-    let mut last_def: HashMap<Resource, usize> = HashMap::new();
+impl DefUse {
+    fn analyze(instrs: &[Instr]) -> Self {
+        let mut defs = Vec::with_capacity(instrs.len());
+        let mut uses = vec![SmallVec::new(); instrs.len()];
+        let mut last_def: HashMap<Resource, usize> = HashMap::new();
 
-    for (idx, instr) in instrs.iter().enumerate() {
-        // Find the definition for each use.
-        defs.push(
-            instr
-                .inputs
-                .iter()
-                .map(|input| last_def.get(input).copied())
-                .collect(),
-        );
+        for (idx, instr) in instrs.iter().enumerate() {
+            // Find the definition for each use.
+            defs.push(
+                instr
+                    .inputs
+                    .iter()
+                    .map(|input| last_def.get(input).copied())
+                    .collect(),
+            );
 
-        // Attribute each use to its definition.
-        for input in &instr.inputs {
-            if let Some(&def_idx) = last_def.get(input) {
-                uses[def_idx].push(idx);
+            // Attribute each use to its definition.
+            for input in &instr.inputs {
+                if let Some(&def_idx) = last_def.get(input) {
+                    uses[def_idx].push(idx);
+                }
             }
+
+            // Record the definition.
+            last_def.insert(instr.output, idx);
         }
 
-        // Record the definition.
-        last_def.insert(instr.output, idx);
+        Self { defs, uses }
     }
-
-    DefUse { defs, uses }
-}
-
-/// Optimize BED file round trips.
-///
-/// Search for this pattern:
-///
-///     something -> "file.bed"
-///     parse-bed("file.bed") -> bed-store-0
-///
-/// And attempt to replace it with:
-///
-///     something -> bed-store 0
-fn skip_bed_files(builder: &mut Builder) {
-    // Find def/use pairs consisting of something that produces a BED file and
-    // then a `parse-bed` instruction.
-    let du = def_use(&builder.instrs);
-    let pairs: Vec<_> = builder
-        .instrs
-        .iter()
-        .enumerate()
-        .filter_map(|(parse_idx, parse_instr)| {
-            // Start with a `parse-bed` instruction.
-            let Op::ParseBED = parse_instr.op else {
-                return None;
-            };
-
-            // Find the instruction that produces this file. If there are no
-            // other uses of this file, we can optimize.
-            let def_idx = du.defs[parse_idx][0]?;
-            if du.uses[def_idx].len() != 1 {
-                return None;
-            }
-
-            // We match if this is in an allowlist of operations that
-            // can either produce BED text files *or* in-memory FlatBED
-            // resources.
-            let Op::MakeWindows { size: _ } = builder.instrs[def_idx].op else {
-                return None;
-            };
-
-            Some((def_idx, parse_idx))
-        })
-        .collect();
-
-    // Apply the optimization.
-    let mut to_drop = Vec::new();
-    for (def_idx, parse_idx) in pairs {
-        // Make the defining instruction produce the parsed FlatBED resource directly.
-        builder.instrs[def_idx].output = builder.instrs[parse_idx].output;
-
-        // Delete the parse instruction.
-        to_drop.push(parse_idx);
-    }
-    remove_indices(&mut builder.instrs, &to_drop);
 }
 
 /// Remove elements from a vector at the given indices.
 ///
 /// The indices must be provided in sorted order.
 fn remove_indices<T>(vec: &mut Vec<T>, indices: &[usize]) {
+    debug_assert!(indices.iter().is_sorted());
     if indices.is_empty() {
         return;
     }
