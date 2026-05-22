@@ -17,9 +17,17 @@ pub fn optimize(prog: Program) -> Program {
 
 /// Try to replace odgi inputs with FlatGFA binary inputs.
 ///
-/// Search for an `odgi-view` instruction that reads an `.og` file and feeds
-/// into a `gfa-parse` instruction, and (if found) replace that pair with a
-/// `map-file` of a similarly-named `.fgfa` file that exists on the filesystem.
+/// Search for a pattern like this:
+///
+///     odgi-view("foo.og") -> pipe-0
+///     parse-gfa(pipe-0) -> gfa-0
+///
+/// And replace it with one of these options:
+///
+///     parse-gfa("foo.gfa") -> gfa-0   *or*
+///     map-file("foo.flatgfa") -> mmap-0
+///
+/// If either of the relevant files is available on the filesystem.
 fn opt_og_parse(builder: &mut Builder) {
     // Search for def/use pairs of `odgi-view` and `parse-gfa` instructions.
     let du = def_use(&builder.instrs);
@@ -73,9 +81,15 @@ fn opt_og_parse(builder: &mut Builder) {
 
 /// Optimize GFA file input to FlatGFA input.
 ///
-/// Search for a `parse-gfa` instruction for a `.gfa` file and, when the
-/// relevant file exists, replace it with a `map-file` of an equivalent
-/// `.flatgfa` file.
+/// Search for an instruction like this:
+///
+///     parse-gfa("foo.gfa") -> gfa-0
+///
+/// And replace it with:
+///
+///     map-file("foo.flatgfa") -> mmap-0
+///
+/// If the relevant FlatGFA file exists on the filesystem.
 fn opt_gfa_parse(builder: &mut Builder) {
     // Search for `parse-gfa` instructions that come from a file.
     let parses: Vec<_> = builder
