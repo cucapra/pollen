@@ -159,9 +159,10 @@ fn skip_bed_files(builder: &mut Builder) {
             // We match if this is in an allowlist of operations that
             // can either produce BED text files *or* in-memory FlatBED
             // resources.
-            let Op::MakeWindows { size: _ } = builder.instrs[def_idx].op else {
-                return None;
-            };
+            match builder.instrs[def_idx].op {
+                Op::MakeWindows { size: _ } | Op::PathDepth { path: _ } => (),
+                _ => return None,
+            }
 
             Some((def_idx, parse_idx))
         })
