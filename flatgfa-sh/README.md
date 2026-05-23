@@ -4,6 +4,7 @@ The FlatGFA Fake Shell
 `flash` is a fake Unix shell that lets you run FlatGFA-oriented pipelines using shell-compatible syntax.
 You write a script that *appears* to invoke odgi but actually triggers built-in FlatGFA functionality.
 
+
 Demo
 ----
 
@@ -192,6 +193,13 @@ Here's a shell script that uses a pipeline to combine `odgi depth` and
 
 ```console
 $ flash windows.sh
+#path	start	end	mean.depth
+5	0	4	2
+5	4	8	2
+5	8	12	2
+5	12	13	2
+
+$ flash -O windows.sh
 #path	start	end	mean.depth
 5	0	4	2
 5	4	8	2
