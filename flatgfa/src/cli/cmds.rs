@@ -232,11 +232,11 @@ pub struct Depth {
 }
 
 pub fn depth(gfa: &flatgfa::FlatGFA, args: Depth) {
-    use crate::ops::depth::{path_depth, seg_depth, PathDepth, SegDepth};
+    use crate::ops::depth::{path_depth, seg_depth_with_uniq, PathDepth, SegDepth};
     use crate::ops::window_depth::{bed_depth, IntervalDepth};
     if args.seg_depth {
         // Segment depth table.
-        let (depths, uniq_depths) = seg_depth(gfa);
+        let (depths, uniq_depths) = seg_depth_with_uniq(gfa);
         SegDepth {
             gfa,
             depths,

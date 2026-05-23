@@ -20,7 +20,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
 fn node_depth(env: &mut Env, input: Resource, output: Resource) {
     let mut out = env.bytes_output(output).expect("bytes output");
     let gfa = env.flatgfa(input);
-    let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
+    let (depths, uniq_depths) = ops::depth::seg_depth_with_uniq(&gfa);
     out.emit(ops::depth::SegDepth {
         gfa: &gfa,
         depths,

@@ -174,7 +174,7 @@ impl Emit for IntervalDepth<'_> {
 /// avoid computing any average weights for segments not included within that
 /// path.
 fn interval_depth(gfa: &flatgfa::FlatGFA, path: Id<Path>, intervals: &FlatBED) -> Vec<f64> {
-    let depth = seg_depth(gfa).0;
+    let depth = seg_depth(gfa);
     let seg_depths = weighted_depths(gfa, &depth, path);
     assign_depths(seg_depths, intervals)
 }
