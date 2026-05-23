@@ -37,6 +37,7 @@ impl Display for Wrapped<'_, ir::Instr> {
         let name = match &self.val.op {
             ir::Op::NodeDepth => "node-depth",
             ir::Op::PathDepth { path: _ } => "path-depth",
+            ir::Op::PathLength { path: _ } => "path-length",
             ir::Op::Exec {
                 command: _,
                 args: _,
@@ -54,6 +55,7 @@ impl Display for Wrapped<'_, ir::Instr> {
         }
         match &self.val.op {
             ir::Op::PathDepth { path: Some(path) } => write!(f, ", path={:?}", path)?,
+            ir::Op::PathLength { path } => write!(f, ", path={:?}", path)?,
             ir::Op::Exec { command, args } => {
                 write!(f, ", command={:?}, args={:?}", command, args)?
             }
