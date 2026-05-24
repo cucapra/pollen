@@ -34,6 +34,9 @@ pub enum Op {
     PathDepth {
         path: Option<String>,
     },
+    PathLength {
+        path: String,
+    },
     Exec {
         command: String,
         args: SmallVec<[String; 4]>,

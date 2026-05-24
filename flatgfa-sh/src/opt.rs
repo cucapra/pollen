@@ -11,6 +11,7 @@ pub fn optimize(prog: Program) -> Program {
     opt_gfa_parse(&mut builder);
     opt_og_parse(&mut builder);
     skip_bed_files(&mut builder);
+    simplify_depth_to_length(&mut builder);
 
     builder.build()
 }
@@ -178,6 +179,56 @@ fn skip_bed_files(builder: &mut Builder) {
         to_drop.push(parse_idx);
     }
     remove_indices(&mut builder.instrs, &to_drop);
+}
+
+/// Simplify `path-depth` to `path-length` where possible.
+///
+/// Search for patterns like this:
+///
+///     path-depth(mmap-0, path="p") -> bed-store-0
+///     make-windows(bed-store-0, size=5) -> bed-store-1
+///
+/// And replace it with this:
+///
+///     path-length(mmap-0, path="p") -> bed-store-0
+///     make-windows(bed-store-0, size=5) -> bed-store-1
+///
+/// Beacuse the consuming instruction doesn't actually care about the depth (it
+/// just needs the path length) but there is no odgi surface syntax for just
+/// computing the length.
+fn simplify_depth_to_length(builder: &mut Builder) {
+    // Search for `path-depth` -> consumer pairs.
+    let du = DefUse::analyze(&builder.instrs);
+    let defs: Vec<_> = builder
+        .instrs
+        .iter()
+        .enumerate()
+        .filter_map(|(idx, instr)| {
+            // Start with a `make-windows` instruction.
+            let Op::MakeWindows { size: _ } = instr.op else {
+                return None;
+            };
+
+            // Find the instruction that produces this BED. If there are no
+            // other uses of this file, we can optimize.
+            // TODO dedup
+            let def_idx = du.defs[idx][0]?;
+            if du.uses[def_idx].len() != 1 {
+                return None;
+            }
+
+            Some(def_idx)
+        })
+        .collect();
+
+    // Replace `path-depth` with `path-length`.
+    for def_idx in defs {
+        // The producer must be a `path-depth` instruction with a named path.
+        // TODO avoid clone
+        if let Op::PathDepth { path: Some(path) } = &builder.instrs[def_idx].op {
+            builder.instrs[def_idx].op = Op::PathLength { path: path.clone() };
+        }
+    }
 }
 
 /// Replace an instruction with a `map-file` to open a FlatGFA binary file.

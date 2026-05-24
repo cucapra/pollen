@@ -5,14 +5,14 @@ use crate::pool::Id;
 use bit_vec::BitVec;
 use std::io::Write;
 
-/// Compute the *depth* of each segment in the variation graph.
+/// Compute the *depth* and *unique depth* of each segment in the variation graph.
 ///
 /// The depth is defined to be the number of times that a path traverses a given
 /// segment. We return two values: the ordinary depth and the *unique* depth,
 /// which only counts each path that tarverses a given segment once.
 ///
 /// Both outputs are depth values indexed by segment ID.
-pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
+pub fn seg_depth_with_uniq(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     // Our output vectors: the ordinary and unique depths of each segment.
     let mut depths = vec![0; gfa.segs.len()];
     let mut uniq_depths = vec![0; gfa.segs.len()];
@@ -38,9 +38,26 @@ pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> (Vec<usize>, Vec<usize>) {
     (depths, uniq_depths)
 }
 
+/// Compute the (non-unique) depth of each segment in the graph.
+///
+/// Like `seg_depth_with_uniq`, but only computes the "ordinary" depth, which
+/// can be cheaper.
+pub fn seg_depth(gfa: &flatgfa::FlatGFA) -> Vec<usize> {
+    let mut depths = vec![0; gfa.segs.len()];
+
+    for path in gfa.paths.all().iter() {
+        for step in &gfa.steps[path.steps] {
+            let seg_id = step.segment().index();
+            depths[seg_id] += 1;
+        }
+    }
+
+    depths
+}
+
 /// A printable segment depth table.
 ///
-/// Formats the result of `seg_depth` in an odgi-style TSV.
+/// Formats the result of `seg_depth_with_uniq` in an odgi-style TSV.
 pub struct SegDepth<'a> {
     pub gfa: &'a flatgfa::FlatGFA<'a>,
     pub depths: Vec<usize>,

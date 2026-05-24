@@ -7,6 +7,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
     match &instr.op {
         Op::NodeDepth => node_depth(env, instr.inputs[0], instr.output),
         Op::PathDepth { path } => path_depth(env, instr.inputs[0], instr.output, path),
+        Op::PathLength { path } => path_length(env, instr.inputs[0], instr.output, path),
         Op::Exec { command, args } => exec(env, instr.inputs[0], instr.output, command, args),
         Op::ParseGFA => parse_gfa(env, instr.inputs[0], instr.output),
         Op::MapFile => map_file(env, instr.inputs[0], instr.output),
@@ -20,7 +21,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
 fn node_depth(env: &mut Env, input: Resource, output: Resource) {
     let mut out = env.bytes_output(output).expect("bytes output");
     let gfa = env.flatgfa(input);
-    let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
+    let (depths, uniq_depths) = ops::depth::seg_depth_with_uniq(&gfa);
     out.emit(ops::depth::SegDepth {
         gfa: &gfa,
         depths,
@@ -62,6 +63,23 @@ fn path_depth(env: &mut Env, input: Resource, output: Resource, path: &Option<St
             _ => out.expect("bytes output").emit(depth).unwrap(),
         }
     }
+}
+
+fn path_length(env: &mut Env, input: Resource, output: Resource, path_name: &str) {
+    let gfa = env.flatgfa(input);
+    let path = gfa.find_path(path_name.into()).expect("no such path found");
+
+    // Add up the total length in base pairs.
+    let mut len = 0;
+    for step in gfa.get_path_steps(&gfa.paths[path]) {
+        len += gfa.segs[step.segment()].len();
+    }
+
+    // Generate a (very short) BED table.
+    let mut store = HeapBEDStore::default();
+    store.add_entry(path_name.as_bytes(), 0, len as u64);
+
+    env.bed_stores[output] = Some(store);
 }
 
 fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args: &[String]) {
