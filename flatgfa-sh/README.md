@@ -184,6 +184,45 @@ interval-depth(gfa-store-0, bed-store-1) -> stdout
 
 The `intermediate.bed` file is eliminated.
 
+### Deduplicate Redundant Reads
+
+If you have two commands that need the same input FlatGFA file, those get coalesced into one `map-file` instruction:
+
+```console
+$ flash -p -c 'odgi depth -i g.flatgfa -r foo ; odgi depth -i g.flatgfa -r bar'
+map-file("g.flatgfa") -> mmap-0
+path-depth(mmap-0, path="foo") -> stdout
+map-file("g.flatgfa") -> mmap-1
+path-depth(mmap-1, path="bar") -> stdout
+
+$ flash -p -O -c 'odgi depth -i g.flatgfa -r foo ; odgi depth -i g.flatgfa -r bar'
+map-file("g.flatgfa") -> mmap-0
+path-depth(mmap-0, path="foo") -> stdout
+path-depth(mmap-0, path="bar") -> stdout
+
+```
+
+### Reduce Depth to Length
+
+When feeding an `odgi depth` table into `bedtools makewindows`, we actually only need the path's *length*, not its depth.
+This optimization avoids computing the depth in that scenario:
+
+```console
+$ flash -p -c 'odgi depth -i g.gfa -r foo | bedtools makewindows -b /dev/stdin -w 4'
+parse-gfa("g.gfa") -> gfa-store-0
+path-depth(gfa-store-0, path="foo") -> pipe-0
+parse-bed(pipe-0) -> bed-store-0
+make-windows(bed-store-0, size=4) -> stdout
+
+$ flash -p -O -c 'odgi depth -i g.gfa -r foo | bedtools makewindows -b /dev/stdin -w 4'
+parse-gfa("g.gfa") -> gfa-store-0
+path-length(gfa-store-0, path="foo") -> bed-store-0
+make-windows(bed-store-0, size=4) -> stdout
+
+```
+
+Notice that `path-depth` has been replaced with `path-length`.
+
 
 Complicated Example
 -------------------
