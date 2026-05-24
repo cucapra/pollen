@@ -69,25 +69,25 @@ impl Env {
         }
     }
 
-    fn input(&mut self, rsrc: Resource) -> Input {
+    fn bytes_input(&mut self, rsrc: Resource) -> Option<Input> {
         match rsrc.kind {
-            ResourceKind::Stdin => Input::Stdin(std::io::stdin().lock()),
-            ResourceKind::Stdout => panic!("cannot read from stdout"),
-            ResourceKind::File => Input::File(memfile::map_file(self.file_name(rsrc))),
-            ResourceKind::Pipe => Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap())),
-            _ => panic!("non-bytes input"),
+            ResourceKind::Stdin => Some(Input::Stdin(std::io::stdin().lock())),
+            ResourceKind::File => Some(Input::File(memfile::map_file(self.file_name(rsrc)))),
+            ResourceKind::Pipe => Some(Input::Pipe(BufReader::new(self.read_pipe(rsrc).unwrap()))),
+            _ => None,
         }
     }
 
-    fn output(&mut self, rsrc: Resource) -> Output {
+    fn bytes_output(&mut self, rsrc: Resource) -> Option<Output> {
         match rsrc.kind {
-            ResourceKind::Stdin => panic!("cannot write to stdin"),
-            ResourceKind::Stdout => Output::Stdout(std::io::stdout().lock()),
-            ResourceKind::File => {
-                Output::File(BufWriter::new(File::create(self.file_name(rsrc)).unwrap()))
+            ResourceKind::Stdout => Some(Output::Stdout(std::io::stdout().lock())),
+            ResourceKind::File => Some(Output::File(BufWriter::new(
+                File::create(self.file_name(rsrc)).unwrap(),
+            ))),
+            ResourceKind::Pipe => {
+                Some(Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())))
             }
-            ResourceKind::Pipe => Output::Pipe(BufWriter::new(self.write_pipe(rsrc).unwrap())),
-            _ => panic!("non-bytes output"),
+            _ => None,
         }
     }
 

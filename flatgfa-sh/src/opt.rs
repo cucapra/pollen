@@ -1,6 +1,6 @@
-use crate::ir::{Builder, Instr, Op, Program, ResourceKind};
+use crate::ir::{Builder, Instr, Op, Program, Resource, ResourceKind};
 use smallvec::SmallVec;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 /// Apply all our optimizations to a program.
 pub fn optimize(prog: Program) -> Program {
@@ -10,79 +10,112 @@ pub fn optimize(prog: Program) -> Program {
     // is available.
     opt_gfa_parse(&mut builder);
     opt_og_parse(&mut builder);
+    skip_bed_files(&mut builder);
 
     builder.build()
 }
 
 /// Try to replace odgi inputs with FlatGFA binary inputs.
 ///
-/// Search for an `odgi-view` instruction that reads an `.og` file and feeds
-/// into a `gfa-parse` instruction, and (if found) replace that pair with a
-/// `map-file` of a similarly-named `.fgfa` file that exists on the filesystem.
+/// Search for a pattern like this:
+///
+///     odgi-view("foo.og") -> pipe-0
+///     parse-gfa(pipe-0) -> gfa-0
+///
+/// And replace it with one of these options:
+///
+///     parse-gfa("foo.gfa") -> gfa-0   *or*
+///     map-file("foo.flatgfa") -> mmap-0
+///
+/// If either of the relevant files is available on the filesystem.
 fn opt_og_parse(builder: &mut Builder) {
-    // Find an `odgi-view` -> `gfa-parse` pair.
-    let Some((view_idx, parse_idx)) = find_og_pair(&builder.instrs) else {
-        return;
-    };
-
-    // Get the stem of the input `.og` file to this pair.
-    let stem = builder
-        .file_name(builder.instrs[view_idx].inputs[0])
-        .strip_suffix(".og")
-        .expect("odgi-view inputs must end in .og")
-        .to_string();
-
-    // Try replacing this with a FlatGFA load.
-    if replace_with_flat(builder, &stem, parse_idx) {
-        // Remove the `odgi-view` too.
-        builder.instrs.remove(view_idx);
-        return;
-    }
-
-    // Otherwise, try replacing this with a direct text GFA parse.
-    let text_filename = format!("{stem}.gfa");
-    if fs::exists(&text_filename).unwrap() {
-        // Make the `parse-gfa` read from this file, and remove the `odgi-view`.
-        builder.instrs[parse_idx].inputs[0] = builder.file(text_filename);
-        builder.instrs.remove(view_idx);
-    }
-}
-
-fn find_og_pair(instrs: &[Instr]) -> Option<(usize, usize)> {
-    // Search for a `parse-gfa` instruction.
-    let (parse_idx, parse_instr) = instrs
+    // Search for def/use pairs of `odgi-view` and `parse-gfa` instructions.
+    let du = DefUse::analyze(&builder.instrs);
+    let pairs: Vec<_> = builder
+        .instrs
         .iter()
         .enumerate()
-        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))?;
+        .filter_map(|(parse_idx, parse_instr)| {
+            // Start with a `parse-gfa` instruction.
+            let Op::ParseGFA = parse_instr.op else {
+                return None;
+            };
 
-    // Search for an `odgi-view` instruction that produces the GFA.
-    let gfa = parse_instr.inputs[0];
-    let view_idx = instrs
-        .iter()
-        .position(|instr| matches!(instr.op, Op::OdgiView) && instr.output == gfa)?;
+            // The definition must be an `odgi-view`.
+            let def_idx = du.defs[parse_idx][0]?;
+            let Op::OdgiView = builder.instrs[def_idx].op else {
+                return None;
+            };
 
-    Some((view_idx, parse_idx))
+            Some((def_idx, parse_idx))
+        })
+        .collect();
+
+    // Delete the `odgi-view` and rewire the result resource.
+    let mut to_drop = Vec::new();
+    for (view_idx, parse_idx) in pairs {
+        // Get the stem of the input `.og` file to this pair.
+        let stem = builder
+            .file_name(builder.instrs[view_idx].inputs[0])
+            .strip_suffix(".og")
+            .expect("odgi-view inputs must end in .og")
+            .to_string();
+
+        // Try replacing this with a FlatGFA load.
+        if replace_with_flat(builder, &stem, parse_idx) {
+            // Remove the `odgi-view` too.
+            to_drop.push(view_idx);
+            continue;
+        }
+
+        // Otherwise, try replacing this with a direct text GFA parse.
+        let text_filename = format!("{stem}.gfa");
+        if fs::exists(&text_filename).unwrap() {
+            // Make the `parse-gfa` read from this file, and remove the `odgi-view`.
+            builder.instrs[parse_idx].inputs[0] = builder.file(text_filename);
+            to_drop.push(view_idx);
+        }
+    }
+    remove_indices(&mut builder.instrs, &to_drop);
 }
 
 /// Optimize GFA file input to FlatGFA input.
 ///
-/// Search for a `parse-gfa` instruction for a `.gfa` file and, when the
-/// relevant file exists, replace it with a `map-file` of an equivalent
-/// `.flatgfa` file.
+/// Search for an instruction like this:
+///
+///     parse-gfa("foo.gfa") -> gfa-0
+///
+/// And replace it with:
+///
+///     map-file("foo.flatgfa") -> mmap-0
+///
+/// If the relevant FlatGFA file exists on the filesystem.
 fn opt_gfa_parse(builder: &mut Builder) {
-    // Search for a `parse-gfa` instruction.
-    if let Some((parse_idx, parse_instr)) = builder
+    // Search for `parse-gfa` instructions that come from a file.
+    let parses: Vec<_> = builder
         .instrs
         .iter()
         .enumerate()
-        .find(|(_, instr)| matches!(instr.op, Op::ParseGFA))
-    {
-        // Get the stem of the input `.gfa` file, if it's a file.
-        if parse_instr.inputs[0].kind != ResourceKind::File {
-            return;
-        }
+        .filter_map(|(idx, instr)| {
+            // Find `parse-gfa` instructions.
+            let Op::ParseGFA = instr.op else {
+                return None;
+            };
+
+            // ...where the input is a file.
+            if instr.inputs[0].kind != ResourceKind::File {
+                return None;
+            }
+
+            Some(idx)
+        })
+        .collect();
+
+    // Search for a `parse-gfa` instruction.
+    for parse_idx in parses {
+        // Get the stem of the input `.gfa` file.
         let stem = builder
-            .file_name(parse_instr.inputs[0])
+            .file_name(builder.instrs[parse_idx].inputs[0])
             .strip_suffix(".gfa")
             .expect("parse-gfa inputs must end in .gfa")
             .to_string();
@@ -90,6 +123,61 @@ fn opt_gfa_parse(builder: &mut Builder) {
         // Try replacing it with a FlatGFA load.
         replace_with_flat(builder, &stem, parse_idx);
     }
+}
+
+/// Optimize BED file round trips.
+///
+/// Search for this pattern:
+///
+///     something -> "file.bed"
+///     parse-bed("file.bed") -> bed-store-0
+///
+/// And attempt to replace it with:
+///
+///     something -> bed-store 0
+fn skip_bed_files(builder: &mut Builder) {
+    // Find def/use pairs consisting of something that produces a BED file and
+    // then a `parse-bed` instruction.
+    let du = DefUse::analyze(&builder.instrs);
+    let pairs: Vec<_> = builder
+        .instrs
+        .iter()
+        .enumerate()
+        .filter_map(|(parse_idx, parse_instr)| {
+            // Start with a `parse-bed` instruction.
+            let Op::ParseBED = parse_instr.op else {
+                return None;
+            };
+
+            // Find the instruction that produces this file. If there are no
+            // other uses of this file, we can optimize.
+            let def_idx = du.defs[parse_idx][0]?;
+            if du.uses[def_idx].len() != 1 {
+                return None;
+            }
+
+            // We match if this is in an allowlist of operations that
+            // can either produce BED text files *or* in-memory FlatBED
+            // resources.
+            match builder.instrs[def_idx].op {
+                Op::MakeWindows { size: _ } | Op::PathDepth { path: _ } => (),
+                _ => return None,
+            }
+
+            Some((def_idx, parse_idx))
+        })
+        .collect();
+
+    // Apply the optimization.
+    let mut to_drop = Vec::new();
+    for (def_idx, parse_idx) in pairs {
+        // Make the defining instruction produce the parsed FlatBED resource directly.
+        builder.instrs[def_idx].output = builder.instrs[parse_idx].output;
+
+        // Delete the parse instruction.
+        to_drop.push(parse_idx);
+    }
+    remove_indices(&mut builder.instrs, &to_drop);
 }
 
 /// Replace an instruction with a `map-file` to open a FlatGFA binary file.
@@ -121,4 +209,77 @@ fn replace_with_flat(builder: &mut Builder, stem: &str, instr_idx: usize) -> boo
     builder.replace_rsrc(old_gfa, new_gfa);
 
     true
+}
+
+#[derive(Debug)]
+struct DefUse {
+    /// The defining instruction for each use.
+    ///
+    /// For each instruction, this contains a vector that is the same length as
+    /// that instruction's `inputs`. Each entry in that vector references (via
+    /// index) the instruction that defined that input.
+    defs: Vec<SmallVec<[Option<usize>; 2]>>,
+
+    /// The uses of the resource defined by each instruction.
+    ///
+    /// Each instruction defines the resource that is its `output` resource.
+    /// For each instruction, this contains a vector referencing (via index) all
+    /// the instructions that use that defined resource. A use occurs when the
+    /// resource appears in an instruction's `inputs` before it is overwritten.
+    uses: Vec<SmallVec<[usize; 2]>>,
+}
+
+impl DefUse {
+    fn analyze(instrs: &[Instr]) -> Self {
+        let mut defs = Vec::with_capacity(instrs.len());
+        let mut uses = vec![SmallVec::new(); instrs.len()];
+        let mut last_def: HashMap<Resource, usize> = HashMap::new();
+
+        for (idx, instr) in instrs.iter().enumerate() {
+            // Find the definition for each use.
+            defs.push(
+                instr
+                    .inputs
+                    .iter()
+                    .map(|input| last_def.get(input).copied())
+                    .collect(),
+            );
+
+            // Attribute each use to its definition.
+            for input in &instr.inputs {
+                if let Some(&def_idx) = last_def.get(input) {
+                    uses[def_idx].push(idx);
+                }
+            }
+
+            // Record the definition.
+            last_def.insert(instr.output, idx);
+        }
+
+        Self { defs, uses }
+    }
+}
+
+/// Remove elements from a vector at the given indices.
+///
+/// The indices must be provided in sorted order.
+fn remove_indices<T>(vec: &mut Vec<T>, indices: &[usize]) {
+    debug_assert!(indices.iter().is_sorted());
+    if indices.is_empty() {
+        return;
+    }
+    let mut cur = 0;
+    let mut i = 0;
+    vec.retain(|_| {
+        if cur >= indices.len() {
+            true
+        } else if indices[cur] == i {
+            cur += 1;
+            i += 1;
+            false
+        } else {
+            i += 1;
+            true
+        }
+    });
 }

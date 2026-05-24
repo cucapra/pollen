@@ -1,4 +1,5 @@
 use crate::emit::Emit;
+use crate::flatbed::HeapBEDStore;
 use crate::flatgfa;
 use crate::pool::Id;
 use bit_vec::BitVec;
@@ -138,6 +139,30 @@ where
             )?;
         }
         Ok(())
+    }
+}
+
+impl<'a, I> PathDepth<'a, I>
+where
+    I: Iterator<Item = Id<flatgfa::Path>>,
+{
+    /// Emit the depth for each path as a BED table.
+    ///
+    /// This is currently quite weird because it throws away the actual depth
+    /// information and only emits the standard BED start/end positions. This
+    /// turns out to be what some workloads actually want, i.e., they don't
+    /// really use the depth. But for more general use cases, we should explore
+    /// letting FlatBED optionally represent more columns.
+    pub fn as_bed(self) -> HeapBEDStore {
+        let mut store = HeapBEDStore::default();
+        for (idx, id) in self.paths.enumerate() {
+            store.add_entry(
+                self.gfa.get_path_name(&self.gfa.paths[id]),
+                0,
+                self.lengths[idx] as u64,
+            );
+        }
+        store
     }
 }
 

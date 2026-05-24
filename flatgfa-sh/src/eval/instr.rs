@@ -1,8 +1,6 @@
 use super::{Env, Input};
 use crate::ir::{Instr, Op, Resource, ResourceKind};
-use bstr::BStr;
-use flatgfa::{self, emit::Emit, memfile, ops};
-use std::io;
+use flatgfa::{self, flatbed::HeapBEDStore, memfile, ops, ops::window_depth::Windows};
 
 /// Execute a single instruction.
 pub fn eval(env: &mut Env, instr: &Instr) {
@@ -20,7 +18,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
 }
 
 fn node_depth(env: &mut Env, input: Resource, output: Resource) {
-    let mut out = env.output(output);
+    let mut out = env.bytes_output(output).expect("bytes output");
     let gfa = env.flatgfa(input);
     let (depths, uniq_depths) = ops::depth::seg_depth(&gfa);
     out.emit(ops::depth::SegDepth {
@@ -32,30 +30,37 @@ fn node_depth(env: &mut Env, input: Resource, output: Resource) {
 }
 
 fn path_depth(env: &mut Env, input: Resource, output: Resource, path: &Option<String>) {
-    let mut out = env.output(output);
+    let out = env.bytes_output(output);
     let gfa = env.flatgfa(input);
     if let Some(path_name) = &path {
         // TODO More elegantly handle missing paths.
-        let path_id = gfa
+        let path_id = env
+            .flatgfa(input)
             .find_path(path_name.as_bytes().into())
             .expect("no such path found");
         let (lengths, depths) = ops::depth::path_depth(&gfa, std::iter::once(path_id));
-        out.emit(ops::depth::PathDepth {
+        let depth = ops::depth::PathDepth {
             gfa: &gfa,
             depths,
             lengths,
             paths: std::iter::once(path_id),
-        })
-        .unwrap();
+        };
+        match output.kind {
+            ResourceKind::BEDStore => env.bed_stores[output] = Some(depth.as_bed()),
+            _ => out.expect("bytes output").emit(depth).unwrap(),
+        }
     } else {
         let (lengths, depths) = ops::depth::path_depth(&gfa, gfa.paths.ids());
-        out.emit(ops::depth::PathDepth {
+        let depth = ops::depth::PathDepth {
             gfa: &gfa,
             depths,
             lengths,
             paths: gfa.paths.ids(),
-        })
-        .unwrap();
+        };
+        match output.kind {
+            ResourceKind::BEDStore => env.bed_stores[output] = Some(depth.as_bed()),
+            _ => out.expect("bytes output").emit(depth).unwrap(),
+        }
     }
 }
 
@@ -66,7 +71,7 @@ fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args
 fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
     use flatgfa::parse::Parser;
 
-    let store = match env.input(input) {
+    let store = match env.bytes_input(input).expect("text input") {
         Input::File(file) => Parser::for_heap().parse_mem(file.as_ref()),
         Input::Stdin(stream) => Parser::for_heap().parse_stream(stream),
         Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
@@ -87,7 +92,7 @@ fn map_file(env: &mut Env, input: Resource, output: Resource) {
 fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
     use flatgfa::flatbed::BEDParser;
 
-    let store = match env.input(input) {
+    let store = match env.bytes_input(input).expect("text input") {
         Input::File(file) => BEDParser::for_heap().parse_mem(file.as_ref()),
         Input::Stdin(stream) => BEDParser::for_heap().parse_stream(stream),
         Input::Pipe(stream) => BEDParser::for_heap().parse_stream(stream),
@@ -96,37 +101,33 @@ fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
     env.bed_stores[output] = Some(store);
 }
 
-struct WindowsBed<'a> {
-    name: &'a BStr,
-    start: u64,
-    end: u64,
-    size: u64,
-}
-
-impl<'a> Emit for WindowsBed<'a> {
-    fn emit(self, f: &mut impl std::io::Write) -> io::Result<()> {
-        let mut pos = self.start;
-        while pos < self.end {
-            let end = (pos + self.size).min(self.end);
-            writeln!(f, "{}\t{}\t{}", self.name, pos, end)?;
-            pos = end;
-        }
-        Ok(())
-    }
-}
-
 fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
     let store = env.bed_stores[input].take().unwrap();
-    let bed = store.as_ref();
-    let mut out = env.output(output);
-    for entry in bed.entries.all() {
-        out.emit(WindowsBed {
-            name: bed.get_name_of_entry(entry),
-            start: entry.start,
-            end: entry.end,
-            size: size.try_into().unwrap(),
-        })
-        .unwrap();
+    let in_bed = store.as_ref();
+
+    // Generate a series of windows for each input interval.
+    let all_windows = in_bed.entries.all().iter().map(|entry| Windows {
+        name: in_bed.get_name_of_entry(entry),
+        start: entry.start,
+        end: entry.end,
+        size: size.try_into().unwrap(),
+    });
+
+    // Output as either FlatBED or text.
+    match output.kind {
+        ResourceKind::BEDStore => {
+            let mut out = HeapBEDStore::default();
+            for windows in all_windows {
+                windows.emit_bed(&mut out);
+            }
+            env.bed_stores[output] = Some(out);
+        }
+        _ => {
+            let mut out = env.bytes_output(output).expect("bytes output");
+            for windows in all_windows {
+                out.emit(windows).unwrap();
+            }
+        }
     }
 }
 
@@ -149,7 +150,7 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
 
     let depths = ops::window_depth::bed_depth(&gfa, &bed_store.as_ref());
 
-    let mut out = env.output(output);
+    let mut out = env.bytes_output(output).expect("bytes output");
     out.write("#path\tstart\tend\tmean.depth\n").unwrap();
     out.emit(ops::window_depth::IntervalDepth {
         intervals: bed_store.as_ref(),

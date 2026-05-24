@@ -2,7 +2,7 @@ use enum_map::{Enum, EnumMap};
 use smallvec::SmallVec;
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Enum)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Enum)]
 pub enum ResourceKind {
     File,
     Stdin,
@@ -13,7 +13,7 @@ pub enum ResourceKind {
     BEDStore,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Resource {
     pub kind: ResourceKind,
     pub index: u16,
