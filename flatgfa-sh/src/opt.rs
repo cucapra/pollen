@@ -1,6 +1,7 @@
 use crate::ir::{Builder, Instr, Op, Program, Resource, ResourceKind};
 use smallvec::SmallVec;
-use std::{collections::HashMap, fs};
+use std::collections::hash_map::{Entry, HashMap};
+use std::fs;
 
 /// Apply all our optimizations to a program.
 pub fn optimize(prog: Program) -> Program {
@@ -12,6 +13,7 @@ pub fn optimize(prog: Program) -> Program {
     opt_og_parse(&mut builder);
     skip_bed_files(&mut builder);
     simplify_depth_to_length(&mut builder);
+    dedup_files(&mut builder);
 
     builder.build()
 }
@@ -229,6 +231,57 @@ fn simplify_depth_to_length(builder: &mut Builder) {
             builder.instrs[def_idx].op = Op::PathLength { path: path.clone() };
         }
     }
+}
+
+/// Deduplicate instructions that read the same file.
+///
+/// Search for multiple copies of instructions that read the same file:
+///
+///     map-file("foo.flatgfa") -> mmap-0
+///     ...
+///     map-file("foo.flatgfa") -> mmap-1
+///
+/// And replace them with a single copy. Works for `map-file` only for now, but
+/// could be extended to apply to `parse-gfa` and `parse-bed` when their input
+/// comes from a file.
+fn dedup_files(builder: &mut Builder) {
+    // Contains the files that have been read with `map-file` and not yet
+    // overwritten. We map each file to the resource read from it.
+    let mut seen_files = HashMap::new();
+
+    // The indices of instructions that read from a file that has already been
+    // read (without being overwritten).
+    let mut redundant_reads = Vec::new();
+
+    // Find redundant reads.
+    for (idx, instr) in builder.instrs.iter().enumerate() {
+        // Process file uses.
+        if let Op::MapFile = instr.op {
+            let input = instr.inputs[0];
+            debug_assert!(matches!(input.kind, ResourceKind::File));
+            if let Entry::Vacant(e) = seen_files.entry(input) {
+                e.insert(instr.output);
+            } else {
+                redundant_reads.push(idx);
+            }
+        }
+
+        // Process file definitions (i.e., overwrites).
+        if let ResourceKind::File = instr.output.kind {
+            seen_files.remove(&instr.output);
+        }
+    }
+
+    // Replace the outputs of the redundant reads.
+    for idx in &redundant_reads {
+        let file = builder.instrs[*idx].inputs[0];
+        let old_out = builder.instrs[*idx].output;
+        let new_out = *seen_files.get(&file).expect("original file not found");
+        builder.replace_rsrc(old_out, new_out);
+    }
+
+    // Remove the redundant read instructions.
+    remove_indices(&mut builder.instrs, &redundant_reads);
 }
 
 /// Replace an instruction with a `map-file` to open a FlatGFA binary file.
