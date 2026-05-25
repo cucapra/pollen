@@ -1,7 +1,10 @@
 use crate::ir::{self, Builder, Op, Resource};
-use brush_parser::ast::{
-    Command, CommandPrefixOrSuffixItem, CompoundListItem, IoFileRedirectKind, IoFileRedirectTarget,
-    IoRedirect, Pipeline, Program, SeparatorOperator,
+use brush_parser::{
+    ast::{
+        Command, CommandPrefixOrSuffixItem, CompoundListItem, IoFileRedirectKind,
+        IoFileRedirectTarget, IoRedirect, Pipeline, Program, SeparatorOperator, Word,
+    },
+    word::{WordPiece, WordPieceWithSource},
 };
 use pico_args::Arguments;
 
@@ -30,7 +33,7 @@ fn cmd_to_ir(
         match redirect {
             IoRedirect::File(_, kind, target) => {
                 let filename = match target {
-                    IoFileRedirectTarget::Filename(w) => w.value,
+                    IoFileRedirectTarget::Filename(w) => word_str(w),
                     _ => unimplemented!(),
                 };
                 match kind {
@@ -120,13 +123,14 @@ fn command_to_ir(builder: &mut Builder, command: Command, input: Resource, outpu
         unimplemented!("only simple commands supported");
     };
 
-    let name = simple.word_or_name.expect("command name").value;
+    let name = word_str(simple.word_or_name.expect("command name"));
+
     let mut args = vec![];
     let mut redirects = vec![];
     if let Some(suffix) = simple.suffix {
         for item in suffix.0 {
             match item {
-                CommandPrefixOrSuffixItem::Word(w) => args.push(w.value),
+                CommandPrefixOrSuffixItem::Word(w) => args.push(word_str(w)),
                 CommandPrefixOrSuffixItem::IoRedirect(r) => redirects.push(r),
                 _ => unimplemented!(),
             }
@@ -174,4 +178,33 @@ pub fn sh_to_ir(shell: Program) -> ir::Program {
         }
     }
     builder.build()
+}
+
+/// Convert a `brush_parser` "word" atom into a plain string.
+///
+/// For example, both `"foo bar"` and `foo\ bar` become `foo bar`.
+fn word_str(word: Word) -> String {
+    let opts = brush_parser::ParserOptions::default();
+    let mut buf = String::new();
+    let pieces = brush_parser::word::parse(&word.value, &opts).unwrap();
+    flatten_word_pieces(&mut buf, pieces);
+    buf
+}
+
+fn flatten_word_pieces(buf: &mut String, pieces: Vec<WordPieceWithSource>) {
+    for piece in pieces {
+        match piece.piece {
+            WordPiece::Text(s) => buf.push_str(&s),
+            WordPiece::SingleQuotedText(s) => buf.push_str(&s),
+            WordPiece::EscapeSequence(s) => {
+                // We expect this to be a backslash and then a single character.
+                assert_eq!(s.len(), 2);
+                let mut chars = s.chars();
+                assert_eq!(chars.next().unwrap(), '\\');
+                buf.push(chars.next().unwrap());
+            }
+            WordPiece::DoubleQuotedSequence(ps) => flatten_word_pieces(buf, ps),
+            _ => unimplemented!(),
+        }
+    }
 }
