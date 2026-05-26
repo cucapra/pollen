@@ -1,21 +1,28 @@
 use crate::ir::{self, Builder, Op, Resource};
-use flash::parser::{Node, Redirect, RedirectKind};
+use brush_parser::{
+    ast::{
+        Command, CommandPrefixOrSuffixItem, CompoundListItem, IoFileRedirectKind,
+        IoFileRedirectTarget, IoRedirect, Pipeline, Program, SeparatorOperator, Word,
+    },
+    word::{WordPiece, WordPieceWithSource},
+};
 use pico_args::Arguments;
 
-pub fn parse_sh(input: &str) -> Node {
-    // Following the example from the flash README.
-    use flash::lexer::Lexer;
-    use flash::parser::Parser;
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
-    parser.parse_script()
+pub fn parse_sh(input: &str) -> Program {
+    use brush_parser::{Parser, ParserOptions};
+    use std::io::BufReader;
+
+    let opts = ParserOptions::default();
+    let buf_reader = BufReader::new(input.as_bytes());
+    let mut parser = Parser::new(buf_reader, &opts);
+    parser.parse_program().unwrap()
 }
 
 fn cmd_to_ir(
     builder: &mut Builder,
     name: String,
     args: Vec<String>,
-    redirects: Vec<Redirect>,
+    redirects: Vec<IoRedirect>,
     input: Resource,
     output: Resource,
 ) {
@@ -23,9 +30,18 @@ fn cmd_to_ir(
     let mut input = input;
     let mut output = output;
     for redirect in redirects {
-        match redirect.kind {
-            RedirectKind::Input => input = builder.file(redirect.file),
-            RedirectKind::Output => output = builder.file(redirect.file),
+        match redirect {
+            IoRedirect::File(_, kind, target) => {
+                let filename = match target {
+                    IoFileRedirectTarget::Filename(w) => word_str(w),
+                    _ => unimplemented!(),
+                };
+                match kind {
+                    IoFileRedirectKind::Read => input = builder.file(filename),
+                    IoFileRedirectKind::Write => output = builder.file(filename),
+                    _ => unimplemented!(),
+                }
+            }
             _ => unimplemented!(),
         }
     }
@@ -102,45 +118,93 @@ fn cmd_to_ir(
     }
 }
 
-fn node_to_ir(builder: &mut Builder, node: Node, input: Resource, output: Resource) {
-    match node {
-        Node::Command {
-            name,
-            args,
-            redirects,
-        } => cmd_to_ir(builder, name, args, redirects, input, output),
-        Node::Comment(_) => (),
-        Node::Pipeline { commands } => {
-            // Step through the pipeline and construct a pipe
-            // between each consecutive pair.
-            let mut input = input;
-            let last = commands.len() - 1;
-            for (i, step) in commands.into_iter().enumerate() {
-                let output = if i == last {
-                    output
-                } else {
-                    builder.rsrc(ir::ResourceKind::Pipe)
-                };
-                node_to_ir(builder, step, input, output);
-                input = output; // Feed this pipe into the next step.
+fn command_to_ir(builder: &mut Builder, command: Command, input: Resource, output: Resource) {
+    let Command::Simple(simple) = command else {
+        unimplemented!("only simple commands supported");
+    };
+
+    let name = word_str(simple.word_or_name.expect("command name"));
+
+    let mut args = vec![];
+    let mut redirects = vec![];
+    if let Some(suffix) = simple.suffix {
+        for item in suffix.0 {
+            match item {
+                CommandPrefixOrSuffixItem::Word(w) => args.push(word_str(w)),
+                CommandPrefixOrSuffixItem::IoRedirect(r) => redirects.push(r),
+                _ => unimplemented!(),
             }
         }
-        Node::List {
-            statements,
-            operators: _,
-        } => {
-            for statement in statements {
-                node_to_ir(builder, statement, input, output);
-            }
-        }
-        _ => unimplemented!(),
+    }
+
+    cmd_to_ir(builder, name, args, redirects, input, output);
+}
+
+fn pipeline_to_ir(builder: &mut Builder, pipeline: Pipeline, input: Resource, output: Resource) {
+    // Step through the pipeline and construct a pipe between each consecutive
+    // pair.
+    let mut input = input;
+    let last = pipeline.seq.len() - 1;
+    for (i, step) in pipeline.seq.into_iter().enumerate() {
+        let output = if i == last {
+            output
+        } else {
+            builder.rsrc(ir::ResourceKind::Pipe)
+        };
+        command_to_ir(builder, step, input, output);
+        input = output; // Feed this pipe into the next step.
     }
 }
 
-pub fn sh_to_ir(shell: Node) -> ir::Program {
+fn item_to_ir(builder: &mut Builder, item: CompoundListItem, input: Resource, output: Resource) {
+    if let SeparatorOperator::Async = item.1 {
+        unimplemented!("async commands not supported");
+    }
+
+    if !item.0.additional.is_empty() {
+        unimplemented!("&& and || not supported");
+    }
+
+    pipeline_to_ir(builder, item.0.first, input, output);
+}
+
+pub fn sh_to_ir(shell: Program) -> ir::Program {
     let mut builder = ir::Builder::new();
     let stdin = builder.stdin();
     let stdout = builder.stdout();
-    node_to_ir(&mut builder, shell, stdin, stdout);
+    for list in shell.complete_commands {
+        for item in list.0 {
+            item_to_ir(&mut builder, item, stdin, stdout);
+        }
+    }
     builder.build()
+}
+
+/// Convert a `brush_parser` "word" atom into a plain string.
+///
+/// For example, both `"foo bar"` and `foo\ bar` become `foo bar`.
+fn word_str(word: Word) -> String {
+    let opts = brush_parser::ParserOptions::default();
+    let mut buf = String::new();
+    let pieces = brush_parser::word::parse(&word.value, &opts).unwrap();
+    flatten_word_pieces(&mut buf, pieces);
+    buf
+}
+
+fn flatten_word_pieces(buf: &mut String, pieces: Vec<WordPieceWithSource>) {
+    for piece in pieces {
+        match piece.piece {
+            WordPiece::Text(s) => buf.push_str(&s),
+            WordPiece::SingleQuotedText(s) => buf.push_str(&s),
+            WordPiece::EscapeSequence(s) => {
+                // We expect this to be a backslash and then a single character.
+                assert_eq!(s.len(), 2);
+                let mut chars = s.chars();
+                assert_eq!(chars.next().unwrap(), '\\');
+                buf.push(chars.next().unwrap());
+            }
+            WordPiece::DoubleQuotedSequence(ps) => flatten_word_pieces(buf, ps),
+            _ => unimplemented!(),
+        }
+    }
 }

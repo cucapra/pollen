@@ -9,13 +9,13 @@ path = "src/main.rs"
 
 [dependencies]
 flatgfa = { path = "../flatgfa" }
-flash = "0.0.6"
 pico-args = "0.5"
 rustyline = "18"
 memmap = { workspace = true }
 bstr = { workspace = true }
 enum-map = "2"
 smallvec = "1"
+brush-parser = "0.4"
 
 [dev-dependencies]
 trycmd = "1.2.0"
