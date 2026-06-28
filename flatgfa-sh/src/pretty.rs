@@ -48,6 +48,7 @@ impl Display for Wrapped<'_, ir::Instr> {
             ir::Op::MakeWindows { size: _ } => "make-windows",
             ir::Op::OdgiView => "odgi-view",
             ir::Op::IntervalDepth => "interval-depth",
+            ir::Op::GzipDecompress => "gzip-decompress",
         };
         write!(f, "{}({}", name, self.wrap(&self.val.inputs[0]))?;
         for input in &self.val.inputs[1..] {

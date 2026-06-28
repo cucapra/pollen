@@ -49,6 +49,7 @@ pub enum Op {
     },
     OdgiView,
     IntervalDepth,
+    GzipDecompress,
 }
 
 #[derive(Debug)]

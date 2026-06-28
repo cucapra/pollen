@@ -211,6 +211,14 @@ impl Output {
             Self::Pipe(ref mut s) => write!(s, "{}", val),
         }
     }
+
+    fn write_all(&mut self, buf: &[u8]) -> std::io::Result<()> {
+        match *self {
+            Self::Stdout(ref mut s) => s.write_all(buf),
+            Self::File(ref mut s) => s.write_all(buf),
+            Self::Pipe(ref mut s) => s.write_all(buf),
+        }
+    }
 }
 
 pub fn run(prog: ir::Program) {

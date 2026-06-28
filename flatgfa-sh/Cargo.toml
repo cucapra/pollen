@@ -7,6 +7,10 @@ edition = "2024"
 name = "flash"
 path = "src/main.rs"
 
+[features]
+default = ["compress"]
+compress = ["dep:flate2"]
+
 [dependencies]
 flatgfa = { path = "../flatgfa" }
 pico-args = "0.5"
@@ -16,6 +20,7 @@ bstr = { workspace = true }
 enum-map = "2"
 smallvec = "1"
 brush-parser = "0.4"
+flate2 = { version = "1", optional = true }
 
 [dev-dependencies]
 trycmd = "1.2.0"

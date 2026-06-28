@@ -105,6 +105,9 @@ fn cmd_to_ir(
             }
             _ => unimplemented!("unsupported bedtools subcommand"),
         }
+    } else if name == "gunzip" {
+        assert!(args.is_empty(), "no gunzip arguments are supported");
+        builder.instr(&[input], output, Op::GzipDecompress);
     } else {
         // Any non-odgi command is a "passthrough" shell command.
         builder.instr(

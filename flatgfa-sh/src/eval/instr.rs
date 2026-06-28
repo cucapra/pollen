@@ -15,6 +15,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
         Op::MakeWindows { size } => make_windows(env, instr.inputs[0], instr.output, *size),
         Op::OdgiView => odgi_view(env, instr.inputs[0], instr.output),
         Op::IntervalDepth => interval_depth(env, instr.inputs[0], instr.inputs[1], instr.output),
+        Op::GzipDecompress => gzip_decompress(env, instr.inputs[0], instr.output),
     }
 }
 
@@ -175,4 +176,30 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
         depths,
     })
     .unwrap();
+}
+
+/// Decompress a gzip file eagerly and produce the raw bytes.
+///
+/// This is a placeholder solution! It works by decompressing the whole thing
+/// into memory and then copying the decompressed data to the output resource.
+/// We want this work in a streaming style, never materializing the whole
+/// decompressed text.
+fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
+    use flate2::bufread::GzDecoder;
+    use std::io::Read;
+
+    // Decompress the whole thing into memory.
+    let mut buf = Vec::new();
+    match env.bytes_input(input).expect("bytes input") {
+        Input::File(file) => GzDecoder::new(file.as_ref()).read_to_end(&mut buf),
+        Input::Stdin(stream) => GzDecoder::new(stream).read_to_end(&mut buf),
+        Input::Pipe(stream) => GzDecoder::new(stream).read_to_end(&mut buf),
+    }
+    .expect("decompression failed");
+
+    // Write the whole decompressed output immediately.
+    env.bytes_output(output)
+        .expect("bytes output")
+        .write_all(&buf)
+        .expect("error writing decompressed output");
 }
