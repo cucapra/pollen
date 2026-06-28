@@ -1,4 +1,4 @@
-use crate::ir::{Builder, Instr, Op, Program, Resource, ResourceKind};
+use crate::ir::{Builder, Encoding, Instr, Op, Program, Resource, ResourceKind};
 use smallvec::SmallVec;
 use std::collections::hash_map::{Entry, HashMap};
 use std::fs;
@@ -7,13 +7,12 @@ use std::fs;
 pub fn optimize(prog: Program) -> Program {
     let mut builder = Builder::rebuild(prog);
 
-    // Optimize `odgi-view` or `parse-gfa` into `map-file` when a FlatGFA file
-    // is available.
     opt_gfa_parse(&mut builder);
     opt_og_parse(&mut builder);
     skip_bed_files(&mut builder);
     simplify_depth_to_length(&mut builder);
     dedup_files(&mut builder);
+    opt_decompress(&mut builder);
 
     builder.build()
 }
@@ -137,7 +136,7 @@ fn opt_gfa_parse(builder: &mut Builder) {
 ///
 /// And attempt to replace it with:
 ///
-///     something -> bed-store 0
+///     something -> bed-store-0
 fn skip_bed_files(builder: &mut Builder) {
     // Find def/use pairs consisting of something that produces a BED file and
     // then a `parse-bed` instruction.
@@ -282,6 +281,63 @@ fn dedup_files(builder: &mut Builder) {
 
     // Remove the redundant read instructions.
     remove_indices(&mut builder.instrs, &redundant_reads);
+}
+
+/// Replace separate decompression instructions with decompressed stream access.
+///
+/// Search for this pattern:
+///
+///     gzip-decompress(foo) -> pipe-0
+///     parse-gfa(pipe-0) -> gfa-0
+///
+/// And replace it with this:
+///
+///     parse-gfa(gz foo) -> gfa-0
+///
+/// That is, for instructions that support on-the-fly decompression, give them
+/// direct access to the compressed file/stream and eliminate the separate
+/// decompression step and the intermediate pipe.
+fn opt_decompress(builder: &mut Builder) {
+    // Find `gzip-decompress` instructions where all uses support direct access
+    // to compressed streams.
+    let du = DefUse::analyze(&builder.instrs);
+    let decomp_defs: Vec<_> = builder
+        .instrs
+        .iter()
+        .enumerate()
+        .filter_map(|(decomp_idx, decomp_instr)| {
+            // Start with a `gzip-decompress` instruction.
+            let Op::GzipDecompress = decomp_instr.op else {
+                return None;
+            };
+
+            // Check that *all* the uses of this decompression support directly
+            // reading compressed streams. (This is somewhat restrictive. We may
+            // someday want to allow some instructions to fall back to explicit
+            // decompression.)
+            for use_idx in &du.uses[decomp_idx] {
+                // The only instruction that supports decompression so far is
+                // `parse-gfa`. We need to expand this.
+                let Op::ParseGFA = builder.instrs[*use_idx].op else {
+                    return None;
+                };
+            }
+
+            Some(decomp_idx)
+        })
+        .collect();
+
+    // Replace all uses of the explicitly decompressed data with direct, encoded
+    // uses of the stream.
+    for decomp_idx in &decomp_defs {
+        let compressed_rsrc = builder.instrs[*decomp_idx].inputs[0];
+        let decompressed_rsrc = builder.instrs[*decomp_idx].output;
+        let encoded_rsrc = compressed_rsrc.encoded(Encoding::Gzip);
+        builder.replace_rsrc(decompressed_rsrc, encoded_rsrc);
+    }
+
+    // Delete the decompression instructions.
+    remove_indices(&mut builder.instrs, &decomp_defs);
 }
 
 /// Replace an instruction with a `map-file` to open a FlatGFA binary file.

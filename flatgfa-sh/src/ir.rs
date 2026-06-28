@@ -91,6 +91,18 @@ impl Resource {
     pub fn stdout() -> Self {
         Self::new(ResourceKind::Stdout, 0)
     }
+
+    /// Get a version of the resource marked with a given encoding. The resource
+    /// must be a byte stream.
+    pub fn encoded(&self, encoding: Encoding) -> Self {
+        use ResourceKind::*;
+        assert!(matches!(self.kind, File | Mmap | Pipe | Stdin | Stdout));
+        Self {
+            kind: self.kind,
+            index: self.index,
+            encoding,
+        }
+    }
 }
 
 pub struct Builder {
