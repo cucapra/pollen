@@ -158,7 +158,7 @@ impl Builder {
     /// Either parse GFA text, memory-map a FlatGFA binary file, or convert an
     /// odgi native file. If `input` is a byte stream, we treat it as GFA text.
     /// If it's a file, we use the filename to decide whether to treat it as GFA
-    /// text or FlatGFA binary.
+    /// text, compressed GFA text, FlatGFA binary, or an odgi graph.
     pub fn load_gfa(&mut self, input: Resource) -> Resource {
         match input.kind {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
@@ -175,6 +175,7 @@ impl Builder {
             }
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
+                let input = self.maybe_decompress(input);
                 let output = self.rsrc(ResourceKind::GFAStore);
                 self.instr(&[input], output, Op::ParseGFA);
                 output
@@ -183,15 +184,33 @@ impl Builder {
         }
     }
 
-    /// Create an instruction to parse a BED file to a FlatBED resource.
+    /// Create an instruction to parse a (possibly compressed) text BED file to
+    /// a FlatBED resource.
     pub fn load_bed(&mut self, input: Resource) -> Resource {
         match input.kind {
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
+                let input = self.maybe_decompress(input);
                 let output = self.rsrc(ResourceKind::BEDStore);
                 self.instr(&[input], output, Op::ParseBED);
                 output
             }
             _ => panic!("cannot parse this resource as BED text"),
+        }
+    }
+
+    /// If the input is a gzip-compressed file, create an instruction to
+    /// decompress it. Otherwise, return it unchanged.
+    ///
+    /// This uses an OS pipe for the decompressed data, which is at least
+    /// general, but it's probably not the most efficient.
+    pub fn maybe_decompress(&mut self, input: Resource) -> Resource {
+        match input.kind {
+            ResourceKind::File if self.file_name(input).ends_with(".gz") => {
+                let pipe = self.rsrc(ResourceKind::Pipe);
+                self.instr(&[input], pipe, Op::GzipDecompress);
+                pipe
+            }
+            _ => input,
         }
     }
 
