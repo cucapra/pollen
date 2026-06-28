@@ -70,6 +70,9 @@ impl Display for Wrapped<'_, ir::Instr> {
 impl Display for Wrapped<'_, ir::Resource> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let index = self.val.index;
+        if let ir::Encoding::Gzip = self.val.encoding {
+            write!(f, "gz ")?;
+        }
         match self.val.kind {
             ir::ResourceKind::File => write!(f, "\"{}\"", self.file_names[index as usize]),
             ir::ResourceKind::Stdin => write!(f, "stdin"),

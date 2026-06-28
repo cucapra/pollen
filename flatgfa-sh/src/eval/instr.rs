@@ -155,10 +155,7 @@ fn odgi_view(env: &mut Env, input: Resource, output: Resource) {
     env.run_cmd(
         "odgi",
         &["view", "-g", "-i", &og_file],
-        Resource {
-            kind: ResourceKind::Stdin,
-            index: 0,
-        },
+        Resource::stdin(),
         output,
     )
 }
