@@ -178,28 +178,20 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
     .unwrap();
 }
 
-/// Decompress a gzip file eagerly and produce the raw bytes.
+/// Decompress a gzip file and produce the raw bytes.
 ///
-/// This is a placeholder solution! It works by decompressing the whole thing
-/// into memory and then copying the decompressed data to the output resource.
-/// We want this work in a streaming style, never materializing the whole
-/// decompressed text.
+/// This is a generic implementation that works for any byte-stream resource
+/// types for the input and output, so it is appropriate when we actually want
+/// to do I/O. But when we want to consume the decompressed data internally,
+/// some other strategy would be more efficient.
 fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
     use flate2::bufread::GzDecoder;
-    use std::io::Read;
 
-    // Decompress the whole thing into memory.
-    let mut buf = Vec::new();
+    let mut out = env.bytes_output(output).expect("bytes output");
     match env.bytes_input(input).expect("bytes input") {
-        Input::File(file) => GzDecoder::new(file.as_ref()).read_to_end(&mut buf),
-        Input::Stdin(stream) => GzDecoder::new(stream).read_to_end(&mut buf),
-        Input::Pipe(stream) => GzDecoder::new(stream).read_to_end(&mut buf),
+        Input::File(file) => out.copy(&mut GzDecoder::new(file.as_ref())),
+        Input::Stdin(stream) => out.copy(&mut GzDecoder::new(stream)),
+        Input::Pipe(stream) => out.copy(&mut GzDecoder::new(stream)),
     }
     .expect("decompression failed");
-
-    // Write the whole decompressed output immediately.
-    env.bytes_output(output)
-        .expect("bytes output")
-        .write_all(&buf)
-        .expect("error writing decompressed output");
 }
