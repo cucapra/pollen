@@ -1,6 +1,11 @@
 use super::{Env, Input};
-use crate::ir::{Instr, Op, Resource, ResourceKind};
-use flatgfa::{self, flatbed::HeapBEDStore, memfile, ops, ops::window_depth::Windows};
+use crate::ir::{Encoding, Instr, Op, Resource, ResourceKind};
+use flatgfa::{
+    self, HeapGFAStore,
+    flatbed::HeapBEDStore,
+    memfile,
+    ops::{self, window_depth::Windows},
+};
 
 /// Execute a single instruction.
 pub fn eval(env: &mut Env, instr: &Instr) {
@@ -88,12 +93,32 @@ fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args
 }
 
 fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
+    use flate2::bufread::GzDecoder;
     use flatgfa::parse::Parser;
+    use std::io::{BufRead, BufReader};
 
+    // Handle compressed or uncompressed input streams.
+    // TODO: This is currently worrisomely verbose, and it's only going to get
+    // worse if we try to apply this to other parsers.
+    fn parse_stream<R: BufRead>(stream: R, encoding: Encoding) -> HeapGFAStore {
+        use flatgfa::parse::Parser;
+        match encoding {
+            Encoding::None => Parser::for_heap().parse_stream(stream),
+            Encoding::Gzip => {
+                Parser::for_heap().parse_stream(BufReader::new(GzDecoder::new(stream)))
+            }
+        }
+    }
+
+    // For unencoded files on disk, we can use a (possibly faster) memchr-based
+    // parser. Otherwise, use the stream parser.
     let store = match env.bytes_input(input).expect("text input") {
-        Input::File(file) => Parser::for_heap().parse_mem(file.as_ref()),
-        Input::Stdin(stream) => Parser::for_heap().parse_stream(stream),
-        Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
+        Input::File(file) => match input.encoding {
+            Encoding::None => Parser::for_heap().parse_mem(file.as_ref()),
+            _ => parse_stream(file.as_ref(), input.encoding),
+        },
+        Input::Stdin(stream) => parse_stream(stream, input.encoding),
+        Input::Pipe(stream) => parse_stream(stream, input.encoding),
     };
 
     env.gfa_stores[output] = Some(store);
@@ -110,6 +135,11 @@ fn map_file(env: &mut Env, input: Resource, output: Resource) {
 
 fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
     use flatgfa::flatbed::BEDParser;
+
+    // We do not yet support decompression.
+    // TODO: We need to centralize this logic, so instruction implementations
+    // like this one cannot easily "forget" to handle compressed streams.
+    assert!(matches!(input.encoding, Encoding::None));
 
     let store = match env.bytes_input(input).expect("text input") {
         Input::File(file) => BEDParser::for_heap().parse_mem(file.as_ref()),
