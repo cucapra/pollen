@@ -93,9 +93,8 @@ fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args
 }
 
 fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
-    use flate2::bufread::GzDecoder;
     use flatgfa::parse::Parser;
-    use std::io::{BufRead, BufReader};
+    use std::io::BufRead;
 
     // Handle compressed or uncompressed input streams.
     // TODO: This is currently worrisomely verbose, and it's only going to get
@@ -105,7 +104,15 @@ fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
         match encoding {
             Encoding::None => Parser::for_heap().parse_stream(stream),
             Encoding::Gzip => {
-                Parser::for_heap().parse_stream(BufReader::new(GzDecoder::new(stream)))
+                #[cfg(feature = "compress")]
+                {
+                    use flate2::bufread::GzDecoder;
+                    use std::io::BufReader;
+                    Parser::for_heap().parse_stream(BufReader::new(GzDecoder::new(stream)))
+                }
+
+                #[cfg(not(feature = "compress"))]
+                panic!("compression not supported")
             }
         }
     }
@@ -206,19 +213,22 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
 }
 
 /// Decompress a gzip file and produce the raw bytes.
-///
-/// This is a generic implementation that works for any byte-stream resource
-/// types for the input and output, so it is appropriate when we actually want
-/// to do I/O. But when we want to consume the decompressed data internally,
-/// some other strategy would be more efficient.
 fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
-    use flate2::bufread::GzDecoder;
+    #[cfg(feature = "compress")]
+    {
+        use flate2::bufread::GzDecoder;
 
-    let mut out = env.bytes_output(output).expect("bytes output");
-    match env.bytes_input(input).expect("bytes input") {
-        Input::File(file) => out.copy(&mut GzDecoder::new(file.as_ref())),
-        Input::Stdin(stream) => out.copy(&mut GzDecoder::new(stream)),
-        Input::Pipe(stream) => out.copy(&mut GzDecoder::new(stream)),
+        let mut out = env.bytes_output(output).expect("bytes output");
+        match env.bytes_input(input).expect("bytes input") {
+            Input::File(file) => out.copy(&mut GzDecoder::new(file.as_ref())),
+            Input::Stdin(stream) => out.copy(&mut GzDecoder::new(stream)),
+            Input::Pipe(stream) => out.copy(&mut GzDecoder::new(stream)),
+        }
+        .expect("decompression failed");
     }
-    .expect("decompression failed");
+
+    #[cfg(not(feature = "compress"))]
+    {
+        env.run_cmd("gzip", &["-d"], input, output)
+    }
 }

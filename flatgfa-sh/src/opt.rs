@@ -12,6 +12,8 @@ pub fn optimize(prog: Program) -> Program {
     skip_bed_files(&mut builder);
     simplify_depth_to_length(&mut builder);
     dedup_files(&mut builder);
+
+    #[cfg(feature = "compress")]
     opt_decompress(&mut builder);
 
     builder.build()
