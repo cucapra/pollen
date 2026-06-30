@@ -1,6 +1,11 @@
 use super::{Env, Input};
-use crate::ir::{Instr, Op, Resource, ResourceKind};
-use flatgfa::{self, flatbed::HeapBEDStore, memfile, ops, ops::window_depth::Windows};
+use crate::ir::{Encoding, Instr, Op, Resource, ResourceKind};
+use flatgfa::{
+    self, HeapGFAStore,
+    flatbed::HeapBEDStore,
+    memfile,
+    ops::{self, window_depth::Windows},
+};
 
 /// Execute a single instruction.
 pub fn eval(env: &mut Env, instr: &Instr) {
@@ -15,6 +20,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
         Op::MakeWindows { size } => make_windows(env, instr.inputs[0], instr.output, *size),
         Op::OdgiView => odgi_view(env, instr.inputs[0], instr.output),
         Op::IntervalDepth => interval_depth(env, instr.inputs[0], instr.inputs[1], instr.output),
+        Op::GzipDecompress => gzip_decompress(env, instr.inputs[0], instr.output),
     }
 }
 
@@ -88,11 +94,38 @@ fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args
 
 fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
     use flatgfa::parse::Parser;
+    use std::io::BufRead;
 
+    // Handle compressed or uncompressed input streams.
+    // TODO: This is currently worrisomely verbose, and it's only going to get
+    // worse if we try to apply this to other parsers.
+    fn parse_stream<R: BufRead>(stream: R, encoding: Encoding) -> HeapGFAStore {
+        use flatgfa::parse::Parser;
+        match encoding {
+            Encoding::None => Parser::for_heap().parse_stream(stream),
+            Encoding::Gzip => {
+                #[cfg(feature = "compress")]
+                {
+                    use flate2::bufread::GzDecoder;
+                    use std::io::BufReader;
+                    Parser::for_heap().parse_stream(BufReader::new(GzDecoder::new(stream)))
+                }
+
+                #[cfg(not(feature = "compress"))]
+                panic!("compression not supported")
+            }
+        }
+    }
+
+    // For unencoded files on disk, we can use a (possibly faster) memchr-based
+    // parser. Otherwise, use the stream parser.
     let store = match env.bytes_input(input).expect("text input") {
-        Input::File(file) => Parser::for_heap().parse_mem(file.as_ref()),
-        Input::Stdin(stream) => Parser::for_heap().parse_stream(stream),
-        Input::Pipe(stream) => Parser::for_heap().parse_stream(stream),
+        Input::File(file) => match input.encoding {
+            Encoding::None => Parser::for_heap().parse_mem(file.as_ref()),
+            _ => parse_stream(file.as_ref(), input.encoding),
+        },
+        Input::Stdin(stream) => parse_stream(stream, input.encoding),
+        Input::Pipe(stream) => parse_stream(stream, input.encoding),
     };
 
     env.gfa_stores[output] = Some(store);
@@ -109,6 +142,11 @@ fn map_file(env: &mut Env, input: Resource, output: Resource) {
 
 fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
     use flatgfa::flatbed::BEDParser;
+
+    // We do not yet support decompression.
+    // TODO: We need to centralize this logic, so instruction implementations
+    // like this one cannot easily "forget" to handle compressed streams.
+    assert!(matches!(input.encoding, Encoding::None));
 
     let store = match env.bytes_input(input).expect("text input") {
         Input::File(file) => BEDParser::for_heap().parse_mem(file.as_ref()),
@@ -154,10 +192,7 @@ fn odgi_view(env: &mut Env, input: Resource, output: Resource) {
     env.run_cmd(
         "odgi",
         &["view", "-g", "-i", &og_file],
-        Resource {
-            kind: ResourceKind::Stdin,
-            index: 0,
-        },
+        Resource::stdin(),
         output,
     )
 }
@@ -175,4 +210,22 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
         depths,
     })
     .unwrap();
+}
+
+#[cfg(feature = "compress")]
+fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
+    use flate2::bufread::GzDecoder;
+
+    let mut out = env.bytes_output(output).expect("bytes output");
+    match env.bytes_input(input).expect("bytes input") {
+        Input::File(file) => out.copy(&mut GzDecoder::new(file.as_ref())),
+        Input::Stdin(stream) => out.copy(&mut GzDecoder::new(stream)),
+        Input::Pipe(stream) => out.copy(&mut GzDecoder::new(stream)),
+    }
+    .expect("decompression failed");
+}
+
+#[cfg(not(feature = "compress"))]
+fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
+    env.run_cmd("gzip", &["-d"], input, output);
 }

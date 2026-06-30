@@ -224,6 +224,54 @@ make-windows(bed-store-0, size=4) -> stdout
 Notice that `path-depth` has been replaced with `path-length`.
 
 
+Compression
+-----------
+
+Flash can help you read from compressed files.
+It can recognize the `gunzip` command:
+
+```
+$ flash -p -c 'gunzip < foo.gfa.gz | odgi depth'
+gzip-decompress("foo.gfa.gz") -> pipe-0
+parse-gfa(pipe-0) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+```
+
+And it can also automatically decompress when it sees a `.gz` filename extension:
+
+```
+$ flash -p -c 'odgi depth -i foo.gfa.gz'
+gzip-decompress("foo.gfa.gz") -> pipe-0
+parse-gfa(pipe-0) -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+```
+
+Some instructions (actually, just `parse-gfa` for now) support directly reading from compressed files, without going through an OS pipe.
+There is an optimization the recognizes relevant uses of `gzip-decompress` and triggers this functionality:
+
+```
+$ flash -p -O -c 'odgi depth -i foo.gfa.gz'
+parse-gfa(gz "foo.gfa.gz") -> gfa-store-0
+path-depth(gfa-store-0) -> stdout
+
+```
+
+Notice the `gz` qualifier next to the filename in the first instruction.
+This means that the `parse-gfa` instruction will decompress the text on the fly while parsing.
+
+Here's an end-to-end test:
+
+```
+$ flash -O -c 'gzip < ../tests/k.gfa | gunzip | odgi depth'
+#path	start	end	mean.depth
+x	0	50	1.9
+y	0	50	1.9
+
+```
+
+
 Complicated Example
 -------------------
 

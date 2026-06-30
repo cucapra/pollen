@@ -2,6 +2,15 @@ use enum_map::{Enum, EnumMap};
 use smallvec::SmallVec;
 use std::collections::HashMap;
 
+/// A value that instructions read or write.
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub struct Resource {
+    pub kind: ResourceKind,
+    pub encoding: Encoding,
+    pub index: u16,
+}
+
+/// The type of resource. Each kind has a different index space.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Enum)]
 pub enum ResourceKind {
     File,
@@ -13,10 +22,14 @@ pub enum ResourceKind {
     BEDStore,
 }
 
+/// The data encoding to be used when reading or writing the resource.
+///
+/// This should only be non-`None` for byte-stream resources (File, Stdin,
+/// Stdout, Pipe, and Mmap).
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Resource {
-    pub kind: ResourceKind,
-    pub index: u16,
+pub enum Encoding {
+    None,
+    Gzip,
 }
 
 /// An instruction performs one imperative action.
@@ -49,6 +62,7 @@ pub enum Op {
     },
     OdgiView,
     IntervalDepth,
+    GzipDecompress,
 }
 
 #[derive(Debug)]
@@ -58,9 +72,42 @@ pub struct Program {
     pub rsrc_counts: EnumMap<ResourceKind, u16>,
 }
 
+impl Resource {
+    /// Create a new resource (with no encoding).
+    pub fn new(kind: ResourceKind, index: u16) -> Self {
+        Resource {
+            kind,
+            index,
+            encoding: Encoding::None,
+        }
+    }
+
+    /// The (unencoded) standard input resource.
+    pub fn stdin() -> Self {
+        Self::new(ResourceKind::Stdin, 0)
+    }
+
+    /// The (unencoded) standard output resource.
+    pub fn stdout() -> Self {
+        Self::new(ResourceKind::Stdout, 0)
+    }
+
+    /// Get a version of the resource marked with a given encoding. The resource
+    /// must be a byte stream.
+    pub fn encoded(&self, encoding: Encoding) -> Self {
+        use ResourceKind::*;
+        assert!(matches!(self.kind, File | Mmap | Pipe | Stdin | Stdout));
+        Self {
+            kind: self.kind,
+            index: self.index,
+            encoding,
+        }
+    }
+}
+
 pub struct Builder {
     pub instrs: Vec<Instr>,
-    pub files: HashMap<String, Resource>,
+    pub files: HashMap<String, u16>,
     pub file_names: Vec<String>,
     pub rsrc_counts: EnumMap<ResourceKind, u16>,
 }
@@ -82,15 +129,7 @@ impl Builder {
             .file_names
             .iter()
             .enumerate()
-            .map(|(i, name)| {
-                (
-                    name.clone(),
-                    Resource {
-                        kind: ResourceKind::File,
-                        index: i.try_into().unwrap(),
-                    },
-                )
-            })
+            .map(|(i, name)| (name.clone(), i.try_into().unwrap()))
             .collect();
         Self {
             instrs: prog.instrs,
@@ -111,16 +150,13 @@ impl Builder {
 
     /// Add a file resource, or get an existing one if we've already added it.
     pub fn file(&mut self, name: String) -> Resource {
-        if let Some(&rsrc) = self.files.get(&name) {
-            rsrc
+        if let Some(&index) = self.files.get(&name) {
+            Resource::new(ResourceKind::File, index)
         } else {
-            let rsrc = Resource {
-                kind: ResourceKind::File,
-                index: self.files.len().try_into().unwrap(),
-            };
-            self.files.insert(name.clone(), rsrc);
+            let index: u16 = self.files.len().try_into().unwrap();
+            self.files.insert(name.clone(), index);
             self.file_names.push(name);
-            rsrc
+            Resource::new(ResourceKind::File, index)
         }
     }
 
@@ -133,23 +169,7 @@ impl Builder {
     pub fn rsrc(&mut self, kind: ResourceKind) -> Resource {
         let index = self.rsrc_counts[kind];
         self.rsrc_counts[kind] += 1;
-        Resource { kind, index }
-    }
-
-    /// Get the standard input resource.
-    pub fn stdin(&self) -> Resource {
-        Resource {
-            kind: ResourceKind::Stdin,
-            index: 0,
-        }
-    }
-
-    /// Get the standard output resource.
-    pub fn stdout(&self) -> Resource {
-        Resource {
-            kind: ResourceKind::Stdout,
-            index: 0,
-        }
+        Resource::new(kind, index)
     }
 
     /// Create an instruction to load a FlatGFA data structure as a resource.
@@ -157,7 +177,7 @@ impl Builder {
     /// Either parse GFA text, memory-map a FlatGFA binary file, or convert an
     /// odgi native file. If `input` is a byte stream, we treat it as GFA text.
     /// If it's a file, we use the filename to decide whether to treat it as GFA
-    /// text or FlatGFA binary.
+    /// text, compressed GFA text, FlatGFA binary, or an odgi graph.
     pub fn load_gfa(&mut self, input: Resource) -> Resource {
         match input.kind {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
@@ -174,6 +194,7 @@ impl Builder {
             }
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 // Parse as GFA text.
+                let input = self.maybe_decompress(input);
                 let output = self.rsrc(ResourceKind::GFAStore);
                 self.instr(&[input], output, Op::ParseGFA);
                 output
@@ -182,15 +203,33 @@ impl Builder {
         }
     }
 
-    /// Create an instruction to parse a BED file to a FlatBED resource.
+    /// Create an instruction to parse a (possibly compressed) text BED file to
+    /// a FlatBED resource.
     pub fn load_bed(&mut self, input: Resource) -> Resource {
         match input.kind {
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
+                let input = self.maybe_decompress(input);
                 let output = self.rsrc(ResourceKind::BEDStore);
                 self.instr(&[input], output, Op::ParseBED);
                 output
             }
             _ => panic!("cannot parse this resource as BED text"),
+        }
+    }
+
+    /// If the input is a gzip-compressed file, create an instruction to
+    /// decompress it. Otherwise, return it unchanged.
+    ///
+    /// This uses an OS pipe for the decompressed data, which is at least
+    /// general, but it's probably not the most efficient.
+    pub fn maybe_decompress(&mut self, input: Resource) -> Resource {
+        match input.kind {
+            ResourceKind::File if self.file_name(input).ends_with(".gz") => {
+                let pipe = self.rsrc(ResourceKind::Pipe);
+                self.instr(&[input], pipe, Op::GzipDecompress);
+                pipe
+            }
+            _ => input,
         }
     }
 

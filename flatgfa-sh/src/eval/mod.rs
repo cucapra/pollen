@@ -8,7 +8,7 @@ use flatgfa::{self, emit::Emit, flatgfa::HeapGFAStore, memfile};
 use memmap::Mmap;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter, Write};
+use std::io::{self, BufReader, BufWriter, PipeReader, PipeWriter, Read, Write};
 use std::ops::{Index, IndexMut};
 
 struct Env {
@@ -210,6 +210,15 @@ impl Output {
             Self::File(ref mut s) => write!(s, "{}", val),
             Self::Pipe(ref mut s) => write!(s, "{}", val),
         }
+    }
+
+    fn copy<R: Read>(&mut self, reader: &mut R) -> std::io::Result<()> {
+        match *self {
+            Self::Stdout(ref mut s) => io::copy(reader, s)?,
+            Self::File(ref mut s) => io::copy(reader, s)?,
+            Self::Pipe(ref mut s) => io::copy(reader, s)?,
+        };
+        Ok(())
     }
 }
 
