@@ -212,23 +212,20 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
     .unwrap();
 }
 
-/// Decompress a gzip file and produce the raw bytes.
+#[cfg(feature = "compress")]
 fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
-    #[cfg(feature = "compress")]
-    {
-        use flate2::bufread::GzDecoder;
+    use flate2::bufread::GzDecoder;
 
-        let mut out = env.bytes_output(output).expect("bytes output");
-        match env.bytes_input(input).expect("bytes input") {
-            Input::File(file) => out.copy(&mut GzDecoder::new(file.as_ref())),
-            Input::Stdin(stream) => out.copy(&mut GzDecoder::new(stream)),
-            Input::Pipe(stream) => out.copy(&mut GzDecoder::new(stream)),
-        }
-        .expect("decompression failed");
+    let mut out = env.bytes_output(output).expect("bytes output");
+    match env.bytes_input(input).expect("bytes input") {
+        Input::File(file) => out.copy(&mut GzDecoder::new(file.as_ref())),
+        Input::Stdin(stream) => out.copy(&mut GzDecoder::new(stream)),
+        Input::Pipe(stream) => out.copy(&mut GzDecoder::new(stream)),
     }
+    .expect("decompression failed");
+}
 
-    #[cfg(not(feature = "compress"))]
-    {
-        env.run_cmd("gzip", &["-d"], input, output)
-    }
+#[cfg(not(feature = "compress"))]
+fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
+    env.run_cmd("gzip", &["-d"], input, output);
 }
