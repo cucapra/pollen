@@ -1,4 +1,5 @@
-use crate::ir::{Builder, Encoding, Instr, Op, Program, Resource, ResourceKind};
+use crate::builder::Builder;
+use crate::ir::{Encoding, Instr, Op, Program, ResourceKind, ResourceRef};
 use smallvec::SmallVec;
 use std::collections::hash_map::{Entry, HashMap};
 use std::fs;
@@ -395,7 +396,7 @@ impl DefUse {
     fn analyze(instrs: &[Instr]) -> Self {
         let mut defs = Vec::with_capacity(instrs.len());
         let mut uses = vec![SmallVec::new(); instrs.len()];
-        let mut last_def: HashMap<Resource, usize> = HashMap::new();
+        let mut last_def: HashMap<ResourceRef, usize> = HashMap::new();
 
         for (idx, instr) in instrs.iter().enumerate() {
             // Find the definition for each use.

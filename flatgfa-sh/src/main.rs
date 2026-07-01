@@ -1,3 +1,4 @@
+mod builder;
 mod eval;
 mod ir;
 mod opt;

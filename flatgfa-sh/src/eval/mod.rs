@@ -1,6 +1,6 @@
 mod instr;
 
-use crate::ir::{self, Resource, ResourceKind};
+use crate::ir::{self, ResourceKind, ResourceRef};
 use enum_map::EnumMap;
 use flatgfa::FlatGFA;
 use flatgfa::flatbed::HeapBEDStore;
@@ -42,12 +42,12 @@ impl Env {
         }
     }
 
-    fn file_name(&self, rsrc: Resource) -> &str {
+    fn file_name(&self, rsrc: ResourceRef) -> &str {
         debug_assert!(rsrc.kind == ResourceKind::File);
         &self.file_names[rsrc.index as usize]
     }
 
-    fn read_pipe(&mut self, rsrc: Resource) -> io::Result<PipeReader> {
+    fn read_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeReader> {
         let pair = &mut self.pipes[rsrc];
         if let Some(reader) = pair.0.take() {
             Ok(reader)
@@ -58,7 +58,7 @@ impl Env {
         }
     }
 
-    fn write_pipe(&mut self, rsrc: Resource) -> io::Result<PipeWriter> {
+    fn write_pipe(&mut self, rsrc: ResourceRef) -> io::Result<PipeWriter> {
         let pair = &mut self.pipes[rsrc];
         if let Some(writer) = pair.1.take() {
             Ok(writer)
@@ -69,7 +69,7 @@ impl Env {
         }
     }
 
-    fn bytes_input(&mut self, rsrc: Resource) -> Option<Input> {
+    fn bytes_input(&mut self, rsrc: ResourceRef) -> Option<Input> {
         match rsrc.kind {
             ResourceKind::Stdin => Some(Input::Stdin(std::io::stdin().lock())),
             ResourceKind::File => Some(Input::File(memfile::map_file(self.file_name(rsrc)))),
@@ -78,7 +78,7 @@ impl Env {
         }
     }
 
-    fn bytes_output(&mut self, rsrc: Resource) -> Option<Output> {
+    fn bytes_output(&mut self, rsrc: ResourceRef) -> Option<Output> {
         match rsrc.kind {
             ResourceKind::Stdout => Some(Output::Stdout(std::io::stdout().lock())),
             ResourceKind::File => Some(Output::File(BufWriter::new(
@@ -95,7 +95,7 @@ impl Env {
     ///
     /// The resource must be either a memory-mapped file or an in-memory
     /// FlatGFA store.
-    fn flatgfa<'a>(&'a self, rsrc: Resource) -> FlatGFA<'a> {
+    fn flatgfa<'a>(&'a self, rsrc: ResourceRef) -> FlatGFA<'a> {
         match rsrc.kind {
             ResourceKind::GFAStore => {
                 let store = self.gfa_stores[rsrc].as_ref().expect("store not populated");
@@ -114,8 +114,8 @@ impl Env {
         &mut self,
         command: impl AsRef<OsStr>,
         args: &[impl AsRef<OsStr>],
-        stdin: Resource,
-        stdout: Resource,
+        stdin: ResourceRef,
+        stdout: ResourceRef,
     ) {
         use std::process::Command;
 
@@ -167,17 +167,17 @@ impl<T: Default> Heap<T> {
     }
 }
 
-impl<T: Default> Index<Resource> for Heap<T> {
+impl<T: Default> Index<ResourceRef> for Heap<T> {
     type Output = T;
 
-    fn index(&self, rsrc: Resource) -> &Self::Output {
+    fn index(&self, rsrc: ResourceRef) -> &Self::Output {
         debug_assert!(rsrc.kind == self.kind);
         &self.data[rsrc.index as usize]
     }
 }
 
-impl<T: Default> IndexMut<Resource> for Heap<T> {
-    fn index_mut(&mut self, rsrc: Resource) -> &mut Self::Output {
+impl<T: Default> IndexMut<ResourceRef> for Heap<T> {
+    fn index_mut(&mut self, rsrc: ResourceRef) -> &mut Self::Output {
         debug_assert!(rsrc.kind == self.kind);
         &mut self.data[rsrc.index as usize]
     }

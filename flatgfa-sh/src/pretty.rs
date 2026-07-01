@@ -67,7 +67,7 @@ impl Display for Wrapped<'_, ir::Instr> {
     }
 }
 
-impl Display for Wrapped<'_, ir::Resource> {
+impl Display for Wrapped<'_, ir::ResourceRef> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let index = self.val.index;
         if let ir::Encoding::Gzip = self.val.encoding {

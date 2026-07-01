@@ -1,4 +1,5 @@
-use crate::ir::{self, Builder, Op, Resource};
+use crate::builder::Builder;
+use crate::ir::{self, Op, ResourceRef};
 use brush_parser::{
     ast::{
         Command, CommandPrefixOrSuffixItem, CompoundListItem, IoFileRedirectKind,
@@ -18,13 +19,15 @@ pub fn parse_sh(input: &str) -> Program {
     parser.parse_program().unwrap()
 }
 
-fn cmd_to_ir(
+/// Translate a single shell command (i.e., an argv list, possibly with stream
+/// redirections) to IR instructions.
+fn translate_command(
     builder: &mut Builder,
     name: String,
     args: Vec<String>,
     redirects: Vec<IoRedirect>,
-    input: Resource,
-    output: Resource,
+    input: ResourceRef,
+    output: ResourceRef,
 ) {
     // Do the input or output come from stream redirections?
     let mut input = input;
@@ -48,68 +51,14 @@ fn cmd_to_ir(
 
     // Look for known commands.
     if name == "odgi" {
-        let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
-        match argp.subcommand().unwrap().as_deref() {
-            Some("depth") => {
-                // Possibly override input from `-i` flag.
-                if let Some(filename) = argp.opt_value_from_str(["-i", "--input"]).unwrap() {
-                    input = builder.file(filename);
-                }
-
-                // Get a FlatGFA data structure, either by parsing GFA text or
-                // by memory-mapping a FlatGFA binary file.
-                let input = builder.load_gfa(input);
-
-                // In the `odgi depth` command line, the default is a per-path
-                // table. `-d` switches to a per-node table, and `-b` takes a
-                // BED file and switches to an interval table.
-                if argp.contains("-d") {
-                    builder.instr(&[input], output, Op::NodeDepth);
-                } else if let Some(bed_file) = argp.opt_value_from_str("-b").unwrap() {
-                    let bed_file = builder.file(bed_file);
-                    let bed_rsrc = builder.load_bed(bed_file);
-                    builder.instr(&[input, bed_rsrc], output, Op::IntervalDepth)
-                } else {
-                    builder.instr(
-                        &[input],
-                        output,
-                        Op::PathDepth {
-                            path: argp.opt_value_from_str("-r").unwrap(),
-                        },
-                    );
-                };
-            }
-            _ => unimplemented!("unsupported odgi subcommand"),
-        }
+        translate_odgi(builder, args, input, output);
     } else if name == "bedtools" {
-        let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
-        match argp.subcommand().unwrap().as_deref() {
-            Some("makewindows") => {
-                // The input comes from the `-b` argument, which may be
-                // literally `/dev/stdin`.
-                let filename: String = argp.value_from_str("-b").unwrap();
-                if filename != "/dev/stdin" {
-                    input = builder.file(filename);
-                }
-
-                // Use an instruction to parse the BED file.
-                let input = builder.load_bed(input);
-
-                builder.instr(
-                    &[input],
-                    output,
-                    Op::MakeWindows {
-                        size: argp.value_from_str("-w").unwrap(),
-                    },
-                );
-            }
-            _ => unimplemented!("unsupported bedtools subcommand"),
-        }
+        translate_bedtools(builder, args, input, output);
     } else if name == "gunzip" {
         assert!(args.is_empty(), "no gunzip arguments are supported");
         builder.instr(&[input], output, Op::GzipDecompress);
     } else {
-        // Any non-odgi command is a "passthrough" shell command.
+        // Any other command is a "passthrough" shell command.
         builder.instr(
             &[input],
             output,
@@ -121,7 +70,86 @@ fn cmd_to_ir(
     }
 }
 
-fn command_to_ir(builder: &mut Builder, command: Command, input: Resource, output: Resource) {
+/// Translate an `odgi` subcommand invocation.
+fn translate_odgi(
+    builder: &mut Builder,
+    args: Vec<String>,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
+    let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
+
+    // Most odgi commands share an `-i` flag for overriding the input.
+    let input = if let Some(filename) = argp.opt_value_from_str(["-i", "--input"]).unwrap() {
+        builder.file(filename)
+    } else {
+        input
+    };
+
+    // Get a FlatGFA data structure, either by parsing GFA text or by
+    // memory-mapping a FlatGFA binary file.
+    let input = builder.load_gfa(input);
+
+    match argp.subcommand().unwrap().as_deref() {
+        Some("depth") => {
+            // In the `odgi depth` command line, the default is a per-path
+            // table. `-d` switches to a per-node table, and `-b` takes a BED
+            // file and switches to an interval table.
+            if argp.contains("-d") {
+                builder.instr(&[input], output, Op::NodeDepth);
+            } else if let Some(bed_file) = argp.opt_value_from_str("-b").unwrap() {
+                let bed_file = builder.file(bed_file);
+                let bed_rsrc = builder.load_bed(bed_file);
+                builder.instr(&[input, bed_rsrc], output, Op::IntervalDepth)
+            } else {
+                builder.instr(
+                    &[input],
+                    output,
+                    Op::PathDepth {
+                        path: argp.opt_value_from_str("-r").unwrap(),
+                    },
+                );
+            };
+        }
+        _ => unimplemented!("unsupported odgi subcommand"),
+    }
+}
+
+/// Translate a `bedtools` subcommand invocation.
+fn translate_bedtools(
+    builder: &mut Builder,
+    args: Vec<String>,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
+    let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
+    match argp.subcommand().unwrap().as_deref() {
+        Some("makewindows") => {
+            // The input comes from the `-b` argument, which may be literally
+            // `/dev/stdin`.
+            let filename: String = argp.value_from_str("-b").unwrap();
+            let input = if filename == "/dev/stdin" {
+                input
+            } else {
+                builder.file(filename)
+            };
+
+            // Use an instruction to parse the BED file.
+            let input = builder.load_bed(input);
+
+            builder.instr(
+                &[input],
+                output,
+                Op::MakeWindows {
+                    size: argp.value_from_str("-w").unwrap(),
+                },
+            );
+        }
+        _ => unimplemented!("unsupported bedtools subcommand"),
+    }
+}
+
+fn command_to_ir(builder: &mut Builder, command: Command, input: ResourceRef, output: ResourceRef) {
     let Command::Simple(simple) = command else {
         unimplemented!("only simple commands supported");
     };
@@ -140,10 +168,15 @@ fn command_to_ir(builder: &mut Builder, command: Command, input: Resource, outpu
         }
     }
 
-    cmd_to_ir(builder, name, args, redirects, input, output);
+    translate_command(builder, name, args, redirects, input, output);
 }
 
-fn pipeline_to_ir(builder: &mut Builder, pipeline: Pipeline, input: Resource, output: Resource) {
+fn pipeline_to_ir(
+    builder: &mut Builder,
+    pipeline: Pipeline,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     // Step through the pipeline and construct a pipe between each consecutive
     // pair.
     let mut input = input;
@@ -159,7 +192,12 @@ fn pipeline_to_ir(builder: &mut Builder, pipeline: Pipeline, input: Resource, ou
     }
 }
 
-fn item_to_ir(builder: &mut Builder, item: CompoundListItem, input: Resource, output: Resource) {
+fn item_to_ir(
+    builder: &mut Builder,
+    item: CompoundListItem,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     if let SeparatorOperator::Async = item.1 {
         unimplemented!("async commands not supported");
     }
@@ -172,10 +210,15 @@ fn item_to_ir(builder: &mut Builder, item: CompoundListItem, input: Resource, ou
 }
 
 pub fn sh_to_ir(shell: Program) -> ir::Program {
-    let mut builder = ir::Builder::new();
+    let mut builder = Builder::new();
     for list in shell.complete_commands {
         for item in list.0 {
-            item_to_ir(&mut builder, item, Resource::stdin(), Resource::stdout());
+            item_to_ir(
+                &mut builder,
+                item,
+                ResourceRef::stdin(),
+                ResourceRef::stdout(),
+            );
         }
     }
     builder.build()

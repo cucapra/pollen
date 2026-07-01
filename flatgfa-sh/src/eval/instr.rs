@@ -1,5 +1,5 @@
 use super::{Env, Input};
-use crate::ir::{Encoding, Instr, Op, Resource, ResourceKind};
+use crate::ir::{Encoding, Instr, Op, ResourceKind, ResourceRef};
 use flatgfa::{
     self, HeapGFAStore,
     flatbed::HeapBEDStore,
@@ -24,7 +24,7 @@ pub fn eval(env: &mut Env, instr: &Instr) {
     }
 }
 
-fn node_depth(env: &mut Env, input: Resource, output: Resource) {
+fn node_depth(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     let mut out = env.bytes_output(output).expect("bytes output");
     let gfa = env.flatgfa(input);
     let (depths, uniq_depths) = ops::depth::seg_depth_with_uniq(&gfa);
@@ -36,7 +36,7 @@ fn node_depth(env: &mut Env, input: Resource, output: Resource) {
     .unwrap();
 }
 
-fn path_depth(env: &mut Env, input: Resource, output: Resource, path: &Option<String>) {
+fn path_depth(env: &mut Env, input: ResourceRef, output: ResourceRef, path: &Option<String>) {
     let out = env.bytes_output(output);
     let gfa = env.flatgfa(input);
     if let Some(path_name) = &path {
@@ -71,7 +71,7 @@ fn path_depth(env: &mut Env, input: Resource, output: Resource, path: &Option<St
     }
 }
 
-fn path_length(env: &mut Env, input: Resource, output: Resource, path_name: &str) {
+fn path_length(env: &mut Env, input: ResourceRef, output: ResourceRef, path_name: &str) {
     let gfa = env.flatgfa(input);
     let path = gfa.find_path(path_name.into()).expect("no such path found");
 
@@ -88,11 +88,11 @@ fn path_length(env: &mut Env, input: Resource, output: Resource, path_name: &str
     env.bed_stores[output] = Some(store);
 }
 
-fn exec(env: &mut Env, input: Resource, output: Resource, command: &String, args: &[String]) {
+fn exec(env: &mut Env, input: ResourceRef, output: ResourceRef, command: &String, args: &[String]) {
     env.run_cmd(command, args, input, output);
 }
 
-fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
+fn parse_gfa(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     use flatgfa::parse::Parser;
     use std::io::BufRead;
 
@@ -131,7 +131,7 @@ fn parse_gfa(env: &mut Env, input: Resource, output: Resource) {
     env.gfa_stores[output] = Some(store);
 }
 
-fn map_file(env: &mut Env, input: Resource, output: Resource) {
+fn map_file(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     if let ResourceKind::File = input.kind {
         let mmap = memfile::map_file(env.file_name(input));
         env.mmaps[output] = Some(mmap);
@@ -140,7 +140,7 @@ fn map_file(env: &mut Env, input: Resource, output: Resource) {
     }
 }
 
-fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
+fn parse_bed(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     use flatgfa::flatbed::BEDParser;
 
     // We do not yet support decompression.
@@ -157,7 +157,7 @@ fn parse_bed(env: &mut Env, input: Resource, output: Resource) {
     env.bed_stores[output] = Some(store);
 }
 
-fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
+fn make_windows(env: &mut Env, input: ResourceRef, output: ResourceRef, size: usize) {
     let store = env.bed_stores[input].take().unwrap();
     let in_bed = store.as_ref();
 
@@ -187,17 +187,22 @@ fn make_windows(env: &mut Env, input: Resource, output: Resource, size: usize) {
     }
 }
 
-fn odgi_view(env: &mut Env, input: Resource, output: Resource) {
+fn odgi_view(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     let og_file = env.file_name(input).to_string();
     env.run_cmd(
         "odgi",
         &["view", "-g", "-i", &og_file],
-        Resource::stdin(),
+        ResourceRef::stdin(),
         output,
     )
 }
 
-fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output: Resource) {
+fn interval_depth(
+    env: &mut Env,
+    gfa_rsrc: ResourceRef,
+    bed_rsrc: ResourceRef,
+    output: ResourceRef,
+) {
     let bed_store = env.bed_stores[bed_rsrc].take().unwrap();
     let gfa = env.flatgfa(gfa_rsrc);
 
@@ -213,7 +218,7 @@ fn interval_depth(env: &mut Env, gfa_rsrc: Resource, bed_rsrc: Resource, output:
 }
 
 #[cfg(feature = "compress")]
-fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
+fn gzip_decompress(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     use flate2::bufread::GzDecoder;
 
     let mut out = env.bytes_output(output).expect("bytes output");
@@ -226,6 +231,6 @@ fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
 }
 
 #[cfg(not(feature = "compress"))]
-fn gzip_decompress(env: &mut Env, input: Resource, output: Resource) {
+fn gzip_decompress(env: &mut Env, input: ResourceRef, output: ResourceRef) {
     env.run_cmd("gzip", &["-d"], input, output);
 }
