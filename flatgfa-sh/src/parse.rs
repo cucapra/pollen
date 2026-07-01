@@ -1,5 +1,5 @@
 use crate::builder::Builder;
-use crate::ir::{self, Op, Resource};
+use crate::ir::{self, Op, ResourceRef};
 use brush_parser::{
     ast::{
         Command, CommandPrefixOrSuffixItem, CompoundListItem, IoFileRedirectKind,
@@ -26,8 +26,8 @@ fn translate_command(
     name: String,
     args: Vec<String>,
     redirects: Vec<IoRedirect>,
-    input: Resource,
-    output: Resource,
+    input: ResourceRef,
+    output: ResourceRef,
 ) {
     // Do the input or output come from stream redirections?
     let mut input = input;
@@ -71,7 +71,12 @@ fn translate_command(
 }
 
 /// Translate an `odgi` subcommand invocation.
-fn translate_odgi(builder: &mut Builder, args: Vec<String>, input: Resource, output: Resource) {
+fn translate_odgi(
+    builder: &mut Builder,
+    args: Vec<String>,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
 
     // Most odgi commands share an `-i` flag for overriding the input.
@@ -111,7 +116,12 @@ fn translate_odgi(builder: &mut Builder, args: Vec<String>, input: Resource, out
 }
 
 /// Translate a `bedtools` subcommand invocation.
-fn translate_bedtools(builder: &mut Builder, args: Vec<String>, input: Resource, output: Resource) {
+fn translate_bedtools(
+    builder: &mut Builder,
+    args: Vec<String>,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     let mut argp = Arguments::from_vec(args.into_iter().map(|s| s.into()).collect());
     match argp.subcommand().unwrap().as_deref() {
         Some("makewindows") => {
@@ -139,7 +149,7 @@ fn translate_bedtools(builder: &mut Builder, args: Vec<String>, input: Resource,
     }
 }
 
-fn command_to_ir(builder: &mut Builder, command: Command, input: Resource, output: Resource) {
+fn command_to_ir(builder: &mut Builder, command: Command, input: ResourceRef, output: ResourceRef) {
     let Command::Simple(simple) = command else {
         unimplemented!("only simple commands supported");
     };
@@ -161,7 +171,12 @@ fn command_to_ir(builder: &mut Builder, command: Command, input: Resource, outpu
     translate_command(builder, name, args, redirects, input, output);
 }
 
-fn pipeline_to_ir(builder: &mut Builder, pipeline: Pipeline, input: Resource, output: Resource) {
+fn pipeline_to_ir(
+    builder: &mut Builder,
+    pipeline: Pipeline,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     // Step through the pipeline and construct a pipe between each consecutive
     // pair.
     let mut input = input;
@@ -177,7 +192,12 @@ fn pipeline_to_ir(builder: &mut Builder, pipeline: Pipeline, input: Resource, ou
     }
 }
 
-fn item_to_ir(builder: &mut Builder, item: CompoundListItem, input: Resource, output: Resource) {
+fn item_to_ir(
+    builder: &mut Builder,
+    item: CompoundListItem,
+    input: ResourceRef,
+    output: ResourceRef,
+) {
     if let SeparatorOperator::Async = item.1 {
         unimplemented!("async commands not supported");
     }
@@ -193,7 +213,12 @@ pub fn sh_to_ir(shell: Program) -> ir::Program {
     let mut builder = Builder::new();
     for list in shell.complete_commands {
         for item in list.0 {
-            item_to_ir(&mut builder, item, Resource::stdin(), Resource::stdout());
+            item_to_ir(
+                &mut builder,
+                item,
+                ResourceRef::stdin(),
+                ResourceRef::stdout(),
+            );
         }
     }
     builder.build()

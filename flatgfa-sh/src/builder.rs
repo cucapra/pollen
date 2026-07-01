@@ -1,4 +1,4 @@
-use crate::ir::{Instr, Op, Program, Resource, ResourceKind};
+use crate::ir::{Instr, Op, Program, ResourceKind, ResourceRef};
 use enum_map::EnumMap;
 use std::collections::HashMap;
 
@@ -37,7 +37,7 @@ impl Builder {
     }
 
     /// Add an instruction to the end of the program.
-    pub fn instr(&mut self, inputs: &[Resource], output: Resource, op: Op) {
+    pub fn instr(&mut self, inputs: &[ResourceRef], output: ResourceRef, op: Op) {
         self.instrs.push(Instr {
             inputs: inputs.into(),
             output,
@@ -46,27 +46,27 @@ impl Builder {
     }
 
     /// Add a file resource, or get an existing one if we've already added it.
-    pub fn file(&mut self, name: String) -> Resource {
+    pub fn file(&mut self, name: String) -> ResourceRef {
         if let Some(&index) = self.files.get(&name) {
-            Resource::new(ResourceKind::File, index)
+            ResourceRef::new(ResourceKind::File, index)
         } else {
             let index: u16 = self.files.len().try_into().unwrap();
             self.files.insert(name.clone(), index);
             self.file_names.push(name);
-            Resource::new(ResourceKind::File, index)
+            ResourceRef::new(ResourceKind::File, index)
         }
     }
 
-    pub fn file_name(&self, rsrc: Resource) -> &str {
+    pub fn file_name(&self, rsrc: ResourceRef) -> &str {
         debug_assert!(rsrc.kind == ResourceKind::File);
         &self.file_names[rsrc.index as usize]
     }
 
     /// Create a new "normal" resource (not a file, stdin, or stdout).
-    pub fn rsrc(&mut self, kind: ResourceKind) -> Resource {
+    pub fn rsrc(&mut self, kind: ResourceKind) -> ResourceRef {
         let index = self.rsrc_counts[kind];
         self.rsrc_counts[kind] += 1;
-        Resource::new(kind, index)
+        ResourceRef::new(kind, index)
     }
 
     /// Create an instruction to load a FlatGFA data structure as a resource.
@@ -75,7 +75,7 @@ impl Builder {
     /// odgi native file. If `input` is a byte stream, we treat it as GFA text.
     /// If it's a file, we use the filename to decide whether to treat it as GFA
     /// text, compressed GFA text, FlatGFA binary, or an odgi graph.
-    pub fn load_gfa(&mut self, input: Resource) -> Resource {
+    pub fn load_gfa(&mut self, input: ResourceRef) -> ResourceRef {
         match input.kind {
             ResourceKind::File if self.file_name(input).ends_with(".flatgfa") => {
                 // Memory-map the FlatGFA binary file.
@@ -102,7 +102,7 @@ impl Builder {
 
     /// Create an instruction to parse a (possibly compressed) text BED file to
     /// a FlatBED resource.
-    pub fn load_bed(&mut self, input: Resource) -> Resource {
+    pub fn load_bed(&mut self, input: ResourceRef) -> ResourceRef {
         match input.kind {
             ResourceKind::Pipe | ResourceKind::Stdin | ResourceKind::File => {
                 let input = self.maybe_decompress(input);
@@ -119,7 +119,7 @@ impl Builder {
     ///
     /// This uses an OS pipe for the decompressed data, which is at least
     /// general, but it's probably not the most efficient.
-    pub fn maybe_decompress(&mut self, input: Resource) -> Resource {
+    pub fn maybe_decompress(&mut self, input: ResourceRef) -> ResourceRef {
         match input.kind {
             ResourceKind::File if self.file_name(input).ends_with(".gz") => {
                 let pipe = self.rsrc(ResourceKind::Pipe);
@@ -131,7 +131,7 @@ impl Builder {
     }
 
     /// Replace all uses of one resource with another.
-    pub fn replace_rsrc(&mut self, old: Resource, new: Resource) {
+    pub fn replace_rsrc(&mut self, old: ResourceRef, new: ResourceRef) {
         for instr in self.instrs.iter_mut() {
             for input in instr.inputs.iter_mut() {
                 if *input == old {

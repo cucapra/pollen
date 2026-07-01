@@ -1,12 +1,16 @@
 use enum_map::{Enum, EnumMap};
 use smallvec::SmallVec;
 
-/// A value that instructions read or write.
+/// A reference to a value that instructions read or write.
+///
+/// Resources have per-kind namespaces, so we can refer to them with their kind
+/// and their index. For byte-stream resources, references can also specify how
+/// to encode/decode bytes when accessing the resource.
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct Resource {
+pub struct ResourceRef {
     pub kind: ResourceKind,
-    pub encoding: Encoding,
     pub index: u16,
+    pub encoding: Encoding,
 }
 
 /// The type of resource. Each kind has a different index space.
@@ -34,8 +38,8 @@ pub enum Encoding {
 /// An instruction performs one imperative action.
 #[derive(Debug)]
 pub struct Instr {
-    pub inputs: SmallVec<[Resource; 2]>,
-    pub output: Resource,
+    pub inputs: SmallVec<[ResourceRef; 2]>,
+    pub output: ResourceRef,
     pub op: Op,
 }
 
@@ -71,10 +75,10 @@ pub struct Program {
     pub rsrc_counts: EnumMap<ResourceKind, u16>,
 }
 
-impl Resource {
-    /// Create a new resource (with no encoding).
+impl ResourceRef {
+    /// Refer to a given resource, with no encoding.
     pub fn new(kind: ResourceKind, index: u16) -> Self {
-        Resource {
+        ResourceRef {
             kind,
             index,
             encoding: Encoding::None,
@@ -91,8 +95,8 @@ impl Resource {
         Self::new(ResourceKind::Stdout, 0)
     }
 
-    /// Get a version of the resource marked with a given encoding. The resource
-    /// must be a byte stream.
+    /// Get a version of the resource reference marked with a given encoding.
+    /// The resource must be a byte stream.
     pub fn encoded(&self, encoding: Encoding) -> Self {
         use ResourceKind::*;
         assert!(matches!(self.kind, File | Mmap | Pipe | Stdin | Stdout));
