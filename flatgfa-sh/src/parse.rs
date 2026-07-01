@@ -1,4 +1,5 @@
-use crate::ir::{self, Builder, Op, Resource};
+use crate::builder::Builder;
+use crate::ir::{self, Op, Resource};
 use brush_parser::{
     ast::{
         Command, CommandPrefixOrSuffixItem, CompoundListItem, IoFileRedirectKind,
@@ -189,7 +190,7 @@ fn item_to_ir(builder: &mut Builder, item: CompoundListItem, input: Resource, ou
 }
 
 pub fn sh_to_ir(shell: Program) -> ir::Program {
-    let mut builder = ir::Builder::new();
+    let mut builder = Builder::new();
     for list in shell.complete_commands {
         for item in list.0 {
             item_to_ir(&mut builder, item, Resource::stdin(), Resource::stdout());

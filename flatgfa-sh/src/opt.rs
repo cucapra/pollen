@@ -1,4 +1,5 @@
-use crate::ir::{Builder, Encoding, Instr, Op, Program, Resource, ResourceKind};
+use crate::builder::Builder;
+use crate::ir::{Encoding, Instr, Op, Program, Resource, ResourceKind};
 use smallvec::SmallVec;
 use std::collections::hash_map::{Entry, HashMap};
 use std::fs;
